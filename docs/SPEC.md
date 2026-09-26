@@ -179,7 +179,7 @@ flowchart LR
 
 ## Esquema de base de datos
 
-Una base PostgreSQL 16 con dos esquemas que marcan el límite entre módulos: `ingest` (4 tablas) y `core` (16 tablas), con un solo historial de migraciones Alembic. Las claves primarias son `uuid` v7 generados en la aplicación con `uuid-utils` (PostgreSQL 16 no tiene `uuidv7()` nativo), salvo `incident_events`, `audit_log` y `evaluation_queue` (`bigint` identity), y `readings` y `rate_limit_windows` (compuestas).
+Una base PostgreSQL 16 con dos esquemas que marcan el límite entre módulos: `ingest` (4 tablas) y `core` (16 tablas), con un solo historial de migraciones Alembic. Las claves primarias son `uuid` v7 generados en la aplicación con `uuid-utils` (PostgreSQL 16 no tiene `uuidv7()` nativo), salvo `incident_events`, `audit_log` y `evaluation_queue` (`bigint` identity); `readings`, `rate_limit_windows`, `zone_stations` y `contact_group_members` (compuestas); `station_heartbeats` (PK `station_id`); y `users`, cuyo `id` es el `sub` que emite Keycloak (uuid, no generado por la aplicación).
 
 ```mermaid
 erDiagram
