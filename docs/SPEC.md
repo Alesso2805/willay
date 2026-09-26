@@ -88,7 +88,7 @@ Una plataforma web que (1) ingiere lecturas de sensores, (2) evalúa reglas por 
 Ejecuta VIG-01 a VIG-05 de docs/SPEC.md en orden:
 1. Monorepo según SPEC, Makefile (up, down, test, lint, migrate, seed, demo) y CI en GitHub Actions.
 2. docker-compose.yml con postgres, keycloak (realm importado de infra/keycloak/realm-vigia.json con 2 organizaciones), mailpit, un servicio `migrate` que corre Alembic una vez y termina, y api, workers y dashboard que dependen de que `migrate` haya terminado con éxito.
-3. Migración Alembic inicial: extensiones, esquemas, tablas, hypertable con compresión y retención, roles `vigia_owner`/`vigia_app`, `ALTER DEFAULT PRIVILEGES` y REVOKE de las tablas append-only.
+3. Script de init de Postgres con roles `vigia_owner`/`vigia_app` y extensiones; migración Alembic inicial: esquemas, tablas, hypertable con compresión y retención, permisos, `ALTER DEFAULT PRIVILEGES` y REVOKE de las tablas append-only.
 4. Seed con 2 organizaciones (demo Rímac y una de prueba de aislamiento), zonas, estaciones con API keys generadas e impresas para el simulador, reglas, política de 3 niveles y contactos.
 5. Borradores de ADR-0001 a ADR-0004.
 Antes del ADR-0004, configura en Keycloak 26 el mapper que incluye el id de la organización en el claim `organization`; el tenant se resuelve solo por ese id.
@@ -255,6 +255,7 @@ erDiagram
 
 ### Roles de base de datos
 
+- Los roles `vigia_owner` y `vigia_app`, la base `keycloak` y las extensiones (`timescaledb`, `postgis`) los crea el script de `infra/postgres/init/`, que corre como superusuario solo sobre un volumen vacío. Las extensiones no son *trusted* y un rol no puede crearse a sí mismo, así que la migración no puede hacerlo con `vigia_owner`; la migración inicial solo ejecuta `CREATE EXTENSION IF NOT EXISTS` como comprobación (ver ADR-0005).
 - `vigia_owner`: dueño de los objetos; solo lo usa el contenedor `migrate`.
 - `vigia_app`: usado por API y workers; SELECT, INSERT, UPDATE y DELETE en tablas de negocio, pero solo SELECT e INSERT en `incident_events` y `audit_log`.
 - La migración inicial ejecuta `ALTER DEFAULT PRIVILEGES FOR ROLE vigia_owner` en ambos esquemas para que toda tabla futura otorgue permisos a `vigia_app` sin pasos manuales.
@@ -277,7 +278,7 @@ erDiagram
 | --- | --- | --- | --- | --- | --- | --- |
 | VIG-01 | E0 Fundaciones | Como desarrollador quiero un monorepo con Makefile y CI | Estructura según SPEC; `make lint` y `make test` pasan; GitHub Actions ejecuta Ruff, Mypy, Pytest y build de Angular | M | 3 | 0 |
 | VIG-02 | E0 Fundaciones | Como desarrollador quiero levantar todo con Docker Compose | `make up` levanta Postgres (con una base separada keycloak para Keycloak), Keycloak, Mailpit, el contenedor `migrate` (corre una vez y termina), la API, 5 workers y el dashboard; API y workers esperan a que `migrate` termine con éxito; healthchecks en verde | M | 5 | 0 |
-| VIG-03 | E0 Fundaciones | Como desarrollador quiero la migración inicial y los roles de BD | Extensiones, esquemas, tablas, hypertable, compresión y retención; roles `vigia_owner` y `vigia_app` con `ALTER DEFAULT PRIVILEGES`; tests: `vigia_app` no puede hacer UPDATE en `incident_events` y sí tiene permisos en una tabla creada por una migración posterior | M | 5 | 0 |
+| VIG-03 | E0 Fundaciones | Como desarrollador quiero la migración inicial y los roles de BD | Roles `vigia_owner` y `vigia_app` y extensiones en el init de Postgres; esquemas, tablas, hypertable, compresión y retención en la migración, con `ALTER DEFAULT PRIVILEGES`; tests: `vigia_app` no puede hacer UPDATE en `incident_events` y sí tiene permisos en una tabla creada por una migración posterior | M | 5 | 0 |
 | VIG-04 | E0 Fundaciones | Como desarrollador quiero datos semilla | `make seed` crea 2 organizaciones (demo Rímac y otra de aislamiento), 3 zonas, 10 estaciones con API keys impresas para el simulador, 6 reglas, 1 política de 3 niveles y 5 contactos | M | 3 | 0 |
 | VIG-05 | E0 Fundaciones | Como desarrollador quiero documentar las decisiones iniciales | ADR-0001 a ADR-0004 en `docs/adr/`; el ADR-0004 fija el mapper de Keycloak 26 que incluye el id de la organización en el claim `organization` | M | 2 | 0 |
 | VIG-06 | E1 Identidad | Como usuario quiero iniciar sesión y ver solo los datos de mi organización | Login OIDC con Keycloak 26 Organizations; tokens con cero o varias organizaciones reciben 403; test con las 2 organizaciones del seed en cada endpoint | M | 5 | 1 |
