@@ -39,6 +39,11 @@ class Database:
     def migrate_url(self) -> str:
         return self.owner_dsn.replace("postgresql://", "postgresql+asyncpg://", 1)
 
+    @property
+    def app_url(self) -> str:
+        """URL de SQLAlchemy con vigia_app, como VIGIA_DATABASE_URL en la API y los workers."""
+        return self.app_dsn.replace("postgresql://", "postgresql+asyncpg://", 1)
+
 
 def _in_own_thread[T](fn: Callable[[], T]) -> T:
     # migrations/env.py usa asyncio.run(), que falla si el hilo ya tiene un event loop

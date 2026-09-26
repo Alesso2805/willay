@@ -37,8 +37,11 @@ test-dashboard:
 migrate: .env ## Aplica las migraciones de Alembic con vigia_owner
 	$(COMPOSE) run --rm migrate
 
-seed: .env ## Carga los datos demo e imprime las API keys del simulador
-	$(COMPOSE) run --rm migrate python -m vigia.seed
+# Corre con tu uid para que .secrets/station-keys.json sea tuyo y no del usuario del contenedor.
+seed: .env ## Carga los datos demo e imprime las API keys (ARGS=--rotate-keys para rotarlas)
+	@mkdir -p .secrets
+	$(COMPOSE) run --rm --user "$$(id -u):$$(id -g)" -v "$(CURDIR)/.secrets:/secrets" \
+		migrate python -m vigia.seed --keys-file /secrets/station-keys.json $(ARGS)
 
 demo: ## Escenario Rímac guiado (VIG-30)
 	@echo "make demo llega con VIG-30 (Sprint 6)." && exit 1
