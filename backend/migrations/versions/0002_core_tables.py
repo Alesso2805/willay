@@ -1,0 +1,336 @@
+"""Tablas del esquema core (16) y REVOKE de las append-only.
+
+Convenciones (ADR-0006):
+- PK uuid v7 generadas por la aplicación (sin DEFAULT); bigint identity solo en
+  incident_events y audit_log; users.id es el `sub` de Keycloak.
+- Valores cerrados con text + CHECK, no con tipos ENUM: un CHECK se cambia en una
+  migración normal; quitar un valor de un ENUM no.
+- Todo instante es timestamptz (UTC).
+
+Revision ID: 0002
+Revises: 0001
+Create Date: 2026-09-26
+"""
+
+from collections.abc import Sequence
+
+from alembic import op
+
+revision: str = "0002"
+down_revision: str | None = "0001"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
+
+INCIDENT_EVENT_TYPES = (
+    "opened",
+    "reading_added",
+    "alert_sent",
+    "alert_failed",
+    "alert_skipped",
+    "escalated",
+    "escalation_exhausted",
+    "station_recovered",
+    "acknowledged",
+    "resolved",
+    "comment",
+)
+
+TABLES = (
+    "audit_log",
+    "alerts",
+    "incident_events",
+    "incidents",
+    "rules",
+    "level_targets",
+    "escalation_levels",
+    "escalation_policies",
+    "contact_group_members",
+    "contact_groups",
+    "contacts",
+    "zone_stations",
+    "stations",
+    "risk_zones",
+    "users",
+    "organizations",
+)
+
+
+def _in(values: Sequence[str]) -> str:
+    return ", ".join(f"'{v}'" for v in values)
+
+
+def upgrade() -> None:
+    op.execute("""
+        CREATE TABLE core.organizations (
+            id               uuid PRIMARY KEY,
+            keycloak_org_id  uuid NOT NULL UNIQUE,
+            name             text NOT NULL,
+            timezone         text NOT NULL DEFAULT 'America/Lima',
+            created_at       timestamptz NOT NULL DEFAULT now()
+        )
+    """)
+
+    op.execute("""
+        CREATE TABLE core.users (
+            id               uuid PRIMARY KEY,  -- = sub de Keycloak
+            organization_id  uuid NOT NULL REFERENCES core.organizations (id),
+            email            text NOT NULL,
+            full_name        text NOT NULL,
+            is_active        boolean NOT NULL DEFAULT true,
+            created_at       timestamptz NOT NULL DEFAULT now()
+        )
+    """)
+    # Único sin distinguir mayúsculas: Ana@x.pe y ana@x.pe son la misma persona.
+    op.execute("CREATE UNIQUE INDEX users_email_key ON core.users (lower(email))")
+    op.execute("CREATE INDEX users_organization_id_idx ON core.users (organization_id)")
+
+    op.execute("""
+        CREATE TABLE core.risk_zones (
+            id                   uuid PRIMARY KEY,
+            organization_id      uuid NOT NULL REFERENCES core.organizations (id),
+            name                 text NOT NULL,
+            description          text,
+            risk_level           text NOT NULL
+                CHECK (risk_level IN ('low', 'medium', 'high', 'critical')),
+            geom                 geometry(MultiPolygon, 4326) NOT NULL,
+            population_estimate  integer CHECK (population_estimate >= 0),
+            is_active            boolean NOT NULL DEFAULT true,
+            created_at           timestamptz NOT NULL DEFAULT now(),
+            updated_at           timestamptz NOT NULL DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX risk_zones_geom_idx ON core.risk_zones USING gist (geom)")
+    op.execute("CREATE INDEX risk_zones_organization_id_idx ON core.risk_zones (organization_id)")
+
+    op.execute("""
+        CREATE TABLE core.stations (
+            id                   uuid PRIMARY KEY,
+            organization_id      uuid NOT NULL REFERENCES core.organizations (id),
+            code                 text NOT NULL,
+            name                 text NOT NULL,
+            variable             text NOT NULL
+                CHECK (variable IN ('water_level', 'discharge', 'rainfall')),
+            unit                 text NOT NULL,
+            location             geometry(Point, 4326) NOT NULL,
+            source               text NOT NULL CHECK (source IN ('sensor', 'simulator')),
+            expected_interval_s  integer NOT NULL CHECK (expected_interval_s > 0),
+            -- Única fuente de K para la regla de silencio.
+            silence_multiplier   integer NOT NULL DEFAULT 3 CHECK (silence_multiplier >= 1),
+            status               text NOT NULL DEFAULT 'active'
+                CHECK (status IN ('active', 'inactive')),
+            api_key_hash         text NOT NULL,
+            api_key_rotated_at   timestamptz NOT NULL,
+            created_at           timestamptz NOT NULL DEFAULT now(),
+            UNIQUE (organization_id, code)
+        )
+    """)
+    op.execute("CREATE INDEX stations_location_idx ON core.stations USING gist (location)")
+
+    op.execute("""
+        CREATE TABLE core.zone_stations (
+            zone_id     uuid NOT NULL REFERENCES core.risk_zones (id) ON DELETE CASCADE,
+            station_id  uuid NOT NULL REFERENCES core.stations (id) ON DELETE CASCADE,
+            position    text NOT NULL CHECK (position IN ('upstream', 'in_zone', 'downstream')),
+            PRIMARY KEY (zone_id, station_id)
+        )
+    """)
+    op.execute("CREATE INDEX zone_stations_station_id_idx ON core.zone_stations (station_id)")
+
+    op.execute("""
+        CREATE TABLE core.contacts (
+            id                         uuid PRIMARY KEY,
+            organization_id            uuid NOT NULL REFERENCES core.organizations (id),
+            user_id                    uuid UNIQUE REFERENCES core.users (id),
+            full_name                  text NOT NULL,
+            email                      text,
+            telegram_chat_id           bigint,
+            telegram_link_token_hash   text UNIQUE,
+            telegram_link_expires_at   timestamptz
+        )
+    """)
+    op.execute("CREATE INDEX contacts_organization_id_idx ON core.contacts (organization_id)")
+
+    op.execute("""
+        CREATE TABLE core.contact_groups (
+            id               uuid PRIMARY KEY,
+            organization_id  uuid NOT NULL REFERENCES core.organizations (id),
+            name             text NOT NULL,
+            zone_id          uuid REFERENCES core.risk_zones (id) ON DELETE SET NULL,
+            UNIQUE (organization_id, name)
+        )
+    """)
+
+    op.execute("""
+        CREATE TABLE core.contact_group_members (
+            group_id    uuid NOT NULL REFERENCES core.contact_groups (id) ON DELETE CASCADE,
+            contact_id  uuid NOT NULL REFERENCES core.contacts (id) ON DELETE CASCADE,
+            PRIMARY KEY (group_id, contact_id)
+        )
+    """)
+
+    op.execute("""
+        CREATE TABLE core.escalation_policies (
+            id               uuid PRIMARY KEY,
+            organization_id  uuid NOT NULL REFERENCES core.organizations (id),
+            name             text NOT NULL,
+            created_at       timestamptz NOT NULL DEFAULT now(),
+            UNIQUE (organization_id, name)
+        )
+    """)
+
+    op.execute("""
+        CREATE TABLE core.escalation_levels (
+            id           uuid PRIMARY KEY,
+            policy_id    uuid NOT NULL REFERENCES core.escalation_policies (id) ON DELETE CASCADE,
+            level_order  integer NOT NULL CHECK (level_order >= 1),
+            wait_s       integer NOT NULL CHECK (wait_s > 0),
+            UNIQUE (policy_id, level_order)
+        )
+    """)
+
+    op.execute("""
+        CREATE TABLE core.level_targets (
+            id                uuid PRIMARY KEY,
+            level_id          uuid NOT NULL
+                REFERENCES core.escalation_levels (id) ON DELETE CASCADE,
+            contact_group_id  uuid NOT NULL REFERENCES core.contact_groups (id),
+            channel           text NOT NULL CHECK (channel IN ('email', 'telegram')),
+            UNIQUE (level_id, contact_group_id, channel)
+        )
+    """)
+
+    op.execute("""
+        CREATE TABLE core.rules (
+            id                    uuid PRIMARY KEY,
+            organization_id       uuid NOT NULL REFERENCES core.organizations (id),
+            zone_id               uuid NOT NULL REFERENCES core.risk_zones (id),
+            station_id            uuid REFERENCES core.stations (id),  -- NULL: toda la zona
+            type                  text NOT NULL
+                CHECK (type IN ('threshold', 'rate_of_change', 'silence')),
+            params                jsonb NOT NULL DEFAULT '{}'::jsonb,  -- validado con Pydantic
+            severity              text NOT NULL CHECK (severity IN ('info', 'warning', 'critical')),
+            escalation_policy_id  uuid NOT NULL REFERENCES core.escalation_policies (id),
+            cooldown_s            integer NOT NULL CHECK (cooldown_s >= 0),
+            is_active             boolean NOT NULL DEFAULT true,
+            created_by            uuid REFERENCES core.users (id),
+            created_at            timestamptz NOT NULL DEFAULT now(),
+            updated_at            timestamptz NOT NULL DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX rules_zone_id_idx ON core.rules (zone_id) WHERE is_active")
+    op.execute("CREATE INDEX rules_station_id_idx ON core.rules (station_id) WHERE is_active")
+
+    op.execute("""
+        CREATE TABLE core.incidents (
+            id                          uuid PRIMARY KEY,
+            organization_id             uuid NOT NULL REFERENCES core.organizations (id),
+            zone_id                     uuid NOT NULL REFERENCES core.risk_zones (id),
+            rule_id                     uuid NOT NULL REFERENCES core.rules (id),
+            station_id                  uuid REFERENCES core.stations (id),
+            status                      text NOT NULL DEFAULT 'open'
+                CHECK (status IN ('open', 'acknowledged', 'resolved')),
+            severity                    text NOT NULL
+                CHECK (severity IN ('info', 'warning', 'critical')),
+            current_level               integer NOT NULL DEFAULT 1 CHECK (current_level >= 1),
+            trigger_value               double precision,
+            dedup_key                   text NOT NULL,
+            opened_at                   timestamptz NOT NULL,
+            escalation_exhausted_at     timestamptz,
+            acknowledged_at             timestamptz,
+            acknowledged_by_user_id     uuid REFERENCES core.users (id),
+            acknowledged_by_contact_id  uuid REFERENCES core.contacts (id),
+            resolved_at                 timestamptz,
+            resolution                  text CHECK (resolution IN ('resolved', 'false_alarm')),
+            -- open: nadie confirmó; acknowledged: exactamente un actor (usuario o contacto).
+            CONSTRAINT incidents_acknowledged_by_check CHECK (
+                (status = 'open'
+                    AND acknowledged_by_user_id IS NULL
+                    AND acknowledged_by_contact_id IS NULL)
+                OR (status = 'acknowledged'
+                    AND num_nonnulls(acknowledged_by_user_id, acknowledged_by_contact_id) = 1)
+                OR (status = 'resolved'
+                    AND num_nonnulls(acknowledged_by_user_id, acknowledged_by_contact_id) <= 1)
+            ),
+            CONSTRAINT incidents_resolved_state_check CHECK (
+                (status = 'resolved') = (resolution IS NOT NULL AND resolved_at IS NOT NULL)
+            )
+        )
+    """)
+    # Un solo incidente activo por causa. Parcial: uno resuelto no bloquea uno nuevo.
+    op.execute("""
+        CREATE UNIQUE INDEX incidents_active_dedup_key
+            ON core.incidents (dedup_key) WHERE status IN ('open', 'acknowledged')
+    """)
+    op.execute("CREATE INDEX incidents_org_status_idx ON core.incidents (organization_id, status)")
+    # Para el enfriamiento: último incidente resuelto de una causa.
+    op.execute("""
+        CREATE INDEX incidents_dedup_resolved_idx
+            ON core.incidents (dedup_key, resolved_at DESC) WHERE status = 'resolved'
+    """)
+
+    op.execute(f"""
+        CREATE TABLE core.incident_events (
+            id               bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            incident_id      uuid NOT NULL REFERENCES core.incidents (id),
+            organization_id  uuid NOT NULL REFERENCES core.organizations (id),
+            occurred_at      timestamptz NOT NULL,
+            event_type       text NOT NULL CHECK (event_type IN ({_in(INCIDENT_EVENT_TYPES)})),
+            actor_type       text NOT NULL CHECK (actor_type IN ('system', 'user', 'contact')),
+            actor_id         uuid,
+            payload          jsonb NOT NULL DEFAULT '{{}}'::jsonb
+        )
+    """)
+    op.execute("""
+        CREATE INDEX incident_events_incident_occurred_idx
+            ON core.incident_events (incident_id, occurred_at)
+    """)
+
+    op.execute("""
+        CREATE TABLE core.alerts (
+            id                    uuid PRIMARY KEY,
+            incident_id           uuid NOT NULL REFERENCES core.incidents (id),
+            level_order           integer NOT NULL CHECK (level_order >= 1),
+            contact_id            uuid NOT NULL REFERENCES core.contacts (id),
+            channel               text NOT NULL CHECK (channel IN ('email', 'telegram')),
+            destination           text NOT NULL,
+            status                text NOT NULL DEFAULT 'pending'
+                CHECK (status IN ('pending', 'sent', 'failed', 'skipped', 'acknowledged')),
+            attempts              integer NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+            next_attempt_at       timestamptz,
+            sent_at               timestamptz,
+            ack_token_hash        text UNIQUE,
+            ack_token_expires_at  timestamptz,
+            acknowledged_at       timestamptz,
+            last_error            text
+        )
+    """)
+    op.execute(
+        "CREATE INDEX alerts_status_next_attempt_idx ON core.alerts (status, next_attempt_at)"
+    )
+    op.execute("CREATE INDEX alerts_incident_id_idx ON core.alerts (incident_id)")
+
+    op.execute("""
+        CREATE TABLE core.audit_log (
+            id               bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            organization_id  uuid NOT NULL REFERENCES core.organizations (id),
+            actor_id         uuid,
+            entity_type      text NOT NULL,
+            entity_id        uuid NOT NULL,
+            action           text NOT NULL,
+            before           jsonb,
+            after            jsonb,
+            at               timestamptz NOT NULL
+        )
+    """)
+    op.execute("CREATE INDEX audit_log_org_at_idx ON core.audit_log (organization_id, at)")
+
+    # Append-only a nivel de permisos: la línea de tiempo y la auditoría no se reescriben.
+    # ALTER DEFAULT PRIVILEGES (0001) otorgó UPDATE y DELETE; aquí se retiran.
+    op.execute(
+        "REVOKE UPDATE, DELETE, TRUNCATE ON core.incident_events, core.audit_log FROM vigia_app"
+    )
+
+
+def downgrade() -> None:
+    for table in TABLES:
+        op.execute(f"DROP TABLE core.{table}")
