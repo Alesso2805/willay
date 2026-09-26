@@ -1,0 +1,172 @@
+# Stack local de Vigía. `make up` crea .env desde .env.example si falta.
+# Orden de arranque: postgres -> (keycloak, migrate) -> api, workers, dashboard.
+
+x-backend: &backend
+  build: ./backend
+  image: vigia-backend:dev
+  restart: unless-stopped
+  environment: &backend-env
+    VIGIA_DATABASE_URL: postgresql+asyncpg://vigia_app:${VIGIA_APP_PASSWORD:?}@postgres:5432/vigia
+    VIGIA_LOG_LEVEL: ${VIGIA_LOG_LEVEL:-INFO}
+  depends_on: &after-migrate
+    migrate:
+      condition: service_completed_successfully
+
+x-worker-healthcheck: &worker-healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 3
+  start_period: 20s
+
+services:
+  postgres:
+    image: timescale/timescaledb-ha:pg16-ts2.30
+    restart: unless-stopped
+    command: ["postgres", "-c", "timescaledb.telemetry_level=off"]
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      VIGIA_OWNER_PASSWORD: ${VIGIA_OWNER_PASSWORD:?}
+      VIGIA_APP_PASSWORD: ${VIGIA_APP_PASSWORD:?}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?}
+    volumes:
+      - pgdata:/home/postgres/pgdata
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${VIGIA_PG_PORT:-5433}:5432"
+    healthcheck:
+      # -h 127.0.0.1: durante el init el servidor temporal solo escucha en el socket,
+      # así el healthcheck no da verde antes de que existan las bases y los roles.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d vigia"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.4
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?}
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?}
+      KC_HEALTH_ENABLED: "true"
+      KC_HOSTNAME: http://localhost:${VIGIA_KEYCLOAK_PORT:-8080}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      # Placeholder ${VIGIA_DEV_USER_PASSWORD} de realm-vigia.json
+      VIGIA_DEV_USER_PASSWORD: ${VIGIA_DEV_USER_PASSWORD:?}
+    volumes:
+      - ./infra/keycloak:/opt/keycloak/data/import:ro
+    ports:
+      - "${VIGIA_KEYCLOAK_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # La imagen no trae curl: petición HTTP a mano al puerto de gestión.
+      test:
+        - CMD-SHELL
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000 &&
+          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q '"UP"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  mailpit:
+    image: axllent/mailpit:v1.31.2
+    restart: unless-stopped
+    ports:
+      - "${VIGIA_MAILPIT_UI_PORT:-8025}:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build: ./backend
+    image: vigia-backend:dev
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      VIGIA_MIGRATE_DATABASE_URL: postgresql+asyncpg://vigia_owner:${VIGIA_OWNER_PASSWORD:?}@postgres:5432/vigia
+      VIGIA_DATABASE_URL: postgresql+asyncpg://vigia_app:${VIGIA_APP_PASSWORD:?}@postgres:5432/vigia
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *backend
+    command: ["uvicorn", "vigia.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "${VIGIA_API_PORT:-8000}:8000"
+    depends_on:
+      <<: *after-migrate
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  worker-evaluator:
+    <<: *backend
+    command: ["python", "-m", "vigia.workers.evaluator"]
+    healthcheck:
+      <<: *worker-healthcheck
+      test: ["CMD", "python", "-m", "vigia.workers.healthcheck", "evaluator"]
+
+  worker-silence:
+    <<: *backend
+    command: ["python", "-m", "vigia.workers.silence"]
+    healthcheck:
+      <<: *worker-healthcheck
+      test: ["CMD", "python", "-m", "vigia.workers.healthcheck", "silence"]
+
+  worker-dispatcher:
+    <<: *backend
+    command: ["python", "-m", "vigia.workers.dispatcher"]
+    environment:
+      <<: *backend-env
+      VIGIA_SMTP_HOST: mailpit
+      VIGIA_SMTP_PORT: "1025"
+    healthcheck:
+      <<: *worker-healthcheck
+      test: ["CMD", "python", "-m", "vigia.workers.healthcheck", "dispatcher"]
+
+  worker-escalation:
+    <<: *backend
+    command: ["python", "-m", "vigia.workers.escalation"]
+    healthcheck:
+      <<: *worker-healthcheck
+      test: ["CMD", "python", "-m", "vigia.workers.healthcheck", "escalation"]
+
+  worker-telegram:
+    <<: *backend
+    command: ["python", "-m", "vigia.workers.telegram"]
+    healthcheck:
+      <<: *worker-healthcheck
+      test: ["CMD", "python", "-m", "vigia.workers.healthcheck", "telegram"]
+
+  dashboard:
+    build: ./dashboard
+    image: vigia-dashboard:dev
+    restart: unless-stopped
+    ports:
+      - "${VIGIA_DASHBOARD_PORT:-4200}:80"
+    depends_on: *after-migrate
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

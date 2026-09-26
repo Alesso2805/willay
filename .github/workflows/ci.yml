@@ -30,6 +30,22 @@ jobs:
       # Los tests de integración usan testcontainers; el runner de GitHub ya trae Docker.
       - run: uv run pytest
 
+  compose:
+    name: Stack completo desde una base vacía
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: cp .env.example .env
+      # --wait falla si algún healthcheck no llega a verde.
+      - run: docker compose up -d --build --wait --wait-timeout 300
+      - name: migrate terminó con éxito
+        run: test "$(docker compose ps -a migrate --format '{{.ExitCode}}')" = "0"
+      - name: Diagnóstico
+        if: failure()
+        run: docker compose ps -a && docker compose logs --tail 100
+      - if: always()
+        run: docker compose down -v
+
   dashboard:
     name: Dashboard (ESLint, Vitest, build)
     runs-on: ubuntu-24.04
