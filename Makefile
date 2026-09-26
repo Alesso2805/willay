@@ -8,8 +8,12 @@ COMPOSE := docker compose
 help: ## Lista los comandos disponibles
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "} {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
-up: ## Levanta todo el stack (migrate corre antes que api y workers)
-	$(COMPOSE) up -d --build
+up: .env ## Levanta todo el stack (migrate corre antes que api y workers)
+	$(COMPOSE) up -d --build --wait
+
+.env:
+	cp .env.example .env
+	@echo "Creado .env desde .env.example (credenciales solo de desarrollo)."
 
 down: ## Detiene el stack (conserva los volúmenes)
 	$(COMPOSE) down
@@ -30,10 +34,10 @@ test-backend:
 test-dashboard:
 	cd dashboard && npm test -- --watch=false
 
-migrate: ## Aplica las migraciones de Alembic con vigia_owner
+migrate: .env ## Aplica las migraciones de Alembic con vigia_owner
 	$(COMPOSE) run --rm migrate
 
-seed: ## Carga los datos demo e imprime las API keys del simulador
+seed: .env ## Carga los datos demo e imprime las API keys del simulador
 	$(COMPOSE) run --rm migrate python -m vigia.seed
 
 demo: ## Escenario Rímac guiado (VIG-30)
