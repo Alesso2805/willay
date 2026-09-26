@@ -1,0 +1,7 @@
+# LF en todo el repo: los .sh del init de Postgres y el Makefile se rompen con CRLF.
+* text=auto eol=lf
+
+*.ico binary
+*.png binary
+*.jpg binary
+*.webp binary
