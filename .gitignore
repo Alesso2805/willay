@@ -1,0 +1,15 @@
+# Secretos locales: nunca en el repositorio
+.env
+.secrets/
+
+# Python
+.venv/
+__pycache__/
+
+# Node
+node_modules/
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.idea/
