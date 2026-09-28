@@ -1,9 +1,22 @@
-<main class="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-6 px-4 py-12">
-  <header>
-    <h1 class="text-4xl font-semibold text-slate-900">{{ title() }}</h1>
-    <p class="mt-2 text-lg text-slate-600">Sistema de alerta temprana para operadores y líderes comunales.</p>
-  </header>
+<header class="border-b border-slate-200 bg-white">
+  <div class="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3">
+    <h1 class="text-2xl font-semibold text-slate-900">Vigía</h1>
+    @if (session.me(); as me) {
+      <div class="flex items-center gap-3 text-sm text-slate-700">
+        <span>{{ me.full_name }}</span>
+        <button
+          type="button"
+          class="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-slate-50"
+          (click)="session.logout()"
+        >
+          Cerrar sesión
+        </button>
+      </div>
+    }
+  </div>
+</header>
 
+<main class="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-8">
   <aside class="rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-900" aria-labelledby="disclaimer-title">
     <h2 id="disclaimer-title" class="font-semibold">Herramienta de apoyo</h2>
     <p class="mt-1">
@@ -11,6 +24,51 @@
       (INDECI, COER regionales, SISMATE).
     </p>
   </aside>
+
+  <section aria-live="polite">
+    @switch (session.state().status) {
+      @case ('loading') {
+        <p class="text-slate-600">Cargando sesión…</p>
+      }
+      @case ('anonymous') {
+        <p class="text-slate-700">Inicia sesión con la cuenta de tu organización.</p>
+        <button
+          type="button"
+          class="mt-3 rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700"
+          (click)="session.login()"
+        >
+          Iniciar sesión
+        </button>
+      }
+      @case ('forbidden') {
+        <div role="alert" class="rounded-md border border-red-300 bg-red-50 p-4 text-red-900">
+          <p class="font-semibold">Acceso no permitido</p>
+          <p class="mt-1">
+            Tu usuario debe pertenecer a exactamente una organización registrada en Vigía.
+            Contacta a quien administra tu organización.
+          </p>
+          <button type="button" class="mt-3 underline" (click)="session.logout()">Cerrar sesión</button>
+        </div>
+      }
+      @case ('error') {
+        <div role="alert" class="rounded-md border border-red-300 bg-red-50 p-4 text-red-900">
+          No se pudo conectar con Vigía. Intenta de nuevo en unos minutos.
+        </div>
+      }
+      @case ('ready') {
+        @if (session.me(); as me) {
+          <dl class="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-slate-800">
+            <dt class="font-medium">Correo</dt>
+            <dd>{{ me.email }}</dd>
+            <dt class="font-medium">Organización</dt>
+            <dd class="font-mono text-sm">{{ me.organization_id }}</dd>
+            <dt class="font-medium">Roles</dt>
+            <dd>{{ roleLabels(me.roles) }}</dd>
+          </dl>
+        }
+      }
+    }
+  </section>
 
   <router-outlet />
 </main>
