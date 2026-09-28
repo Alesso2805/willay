@@ -1,0 +1,30 @@
+from uuid import UUID
+
+from fastapi import APIRouter
+from pydantic import BaseModel
+
+from vigia.identity.api.dependencies import CurrentPrincipal
+from vigia.identity.domain.principal import Role
+
+router = APIRouter(prefix="/v1", tags=["identity"])
+
+
+class MeResponse(BaseModel):
+    user_id: UUID
+    email: str
+    full_name: str
+    organization_id: UUID
+    keycloak_org_id: UUID
+    roles: list[Role]
+
+
+@router.get("/me", summary="Usuario autenticado, su organización y sus roles")
+async def me(principal: CurrentPrincipal) -> MeResponse:
+    return MeResponse(
+        user_id=principal.user_id,
+        email=principal.email,
+        full_name=principal.full_name,
+        organization_id=principal.organization_id,
+        keycloak_org_id=principal.keycloak_org_id,
+        roles=sorted(principal.roles),
+    )

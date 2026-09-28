@@ -103,6 +103,12 @@ services:
   api:
     <<: *backend
     command: ["uvicorn", "vigia.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      <<: *backend-env
+      # iss = URL pública con la que el navegador pide el token; el JWKS va por la red interna.
+      VIGIA_OIDC_ISSUER: http://localhost:${VIGIA_KEYCLOAK_PORT:-8080}/realms/vigia
+      VIGIA_OIDC_JWKS_URL: http://keycloak:8080/realms/vigia/protocol/openid-connect/certs
+      VIGIA_OIDC_AUDIENCE: vigia-api
     ports:
       - "${VIGIA_API_PORT:-8000}:8000"
     depends_on:
