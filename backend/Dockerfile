@@ -23,4 +23,4 @@ ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1
 USER vigia
 EXPOSE 8000
-CMD ["uvicorn", "vigia.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "--factory", "vigia.api.main:create_app", "--host", "0.0.0.0", "--port", "8000"]
