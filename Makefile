@@ -3,7 +3,7 @@ SHELL := /bin/bash
 
 COMPOSE := docker compose
 
-.PHONY: help up down lint lint-backend lint-dashboard test test-backend test-dashboard migrate seed demo
+.PHONY: help up down lint lint-backend lint-dashboard test test-backend test-dashboard openapi migrate seed demo
 
 help: ## Lista los comandos disponibles
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "} {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -33,6 +33,9 @@ test-backend:
 
 test-dashboard:
 	cd dashboard && npm test -- --watch=false
+
+openapi: ## Regenera docs/openapi.json (un test falla si queda desactualizado)
+	cd backend && uv run python -m vigia.api.openapi ../docs/openapi.json
 
 migrate: .env ## Aplica las migraciones de Alembic con vigia_owner
 	$(COMPOSE) run --rm migrate
