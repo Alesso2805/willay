@@ -1,4 +1,7 @@
-"""App FastAPI. Se ejecuta con `uvicorn vigia.api.main:app`.
+"""App FastAPI. Se ejecuta con `uvicorn --factory vigia.api.main:create_app`.
+
+Con --factory no hay un `app` global: importar este módulo no lee el entorno, y los
+tests construyen la app con su propia configuración.
 
 Los workers nunca arrancan en el lifespan de esta app: son procesos separados. El
 lifespan solo crea recursos compartidos por las peticiones (motor de BD, verificador JWT).
@@ -8,6 +11,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from vigia.identity.api.routes import router as identity_router
 from vigia.identity.infrastructure.jwt_verifier import JwtVerifier, jwks_key_resolver
@@ -18,9 +22,10 @@ from vigia.shared.logging import configure_logging
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
+    config = settings or get_settings()
+
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        config = settings or get_settings()
         configure_logging(config.log_level)
         app.state.engine = create_engine(config.database_url)
         app.state.verifier = JwtVerifier(
@@ -33,6 +38,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         await app.state.engine.dispose()
 
     app = FastAPI(title="Vigía API", version="0.1.0", lifespan=lifespan)
+    # El JWT va en el header Authorization (nunca cookies): no hace falta allow_credentials.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=config.cors_origins,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+        allow_headers=["Authorization", "Content-Type"],
+    )
 
     @app.get("/health", tags=["ops"])
     async def health() -> dict[str, str]:
@@ -40,6 +52,3 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(identity_router)
     return app
-
-
-app = create_app()

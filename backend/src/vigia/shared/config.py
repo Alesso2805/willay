@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     oidc_jwks_url: str = "http://keycloak:8080/realms/vigia/protocol/openid-connect/certs"
     oidc_audience: str = "vigia-api"
 
+    # Orígenes del panel que pueden llamar a la API desde el navegador (JSON en el entorno).
+    cors_origins: list[str] = ["http://localhost:4200"]
+
 
 @lru_cache
 def get_settings() -> Settings:
