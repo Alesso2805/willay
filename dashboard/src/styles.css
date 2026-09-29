@@ -1,3 +1,10 @@
-/* You can add global styles to this file, and also import other style files */
-
 @import 'tailwindcss';
+
+/*
+ * Leaflet: al hacer clic en una zona, el navegador dibuja un rectángulo de foco negro sobre
+ * el polígono SVG. Se oculta solo cuando el foco viene del ratón; con teclado
+ * (:focus-visible) el contorno se mantiene, porque indica dónde está el foco (WCAG 2.4.7).
+ */
+.leaflet-interactive:focus:not(:focus-visible) {
+  outline: none;
+}
