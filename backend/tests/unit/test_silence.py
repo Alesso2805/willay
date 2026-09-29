@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from vigia.incidents.application.open_incident import Trigger
+from vigia.incidents.application.station_recovery import Recovery
 from vigia.incidents.domain.incidents import EvidenceReading
 from vigia.rules.application.silence_check import SilenceChecker, SilenceCycle, WatchedStation
 from vigia.rules.domain.silence import is_silent, silence_threshold
@@ -49,21 +50,31 @@ def _station(last_seen_at: datetime | None = T0, **kw: Any) -> WatchedStation:
 
 
 class Repository:
-    def __init__(self, *stations: WatchedStation) -> None:
+    def __init__(self, *stations: WatchedStation, recoveries: tuple[Recovery, ...] = ()) -> None:
         self.stations = list(stations)
+        self.pending_recoveries = list(recoveries)
 
     async def watched(self, tx: Any) -> list[WatchedStation]:
         return self.stations
 
+    async def recoveries(self, tx: Any) -> list[Recovery]:
+        return self.pending_recoveries
+
 
 class Incidents:
-    def __init__(self, *, already_open: bool = False) -> None:
+    def __init__(self, *, already_open: bool = False, already_recovered: bool = False) -> None:
         self.opened: list[Trigger] = []
+        self.recovered: list[tuple[Recovery, datetime]] = []
         self.already_open = already_open
+        self.already_recovered = already_recovered
 
     async def open(self, tx: Any, trigger: Trigger, now: datetime) -> UUID | None:
         self.opened.append(trigger)
         return None if self.already_open else uuid4()
+
+    async def record_recovery(self, tx: Any, recovery: Recovery, now: datetime) -> bool:
+        self.recovered.append((recovery, now))
+        return not self.already_recovered
 
 
 @asynccontextmanager
@@ -85,7 +96,7 @@ async def test_only_silent_stations_open_an_incident() -> None:
         Repository(silent, almost, never), incidents, FakeClock(T0 + THIRTY_S)
     ).run()
 
-    assert cycle == SilenceCycle(watched=3, silent=1, opened=1)
+    assert cycle == SilenceCycle(watched=3, silent=1, opened=1, recovered=0)
     assert [t.station_id for t in incidents.opened] == [silent.station_id]
 
 
@@ -126,4 +137,26 @@ async def test_a_station_without_a_last_value_opens_without_evidence() -> None:
 async def test_an_incident_already_open_is_not_counted_again() -> None:
     incidents = Incidents(already_open=True)
     cycle = await _checker(Repository(_station(T0)), incidents, FakeClock(T0 + THIRTY_S)).run()
-    assert cycle == SilenceCycle(watched=1, silent=1, opened=0)
+    assert cycle == SilenceCycle(watched=1, silent=1, opened=0, recovered=0)
+
+
+def _recovery() -> Recovery:
+    return Recovery(uuid4(), uuid4(), uuid4(), T0 + timedelta(minutes=5), None, 85.0)
+
+
+async def test_a_station_that_reports_again_is_recorded_as_recovered() -> None:
+    recovery, incidents = _recovery(), Incidents()
+    clock = FakeClock(T0 + timedelta(minutes=6))
+    cycle = await _checker(Repository(recoveries=(recovery,)), incidents, clock).run()
+
+    assert cycle.recovered == 1
+    assert incidents.recovered == [(recovery, clock.now())]
+    assert incidents.opened == []  # la recuperación no abre ni cierra nada
+
+
+async def test_a_recovery_recorded_by_another_worker_is_not_counted() -> None:
+    incidents = Incidents(already_recovered=True)
+    cycle = await _checker(
+        Repository(recoveries=(_recovery(),)), incidents, FakeClock(T0 + timedelta(minutes=6))
+    ).run()
+    assert cycle.recovered == 0

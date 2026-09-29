@@ -5,6 +5,10 @@ activas, la estación está activa y asignada a esa zona (una estación sin zona
 alerta) y la regla es de esa estación o de toda la zona. Se abre un incidente por
 estación silenciada, con causa `rule_id:zone_id:station_id`: dos estaciones calladas en
 la misma zona son dos incidentes.
+
+En el mismo ciclo se registra station_recovered en los incidentes de silencio activos
+cuya estación volvió a reportar, es decir, que tiene un latido posterior al que se
+conocía al abrirlos. El incidente sigue abierto hasta que el operador lo resuelve.
 """
 
 from collections.abc import Mapping
@@ -17,6 +21,7 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from vigia.incidents.application.open_incident import IncidentStore, Trigger
+from vigia.incidents.application.station_recovery import Recovery, RecoveryLog
 from vigia.incidents.domain.incidents import EvidenceReading, dedup_key
 from vigia.rules.application.evaluate import Transaction
 from vigia.rules.domain.silence import is_silent, silence_threshold
@@ -51,19 +56,29 @@ class SilenceRepository(Protocol):
         """Todas las estaciones vigiladas por reglas de silencio (ver módulo)."""
         ...
 
+    async def recoveries(self, tx: AsyncConnection) -> list[Recovery]:
+        """Incidentes de silencio activos, sin station_recovered, cuya estación volvió a
+        reportar después de abrirse."""
+        ...
+
+
+class SilenceIncidents(IncidentStore, RecoveryLog, Protocol):
+    """Lo que el worker silence hace con los incidentes: abrirlos y anotar recuperaciones."""
+
 
 @dataclass(frozen=True)
 class SilenceCycle:
     watched: int
     silent: int
     opened: int
+    recovered: int
 
 
 class SilenceChecker:
     def __init__(
         self,
         repository: SilenceRepository,
-        incidents: IncidentStore,
+        incidents: SilenceIncidents,
         clock: Clock,
         transaction: Transaction,
     ) -> None:
@@ -76,6 +91,7 @@ class SilenceChecker:
         now = self._clock.now()
         async with self._transaction() as tx:
             watched = await self._repository.watched(tx)
+            recoveries = await self._repository.recoveries(tx)
         silent = [w for w in watched if is_silent(w.last_seen_at, w.threshold, now)]
 
         opened = 0
@@ -93,7 +109,19 @@ class SilenceChecker:
                     station_id=str(station.station_id),
                     incident_id=str(incident_id),
                 )
-        return SilenceCycle(len(watched), len(silent), opened)
+
+        recovered = 0
+        for recovery in recoveries:
+            async with self._transaction() as tx:
+                recorded = await self._incidents.record_recovery(tx, recovery, now)
+            if recorded:  # False: otro worker lo registró primero
+                recovered += 1
+                log.info(
+                    "station_recovered",
+                    station_id=str(recovery.station_id),
+                    incident_id=str(recovery.incident_id),
+                )
+        return SilenceCycle(len(watched), len(silent), opened, recovered)
 
 
 def _trigger(station: WatchedStation) -> Trigger:
