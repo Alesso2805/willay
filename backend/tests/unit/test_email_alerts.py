@@ -69,6 +69,18 @@ def test_the_email_has_zone_severity_value_local_time_and_link() -> None:
     assert "no reemplaza los avisos oficiales" in body
 
 
+@pytest.mark.parametrize(
+    ("severity", "phrase"),
+    [
+        ("critical", "abrió un incidente CRÍTICO en"),
+        ("warning", "abrió un incidente de ADVERTENCIA en"),
+        ("info", "abrió un incidente INFORMATIVO en"),
+    ],
+)
+def test_the_opening_sentence_agrees_with_the_severity(severity: str, phrase: str) -> None:
+    assert phrase in compose_email(replace(MESSAGE, severity=severity), "http://x").body
+
+
 def test_a_silence_email_shows_the_last_value_or_says_there_is_none() -> None:
     silence = replace(MESSAGE, rule_type="silence", trigger_value=None)
     content = compose_email(silence, "http://x/confirmar/abc")
