@@ -43,7 +43,7 @@ make simulate ARGS="--scenario rimac --seed 42"   # demo: caída aguas abajo y, 
 
 Escenarios: `normal`, `rise` (el valor se duplica en 5 min), `drop` (cae al 40 %), `silence` (deja de reportar) y `rimac`. `--event-after` fija cuándo empieza el evento (60 s por defecto).
 
-Con los datos del seed, el evaluador ya abre incidentes: `rise` dispara la regla de umbral de RIM-CHO-01 y `rimac`, la de caída de caudal de RIM-CHA-01. El silencio de RIM-SEU-01 se detectará cuando llegue el worker `silence` (VIG-17).
+Con los datos del seed, Vigía ya abre incidentes y avisa por correo: `rise` dispara la regla de umbral de RIM-CHO-01, y `rimac`, la caída de caudal de RIM-CHA-01 y, 4 minutos después, el silencio de RIM-SEU-01. Los correos del nivel 1 se ven en Mailpit (http://localhost:8025). Una causa recién resuelta no vuelve a abrir incidente durante su enfriamiento (30 min en el seed).
 
 ## Estructura
 
