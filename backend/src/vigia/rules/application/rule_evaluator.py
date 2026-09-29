@@ -22,7 +22,9 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from vigia.incidents.application.open_incident import IncidentStore, Trigger
 from vigia.incidents.domain.incidents import EvidenceReading, dedup_key
 from vigia.rules.application.queue import QueuedReading
-from vigia.rules.domain.threshold import InvalidRuleParamsError, fires, parse_threshold
+from vigia.rules.domain.errors import InvalidRuleParamsError
+from vigia.rules.domain.rate_of_change import detect_change, parse_rate_of_change
+from vigia.rules.domain.threshold import fires, parse_threshold
 from vigia.shared.clock import Clock
 
 log = structlog.get_logger()
@@ -51,6 +53,12 @@ class ReadingHistory(Protocol):
         self, tx: AsyncConnection, station_id: UUID, until: datetime, limit: int
     ) -> list[EvidenceReading]:
         """Las `limit` lecturas `ok` más recientes con measured_at <= until, la última primero."""
+        ...
+
+    async def ok_between(
+        self, tx: AsyncConnection, station_id: UUID, since: datetime, until: datetime
+    ) -> list[EvidenceReading]:
+        """Las lecturas `ok` con since <= measured_at <= until, en orden cronológico."""
         ...
 
 
@@ -84,23 +92,57 @@ class RuleEvaluator:
     async def _check(
         self, tx: AsyncConnection, rule: ApplicableRule, item: QueuedReading
     ) -> Trigger | None:
-        if rule.type != "threshold":
-            return None  # tasa de cambio: VIG-16
+        match rule.type:
+            case "threshold":
+                return await self._check_threshold(tx, rule, item)
+            case "rate_of_change":
+                return await self._check_rate_of_change(tx, rule, item)
+            case _:
+                return None
+
+    async def _check_threshold(
+        self, tx: AsyncConnection, rule: ApplicableRule, item: QueuedReading
+    ) -> Trigger | None:
         params = parse_threshold(rule.params)
         recent = await self._history.latest_ok(
             tx, item.station_id, item.measured_at, params.consecutive
         )
         if not fires(params, [r.value for r in recent]):
             return None
-        return Trigger(
-            organization_id=rule.organization_id,
-            zone_id=rule.zone_id,
-            rule_id=rule.id,
-            rule_type=rule.type,
-            rule_params=rule.params,
-            severity=rule.severity,
-            station_id=item.station_id,
-            trigger_value=recent[0].value,
-            dedup_key=dedup_key(rule.id, rule.zone_id),
-            evidence=tuple(reversed(recent)),  # en orden cronológico
+        return _trigger(rule, item, recent[0].value, tuple(reversed(recent)))  # cronológico
+
+    async def _check_rate_of_change(
+        self, tx: AsyncConnection, rule: ApplicableRule, item: QueuedReading
+    ) -> Trigger | None:
+        params = parse_rate_of_change(rule.params)
+        # La ventana termina en la lectura evaluada, no en "ahora": una lectura que llega
+        # con retraso (sin ser tardía) se evalúa con las lecturas de su momento.
+        window = await self._history.ok_between(
+            tx, item.station_id, item.measured_at - params.window, item.measured_at
         )
+        change = detect_change(params, [r.value for r in window])
+        if change is None:
+            return None
+        # Evidencia: la ventana completa, con el antes y el después de la variación. El
+        # valor disparador es la lectura que completó la caída o la subida.
+        return _trigger(rule, item, window[change.end].value, tuple(window))
+
+
+def _trigger(
+    rule: ApplicableRule,
+    item: QueuedReading,
+    trigger_value: float,
+    evidence: tuple[EvidenceReading, ...],
+) -> Trigger:
+    return Trigger(
+        organization_id=rule.organization_id,
+        zone_id=rule.zone_id,
+        rule_id=rule.id,
+        rule_type=rule.type,
+        rule_params=rule.params,
+        severity=rule.severity,
+        station_id=item.station_id,
+        trigger_value=trigger_value,
+        dedup_key=dedup_key(rule.id, rule.zone_id),
+        evidence=evidence,
+    )

@@ -37,12 +37,19 @@ class History:
             EvidenceReading(T0 - timedelta(seconds=10 * i), v) for i, v in enumerate(values)
         ]
         self.limits: list[int] = []
+        self.windows: list[tuple[datetime, datetime]] = []
 
     async def latest_ok(
         self, tx: Any, station_id: UUID, until: datetime, limit: int
     ) -> list[EvidenceReading]:
         self.limits.append(limit)
         return self.readings[:limit]
+
+    async def ok_between(
+        self, tx: Any, station_id: UUID, since: datetime, until: datetime
+    ) -> list[EvidenceReading]:
+        self.windows.append((since, until))
+        return list(reversed(self.readings))  # cronológico
 
 
 class Incidents:
@@ -73,10 +80,24 @@ async def test_nothing_is_opened_when_the_rule_does_not_fire() -> None:
     assert incidents.opened == []
 
 
-async def test_rate_of_change_rules_are_ignored_until_vig_16() -> None:
-    incidents = Incidents()
+async def test_a_sudden_drop_opens_an_incident_with_the_whole_window_as_evidence() -> None:
     rule = _rule("rate_of_change", direction="down", delta=40.0, window_minutes=10)
-    await RuleEvaluator(Rules(rule), History(9.0, 9.0), incidents, FakeClock(T0)).evaluate(TX, ITEM)
+    incidents, history = Incidents(), History(60.0, 34.0, 85.0, 84.0)  # la última primero
+    await RuleEvaluator(Rules(rule), history, incidents, FakeClock(T0)).evaluate(TX, ITEM)
+
+    [trigger] = incidents.opened
+    assert trigger.trigger_value == 34.0  # la lectura que completó la caída
+    assert [r.value for r in trigger.evidence] == [84.0, 85.0, 34.0, 60.0]
+    # La ventana termina en la lectura evaluada, no en el reloj.
+    assert history.windows == [(T0 - timedelta(minutes=10), T0)]
+
+
+async def test_a_change_within_delta_opens_nothing() -> None:
+    rule = _rule("rate_of_change", direction="down", delta=40.0, window_minutes=10)
+    incidents = Incidents()
+    await RuleEvaluator(Rules(rule), History(50.0, 85.0), incidents, FakeClock(T0)).evaluate(
+        TX, ITEM
+    )
     assert incidents.opened == []
 
 

@@ -31,6 +31,15 @@ _LATEST_OK = text("""
     LIMIT :limit
 """)
 
+# La PK (station_id, measured_at) sirve de índice y el rango de measured_at deja a
+# Timescale leer solo los chunks de la ventana.
+_OK_BETWEEN = text("""
+    SELECT measured_at, value FROM ingest.readings
+    WHERE station_id = :station_id AND quality = 'ok'
+      AND measured_at >= :since AND measured_at <= :until
+    ORDER BY measured_at
+""")
+
 
 class SqlRuleRepository:
     async def applicable(
@@ -51,5 +60,13 @@ class SqlReadingHistory:
     ) -> list[EvidenceReading]:
         rows = await tx.execute(
             _LATEST_OK, {"station_id": station_id, "until": until, "limit": limit}
+        )
+        return [EvidenceReading(r.measured_at, r.value) for r in rows]
+
+    async def ok_between(
+        self, tx: AsyncConnection, station_id: UUID, since: datetime, until: datetime
+    ) -> list[EvidenceReading]:
+        rows = await tx.execute(
+            _OK_BETWEEN, {"station_id": station_id, "since": since, "until": until}
         )
         return [EvidenceReading(r.measured_at, r.value) for r in rows]

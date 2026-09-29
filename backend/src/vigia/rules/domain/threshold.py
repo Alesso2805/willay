@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
+from vigia.rules.domain.errors import InvalidRuleParamsError
+
 # Más de 60 lecturas seguidas (10 min a 10 s por lectura) ya no es "consecutivas": es
 # una regla de promedio, que no es este tipo.
 MAX_CONSECUTIVE = 60
@@ -21,10 +23,6 @@ class Operator(StrEnum):
     GE = "ge"
     LT = "lt"
     LE = "le"
-
-
-class InvalidRuleParamsError(Exception):
-    pass
 
 
 @dataclass(frozen=True)

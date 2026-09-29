@@ -2,8 +2,8 @@ from typing import Any
 
 import pytest
 
+from vigia.rules.domain.errors import InvalidRuleParamsError
 from vigia.rules.domain.threshold import (
-    InvalidRuleParamsError,
     Operator,
     ThresholdParams,
     fires,
