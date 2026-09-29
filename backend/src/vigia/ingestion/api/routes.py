@@ -32,6 +32,11 @@ class ReadingBatchOut(BaseModel):
     received: int
     stored: int
     duplicates: int = Field(description="Ya existían por (estación, measured_at); se ignoran.")
+    late: int = Field(
+        description="De las guardadas, cuántas llegaron más de 1 h tarde: quedan en el "
+        "historial pero no se evalúan. Muchas tardías suelen indicar un reloj o un enlace "
+        "con problemas en la estación."
+    )
 
 
 @router.post(
@@ -66,7 +71,10 @@ async def post_readings(
             ],
         ) from exc
     return ReadingBatchOut(
-        received=result.received, stored=result.stored, duplicates=result.duplicates
+        received=result.received,
+        stored=result.counts.stored,
+        duplicates=result.duplicates,
+        late=result.counts.late,
     )
 
 

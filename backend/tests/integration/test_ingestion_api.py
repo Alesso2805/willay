@@ -55,7 +55,7 @@ async def test_batch_is_stored_and_enqueued_in_the_same_transaction(
     response = await _post(client, key, body)
 
     assert response.status_code == 202, response.text
-    assert response.json() == {"received": 3, "stored": 3, "duplicates": 0}
+    assert response.json() == {"received": 3, "stored": 3, "duplicates": 0, "late": 0}
     readings = await owner.fetch(
         "SELECT measured_at, organization_id, quality, received_at FROM ingest.readings "
         "WHERE station_id = $1 ORDER BY measured_at",
@@ -89,7 +89,7 @@ async def test_resending_readings_does_not_duplicate_them_or_their_queue_rows(
         client, key, _batch(t0, t0 + timedelta(seconds=10), t0 + timedelta(seconds=20))
     )
 
-    assert again.json() == {"received": 3, "stored": 1, "duplicates": 2}
+    assert again.json() == {"received": 3, "stored": 1, "duplicates": 2, "late": 0}
     counts = await owner.fetchrow(
         """
         SELECT (SELECT count(*) FROM ingest.readings WHERE station_id = $1) AS readings,

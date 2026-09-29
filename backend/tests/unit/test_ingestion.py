@@ -11,14 +11,18 @@ from vigia.ingestion.application.authenticate_station import (
     StationCredential,
     authenticate_station,
 )
-from vigia.ingestion.application.ingest_batch import ingest_batch
+from vigia.ingestion.application.ingest_batch import StoreCounts, ingest_batch
 from vigia.ingestion.domain.api_keys import generate_api_key
 from vigia.ingestion.domain.readings import (
+    LATE_AFTER,
     MAX_CLOCK_SKEW,
+    ClassifiedReading,
     FutureReadingsError,
+    Quality,
     Reading,
     check_not_in_future,
-    in_measurement_order,
+    classify,
+    quality_of,
 )
 from vigia.shared.clock import FakeClock
 
@@ -47,9 +51,18 @@ def test_readings_beyond_the_clock_skew_are_reported_by_index() -> None:
     assert exc.value.indices == [1, 2]
 
 
-def test_batch_is_processed_in_measurement_order() -> None:
-    late, early = Reading(NOW, 2.0), Reading(NOW - timedelta(seconds=10), 1.0)
-    assert in_measurement_order([late, early]) == [early, late]
+def test_a_reading_is_late_only_after_more_than_one_hour() -> None:
+    assert quality_of(NOW - LATE_AFTER, NOW) is Quality.OK  # justo 1 h: todavía a tiempo
+    assert quality_of(NOW - LATE_AFTER - timedelta(microseconds=1), NOW) is Quality.LATE
+
+
+def test_classify_sorts_by_measurement_and_marks_quality() -> None:
+    old = Reading(NOW - timedelta(hours=3), 1.0)
+    recent = Reading(NOW - timedelta(seconds=10), 2.0)
+    assert classify([recent, old], NOW) == [
+        ClassifiedReading(old.measured_at, 1.0, Quality.LATE),
+        ClassifiedReading(recent.measured_at, 2.0, Quality.OK),
+    ]
 
 
 # --- autenticación de estación -----------------------------------------------------
@@ -120,30 +133,39 @@ async def test_inactive_station_is_forbidden_even_with_the_right_key() -> None:
 class FakeWriter:
     def __init__(self, existing: int = 0) -> None:
         self.existing = existing
-        self.calls: list[tuple[list[Reading], datetime]] = []
+        self.calls: list[tuple[list[ClassifiedReading], datetime]] = []
 
     async def store_and_enqueue(
         self,
         station_id: UUID,
         organization_id: UUID,
-        readings: Sequence[Reading],
+        readings: Sequence[ClassifiedReading],
         received_at: datetime,
-    ) -> tuple[int, int]:
+    ) -> StoreCounts:
         self.calls.append((list(readings), received_at))
-        stored = len(readings) - self.existing
-        return stored, stored
+        new = readings[self.existing :]
+        late = sum(1 for r in new if r.quality is Quality.LATE)
+        return StoreCounts(stored=len(new), late=late, enqueued=len(new) - late)
 
 
-async def test_batch_is_stored_sorted_with_received_at_from_the_clock() -> None:
+async def test_batch_is_classified_sorted_and_stamped_with_the_clock() -> None:
     writer = FakeWriter(existing=1)
-    readings = [Reading(NOW, 2.0), Reading(NOW - timedelta(seconds=10), 1.0)]
+    readings = [Reading(NOW, 2.0), Reading(NOW - timedelta(hours=2), 1.0)]
 
     result = await ingest_batch(
         AuthenticatedStation(STATION, ORG), readings, FakeClock(NOW), writer
     )
 
-    assert writer.calls == [(sorted(readings, key=lambda r: r.measured_at), NOW)]
-    assert (result.received, result.stored, result.duplicates) == (2, 1, 1)
+    assert writer.calls == [
+        (
+            [
+                ClassifiedReading(NOW - timedelta(hours=2), 1.0, Quality.LATE),
+                ClassifiedReading(NOW, 2.0, Quality.OK),
+            ],
+            NOW,
+        )
+    ]
+    assert (result.received, result.counts.stored, result.duplicates) == (2, 1, 1)
 
 
 async def test_future_readings_reject_the_whole_batch() -> None:
