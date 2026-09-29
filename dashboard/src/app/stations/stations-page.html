@@ -1,0 +1,211 @@
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h2 class="text-xl font-semibold text-slate-900">Estaciones</h2>
+  <div class="flex items-center gap-4">
+    <label class="flex items-center gap-2 text-sm text-slate-700">
+      <input type="checkbox" [checked]="includeInactive()" (change)="toggleInactive($any($event.target).checked)" />
+      Mostrar desactivadas
+    </label>
+    @if (canManage() && !editing()) {
+      <button
+        type="button"
+        class="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
+        (click)="startCreate()"
+      >
+        Nueva estación
+      </button>
+    }
+  </div>
+</div>
+
+<p class="mt-2 min-h-5 text-sm text-slate-700" aria-live="polite">{{ status() }}</p>
+
+@if (issued(); as key) {
+  <section
+    role="alert"
+    aria-labelledby="issued-key-title"
+    class="mt-2 rounded-md border border-amber-400 bg-amber-50 p-4 text-amber-950"
+  >
+    <h3 id="issued-key-title" class="font-semibold">API key de {{ key.code }}</h3>
+    <p class="mt-1 text-sm">
+      Cópiala ahora y configúrala en la estación: <strong>no se volverá a mostrar</strong>.
+      Vigía solo guarda su hash. Si la pierdes, rota la clave.
+    </p>
+    <div class="mt-3 flex flex-wrap items-center gap-2">
+      <input
+        readonly
+        [value]="key.key"
+        aria-label="API key"
+        class="min-w-0 flex-1 rounded border border-amber-300 bg-white px-2 py-1 font-mono text-sm"
+        (focus)="$any($event.target).select()"
+      />
+      <button type="button" class="rounded-md border border-amber-400 px-3 py-1 text-sm" (click)="copyKey()">
+        {{ copied() ? 'Copiada' : 'Copiar' }}
+      </button>
+      <button type="button" class="rounded-md bg-amber-900 px-3 py-1 text-sm text-white" (click)="dismissKey()">
+        Ya la guardé
+      </button>
+    </div>
+  </section>
+}
+
+@if (loadFailed()) {
+  <div role="alert" class="mt-2 rounded-md border border-red-300 bg-red-50 p-3 text-red-900">
+    No se pudieron cargar las estaciones.
+    <button type="button" class="underline" (click)="load()">Reintentar</button>
+  </div>
+}
+
+<div class="mt-4 grid gap-6 lg:grid-cols-[2fr_1fr]">
+  <app-station-map
+    [stations]="stations()"
+    [zones]="zones()"
+    [picking]="editing() !== null"
+    [pending]="pending()"
+    [selectedId]="editing()?.kind === 'edit' ? $any(editing()).station.id : null"
+    (picked)="onPicked($event)"
+  />
+
+  <div class="flex flex-col gap-6">
+    @if (editing(); as current) {
+      <form class="flex flex-col gap-3 rounded-md border border-slate-300 p-4" [formGroup]="form" (ngSubmit)="save()">
+        <h3 class="font-semibold">{{ current.kind === 'new' ? 'Nueva estación' : 'Editar ' + form.controls.code.value }}</h3>
+
+        @if (current.kind === 'new') {
+          <label class="flex flex-col gap-1 text-sm">
+            Código (no se puede cambiar después)
+            <input formControlName="code" class="rounded border border-slate-300 px-2 py-1 font-mono uppercase" placeholder="RIM-CHA-02" />
+          </label>
+        }
+
+        <label class="flex flex-col gap-1 text-sm">
+          Nombre
+          <input formControlName="name" class="rounded border border-slate-300 px-2 py-1" />
+        </label>
+
+        <div class="grid grid-cols-2 gap-3">
+          <label class="flex flex-col gap-1 text-sm">
+            Variable
+            <select formControlName="variable" class="rounded border border-slate-300 px-2 py-1">
+              @for (variable of variables; track variable) {
+                <option [value]="variable">{{ variableLabels[variable] }}</option>
+              }
+            </select>
+          </label>
+          <p class="flex flex-col gap-1 text-sm">
+            Unidad
+            <span class="py-1 font-mono">{{ units[form.controls.variable.value] }}</span>
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <label class="flex flex-col gap-1 text-sm">
+            Longitud
+            <input type="number" step="any" formControlName="lon" (change)="onCoordinatesTyped()" class="rounded border border-slate-300 px-2 py-1" />
+          </label>
+          <label class="flex flex-col gap-1 text-sm">
+            Latitud
+            <input type="number" step="any" formControlName="lat" (change)="onCoordinatesTyped()" class="rounded border border-slate-300 px-2 py-1" />
+          </label>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <label class="flex flex-col gap-1 text-sm">
+            Intervalo esperado (s)
+            <input type="number" min="5" formControlName="expected_interval_s" class="rounded border border-slate-300 px-2 py-1" />
+          </label>
+          <label class="flex flex-col gap-1 text-sm">
+            Silencio tras (× intervalo)
+            <input type="number" min="1" max="20" formControlName="silence_multiplier" class="rounded border border-slate-300 px-2 py-1" />
+          </label>
+        </div>
+
+        <label class="flex flex-col gap-1 text-sm">
+          Origen
+          <select formControlName="source" class="rounded border border-slate-300 px-2 py-1">
+            <option value="sensor">Sensor</option>
+            <option value="simulator">Simulador</option>
+          </select>
+        </label>
+
+        <fieldset class="flex flex-col gap-2 text-sm">
+          <legend class="font-medium">Zonas (sin zona, la estación no genera alertas)</legend>
+          @for (zone of zones(); track zone.id) {
+            <label class="flex items-center justify-between gap-2">
+              <span>{{ zone.name }}</span>
+              <select
+                class="rounded border border-slate-300 px-2 py-1"
+                [value]="assignments()[zone.id] ?? ''"
+                (change)="setPosition(zone.id, $any($event.target).value)"
+              >
+                <option value="">No asociada</option>
+                @for (position of positions; track position) {
+                  <option [value]="position">{{ positionLabels[position] }}</option>
+                }
+              </select>
+            </label>
+          } @empty {
+            <span class="text-slate-600">No hay zonas activas.</span>
+          }
+        </fieldset>
+
+        @if (problem(); as p) {
+          <div role="alert" class="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">{{ p }}</div>
+        }
+
+        <div class="flex gap-2">
+          <button
+            type="submit"
+            class="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+            [disabled]="saving()"
+          >
+            {{ saving() ? 'Guardando…' : 'Guardar' }}
+          </button>
+          <button type="button" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm" (click)="cancel()">Cancelar</button>
+        </div>
+      </form>
+    }
+
+    <section aria-labelledby="station-list-title">
+      <h3 id="station-list-title" class="font-semibold">Listado ({{ stations().length }})</h3>
+      <ul class="mt-2 flex flex-col gap-2">
+        @for (station of stations(); track station.id) {
+          <li class="rounded-md border border-slate-200 p-3" [class.opacity-60]="station.status === 'inactive'">
+            <p class="font-medium text-slate-900">
+              <span class="font-mono">{{ station.code }}</span> · {{ station.name }}
+              @if (!station.has_zone) {
+                <span class="ml-1 rounded border border-amber-400 bg-amber-50 px-1.5 text-xs font-medium text-amber-900">Sin zona</span>
+              }
+              @if (station.status === 'inactive') {
+                <span class="text-sm font-normal text-slate-600">(desactivada)</span>
+              }
+            </p>
+            <p class="text-sm text-slate-700">
+              {{ variableLabels[station.variable] }} ({{ station.unit }})
+              @if (station.heartbeat?.last_value !== null && station.heartbeat?.last_value !== undefined) {
+                · Último: {{ station.heartbeat?.last_value }} {{ station.unit }} {{ age(station) }}
+              } @else {
+                · Sin lecturas todavía
+              }
+            </p>
+            @if (station.has_zone) {
+              <p class="text-sm text-slate-600">{{ zoneSummary(station) }}</p>
+            }
+            @if (canManage() && !editing()) {
+              <div class="mt-2 flex flex-wrap gap-3 text-sm">
+                @if (station.status === 'active') {
+                  <button type="button" class="underline" (click)="startEdit(station)">Editar</button>
+                  <button type="button" class="underline" (click)="rotate(station)">Rotar clave</button>
+                  <button type="button" class="text-red-800 underline" (click)="deactivate(station)">Desactivar</button>
+                } @else {
+                  <button type="button" class="underline" (click)="reactivate(station)">Reactivar</button>
+                }
+              </div>
+            }
+          </li>
+        } @empty {
+          <li class="text-sm text-slate-600">Todavía no hay estaciones.</li>
+        }
+      </ul>
+    </section>
+  </div>
+</div>
