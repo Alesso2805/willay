@@ -7,62 +7,32 @@ from uuid import UUID
 import asyncpg
 import httpx2
 import pytest
-from argon2 import PasswordHasher
 from uuid_utils.compat import uuid7
 
+from tests.integration.api import api_client, bearer
 from tests.integration.conftest import Database
 from tests.support.tokens import (
-    ISSUER,
-    KC_AISLAMIENTO,
-    KC_RIMAC,
+    AISLAMIENTO,
+    RIMAC,
     SUB_AISLAMIENTO_ADMIN,
     SUB_DOS_ORGS,
     SUB_RIMAC_OPERATOR,
     SUB_SIN_ORG,
     TokenFactory,
-    org_claim,
 )
-from vigia.api.main import create_app
-from vigia.identity.api.dependencies import get_verifier
-from vigia.ingestion.infrastructure.api_keys import ApiKeyHasher
 from vigia.seed import data
-from vigia.seed.loader import load_seed
-from vigia.shared.clock import FakeClock, SystemClock
-from vigia.shared.config import Settings
-from vigia.shared.db import create_engine
 
 pytestmark = pytest.mark.integration
-
-RIMAC = org_claim(("rimac", KC_RIMAC))
-AISLAMIENTO = org_claim(("aislamiento", KC_AISLAMIENTO))
-
-
-@pytest.fixture
-def tokens() -> TokenFactory:
-    # Reloj real: los tokens deben ser válidos "ahora" para el verificador de la app.
-    return TokenFactory(FakeClock(SystemClock().now()))
 
 
 @pytest.fixture
 async def client(database: Database, tokens: TokenFactory) -> AsyncIterator[httpx2.AsyncClient]:
-    # Las organizaciones del seed deben existir: el tenant se resuelve contra ellas.
-    engine = create_engine(database.app_url)
-    fast = ApiKeyHasher(PasswordHasher(time_cost=1, memory_cost=8, parallelism=1))
-    async with engine.begin() as conn:
-        await load_seed(conn, SystemClock(), fast)
-    await engine.dispose()
-
-    app = create_app(Settings(database_url=database.app_url, oidc_issuer=ISSUER))
-    app.dependency_overrides[get_verifier] = tokens.verifier
-    async with app.router.lifespan_context(app):
-        transport = httpx2.ASGITransport(app=app)
-        async with httpx2.AsyncClient(transport=transport, base_url="http://test") as client:
-            yield client
+    async with api_client(database, tokens) as client:
+        yield client
 
 
 async def _me(client: httpx2.AsyncClient, token: str | None) -> httpx2.Response:
-    headers = {"Authorization": f"Bearer {token}"} if token is not None else {}
-    return await client.get("/v1/me", headers=headers)
+    return await client.get("/v1/me", headers=bearer(token))
 
 
 async def test_each_seed_organization_sees_itself(

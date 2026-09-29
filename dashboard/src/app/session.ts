@@ -12,6 +12,8 @@ export interface Me {
   organization_id: string;
   keycloak_org_id: string;
   roles: string[];
+  /** Solo para ocultar acciones en la UI: la API valida el permiso en cada endpoint. */
+  permissions: string[];
 }
 
 export type SessionState =

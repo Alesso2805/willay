@@ -18,6 +18,9 @@ from alembic import command
 from alembic.config import Config
 from testcontainers.core.container import DockerContainer
 
+from tests.support.tokens import TokenFactory
+from vigia.shared.clock import FakeClock, SystemClock
+
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 INIT_DIR = BACKEND_DIR.parent / "infra" / "postgres" / "init"
 IMAGE = "timescale/timescaledb-ha:pg16-ts2.30"
@@ -105,6 +108,13 @@ def database() -> Iterator[Database]:
         _in_own_thread(lambda: asyncio.run(_wait_until_ready(db.owner_dsn)))
         migrate(db)
         yield db
+
+
+@pytest.fixture
+def tokens() -> TokenFactory:
+    # Reloj real congelado al crear el fixture: los tokens deben ser válidos "ahora"
+    # para el verificador de la app, que también se construye con este reloj.
+    return TokenFactory(FakeClock(SystemClock().now()))
 
 
 @pytest.fixture

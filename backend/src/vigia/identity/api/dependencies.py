@@ -5,16 +5,19 @@ Todo endpoint (y el canal SSE) recibe el Principal y filtra por
 
 Códigos:
 - 401: sin token o token inválido (firma, emisor, audiencia, expiración, claims básicos).
-- 403: token válido pero sin exactamente una organización registrada en Vigía.
+- 403: token válido pero sin exactamente una organización registrada en Vigía, o
+  (con `require`) un rol sin el permiso que pide el endpoint.
 - 503: Keycloak no responde al pedir el JWKS.
 """
 
+from collections.abc import Awaitable, Callable
 from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from vigia.identity.application.authenticate import InvalidClaimsError, authenticate
+from vigia.identity.domain.permissions import Permission, can
 from vigia.identity.domain.principal import Principal, TenantError
 from vigia.identity.infrastructure.jwt_verifier import (
     IdentityProviderUnavailableError,
@@ -77,3 +80,22 @@ async def current_principal(
 
 
 CurrentPrincipal = Annotated[Principal, Depends(current_principal)]
+
+
+def require(permission: Permission) -> Callable[[Principal], Awaitable[Principal]]:
+    """Dependencia que exige un permiso de la matriz. Uso en un endpoint:
+
+        principal: Annotated[Principal, Depends(require(Permission.MANAGE_RULES))]
+
+    Devuelve el mismo Principal, así el endpoint sigue teniendo el tenant.
+    """
+
+    async def dependency(principal: CurrentPrincipal) -> Principal:
+        if not can(principal, permission):
+            # Mensaje distinto del 403 de tenant: el panel puede explicar cuál de los dos es.
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN, detail=f"Tu rol no tiene el permiso {permission}"
+            )
+        return principal
+
+    return dependency
