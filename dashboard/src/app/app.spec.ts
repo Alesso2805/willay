@@ -14,6 +14,7 @@ const ME: Me = {
   organization_id: '01a0dc43-cd2d-7522-8430-867cee8f89ce',
   keycloak_org_id: '1d44f4b3-b1df-457f-b717-20926a20166e',
   roles: ['operator'],
+  permissions: ['view', 'incidents:acknowledge', 'incidents:resolve', 'territory:manage'],
 };
 
 function setup(isAuthenticated: boolean) {

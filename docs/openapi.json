@@ -21,6 +21,14 @@
             "title": "Organization Id",
             "type": "string"
           },
+          "permissions": {
+            "description": "Para que el panel oculte acciones; la API las valida igual en cada endpoint.",
+            "items": {
+              "$ref": "#/components/schemas/Permission"
+            },
+            "title": "Permissions",
+            "type": "array"
+          },
           "roles": {
             "items": {
               "$ref": "#/components/schemas/Role"
@@ -40,10 +48,26 @@
           "full_name",
           "organization_id",
           "keycloak_org_id",
-          "roles"
+          "roles",
+          "permissions"
         ],
         "title": "MeResponse",
         "type": "object"
+      },
+      "Permission": {
+        "enum": [
+          "view",
+          "incidents:acknowledge",
+          "incidents:resolve",
+          "territory:manage",
+          "rules:manage",
+          "contacts:view_details",
+          "contacts:manage",
+          "policies:manage",
+          "audit:view"
+        ],
+        "title": "Permission",
+        "type": "string"
       },
       "Role": {
         "enum": [
@@ -114,7 +138,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Usuario autenticado, su organización y sus roles",
+        "summary": "Usuario autenticado, su organización, roles y permisos",
         "tags": [
           "identity"
         ]

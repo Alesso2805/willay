@@ -1,9 +1,10 @@
 from uuid import UUID
 
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from vigia.identity.api.dependencies import CurrentPrincipal
+from vigia.identity.domain.permissions import Permission, permissions_of
 from vigia.identity.domain.principal import Role
 
 router = APIRouter(prefix="/v1", tags=["identity"])
@@ -16,9 +17,12 @@ class MeResponse(BaseModel):
     organization_id: UUID
     keycloak_org_id: UUID
     roles: list[Role]
+    permissions: list[Permission] = Field(
+        description="Para que el panel oculte acciones; la API las valida igual en cada endpoint."
+    )
 
 
-@router.get("/me", summary="Usuario autenticado, su organización y sus roles")
+@router.get("/me", summary="Usuario autenticado, su organización, roles y permisos")
 async def me(principal: CurrentPrincipal) -> MeResponse:
     return MeResponse(
         user_id=principal.user_id,
@@ -27,4 +31,5 @@ async def me(principal: CurrentPrincipal) -> MeResponse:
         organization_id=principal.organization_id,
         keycloak_org_id=principal.keycloak_org_id,
         roles=sorted(principal.roles),
+        permissions=sorted(permissions_of(principal.roles)),
     )
