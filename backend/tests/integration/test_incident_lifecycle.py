@@ -13,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 from tests.integration.conftest import Database
 from tests.integration.evaluation import Station, incidents
 from tests.integration.factories import create_graph, create_rule, link_station
+from vigia.alerts.application.planning import AlertPlanner
+from vigia.alerts.infrastructure.sql_alerts import SqlAlertRepository
 from vigia.incidents.application.open_incident import OpenResult, Trigger
 from vigia.incidents.infrastructure.sql_incidents import SqlIncidentStore
 from vigia.ingestion.domain.readings import ClassifiedReading, Quality
@@ -165,7 +167,11 @@ async def test_two_evaluators_racing_on_the_same_cause_open_one_incident(
 
     async def evaluator() -> None:
         rules = RuleEvaluator(
-            SqlRuleRepository(), SqlReadingHistory(), _MeetBeforeOpening(barrier), clock
+            SqlRuleRepository(),
+            SqlReadingHistory(),
+            _MeetBeforeOpening(barrier),
+            clock,
+            alerts=AlertPlanner(SqlAlertRepository()),
         )
         await process_batch(queue, rules, engine.begin, limit=1)  # una lectura cada uno
 

@@ -8,6 +8,8 @@ reparte las filas sin que dos tomen la misma.
 
 import asyncio
 
+from vigia.alerts.application.planning import AlertPlanner
+from vigia.alerts.infrastructure.sql_alerts import SqlAlertRepository
 from vigia.incidents.infrastructure.sql_incidents import SqlIncidentStore
 from vigia.rules.application.evaluate import ReadingEvaluator, process_batch
 from vigia.rules.application.rule_evaluator import RuleEvaluator
@@ -38,7 +40,11 @@ async def run_evaluator(
     engine = create_engine(settings.database_url)
     queue = PostgresEvaluationQueue(engine, clock)
     rules = evaluator or RuleEvaluator(
-        SqlRuleRepository(), SqlReadingHistory(), SqlIncidentStore(), clock
+        SqlRuleRepository(),
+        SqlReadingHistory(),
+        SqlIncidentStore(),
+        clock,
+        alerts=AlertPlanner(SqlAlertRepository()),
     )
 
     async def tick() -> bool:

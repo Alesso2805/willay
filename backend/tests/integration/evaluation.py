@@ -8,6 +8,8 @@ import asyncpg
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from tests.integration.factories import Graph
+from vigia.alerts.application.planning import AlertPlanner
+from vigia.alerts.infrastructure.sql_alerts import SqlAlertRepository
 from vigia.incidents.infrastructure.sql_incidents import SqlIncidentStore
 from vigia.ingestion.domain.readings import ClassifiedReading, Quality
 from vigia.ingestion.infrastructure.repositories import SqlReadingWriter
@@ -34,7 +36,11 @@ class Station:
         self.clock = clock or SystemClock()
         self.queue = PostgresEvaluationQueue(engine, self.clock)
         self.evaluator = RuleEvaluator(
-            SqlRuleRepository(), SqlReadingHistory(), SqlIncidentStore(), self.clock
+            SqlRuleRepository(),
+            SqlReadingHistory(),
+            SqlIncidentStore(),
+            self.clock,
+            alerts=AlertPlanner(SqlAlertRepository()),
         )
         self.interval = timedelta(seconds=interval_s)
         self.start = self.clock.now() - timedelta(minutes=30)

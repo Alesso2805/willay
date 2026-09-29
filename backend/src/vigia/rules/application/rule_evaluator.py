@@ -19,6 +19,7 @@ from uuid import UUID
 import structlog
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from vigia.alerts.application.planning import FIRST_LEVEL, IncidentAlerting
 from vigia.incidents.application.open_incident import (
     IncidentStore,
     Trigger,
@@ -75,11 +76,14 @@ class RuleEvaluator:
         history: ReadingHistory,
         incidents: IncidentStore,
         clock: Clock,
+        *,
+        alerts: IncidentAlerting,
     ) -> None:
         self._rules = rules
         self._history = history
         self._incidents = incidents
         self._clock = clock
+        self._alerts = alerts
 
     async def evaluate(self, tx: AsyncConnection, item: QueuedReading) -> None:
         for rule in await self._rules.applicable(tx, item.organization_id, item.station_id):
@@ -91,10 +95,18 @@ class RuleEvaluator:
                 continue
             if trigger is None:
                 continue
-            recorded = await record_trigger(self._incidents, tx, trigger, self._clock.now())
+            now = self._clock.now()
+            recorded = await record_trigger(self._incidents, tx, trigger, now)
             incident = str(recorded.incident_id)
-            if recorded.outcome is TriggerOutcome.OPENED:
-                bound.info("incident_opened", incident_id=incident)
+            if recorded.outcome is TriggerOutcome.OPENED and recorded.incident_id is not None:
+                # En la misma transacción que el incidente: o existen los dos o ninguno.
+                alerted = await self._alerts.alert_level(tx, recorded.incident_id, FIRST_LEVEL, now)
+                bound.info(
+                    "incident_opened",
+                    incident_id=incident,
+                    alerts_pending=alerted.pending,
+                    alerts_skipped=alerted.skipped,
+                )
             elif recorded.outcome is TriggerOutcome.READING_ADDED:
                 bound.info("incident_reading_added", incident_id=incident)
 

@@ -176,3 +176,58 @@ async def create_rule(
         graph.policy_id,
     )
     return rule_id
+
+
+async def create_contact(
+    conn: asyncpg.Connection,
+    graph: Graph,
+    name: str,
+    *,
+    email: str | None = None,
+    telegram_chat_id: int | None = None,
+) -> UUID:
+    contact_id = uuid7()
+    await conn.execute(
+        "INSERT INTO core.contacts (id, organization_id, full_name, email, telegram_chat_id)"
+        " VALUES ($1, $2, $3, $4, $5)",
+        contact_id, graph.organization_id, name, email, telegram_chat_id,
+    )  # fmt: skip
+    return contact_id
+
+
+async def create_group(conn: asyncpg.Connection, graph: Graph, *contacts: UUID) -> UUID:
+    group_id = uuid7()
+    await conn.execute(
+        "INSERT INTO core.contact_groups (id, organization_id, name) VALUES ($1, $2, $3)",
+        group_id, graph.organization_id, f"grupo {group_id}",
+    )  # fmt: skip
+    for contact_id in contacts:
+        await conn.execute(
+            "INSERT INTO core.contact_group_members (group_id, contact_id) VALUES ($1, $2)",
+            group_id,
+            contact_id,
+        )
+    return group_id
+
+
+async def add_level(
+    conn: asyncpg.Connection,
+    graph: Graph,
+    level_order: int,
+    *targets: tuple[UUID, str],
+    wait_s: int = 120,
+) -> UUID:
+    """Nivel de la política del grafo; `targets` son pares (grupo, canal)."""
+    level_id = uuid7()
+    await conn.execute(
+        "INSERT INTO core.escalation_levels (id, policy_id, level_order, wait_s)"
+        " VALUES ($1, $2, $3, $4)",
+        level_id, graph.policy_id, level_order, wait_s,
+    )  # fmt: skip
+    for group_id, channel in targets:
+        await conn.execute(
+            "INSERT INTO core.level_targets (id, level_id, contact_group_id, channel)"
+            " VALUES ($1, $2, $3, $4)",
+            uuid7(), level_id, group_id, channel,
+        )  # fmt: skip
+    return level_id

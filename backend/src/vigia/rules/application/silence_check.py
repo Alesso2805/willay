@@ -20,6 +20,7 @@ from uuid import UUID
 import structlog
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from vigia.alerts.application.planning import FIRST_LEVEL, IncidentAlerting
 from vigia.incidents.application.open_incident import (
     IncidentStore,
     Trigger,
@@ -87,11 +88,14 @@ class SilenceChecker:
         incidents: SilenceIncidents,
         clock: Clock,
         transaction: Transaction,
+        *,
+        alerts: IncidentAlerting,
     ) -> None:
         self._repository = repository
         self._incidents = incidents
         self._clock = clock
         self._transaction = transaction
+        self._alerts = alerts
 
     async def run(self) -> SilenceCycle:
         now = self._clock.now()
@@ -106,6 +110,8 @@ class SilenceChecker:
             # incidente. Si ya hay uno activo o la causa está en enfriamiento, no se abre.
             async with self._transaction() as tx:
                 recorded = await record_trigger(self._incidents, tx, _trigger(station), now)
+                if recorded.outcome is TriggerOutcome.OPENED and recorded.incident_id is not None:
+                    await self._alerts.alert_level(tx, recorded.incident_id, FIRST_LEVEL, now)
             if recorded.outcome is TriggerOutcome.OPENED:
                 opened += 1
                 log.info(
