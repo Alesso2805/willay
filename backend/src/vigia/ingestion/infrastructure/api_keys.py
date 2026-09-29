@@ -1,9 +1,12 @@
 """Hash Argon2id de las API keys de estación (el formato vive en domain/api_keys.py)."""
 
 from functools import cached_property
+from uuid import UUID
 
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
+
+from vigia.ingestion.domain.api_keys import generate_api_key
 
 
 class ApiKeyHasher:
@@ -28,3 +31,14 @@ class ApiKeyHasher:
         Verificar contra él cuando la estación no existe iguala el tiempo de respuesta.
         """
         return self._hasher.hash("vigia-dummy-key-que-nunca-coincide")
+
+
+class Argon2ApiKeyIssuer:
+    """Emite claves para el módulo de territorio (crear estación, rotar clave)."""
+
+    def __init__(self, hasher: ApiKeyHasher) -> None:
+        self._hasher = hasher
+
+    def issue(self, station_id: UUID) -> tuple[str, str]:
+        api_key = generate_api_key(station_id)
+        return api_key, self._hasher.hash(api_key)

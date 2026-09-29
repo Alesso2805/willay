@@ -25,6 +25,30 @@
         "title": "GeoJsonGeometry",
         "type": "object"
       },
+      "GeoJsonPoint": {
+        "properties": {
+          "coordinates": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Coordinates",
+            "type": "array"
+          },
+          "type": {
+            "const": "Point",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "coordinates"
+        ],
+        "title": "GeoJsonPoint",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -36,6 +60,56 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HeartbeatOut": {
+        "properties": {
+          "last_measured_at": {
+            "format": "date-time",
+            "title": "Last Measured At",
+            "type": "string"
+          },
+          "last_seen_at": {
+            "format": "date-time",
+            "title": "Last Seen At",
+            "type": "string"
+          },
+          "last_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Value"
+          }
+        },
+        "required": [
+          "last_seen_at",
+          "last_measured_at",
+          "last_value"
+        ],
+        "title": "HeartbeatOut",
+        "type": "object"
+      },
+      "IssuedKeyOut": {
+        "properties": {
+          "api_key": {
+            "description": "Se muestra una sola vez; Vigía solo guarda su hash",
+            "title": "Api Key",
+            "type": "string"
+          },
+          "station": {
+            "$ref": "#/components/schemas/StationOut"
+          }
+        },
+        "required": [
+          "station",
+          "api_key"
+        ],
+        "title": "IssuedKeyOut",
         "type": "object"
       },
       "MeResponse": {
@@ -195,6 +269,239 @@
         "title": "Role",
         "type": "string"
       },
+      "Source": {
+        "enum": [
+          "sensor",
+          "simulator"
+        ],
+        "title": "Source",
+        "type": "string"
+      },
+      "StationBodyIn": {
+        "additionalProperties": false,
+        "description": "Lo editable. El código no está: se fija al crear y no cambia.",
+        "properties": {
+          "expected_interval_s": {
+            "maximum": 86400.0,
+            "minimum": 5.0,
+            "title": "Expected Interval S",
+            "type": "integer"
+          },
+          "location": {
+            "$ref": "#/components/schemas/GeoJsonPoint"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "silence_multiplier": {
+            "default": 3,
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Silence Multiplier",
+            "type": "integer"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source",
+            "default": "sensor"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StationStatus",
+            "default": "active"
+          },
+          "variable": {
+            "$ref": "#/components/schemas/Variable"
+          },
+          "zones": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ZoneAssignmentIn"
+            },
+            "maxItems": 50,
+            "title": "Zones",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "variable",
+          "location",
+          "expected_interval_s"
+        ],
+        "title": "StationBodyIn",
+        "type": "object"
+      },
+      "StationCreateIn": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "examples": [
+              "RIM-CHA-01"
+            ],
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Code",
+            "type": "string"
+          },
+          "expected_interval_s": {
+            "maximum": 86400.0,
+            "minimum": 5.0,
+            "title": "Expected Interval S",
+            "type": "integer"
+          },
+          "location": {
+            "$ref": "#/components/schemas/GeoJsonPoint"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "silence_multiplier": {
+            "default": 3,
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Silence Multiplier",
+            "type": "integer"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source",
+            "default": "sensor"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StationStatus",
+            "default": "active"
+          },
+          "variable": {
+            "$ref": "#/components/schemas/Variable"
+          },
+          "zones": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ZoneAssignmentIn"
+            },
+            "maxItems": 50,
+            "title": "Zones",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "variable",
+          "location",
+          "expected_interval_s",
+          "code"
+        ],
+        "title": "StationCreateIn",
+        "type": "object"
+      },
+      "StationOut": {
+        "properties": {
+          "api_key_rotated_at": {
+            "format": "date-time",
+            "title": "Api Key Rotated At",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "expected_interval_s": {
+            "title": "Expected Interval S",
+            "type": "integer"
+          },
+          "has_zone": {
+            "description": "Sin zona, la estación no genera alertas",
+            "title": "Has Zone",
+            "type": "boolean"
+          },
+          "heartbeat": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HeartbeatOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "location": {
+            "additionalProperties": true,
+            "description": "GeoJSON Point [lon, lat]",
+            "title": "Location",
+            "type": "object"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "silence_multiplier": {
+            "title": "Silence Multiplier",
+            "type": "integer"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StationStatus"
+          },
+          "unit": {
+            "description": "Fija por variable: discharge m3/s, water_level m, rainfall mm",
+            "title": "Unit",
+            "type": "string"
+          },
+          "variable": {
+            "$ref": "#/components/schemas/Variable"
+          },
+          "zones": {
+            "items": {
+              "$ref": "#/components/schemas/ZoneAssignmentIn"
+            },
+            "title": "Zones",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "variable",
+          "unit",
+          "location",
+          "source",
+          "expected_interval_s",
+          "silence_multiplier",
+          "status",
+          "zones",
+          "has_zone",
+          "heartbeat",
+          "api_key_rotated_at",
+          "created_at"
+        ],
+        "title": "StationOut",
+        "type": "object"
+      },
+      "StationStatus": {
+        "enum": [
+          "active",
+          "inactive"
+        ],
+        "title": "StationStatus",
+        "type": "string"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -233,6 +540,34 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "Variable": {
+        "enum": [
+          "water_level",
+          "discharge",
+          "rainfall"
+        ],
+        "title": "Variable",
+        "type": "string"
+      },
+      "ZoneAssignmentIn": {
+        "additionalProperties": false,
+        "properties": {
+          "position": {
+            "$ref": "#/components/schemas/ZonePosition"
+          },
+          "zone_id": {
+            "format": "uuid",
+            "title": "Zone Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "zone_id",
+          "position"
+        ],
+        "title": "ZoneAssignmentIn",
         "type": "object"
       },
       "ZoneIn": {
@@ -358,6 +693,15 @@
         ],
         "title": "ZoneOut",
         "type": "object"
+      },
+      "ZonePosition": {
+        "enum": [
+          "upstream",
+          "in_zone",
+          "downstream"
+        ],
+        "title": "ZonePosition",
+        "type": "string"
       }
     },
     "securitySchemes": {
@@ -482,6 +826,296 @@
         "summary": "Lote de lecturas de la estación dueña de la API key",
         "tags": [
           "ingestion"
+        ]
+      }
+    },
+    "/v1/stations": {
+      "get": {
+        "operationId": "list_stations_v1_stations_get",
+        "parameters": [
+          {
+            "description": "incluir las desactivadas",
+            "in": "query",
+            "name": "include_inactive",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "incluir las desactivadas",
+              "title": "Include Inactive",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StationOut"
+                  },
+                  "title": "Response List Stations V1 Stations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Estaciones de la organización",
+        "tags": [
+          "territory"
+        ]
+      },
+      "post": {
+        "operationId": "post_station_v1_stations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StationCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuedKeyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "Código repetido"
+          },
+          "422": {
+            "description": "Datos inválidos"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Crear una estación (devuelve su API key una sola vez)",
+        "tags": [
+          "territory"
+        ]
+      }
+    },
+    "/v1/stations/{station_id}": {
+      "delete": {
+        "operationId": "delete_station_v1_stations__station_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "station_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Station Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No existe"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Desactivar una estación (sus lotes reciben 403; la historia se conserva)",
+        "tags": [
+          "territory"
+        ]
+      },
+      "get": {
+        "operationId": "get_station_v1_stations__station_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "station_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Station Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No existe"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Una estación",
+        "tags": [
+          "territory"
+        ]
+      },
+      "put": {
+        "operationId": "put_station_v1_stations__station_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "station_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Station Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StationBodyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No existe"
+          },
+          "422": {
+            "description": "Datos inválidos"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reemplazar una estación (no cambia el código; también reactiva)",
+        "tags": [
+          "territory"
+        ]
+      }
+    },
+    "/v1/stations/{station_id}/api-key": {
+      "post": {
+        "operationId": "post_api_key_v1_stations__station_id__api_key_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "station_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Station Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuedKeyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No existe"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rotar la API key: la anterior deja de valer al instante",
+        "tags": [
+          "territory"
         ]
       }
     },
