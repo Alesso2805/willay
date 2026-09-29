@@ -8,7 +8,9 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from vigia.ingestion.application.authenticate_station import StationCredential
-from vigia.ingestion.domain.readings import Reading
+from vigia.ingestion.application.ingest_batch import StoreCounts
+from vigia.ingestion.domain.readings import ClassifiedReading
+from vigia.shared import notifications
 
 
 class SqlStationCredentials:
@@ -63,17 +65,21 @@ class SqlBatchCounter:
 
 # Una sola sentencia: lecturas y cola se escriben juntas o no se escribe nada. El CTE
 # `stored` solo devuelve las filas realmente insertadas (ON CONFLICT DO NOTHING descarta
-# los duplicados), así que nunca se encola una lectura que ya existía.
+# los duplicados), así que nunca se encola una lectura que ya existía. Las tardías se
+# guardan pero no se encolan: no entran en las ventanas de las reglas.
 _STORE_AND_ENQUEUE = text("""
     WITH batch AS (
-        SELECT measured_at, value
-        FROM unnest(CAST(:measured_at AS timestamptz[]), CAST(:value AS float8[]))
-             AS t(measured_at, value)
+        SELECT measured_at, value, quality
+        FROM unnest(
+            CAST(:measured_at AS timestamptz[]),
+            CAST(:value AS float8[]),
+            CAST(:quality AS text[])
+        ) AS t(measured_at, value, quality)
     ),
     stored AS (
         INSERT INTO ingest.readings (station_id, organization_id, measured_at, received_at,
                                      value, quality)
-        SELECT :station_id, :organization_id, measured_at, :received_at, value, 'ok'
+        SELECT :station_id, :organization_id, measured_at, :received_at, value, quality
         FROM batch
         ON CONFLICT (station_id, measured_at) DO NOTHING
         RETURNING measured_at, quality
@@ -88,6 +94,7 @@ _STORE_AND_ENQUEUE = text("""
         RETURNING 1
     )
     SELECT (SELECT count(*) FROM stored) AS stored,
+           (SELECT count(*) FROM stored WHERE quality = 'late') AS late,
            (SELECT count(*) FROM enqueued) AS enqueued
 """)
 
@@ -100,9 +107,9 @@ class SqlReadingWriter:
         self,
         station_id: UUID,
         organization_id: UUID,
-        readings: Sequence[Reading],
+        readings: Sequence[ClassifiedReading],
         received_at: datetime,
-    ) -> tuple[int, int]:
+    ) -> StoreCounts:
         row = (
             await self._conn.execute(
                 _STORE_AND_ENQUEUE,
@@ -112,7 +119,15 @@ class SqlReadingWriter:
                     "received_at": received_at,
                     "measured_at": [r.measured_at for r in readings],
                     "value": [r.value for r in readings],
+                    "quality": [r.quality.value for r in readings],
                 },
             )
         ).one()
-        return int(row.stored), int(row.enqueued)
+        counts = StoreCounts(stored=int(row.stored), late=int(row.late), enqueued=int(row.enqueued))
+        if counts.enqueued:
+            # Misma transacción que las filas: Postgres entrega el aviso solo si hace commit.
+            # Sin filas nuevas en la cola no se despierta al evaluador en vano.
+            await self._conn.execute(
+                text("SELECT pg_notify(:channel, '')"), {"channel": notifications.EVALUATION_QUEUE}
+            )
+        return counts

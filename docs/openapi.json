@@ -108,6 +108,11 @@
             "title": "Duplicates",
             "type": "integer"
           },
+          "late": {
+            "description": "De las guardadas, cuántas llegaron más de 1 h tarde: quedan en el historial pero no se evalúan. Muchas tardías suelen indicar un reloj o un enlace con problemas en la estación.",
+            "title": "Late",
+            "type": "integer"
+          },
           "received": {
             "title": "Received",
             "type": "integer"
@@ -120,7 +125,8 @@
         "required": [
           "received",
           "stored",
-          "duplicates"
+          "duplicates",
+          "late"
         ],
         "title": "ReadingBatchOut",
         "type": "object"
