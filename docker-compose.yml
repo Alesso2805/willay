@@ -143,6 +143,8 @@ services:
       <<: *backend-env
       VIGIA_SMTP_HOST: mailpit
       VIGIA_SMTP_PORT: "1025"
+      # Base de los enlaces de confirmación de los correos: la API vista desde el navegador.
+      VIGIA_PUBLIC_URL: http://localhost:${VIGIA_API_PORT:-8000}
     healthcheck:
       <<: *worker-healthcheck
       test: ["CMD", "python", "-m", "vigia.workers.healthcheck", "dispatcher"]
