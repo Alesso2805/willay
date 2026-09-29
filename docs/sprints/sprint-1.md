@@ -25,10 +25,10 @@ make simulate ARGS="--scenario rimac --seed 42"
 
 ## Cambios a SPEC.md y CLAUDE.md en este sprint
 
-- `42a19c5` docs: align CLAUDE.md with SPEC on organization claim and DB init
-- `b4d1f28` docs(spec): role permission matrix
-- `9f9f8f3` docs(spec): add last_measured_at to station heartbeats
-- `2ec0f70` docs(spec): use httpx2 as the HTTP client
+- `d14aea4` docs: align CLAUDE.md with SPEC on organization claim and DB init
+- `6eb3d39` docs(spec): role permission matrix
+- `8062938` docs(spec): add last_measured_at to station heartbeats
+- `f06a80b` docs(spec): use httpx2 as the HTTP client
 
 ## Pendientes
 

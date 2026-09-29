@@ -35,7 +35,7 @@ Planificar el Sprint 1 empezando por **VIG-06** (login OIDC y resolución del te
 
 ## Cambios a SPEC.md en este sprint
 
-`50c95fe`, `0ebabac`, `c82fca8`, `00eafff`, `f778a32` (ver `git log -- docs/SPEC.md`).
+`71e637f`, `7cea26e`, `fe25e48`, `515d115`, `7896ba9` (ver `git log -- docs/SPEC.md`).
 
 ## Retro
 
