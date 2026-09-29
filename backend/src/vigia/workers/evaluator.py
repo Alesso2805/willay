@@ -1,6 +1,6 @@
 """Worker evaluador (VIG-14): `python -m vigia.workers.evaluator`.
 
-Toma lecturas de ingest.evaluation_queue y las evalúa (reglas en VIG-15/16). Despierta
+Toma lecturas de ingest.evaluation_queue y aplica las reglas de su estación. Despierta
 con LISTEN vigia_evaluation_queue en cuanto la ingesta confirma un lote, y consulta cada
 5 s por si un aviso se perdió. Varios procesos pueden correr a la vez: SKIP LOCKED
 reparte las filas sin que dos tomen la misma.
@@ -8,12 +8,11 @@ reparte las filas sin que dos tomen la misma.
 
 import asyncio
 
-from vigia.rules.application.evaluate import (
-    NoRulesEvaluator,
-    ReadingEvaluator,
-    process_batch,
-)
+from vigia.incidents.infrastructure.sql_incidents import SqlIncidentStore
+from vigia.rules.application.evaluate import ReadingEvaluator, process_batch
+from vigia.rules.application.rule_evaluator import RuleEvaluator
 from vigia.rules.infrastructure.pg_queue import PostgresEvaluationQueue
+from vigia.rules.infrastructure.sql_rules import SqlReadingHistory, SqlRuleRepository
 from vigia.shared import notifications
 from vigia.shared.clock import Clock, SystemClock
 from vigia.shared.config import Settings
@@ -35,9 +34,12 @@ async def run_evaluator(
     poll_interval_s: float = POLL_INTERVAL_S,
     batch_size: int = BATCH_SIZE,
 ) -> None:
+    clock = clock or SystemClock()
     engine = create_engine(settings.database_url)
-    queue = PostgresEvaluationQueue(engine, clock or SystemClock())
-    rules = evaluator or NoRulesEvaluator()
+    queue = PostgresEvaluationQueue(engine, clock)
+    rules = evaluator or RuleEvaluator(
+        SqlRuleRepository(), SqlReadingHistory(), SqlIncidentStore(), clock
+    )
 
     async def tick() -> bool:
         result = await process_batch(queue, rules, engine.begin, limit=batch_size)
