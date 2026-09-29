@@ -305,6 +305,9 @@
               }
             },
             "description": "Validation Error"
+          },
+          "429": {
+            "description": "Más de 60 lotes por minuto; ver el header Retry-After"
           }
         },
         "security": [

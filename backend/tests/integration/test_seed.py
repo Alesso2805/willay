@@ -6,11 +6,10 @@ from uuid import UUID
 
 import asyncpg
 import pytest
-from argon2 import PasswordHasher
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from tests.integration.conftest import Database
-from vigia.ingestion.infrastructure.api_keys import ApiKeyHasher
+from tests.integration.factories import FAST_HASHER
 from vigia.seed import data
 from vigia.seed.loader import IssuedKey, load_seed
 from vigia.shared.clock import FakeClock
@@ -19,8 +18,6 @@ from vigia.shared.db import create_engine
 pytestmark = pytest.mark.integration
 
 SEED_ORGS = [org.id for org in data.ORGANIZATIONS]
-# Parámetros mínimos de Argon2id: el test comprueba el flujo, no el costo del hash.
-FAST_HASHER = ApiKeyHasher(PasswordHasher(time_cost=1, memory_cost=8, parallelism=1))
 
 
 @pytest.fixture

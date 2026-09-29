@@ -20,12 +20,19 @@ async def db_connection(request: Request) -> AsyncIterator[AsyncConnection]:
         yield conn
 
 
+def get_engine(request: Request) -> AsyncEngine:
+    """Para pasos que abren su propia transacción corta, fuera de la de la petición."""
+    engine: AsyncEngine = request.app.state.engine
+    return engine
+
+
 def get_clock(request: Request) -> Clock:
     clock: Clock = request.app.state.clock
     return clock
 
 
 DbConnection = Annotated[AsyncConnection, Depends(db_connection)]
+EngineDep = Annotated[AsyncEngine, Depends(get_engine)]
 ClockDep = Annotated[Clock, Depends(get_clock)]
 
 

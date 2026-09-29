@@ -5,29 +5,60 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncConnection
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from vigia.ingestion.application.authenticate_station import StationCredential
 from vigia.ingestion.domain.readings import Reading
 
 
 class SqlStationCredentials:
-    def __init__(self, conn: AsyncConnection) -> None:
-        self._conn = conn
+    """Lectura en una conexión propia y breve: se devuelve al pool antes de verificar el
+    hash Argon2id (decenas de ms), en lugar de retenerla durante el cálculo."""
+
+    def __init__(self, engine: AsyncEngine) -> None:
+        self._engine = engine
 
     async def find(self, station_id: UUID) -> StationCredential | None:
-        row = (
-            await self._conn.execute(
-                text("""
-                    SELECT id, organization_id, api_key_hash, status = 'active' AS is_active
-                    FROM core.stations WHERE id = :id
-                """),
-                {"id": station_id},
-            )
-        ).one_or_none()
+        async with self._engine.connect() as conn:
+            row = (
+                await conn.execute(
+                    text("""
+                        SELECT id, organization_id, api_key_hash, status = 'active' AS is_active
+                        FROM core.stations WHERE id = :id
+                    """),
+                    {"id": station_id},
+                )
+            ).one_or_none()
         if row is None:
             return None
         return StationCredential(row.id, row.organization_id, row.api_key_hash, row.is_active)
+
+
+class SqlBatchCounter:
+    """Contador de lotes por estación y minuto en ingest.rate_limit_windows.
+
+    El upsert es atómico: con varias réplicas de la API, Postgres serializa los
+    incrementos de la misma fila y cada petición ve un total distinto. Va en su propia
+    transacción corta, no en la de la petición: así el bloqueo de la fila dura
+    microsegundos, y un lote que luego falla (422) igual cuenta para el límite.
+    """
+
+    def __init__(self, engine: AsyncEngine) -> None:
+        self._engine = engine
+
+    async def hit(self, station_id: UUID, window: datetime) -> int:
+        async with self._engine.begin() as conn:
+            count = await conn.scalar(
+                text("""
+                    INSERT INTO ingest.rate_limit_windows (station_id, window_start, request_count)
+                    VALUES (:station_id, :window, 1)
+                    ON CONFLICT (station_id, window_start)
+                    DO UPDATE SET request_count = ingest.rate_limit_windows.request_count + 1
+                    RETURNING request_count
+                """),
+                {"station_id": station_id, "window": window},
+            )
+        return int(count)
 
 
 # Una sola sentencia: lecturas y cola se escriben juntas o no se escribe nada. El CTE

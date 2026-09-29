@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, status
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
-from vigia.ingestion.api.dependencies import CurrentStation
+from vigia.ingestion.api.dependencies import IngestingStation
 from vigia.ingestion.application.ingest_batch import ingest_batch
 from vigia.ingestion.domain.readings import MAX_BATCH_SIZE, FutureReadingsError, Reading
 from vigia.ingestion.infrastructure.repositories import SqlReadingWriter
@@ -41,11 +41,12 @@ class ReadingBatchOut(BaseModel):
     responses={
         401: {"description": "API key ausente o inválida"},
         403: {"description": "Estación inactiva"},
+        429: {"description": "Más de 60 lotes por minuto; ver el header Retry-After"},
     },
 )
 async def post_readings(
     batch: ReadingBatchIn,
-    station: CurrentStation,
+    station: IngestingStation,  # antes que conn: la conexión de escritura se pide al final
     conn: DbConnection,
     clock: ClockDep,
 ) -> ReadingBatchOut:
