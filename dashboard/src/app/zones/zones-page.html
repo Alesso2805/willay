@@ -1,0 +1,134 @@
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h2 class="text-xl font-semibold text-slate-900">Zonas de riesgo</h2>
+  <div class="flex items-center gap-4">
+    <label class="flex items-center gap-2 text-sm text-slate-700">
+      <input
+        type="checkbox"
+        [checked]="includeInactive()"
+        (change)="toggleInactive($any($event.target).checked)"
+      />
+      Mostrar desactivadas
+    </label>
+    @if (canManage() && !editing()) {
+      <button
+        type="button"
+        class="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
+        (click)="startCreate()"
+      >
+        Nueva zona
+      </button>
+    }
+  </div>
+</div>
+
+<p class="mt-2 min-h-5 text-sm text-slate-700" aria-live="polite">{{ status() }}</p>
+
+@if (loadFailed()) {
+  <div role="alert" class="mt-2 rounded-md border border-red-300 bg-red-50 p-3 text-red-900">
+    No se pudieron cargar las zonas.
+    <button type="button" class="underline" (click)="load()">Reintentar</button>
+  </div>
+}
+
+<div class="mt-4 grid gap-6 lg:grid-cols-[2fr_1fr]">
+  <app-zone-map
+    [zones]="zones()"
+    [mode]="mapMode()"
+    [problem]="problem()?.point ?? null"
+    (geometryChange)="onGeometry($event)"
+  />
+
+  <div class="flex flex-col gap-6">
+    @if (editing(); as current) {
+      <form class="flex flex-col gap-3 rounded-md border border-slate-300 p-4" [formGroup]="form" (ngSubmit)="save()">
+        <h3 class="font-semibold">{{ current.kind === 'new' ? 'Nueva zona' : 'Editar zona' }}</h3>
+
+        <label class="flex flex-col gap-1 text-sm">
+          Nombre
+          <input formControlName="name" class="rounded border border-slate-300 px-2 py-1" required maxlength="120" />
+        </label>
+        @if (form.controls.name.touched && form.controls.name.invalid) {
+          <p class="text-sm text-red-800">El nombre es obligatorio.</p>
+        }
+
+        <label class="flex flex-col gap-1 text-sm">
+          Nivel de riesgo
+          <select formControlName="risk_level" class="rounded border border-slate-300 px-2 py-1">
+            @for (level of riskLevels; track level) {
+              <option [value]="level">{{ riskLabels[level] }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="flex flex-col gap-1 text-sm">
+          Población estimada (opcional)
+          <input type="number" min="0" formControlName="population_estimate" class="rounded border border-slate-300 px-2 py-1" />
+        </label>
+
+        <label class="flex flex-col gap-1 text-sm">
+          Descripción (opcional)
+          <textarea formControlName="description" rows="2" class="rounded border border-slate-300 px-2 py-1"></textarea>
+        </label>
+
+        <p class="text-sm text-slate-700">
+          @if (geometry()) {
+            Polígono listo: {{ vertexCount() }} vértices. Puedes ajustarlos en el mapa.
+          } @else {
+            Aún no hay polígono: dibújalo en el mapa.
+          }
+        </p>
+
+        @if (problem(); as p) {
+          <div role="alert" class="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">{{ p.message }}</div>
+        }
+
+        <div class="flex gap-2">
+          <button
+            type="submit"
+            class="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+            [disabled]="saving()"
+          >
+            {{ saving() ? 'Guardando…' : 'Guardar' }}
+          </button>
+          <button type="button" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm" (click)="cancel()">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    }
+
+    <section aria-labelledby="zone-list-title">
+      <h3 id="zone-list-title" class="font-semibold">Listado ({{ zones().length }})</h3>
+      <ul class="mt-2 flex flex-col gap-2">
+        @for (zone of zones(); track zone.id) {
+          <li class="rounded-md border border-slate-200 p-3" [class.opacity-60]="!zone.is_active">
+            <p class="font-medium text-slate-900">
+              {{ zone.name }}
+              @if (!zone.is_active) {
+                <span class="text-sm font-normal text-slate-600">(desactivada)</span>
+              }
+            </p>
+            <p class="text-sm text-slate-700">
+              Riesgo: {{ riskLabels[zone.risk_level] }}
+              @if (zone.population_estimate !== null) {
+                · Población: {{ zone.population_estimate }}
+              }
+            </p>
+            @if (canManage() && !editing()) {
+              <div class="mt-2 flex gap-3 text-sm">
+                @if (zone.is_active) {
+                  <button type="button" class="underline" (click)="startEdit(zone)">Editar</button>
+                  <button type="button" class="text-red-800 underline" (click)="deactivate(zone)">Desactivar</button>
+                } @else {
+                  <button type="button" class="underline" (click)="reactivate(zone)">Reactivar</button>
+                }
+              </div>
+            }
+          </li>
+        } @empty {
+          <li class="text-sm text-slate-600">Todavía no hay zonas.</li>
+        }
+      </ul>
+    </section>
+  </div>
+</div>
