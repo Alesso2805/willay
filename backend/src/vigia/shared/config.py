@@ -24,6 +24,18 @@ class Settings(BaseSettings):
     # Orígenes del panel que pueden llamar a la API desde el navegador (JSON en el entorno).
     cors_origins: list[str] = ["http://localhost:4200"]
 
+    # URL pública de la API: base de los enlaces que salen en las alertas (confirmación).
+    public_url: str = "http://localhost:8000"
+
+    # Correo saliente (dispatcher). En local, Mailpit: sin TLS ni credenciales.
+    smtp_host: str = "localhost"
+    smtp_port: int = 1025
+    smtp_from: str = "Vigía <alertas@vigia.local>"
+    smtp_start_tls: bool = False
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_timeout_s: float = 10.0
+
 
 @lru_cache
 def get_settings() -> Settings:
