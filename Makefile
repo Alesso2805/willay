@@ -3,7 +3,7 @@ SHELL := /bin/bash
 
 COMPOSE := docker compose
 
-.PHONY: help up down lint lint-backend lint-dashboard test test-backend test-dashboard openapi migrate seed demo
+.PHONY: help up down lint lint-backend lint-dashboard test test-backend test-dashboard openapi migrate seed simulate demo
 
 help: ## Lista los comandos disponibles
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "} {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -45,6 +45,9 @@ seed: .env ## Carga los datos demo e imprime las API keys (ARGS=--rotate-keys pa
 	@mkdir -p .secrets
 	$(COMPOSE) run --rm --user "$$(id -u):$$(id -g)" -v "$(CURDIR)/.secrets:/secrets" \
 		migrate python -m vigia.seed --keys-file /secrets/station-keys.json $(ARGS)
+
+simulate: ## Simulador de estaciones contra la API local (ARGS="--scenario rimac --seed 42")
+	cd backend && uv run simulate --keys-file ../.secrets/station-keys.json $(ARGS)
 
 demo: ## Escenario Rímac guiado (VIG-30)
 	@echo "make demo llega con VIG-30 (Sprint 6)." && exit 1

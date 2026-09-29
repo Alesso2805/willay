@@ -32,6 +32,17 @@ make lint   # Ruff, Mypy strict, ESLint
 make test   # Pytest (unit + integración con Postgres real vía Docker) y Vitest
 ```
 
+## Simulador de estaciones
+
+Envía lecturas reales a `POST /v1/readings` con las API keys que dejó `make seed` en `.secrets/station-keys.json`. La misma semilla produce siempre la misma serie de valores. Corre en tiempo real (un lote por estación cada 10 s) porque la detección de silencio mide con el reloj de verdad.
+
+```bash
+make simulate ARGS="--scenario normal --stations 3 --seed 7 --steps 12"
+make simulate ARGS="--scenario rimac --seed 42"   # demo: caída aguas abajo y, 4 min después, silencio aguas arriba
+```
+
+Escenarios: `normal`, `rise` (el valor se duplica en 5 min), `drop` (cae al 40 %), `silence` (deja de reportar) y `rimac`. `--event-after` fija cuándo empieza el evento (60 s por defecto).
+
 ## Estructura
 
 | Carpeta | Contenido |
