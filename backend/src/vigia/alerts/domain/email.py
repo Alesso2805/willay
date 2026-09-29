@@ -11,6 +11,12 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 SEVERITY_LABEL = {"info": "INFORMATIVO", "warning": "ADVERTENCIA", "critical": "CRÍTICO"}
+# La frase del cuerpo concuerda con cada severidad ("un incidente ADVERTENCIA" no se dice).
+SEVERITY_PHRASE = {
+    "info": "un incidente INFORMATIVO",
+    "warning": "un incidente de ADVERTENCIA",
+    "critical": "un incidente CRÍTICO",
+}
 RULE_LABEL = {
     "threshold": "Valor fuera de límite",
     "rate_of_change": "Cambio brusco",
@@ -51,7 +57,7 @@ def compose_email(message: AlertMessage, confirm_url: str) -> EmailContent:
     lines = [
         f"Hola {message.contact_name}:",
         "",
-        f"Vigía abrió un incidente {severity} en la zona {message.zone_name}.",
+        f"Vigía abrió {_phrase(message.severity)} en la zona {message.zone_name}.",
         "",
         f"  Causa:     {cause}",
     ]
@@ -75,6 +81,10 @@ def compose_email(message: AlertMessage, confirm_url: str) -> EmailContent:
         "(INDECI, COER, SISMATE).",
     ]
     return EmailContent(subject=f"[Vigía] {severity} · {cause} en {where}", body="\n".join(lines))
+
+
+def _phrase(severity: str) -> str:
+    return SEVERITY_PHRASE.get(severity, f"un incidente {severity.upper()}")
 
 
 def _value_label(message: AlertMessage) -> str:
