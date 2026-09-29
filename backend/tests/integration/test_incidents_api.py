@@ -135,7 +135,7 @@ async def test_invalid_transitions_get_409(
     assert (await _post(client, incident_id, "acknowledge", operator)).status_code == 200
     again = await _post(client, incident_id, "acknowledge", operator)
     assert again.status_code == 409
-    assert "acknowledged" in again.json()["detail"]
+    assert again.json()["detail"] == "El incidente ya está confirmado: no se puede confirmar."
 
     assert (
         await _post(client, incident_id, "resolve", operator, resolution="resolved")
