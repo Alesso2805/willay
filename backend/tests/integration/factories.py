@@ -6,9 +6,15 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 import asyncpg
+from argon2 import PasswordHasher
 from uuid_utils.compat import uuid7
 
+from vigia.ingestion.domain.api_keys import generate_api_key
+from vigia.ingestion.infrastructure.api_keys import ApiKeyHasher
+
 T0 = datetime(2026, 10, 1, 8, 40, tzinfo=UTC)
+# Parámetros mínimos de Argon2id: los tests ejercitan el flujo, no el costo del hash.
+FAST_HASHER = ApiKeyHasher(PasswordHasher(time_cost=1, memory_cost=8, parallelism=1))
 
 
 @dataclass(frozen=True)
@@ -96,3 +102,15 @@ async def create_incident(
         T0,
     )
     return incident_id
+
+
+async def create_station_with_key(conn: asyncpg.Connection) -> tuple[Graph, str]:
+    """Estación nueva (en su propia organización) y su API key en claro."""
+    graph = await create_graph(conn)
+    key = generate_api_key(graph.station_id)
+    await conn.execute(
+        "UPDATE core.stations SET api_key_hash = $1 WHERE id = $2",
+        FAST_HASHER.hash(key),
+        graph.station_id,
+    )
+    return graph, key

@@ -8,9 +8,9 @@ import asyncpg
 import httpx2
 import pytest
 
-from tests.integration.api import FAST_HASHER, api_client
+from tests.integration.api import api_client
 from tests.integration.conftest import Database
-from tests.integration.factories import Graph, create_graph
+from tests.integration.factories import Graph, create_station_with_key
 from tests.support.tokens import TokenFactory
 from vigia.ingestion.domain.api_keys import generate_api_key
 from vigia.ingestion.domain.readings import MAX_BATCH_SIZE
@@ -27,15 +27,7 @@ async def client(database: Database, tokens: TokenFactory) -> AsyncIterator[http
 
 @pytest.fixture
 async def station(owner: asyncpg.Connection) -> tuple[Graph, str]:
-    """Estación nueva (en su propia organización) con una API key conocida."""
-    graph = await create_graph(owner)
-    key = generate_api_key(graph.station_id)
-    await owner.execute(
-        "UPDATE core.stations SET api_key_hash = $1 WHERE id = $2",
-        FAST_HASHER.hash(key),
-        graph.station_id,
-    )
-    return graph, key
+    return await create_station_with_key(owner)
 
 
 def _now() -> datetime:
