@@ -1,0 +1,161 @@
+"""IncidentRepository sobre core.incidents y core.incident_events (rol vigia_app)."""
+
+import json
+from collections.abc import Mapping, Sequence
+from datetime import datetime
+from typing import Any
+from uuid import UUID
+
+from sqlalchemy import Row, text
+from sqlalchemy.ext.asyncio import AsyncConnection
+
+from vigia.incidents.application.lifecycle import Actor, Incident, IncidentEvent
+from vigia.incidents.domain.lifecycle import IncidentStatus, Resolution
+
+# La zona y la regla siempre existen (no se borran: se desactivan); la estación puede
+# faltar si algún tipo de regla futuro no la tiene.
+_SELECT = """
+    SELECT i.id, i.zone_id, z.name AS zone_name, i.station_id, s.code AS station_code,
+           i.rule_id, r.type AS rule_type, i.severity, i.status, i.current_level,
+           i.trigger_value, i.opened_at, i.escalation_exhausted_at, i.acknowledged_at,
+           i.acknowledged_by_user_id, i.acknowledged_by_contact_id, i.resolved_at,
+           i.resolution
+    FROM core.incidents i
+    JOIN core.risk_zones z ON z.id = i.zone_id
+    JOIN core.rules r ON r.id = i.rule_id
+    LEFT JOIN core.stations s ON s.id = i.station_id
+"""
+
+_LIST = text(
+    _SELECT
+    + """
+    WHERE i.organization_id = :organization_id
+      AND (cardinality(CAST(:statuses AS text[])) = 0
+           OR i.status = ANY(CAST(:statuses AS text[])))
+    ORDER BY i.opened_at DESC, i.id DESC
+    LIMIT :limit
+"""
+)
+
+_GET = text(_SELECT + " WHERE i.organization_id = :organization_id AND i.id = :id")
+
+_TIMELINE = text("""
+    SELECT id, occurred_at, event_type, actor_type, actor_id, payload
+    FROM core.incident_events
+    WHERE incident_id = :id
+    ORDER BY occurred_at, id
+""")
+
+_LOCK = text("""
+    SELECT status FROM core.incidents
+    WHERE organization_id = :organization_id AND id = :id
+    FOR UPDATE
+""")
+
+_ACKNOWLEDGE = text("""
+    UPDATE core.incidents
+    SET status = 'acknowledged', acknowledged_at = :now, acknowledged_by_user_id = :user_id
+    WHERE id = :id
+""")
+
+_RESOLVE = text("""
+    UPDATE core.incidents
+    SET status = 'resolved', resolved_at = :now, resolution = :resolution
+    WHERE id = :id
+""")
+
+_EVENT = text("""
+    INSERT INTO core.incident_events (incident_id, organization_id, occurred_at, event_type,
+                                      actor_type, actor_id, payload)
+    VALUES (:incident_id, :organization_id, :now, :event_type, 'user', :actor_id,
+            CAST(:payload AS jsonb))
+""")
+
+
+class SqlIncidentRepository:
+    def __init__(self, conn: AsyncConnection) -> None:
+        self._conn = conn
+
+    async def recent(
+        self, organization_id: UUID, statuses: Sequence[IncidentStatus], limit: int
+    ) -> list[Incident]:
+        rows = await self._conn.execute(
+            _LIST,
+            {
+                "organization_id": organization_id,
+                "statuses": [s.value for s in statuses],
+                "limit": limit,
+            },
+        )
+        return [_incident(r) for r in rows]
+
+    async def get(self, organization_id: UUID, incident_id: UUID) -> Incident | None:
+        rows = await self._conn.execute(
+            _GET, {"organization_id": organization_id, "id": incident_id}
+        )
+        row = rows.first()
+        return _incident(row) if row is not None else None
+
+    async def timeline(self, incident_id: UUID) -> list[IncidentEvent]:
+        rows = await self._conn.execute(_TIMELINE, {"id": incident_id})
+        return [
+            IncidentEvent(r.id, r.occurred_at, r.event_type, r.actor_type, r.actor_id, r.payload)
+            for r in rows
+        ]
+
+    async def lock_status(self, organization_id: UUID, incident_id: UUID) -> IncidentStatus | None:
+        status = await self._conn.scalar(
+            _LOCK, {"organization_id": organization_id, "id": incident_id}
+        )
+        return IncidentStatus(status) if status is not None else None
+
+    async def acknowledge(self, incident_id: UUID, user_id: UUID, now: datetime) -> None:
+        await self._conn.execute(_ACKNOWLEDGE, {"id": incident_id, "user_id": user_id, "now": now})
+
+    async def resolve(self, incident_id: UUID, resolution: Resolution, now: datetime) -> None:
+        await self._conn.execute(
+            _RESOLVE, {"id": incident_id, "resolution": resolution.value, "now": now}
+        )
+
+    async def add_event(
+        self,
+        incident_id: UUID,
+        actor: Actor,
+        event_type: str,
+        payload: Mapping[str, Any],
+        now: datetime,
+    ) -> None:
+        await self._conn.execute(
+            _EVENT,
+            {
+                "incident_id": incident_id,
+                "organization_id": actor.organization_id,
+                "now": now,
+                "event_type": event_type,
+                "actor_id": actor.user_id,
+                "payload": json.dumps(dict(payload)),
+            },
+        )
+
+
+def _incident(r: Row[Any]) -> Incident:
+    return Incident(
+        id=r.id,
+        zone_id=r.zone_id,
+        zone_name=r.zone_name,
+        station_id=r.station_id,
+        station_code=r.station_code,
+        rule_id=r.rule_id,
+        rule_type=r.rule_type,
+        severity=r.severity,
+        status=IncidentStatus(r.status),
+        current_level=r.current_level,
+        trigger_value=r.trigger_value,
+        opened_at=r.opened_at,
+        escalation_exhausted_at=r.escalation_exhausted_at,
+        acknowledged_at=r.acknowledged_at,
+        acknowledged_by_user_id=r.acknowledged_by_user_id,
+        acknowledged_by_contact_id=r.acknowledged_by_contact_id,
+        resolved_at=r.resolved_at,
+        resolution=Resolution(r.resolution) if r.resolution is not None else None,
+    )

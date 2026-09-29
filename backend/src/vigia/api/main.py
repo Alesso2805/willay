@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from vigia.identity.api.routes import router as identity_router
 from vigia.identity.infrastructure.jwt_verifier import JwtVerifier, jwks_key_resolver
+from vigia.incidents.api.routes import router as incidents_router
 from vigia.ingestion.api.routes import router as ingestion_router
 from vigia.ingestion.infrastructure.api_keys import ApiKeyHasher
 from vigia.shared.clock import SystemClock
@@ -64,4 +65,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(ingestion_router)
     app.include_router(zones_router)
     app.include_router(stations_router)
+    app.include_router(incidents_router)
     return app
