@@ -1,5 +1,6 @@
-"""VIG-18: incidentes sin duplicados: enfriamiento y lecturas que los agravan."""
+"""VIG-18: incidentes sin duplicados: enfriamiento, lecturas que los agravan y carrera."""
 
+import asyncio
 import json
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
@@ -7,13 +8,21 @@ from uuid import UUID
 
 import asyncpg
 import pytest
-from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from tests.integration.conftest import Database
 from tests.integration.evaluation import Station, incidents
 from tests.integration.factories import create_graph, create_rule, link_station
+from vigia.incidents.application.open_incident import OpenResult, Trigger
+from vigia.incidents.infrastructure.sql_incidents import SqlIncidentStore
+from vigia.ingestion.domain.readings import ClassifiedReading, Quality
+from vigia.ingestion.infrastructure.repositories import SqlReadingWriter
+from vigia.rules.application.evaluate import process_batch
 from vigia.rules.application.queue import QueuedReading
-from vigia.shared.clock import FakeClock
+from vigia.rules.application.rule_evaluator import RuleEvaluator
+from vigia.rules.infrastructure.pg_queue import PostgresEvaluationQueue
+from vigia.rules.infrastructure.sql_rules import SqlReadingHistory, SqlRuleRepository
+from vigia.shared.clock import FakeClock, SystemClock
 from vigia.shared.db import create_engine
 
 pytestmark = pytest.mark.integration
@@ -121,3 +130,49 @@ async def test_reprocessing_a_reading_adds_nothing(
 
     assert len(await incidents(owner, station.graph)) == 1
     assert await _timeline(owner, incident["id"]) == before
+
+
+class _MeetBeforeOpening(SqlIncidentStore):
+    """Hace que dos evaluadores lleguen a la vez a abrir el incidente."""
+
+    def __init__(self, barrier: asyncio.Barrier) -> None:
+        self._barrier = barrier
+
+    async def open(self, tx: AsyncConnection, trigger: Trigger, now: datetime) -> OpenResult:
+        await self._barrier.wait()
+        return await super().open(tx, trigger, now)
+
+
+async def test_two_evaluators_racing_on_the_same_cause_open_one_incident(
+    engine: AsyncEngine, owner: asyncpg.Connection
+) -> None:
+    station, _ = await _station(engine, owner)
+    clock, graph = SystemClock(), station.graph
+    async with engine.begin() as tx:
+        await SqlReadingWriter(tx).store_and_enqueue(
+            graph.station_id,
+            graph.organization_id,
+            [
+                ClassifiedReading(clock.now() - timedelta(seconds=20), 3.6, Quality.OK),
+                ClassifiedReading(clock.now() - timedelta(seconds=10), 3.7, Quality.OK),
+            ],
+            clock.now(),
+            None,
+        )
+
+    barrier = asyncio.Barrier(2)
+    queue = PostgresEvaluationQueue(engine, clock)
+
+    async def evaluator() -> None:
+        rules = RuleEvaluator(
+            SqlRuleRepository(), SqlReadingHistory(), _MeetBeforeOpening(barrier), clock
+        )
+        await process_batch(queue, rules, engine.begin, limit=1)  # una lectura cada uno
+
+    async with asyncio.timeout(10):
+        await asyncio.gather(evaluator(), evaluator())
+
+    assert len(await incidents(owner, graph)) == 1
+    assert not await owner.fetchval(  # las dos lecturas quedaron evaluadas
+        "SELECT count(*) FROM ingest.evaluation_queue WHERE station_id = $1", graph.station_id
+    )
