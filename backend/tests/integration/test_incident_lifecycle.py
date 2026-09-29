@@ -1,4 +1,4 @@
-"""VIG-18: incidentes sin duplicados: enfriamiento."""
+"""VIG-18: incidentes sin duplicados: enfriamiento y lecturas que los agravan."""
 
 import json
 from collections.abc import AsyncIterator
@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from tests.integration.conftest import Database
 from tests.integration.evaluation import Station, incidents
 from tests.integration.factories import create_graph, create_rule, link_station
+from vigia.rules.application.queue import QueuedReading
 from vigia.shared.clock import FakeClock
 from vigia.shared.db import create_engine
 
@@ -85,3 +86,38 @@ async def test_a_resolved_cause_does_not_reopen_during_its_cooldown(
         )
         == 4
     )
+
+
+async def test_only_readings_that_worsen_an_active_incident_join_its_timeline(
+    engine: AsyncEngine, owner: asyncpg.Connection
+) -> None:
+    station, _ = await _station(engine, owner)
+    await station.send(3.6, 3.8, 3.7, 3.8, 4.0, 3.9)
+
+    [incident] = await incidents(owner, station.graph)
+    assert await _timeline(owner, incident["id"]) == [
+        ("opened", None),
+        ("reading_added", 3.8),
+        ("reading_added", 4.0),
+    ]
+
+
+async def test_reprocessing_a_reading_adds_nothing(
+    engine: AsyncEngine, owner: asyncpg.Connection
+) -> None:
+    station, _ = await _station(engine, owner)
+    await station.send(3.6, 4.0)
+    [incident] = await incidents(owner, station.graph)
+    before = await _timeline(owner, incident["id"])
+
+    # La misma lectura (4,0) evaluada otra vez, como tras un reintento de la cola.
+    measured_at = await owner.fetchval(
+        "SELECT max(measured_at) FROM ingest.readings WHERE station_id = $1",
+        station.graph.station_id,
+    )
+    item = QueuedReading(0, station.graph.station_id, station.graph.organization_id, measured_at, 2)
+    async with engine.begin() as tx:
+        await station.evaluator.evaluate(tx, item)
+
+    assert len(await incidents(owner, station.graph)) == 1
+    assert await _timeline(owner, incident["id"]) == before
