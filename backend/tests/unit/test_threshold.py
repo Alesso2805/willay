@@ -28,6 +28,7 @@ def test_seed_params_are_parsed() -> None:
         {"operator": "gt", "value": 3.5, "consecutive": 0},
         {"operator": "gt", "value": 3.5, "consecutive": 61},
         {"operator": "gt", "value": 3.5, "consecutive": 2.5},
+        {"operator": "gt", "value": 3.5, "consecutive": True},
     ],
 )
 def test_invalid_params_are_rejected(raw: dict[str, Any]) -> None:
