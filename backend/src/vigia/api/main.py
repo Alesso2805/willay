@@ -23,6 +23,7 @@ from vigia.shared.config import Settings, get_settings
 from vigia.shared.db import create_engine
 from vigia.shared.logging import configure_logging
 from vigia.shared.web import validation_error_handler
+from vigia.territory.api.stations import router as stations_router
 from vigia.territory.api.zones import router as zones_router
 
 
@@ -62,4 +63,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(identity_router)
     app.include_router(ingestion_router)
     app.include_router(zones_router)
+    app.include_router(stations_router)
     return app
