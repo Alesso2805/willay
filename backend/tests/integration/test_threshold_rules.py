@@ -1,8 +1,6 @@
 """VIG-15: reglas de umbral de punta a punta (ingesta → cola → evaluador → incidente)."""
 
-import json
 from collections.abc import AsyncIterator
-from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -11,15 +9,8 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from tests.integration.conftest import Database
-from tests.integration.factories import Graph, create_graph, create_rule, link_station
-from vigia.incidents.infrastructure.sql_incidents import SqlIncidentStore
-from vigia.ingestion.domain.readings import ClassifiedReading, Quality
-from vigia.ingestion.infrastructure.repositories import SqlReadingWriter
-from vigia.rules.application.evaluate import process_batch
-from vigia.rules.application.rule_evaluator import RuleEvaluator
-from vigia.rules.infrastructure.pg_queue import PostgresEvaluationQueue
-from vigia.rules.infrastructure.sql_rules import SqlReadingHistory, SqlRuleRepository
-from vigia.shared.clock import SystemClock
+from tests.integration.evaluation import Station, incidents, opened_payload
+from tests.integration.factories import create_graph, create_rule, link_station
 from vigia.shared.db import create_engine
 
 pytestmark = pytest.mark.integration
@@ -33,51 +24,6 @@ async def engine(database: Database, owner: asyncpg.Connection) -> AsyncIterator
     engine = create_engine(database.app_url)
     yield engine
     await engine.dispose()
-
-
-class Station:
-    """Una estación que envía lecturas y un evaluador que las procesa una a una."""
-
-    def __init__(self, engine: AsyncEngine, graph: Graph) -> None:
-        self.engine, self.graph = engine, graph
-        self.clock = SystemClock()
-        self.queue = PostgresEvaluationQueue(engine, self.clock)
-        self.evaluator = RuleEvaluator(
-            SqlRuleRepository(), SqlReadingHistory(), SqlIncidentStore(), self.clock
-        )
-        self.start = self.clock.now() - timedelta(minutes=30)
-        self.sent = 0
-
-    async def send(self, *values: float) -> None:
-        for value in values:
-            await self._write(ClassifiedReading(self._next_time(), value, Quality.OK))
-            await process_batch(self.queue, self.evaluator, self.engine.begin, limit=10)
-
-    async def write_late(self, value: float) -> None:
-        """Una lectura tardía (> 1 h) intercalada: se guarda pero no se encola."""
-        await self._write(ClassifiedReading(self._next_time(), value, Quality.LATE))
-
-    def _next_time(self) -> datetime:
-        self.sent += 1
-        return self.start + timedelta(seconds=10 * self.sent)
-
-    async def _write(self, reading: ClassifiedReading) -> None:
-        async with self.engine.begin() as tx:
-            await SqlReadingWriter(tx).store_and_enqueue(
-                self.graph.station_id,
-                self.graph.organization_id,
-                [reading],
-                self.clock.now(),
-                reading if reading.quality is Quality.OK else None,
-            )
-
-
-async def _incidents(owner: asyncpg.Connection, graph: Graph) -> list[asyncpg.Record]:
-    return await owner.fetch(
-        "SELECT id, rule_id, zone_id, station_id, severity, trigger_value, dedup_key, status "
-        "FROM core.incidents WHERE organization_id = $1 ORDER BY opened_at",
-        graph.organization_id,
-    )
 
 
 async def _station(
@@ -97,10 +43,10 @@ async def test_two_consecutive_readings_above_the_limit_open_one_incident(
     station, rule_id = await _station(engine, owner, severity="critical")
 
     await station.send(3.0, 3.6)
-    assert await _incidents(owner, station.graph) == []  # una sola lectura fuera de límite
+    assert await incidents(owner, station.graph) == []  # una sola lectura fuera de límite
 
     await station.send(3.7)
-    [incident] = await _incidents(owner, station.graph)
+    [incident] = await incidents(owner, station.graph)
     graph = station.graph
     assert incident["dedup_key"] == f"{rule_id}:{graph.zone_id}"
     assert (incident["status"], incident["severity"], incident["trigger_value"]) == (
@@ -110,13 +56,7 @@ async def test_two_consecutive_readings_above_the_limit_open_one_incident(
     )
     assert (incident["zone_id"], incident["station_id"]) == (graph.zone_id, graph.station_id)
 
-    payload = json.loads(
-        await owner.fetchval(
-            "SELECT payload FROM core.incident_events WHERE incident_id = $1 "
-            "AND event_type = 'opened'",
-            incident["id"],
-        )
-    )
+    payload = await opened_payload(owner, incident["id"])
     # La evidencia: las lecturas que dispararon la regla, en orden cronológico.
     assert [r["value"] for r in payload["readings"]] == [3.6, 3.7]
     assert payload["rule_params"] == GT_35
@@ -127,7 +67,7 @@ async def test_more_readings_above_the_limit_do_not_open_a_second_incident(
 ) -> None:
     station, _ = await _station(engine, owner)
     await station.send(3.6, 3.7, 3.8, 3.9)
-    assert len(await _incidents(owner, station.graph)) == 1
+    assert len(await incidents(owner, station.graph)) == 1
 
 
 async def test_readings_exactly_at_the_limit_do_not_fire(
@@ -135,7 +75,7 @@ async def test_readings_exactly_at_the_limit_do_not_fire(
 ) -> None:
     station, _ = await _station(engine, owner)
     await station.send(3.5, 3.5, 3.5)
-    assert await _incidents(owner, station.graph) == []
+    assert await incidents(owner, station.graph) == []
 
 
 async def test_a_reading_back_inside_breaks_the_streak(
@@ -143,7 +83,7 @@ async def test_a_reading_back_inside_breaks_the_streak(
 ) -> None:
     station, _ = await _station(engine, owner)
     await station.send(3.6, 3.4, 3.6)
-    assert await _incidents(owner, station.graph) == []
+    assert await incidents(owner, station.graph) == []
 
 
 async def test_late_readings_do_not_break_or_count_in_the_streak(
@@ -153,7 +93,7 @@ async def test_late_readings_do_not_break_or_count_in_the_streak(
     await station.send(3.6)
     await station.write_late(1.0)  # dentro del límite, pero tardía: no cuenta
     await station.send(3.7)
-    assert len(await _incidents(owner, station.graph)) == 1
+    assert len(await incidents(owner, station.graph)) == 1
 
 
 async def test_lower_limit_rules_fire_on_values_below(
@@ -161,9 +101,9 @@ async def test_lower_limit_rules_fire_on_values_below(
 ) -> None:
     station, _ = await _station(engine, owner, {"operator": "lt", "value": 0.5, "consecutive": 3})
     await station.send(0.4, 0.3)
-    assert await _incidents(owner, station.graph) == []
+    assert await incidents(owner, station.graph) == []
     await station.send(0.2)
-    assert len(await _incidents(owner, station.graph)) == 1
+    assert len(await incidents(owner, station.graph)) == 1
 
 
 async def test_a_station_without_zone_never_alerts(
@@ -173,7 +113,7 @@ async def test_a_station_without_zone_never_alerts(
     await create_rule(owner, graph, "threshold", GT_35, station_id=graph.station_id)
     station = Station(engine, graph)
     await station.send(9.0, 9.0, 9.0)
-    assert await _incidents(owner, graph) == []
+    assert await incidents(owner, graph) == []
 
 
 @pytest.mark.parametrize(
@@ -193,7 +133,7 @@ async def test_inactive_rules_or_zones_do_not_fire(
     station, rule_id = await _station(engine, owner)
     await owner.execute(deactivate, rule_id)
     await station.send(9.0, 9.0)
-    assert await _incidents(owner, station.graph) == []
+    assert await incidents(owner, station.graph) == []
 
 
 async def test_a_zone_wide_rule_applies_to_every_station_in_the_zone(
@@ -204,7 +144,7 @@ async def test_a_zone_wide_rule_applies_to_every_station_in_the_zone(
     await create_rule(owner, graph, "threshold", GT_35)  # station_id nulo: toda la zona
     station = Station(engine, graph)
     await station.send(4.0, 4.0)
-    assert len(await _incidents(owner, graph)) == 1
+    assert len(await incidents(owner, graph)) == 1
 
 
 async def test_a_rule_with_broken_params_is_skipped_and_the_others_still_run(
@@ -221,7 +161,7 @@ async def test_a_rule_with_broken_params_is_skipped_and_the_others_still_run(
 
     await station.send(4.0, 4.0)
 
-    [incident] = await _incidents(owner, station.graph)
+    [incident] = await incidents(owner, station.graph)
     assert incident["rule_id"] == good_rule
     assert not await owner.fetchval(  # la lectura no quedó fallida por la regla rota
         "SELECT count(*) FROM ingest.evaluation_queue WHERE station_id = $1",
