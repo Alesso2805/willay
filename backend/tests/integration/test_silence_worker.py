@@ -118,6 +118,30 @@ async def test_later_cycles_do_not_open_a_second_incident(
     assert len(await incidents(owner, graph)) == 1
 
 
+async def test_a_resolved_silence_does_not_reopen_until_its_cooldown_ends(
+    engine: AsyncEngine, owner: asyncpg.Connection
+) -> None:
+    graph = await _watched_station(owner)  # la regla de create_graph enfría 600 s
+    clock = FakeClock(LAST_SEEN + THRESHOLD)
+    checker = _checker(engine, clock)
+    await checker.run()
+    [incident] = await incidents(owner, graph)
+    await owner.execute(
+        "UPDATE core.incidents SET status = 'resolved', resolved_at = $2,"
+        " resolution = 'false_alarm' WHERE id = $1",
+        incident["id"],
+        clock.now(),
+    )
+
+    clock.advance(timedelta(seconds=599))  # la estación sigue callada
+    await checker.run()
+    assert len(await incidents(owner, graph)) == 1
+
+    clock.advance(timedelta(seconds=2))
+    await checker.run()
+    assert [i["status"] for i in await incidents(owner, graph)] == ["resolved", "open"]
+
+
 async def test_a_zone_wide_rule_opens_one_incident_per_silent_station(
     engine: AsyncEngine, owner: asyncpg.Connection
 ) -> None:

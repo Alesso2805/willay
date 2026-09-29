@@ -19,7 +19,12 @@ from uuid import UUID
 import structlog
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from vigia.incidents.application.open_incident import IncidentStore, Trigger
+from vigia.incidents.application.open_incident import (
+    IncidentStore,
+    Trigger,
+    TriggerOutcome,
+    record_trigger,
+)
 from vigia.incidents.domain.incidents import EvidenceReading, dedup_key
 from vigia.rules.application.queue import QueuedReading
 from vigia.rules.domain.errors import InvalidRuleParamsError
@@ -38,6 +43,7 @@ class ApplicableRule:
     type: str
     params: Mapping[str, Any]
     severity: str
+    cooldown_s: int
 
 
 class RuleRepository(Protocol):
@@ -85,9 +91,9 @@ class RuleEvaluator:
                 continue
             if trigger is None:
                 continue
-            incident_id = await self._incidents.open(tx, trigger, self._clock.now())
-            if incident_id is not None:
-                bound.info("incident_opened", incident_id=str(incident_id))
+            recorded = await record_trigger(self._incidents, tx, trigger, self._clock.now())
+            if recorded.outcome is TriggerOutcome.OPENED:
+                bound.info("incident_opened", incident_id=str(recorded.incident_id))
 
     async def _check(
         self, tx: AsyncConnection, rule: ApplicableRule, item: QueuedReading
@@ -109,7 +115,7 @@ class RuleEvaluator:
         )
         if not fires(params, [r.value for r in recent]):
             return None
-        return _trigger(rule, item, recent[0].value, tuple(reversed(recent)))  # cronológico
+        return _trigger(rule, item, recent[0], tuple(reversed(recent)))  # cronológico
 
     async def _check_rate_of_change(
         self, tx: AsyncConnection, rule: ApplicableRule, item: QueuedReading
@@ -125,13 +131,13 @@ class RuleEvaluator:
             return None
         # Evidencia: la ventana completa, con el antes y el después de la variación. El
         # valor disparador es la lectura que completó la caída o la subida.
-        return _trigger(rule, item, window[change.end].value, tuple(window))
+        return _trigger(rule, item, window[change.end], tuple(window))
 
 
 def _trigger(
     rule: ApplicableRule,
     item: QueuedReading,
-    trigger_value: float,
+    trigger_reading: EvidenceReading,
     evidence: tuple[EvidenceReading, ...],
 ) -> Trigger:
     return Trigger(
@@ -142,7 +148,8 @@ def _trigger(
         rule_params=rule.params,
         severity=rule.severity,
         station_id=item.station_id,
-        trigger_value=trigger_value,
+        trigger_reading=trigger_reading,
         dedup_key=dedup_key(rule.id, rule.zone_id),
+        cooldown_s=rule.cooldown_s,
         evidence=evidence,
     )

@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from vigia.incidents.application.open_incident import Trigger
+from tests.support.incidents import FakeIncidentStore
 from vigia.incidents.domain.incidents import EvidenceReading
 from vigia.rules.application.queue import QueuedReading
 from vigia.rules.application.rule_evaluator import ApplicableRule, RuleEvaluator
@@ -17,7 +17,9 @@ ITEM = QueuedReading(1, uuid4(), uuid4(), T0, 1)
 
 def _rule(rule_type: str = "threshold", **params: Any) -> ApplicableRule:
     params = params or {"operator": "gt", "value": 3.5, "consecutive": 2}
-    return ApplicableRule(uuid4(), ITEM.organization_id, uuid4(), rule_type, params, "critical")
+    return ApplicableRule(
+        uuid4(), ITEM.organization_id, uuid4(), rule_type, params, "critical", cooldown_s=600
+    )
 
 
 class Rules:
@@ -52,17 +54,13 @@ class History:
         return list(reversed(self.readings))  # cronológico
 
 
-class Incidents:
-    def __init__(self) -> None:
-        self.opened: list[Trigger] = []
-
-    async def open(self, tx: Any, trigger: Trigger, now: datetime) -> UUID | None:
-        self.opened.append(trigger)
-        return uuid4()
+async def _evaluate(rule: ApplicableRule, incidents: FakeIncidentStore, *values: float) -> None:
+    """Evalúa la lectura con este historial (la última primero)."""
+    await RuleEvaluator(Rules(rule), History(*values), incidents, FakeClock(T0)).evaluate(TX, ITEM)
 
 
 async def test_a_firing_threshold_opens_an_incident_with_its_evidence() -> None:
-    rule, incidents, history = _rule(), Incidents(), History(3.7, 3.6, 1.0)
+    rule, incidents, history = _rule(), FakeIncidentStore(), History(3.7, 3.6, 1.0)
     await RuleEvaluator(Rules(rule), history, incidents, FakeClock(T0)).evaluate(TX, ITEM)
 
     [trigger] = incidents.opened
@@ -73,7 +71,7 @@ async def test_a_firing_threshold_opens_an_incident_with_its_evidence() -> None:
 
 
 async def test_nothing_is_opened_when_the_rule_does_not_fire() -> None:
-    incidents = Incidents()
+    incidents = FakeIncidentStore()
     await RuleEvaluator(Rules(_rule()), History(3.7, 3.4), incidents, FakeClock(T0)).evaluate(
         TX, ITEM
     )
@@ -82,7 +80,7 @@ async def test_nothing_is_opened_when_the_rule_does_not_fire() -> None:
 
 async def test_a_sudden_drop_opens_an_incident_with_the_whole_window_as_evidence() -> None:
     rule = _rule("rate_of_change", direction="down", delta=40.0, window_minutes=10)
-    incidents, history = Incidents(), History(60.0, 34.0, 85.0, 84.0)  # la última primero
+    incidents, history = FakeIncidentStore(), History(60.0, 34.0, 85.0, 84.0)  # la última primero
     await RuleEvaluator(Rules(rule), history, incidents, FakeClock(T0)).evaluate(TX, ITEM)
 
     [trigger] = incidents.opened
@@ -94,7 +92,7 @@ async def test_a_sudden_drop_opens_an_incident_with_the_whole_window_as_evidence
 
 async def test_a_change_within_delta_opens_nothing() -> None:
     rule = _rule("rate_of_change", direction="down", delta=40.0, window_minutes=10)
-    incidents = Incidents()
+    incidents = FakeIncidentStore()
     await RuleEvaluator(Rules(rule), History(50.0, 85.0), incidents, FakeClock(T0)).evaluate(
         TX, ITEM
     )
@@ -102,8 +100,21 @@ async def test_a_change_within_delta_opens_nothing() -> None:
 
 
 async def test_a_broken_rule_is_skipped_and_the_next_one_still_runs() -> None:
-    broken, good, incidents = _rule(operator="between"), _rule(), Incidents()
+    broken, good, incidents = _rule(operator="between"), _rule(), FakeIncidentStore()
     await RuleEvaluator(Rules(broken, good), History(4.0, 4.0), incidents, FakeClock(T0)).evaluate(
         TX, ITEM
     )
     assert [t.rule_id for t in incidents.opened] == [good.id]
+
+
+async def test_the_trigger_carries_the_rule_cooldown() -> None:
+    incidents = FakeIncidentStore()
+    await _evaluate(_rule(), incidents, 3.7, 3.6)
+    [trigger] = incidents.opened
+    assert trigger.cooldown_s == 600
+
+
+async def test_nothing_is_opened_while_the_cause_cools_down() -> None:
+    incidents = FakeIncidentStore(cooling_down=True)
+    await _evaluate(_rule(), incidents, 3.7, 3.6)
+    assert incidents.opened == []
