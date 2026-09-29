@@ -18,7 +18,12 @@ from vigia.incidents.application.lifecycle import (
     acknowledge_incident,
     resolve_incident,
 )
-from vigia.incidents.domain.lifecycle import IncidentStatus, InvalidTransitionError, Resolution
+from vigia.incidents.domain.lifecycle import (
+    IncidentStatus,
+    InvalidTransitionError,
+    Resolution,
+    Transition,
+)
 from vigia.incidents.infrastructure.incidents_repository import SqlIncidentRepository
 from vigia.shared.web import ClockDep, DbConnection
 
@@ -29,6 +34,13 @@ CanAcknowledge = Annotated[Principal, Depends(require(Permission.ACKNOWLEDGE_INC
 CanResolve = Annotated[Principal, Depends(require(Permission.RESOLVE_INCIDENTS))]
 
 _NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, detail="Incidente no encontrado")
+# El panel muestra el detalle del 409 tal cual: en español, no los valores internos.
+_STATUS_LABEL = {
+    IncidentStatus.OPEN: "abierto",
+    IncidentStatus.ACKNOWLEDGED: "confirmado",
+    IncidentStatus.RESOLVED: "resuelto",
+}
+_TRANSITION_LABEL = {Transition.ACKNOWLEDGE: "confirmar", Transition.RESOLVE: "resolver"}
 _TRANSITION_RESPONSES: dict[int | str, dict[str, Any]] = {
     404: {"description": "No existe"},
     409: {"description": "Transición inválida para el estado actual"},
@@ -159,7 +171,10 @@ def _actor(principal: Principal) -> Actor:
 def _conflict(exc: InvalidTransitionError) -> HTTPException:
     return HTTPException(
         status.HTTP_409_CONFLICT,
-        detail=f"El incidente está {exc.current}: no se puede {exc.transition}.",
+        detail=(
+            f"El incidente ya está {_STATUS_LABEL[exc.current]}: "
+            f"no se puede {_TRANSITION_LABEL[exc.transition]}."
+        ),
     )
 
 
