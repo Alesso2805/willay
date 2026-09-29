@@ -17,3 +17,8 @@ Todos los cambios visibles se documentan aquí. Formato [Keep a Changelog](https
 - Latido de cada estación con su último valor y la hora de medición (VIG-10).
 - Simulador de estaciones `make simulate` con el escenario de demo del Rímac (VIG-11).
 - Contrato OpenAPI versionado en `docs/openapi.json`.
+- Zonas de riesgo: CRUD con validación de geometría y auditoría, y dibujo y edición de polígonos en el mapa del panel (VIG-12).
+- Estaciones: CRUD con su posición en cada zona, rotación de API key mostrada una sola vez y página en el panel (VIG-13).
+- Worker evaluador: toma lecturas de la cola con `SKIP LOCKED`, despierta con `LISTEN/NOTIFY` y marca como fallida una lectura tras 5 intentos (VIG-14).
+- Reglas de umbral e incidentes sin duplicados, con copia de las lecturas que los dispararon (VIG-15).
+- Reglas de tasa de cambio, medidas del pico al valle dentro de la ventana (VIG-16).
