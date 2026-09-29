@@ -158,7 +158,7 @@ flowchart LR
 | `vigia.api` | FastAPI async | Ingesta con rate limit, API de negocio, confirmaciones por enlace, stream SSE |
 | `worker evaluator` | Python, asyncpg | Toma lecturas de la cola, evalúa umbral y tasa de cambio, abre o actualiza incidentes y crea alertas |
 | `worker silence` | Python | Cada 15 s recorre las reglas de silencio activas y sus estaciones; abre un incidente por estación silenciada |
-| `worker dispatcher` | Python, httpx, aiosmtplib | Despierta con `NOTIFY` al crearse alertas; envía con 3 reintentos exponenciales |
+| `worker dispatcher` | Python, httpx2, aiosmtplib | Despierta con `NOTIFY` al crearse alertas; envía con 3 reintentos exponenciales |
 | `worker escalation` | Python | Cada 15 s escala incidentes cuyo nivel venció sin confirmación |
 | `worker telegram` | Python, long polling | Vincula `chat_id` de contactos y recibe clics de confirmación |
 | `dashboard` | Angular + Leaflet | Mapa, gestión de territorio y reglas, incidentes en vivo |
