@@ -20,7 +20,12 @@ from uuid import UUID
 import structlog
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from vigia.incidents.application.open_incident import IncidentStore, Trigger
+from vigia.incidents.application.open_incident import (
+    IncidentStore,
+    Trigger,
+    TriggerOutcome,
+    record_trigger,
+)
 from vigia.incidents.application.station_recovery import Recovery, RecoveryLog
 from vigia.incidents.domain.incidents import EvidenceReading, dedup_key
 from vigia.rules.application.evaluate import Transaction
@@ -39,6 +44,7 @@ class WatchedStation:
     zone_id: UUID
     rule_params: Mapping[str, Any]
     severity: str
+    cooldown_s: int
     station_id: UUID
     expected_interval_s: int
     silence_multiplier: int
@@ -97,24 +103,24 @@ class SilenceChecker:
         opened = 0
         for station in silent:
             # Una transacción por estación: si una falla, las demás abren igual su
-            # incidente. Si ya hay uno activo con esa causa, open no hace nada.
+            # incidente. Si ya hay uno activo o la causa está en enfriamiento, no se abre.
             async with self._transaction() as tx:
-                incident_id = await self._incidents.open(tx, _trigger(station), now)
-            if incident_id is not None:
+                recorded = await record_trigger(self._incidents, tx, _trigger(station), now)
+            if recorded.outcome is TriggerOutcome.OPENED:
                 opened += 1
                 log.info(
                     "incident_opened",
                     rule_type="silence",
                     rule_id=str(station.rule_id),
                     station_id=str(station.station_id),
-                    incident_id=str(incident_id),
+                    incident_id=str(recorded.incident_id),
                 )
 
         recovered = 0
         for recovery in recoveries:
             async with self._transaction() as tx:
-                recorded = await self._incidents.record_recovery(tx, recovery, now)
-            if recorded:  # False: otro worker lo registró primero
+                first = await self._incidents.record_recovery(tx, recovery, now)
+            if first:  # False: otro worker lo registró primero
                 recovered += 1
                 log.info(
                     "station_recovered",
@@ -126,10 +132,10 @@ class SilenceChecker:
 
 def _trigger(station: WatchedStation) -> Trigger:
     last_seen = station.last_seen_at
-    evidence: tuple[EvidenceReading, ...] = ()
+    last_reading = None
     if station.last_measured_at is not None and station.last_value is not None:
         # La última lectura conocida antes del silencio.
-        evidence = (EvidenceReading(station.last_measured_at, station.last_value),)
+        last_reading = EvidenceReading(station.last_measured_at, station.last_value)
     return Trigger(
         organization_id=station.organization_id,
         zone_id=station.zone_id,
@@ -138,9 +144,10 @@ def _trigger(station: WatchedStation) -> Trigger:
         rule_params=station.rule_params,
         severity=station.severity,
         station_id=station.station_id,
-        trigger_value=station.last_value,
+        trigger_reading=last_reading,
         dedup_key=dedup_key(station.rule_id, station.zone_id, station.station_id),
-        evidence=evidence,
+        cooldown_s=station.cooldown_s,
+        evidence=(last_reading,) if last_reading is not None else (),
         details={
             "last_seen_at": last_seen.isoformat() if last_seen is not None else None,
             "expected_interval_s": station.expected_interval_s,

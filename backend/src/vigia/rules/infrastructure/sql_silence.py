@@ -10,7 +10,7 @@ from vigia.rules.application.silence_check import WatchedStation
 # zone_stations deja fuera a las estaciones sin zona y el LEFT JOIN con los latidos
 # conserva a las que nunca reportaron: decidir qué hacer con ellas es del dominio.
 _WATCHED = text("""
-    SELECT r.id AS rule_id, r.organization_id, r.zone_id, r.params, r.severity,
+    SELECT r.id AS rule_id, r.organization_id, r.zone_id, r.params, r.severity, r.cooldown_s,
            s.id AS station_id, s.expected_interval_s, s.silence_multiplier,
            h.last_seen_at, h.last_measured_at, h.last_value
     FROM core.rules r
@@ -56,6 +56,7 @@ class SqlSilenceRepository:
                 zone_id=r.zone_id,
                 rule_params=r.params,
                 severity=r.severity,
+                cooldown_s=r.cooldown_s,
                 station_id=r.station_id,
                 expected_interval_s=r.expected_interval_s,
                 silence_multiplier=r.silence_multiplier,

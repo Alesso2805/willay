@@ -12,7 +12,7 @@ from vigia.rules.application.rule_evaluator import ApplicableRule
 # El JOIN con zone_stations es lo que hace que una estación sin zona nunca alerte, y el
 # filtro por organización es una defensa más: nunca se evalúa con reglas de otro tenant.
 _APPLICABLE = text("""
-    SELECT r.id, r.organization_id, r.zone_id, r.type, r.params, r.severity
+    SELECT r.id, r.organization_id, r.zone_id, r.type, r.params, r.severity, r.cooldown_s
     FROM core.rules r
     JOIN core.risk_zones z ON z.id = r.zone_id AND z.is_active
     JOIN core.zone_stations zs ON zs.zone_id = r.zone_id AND zs.station_id = :station_id
@@ -49,7 +49,9 @@ class SqlRuleRepository:
             _APPLICABLE, {"organization_id": organization_id, "station_id": station_id}
         )
         return [
-            ApplicableRule(r.id, r.organization_id, r.zone_id, r.type, r.params, r.severity)
+            ApplicableRule(
+                r.id, r.organization_id, r.zone_id, r.type, r.params, r.severity, r.cooldown_s
+            )
             for r in rows
         ]
 

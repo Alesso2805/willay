@@ -15,16 +15,23 @@ from vigia.rules.application.evaluate import process_batch
 from vigia.rules.application.rule_evaluator import RuleEvaluator
 from vigia.rules.infrastructure.pg_queue import PostgresEvaluationQueue
 from vigia.rules.infrastructure.sql_rules import SqlReadingHistory, SqlRuleRepository
-from vigia.shared.clock import SystemClock
+from vigia.shared.clock import Clock, SystemClock
 
 
 class Station:
     """Una estación que envía lecturas cada `interval_s` y un evaluador que las procesa
     una a una, como el worker real."""
 
-    def __init__(self, engine: AsyncEngine, graph: Graph, *, interval_s: float = 10) -> None:
+    def __init__(
+        self,
+        engine: AsyncEngine,
+        graph: Graph,
+        *,
+        interval_s: float = 10,
+        clock: Clock | None = None,
+    ) -> None:
         self.engine, self.graph = engine, graph
-        self.clock = SystemClock()
+        self.clock = clock or SystemClock()
         self.queue = PostgresEvaluationQueue(engine, self.clock)
         self.evaluator = RuleEvaluator(
             SqlRuleRepository(), SqlReadingHistory(), SqlIncidentStore(), self.clock
