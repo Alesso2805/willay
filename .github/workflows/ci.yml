@@ -48,6 +48,8 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: backend/uv.lock
+          # Clave propia: el job de backend guarda la suya en paralelo con el mismo lock.
+          cache-suffix: compose
       - run: cp .env.example .env
       # --wait falla si algún healthcheck no llega a verde.
       - run: docker compose up -d --build --wait --wait-timeout 300
