@@ -105,7 +105,7 @@ El MVP cubre el ciclo completo dato → regla → incidente → alerta → confi
 | Ingesta | Encolado atómico | Lectura y fila en `evaluation_queue` en la misma transacción |
 | Ingesta | Lecturas tardías y desordenadas | Se ordenan por `measured_at`; si `received_at − measured_at` > 1 h se guardan con `quality = late`: no se encolan, no entran en ventanas de reglas y no actualizan el latido |
 | Ingesta | Simulador | Escenarios normal, subida, caída brusca y apagado de sensor, reproducibles con semilla |
-| Ingesta | Latido de estación | `last_seen_at` = `received_at` de la última lectura no tardía |
+| Ingesta | Latido de estación | `last_seen_at` = `received_at` del último lote con alguna lectura no tardía; `last_value` y `last_measured_at` = la medición no tardía más reciente |
 | Territorio | Zonas de riesgo | CRUD de polígonos en mapa, nivel de riesgo, población estimada |
 | Territorio | Estaciones | CRUD con ubicación, variable, unidad, intervalo esperado, multiplicador de silencio y API key rotable; el panel marca las estaciones sin zona |
 | Reglas | Umbral | Valor fuera de límite durante N lecturas consecutivas con `quality = ok` |
@@ -239,7 +239,7 @@ erDiagram
 | --- | --- | --- |
 | `readings` | station\_id, organization\_id, measured\_at, received\_at, value `double precision`, quality, evaluated\_at | PK `(station_id, measured_at)`; FK a `core.stations` (de la hypertable hacia una tabla normal, soportado); hypertable por `measured_at` (chunks de 1 día); compresión a los 7 días y retención de 180 días; quality ∈ ok, late (una calidad suspect por validación de rango queda para después del MVP) |
 | `evaluation_queue` | id, station\_id, measured\_at, organization\_id, enqueued\_at, available\_at, attempts, last\_error, failed\_at | sin FK hacia `readings` (Timescale restringe las FK que apuntan a hypertables); índice parcial en available\_at WHERE failed\_at IS NULL (visibility timeout de 60 s) |
-| `station_heartbeats` | station\_id, last\_seen\_at, last\_value, updated\_at | PK `station_id`; `last_seen_at` = `received_at` de la última lectura no tardía |
+| `station_heartbeats` | station\_id, last\_seen\_at, last\_measured\_at, last\_value, updated\_at | PK `station_id`; `last_seen_at` = `received_at` del último lote con al menos una lectura no tardía (también si era un duplicado: la estación está comunicando); `last_value` es el valor de la medición no tardía más reciente y `last_measured_at` su `measured_at`, para mostrar la antigüedad del dato; ninguno de los dos retrocede con lotes concurrentes o reenvíos antiguos |
 | `rate_limit_windows` | station\_id, window\_start, request\_count | PK `(station_id, window_start)`; upsert atómico por lote; el worker silence purga en cada ciclo las ventanas de más de 1 h |
 
 ### Cómo se relacionan
