@@ -12,6 +12,7 @@ from vigia.ingestion.domain.readings import (
     Reading,
     check_not_in_future,
     classify,
+    heartbeat_reading,
 )
 from vigia.shared.clock import Clock
 
@@ -40,9 +41,10 @@ class ReadingWriter(Protocol):
         organization_id: UUID,
         readings: Sequence[ClassifiedReading],
         received_at: datetime,
+        heartbeat: ClassifiedReading | None,
     ) -> StoreCounts:
-        """Guarda las lecturas, encola las nuevas con calidad ok y avisa al evaluador,
-        todo en la transacción en curso."""
+        """En la transacción en curso: guarda las lecturas, encola las nuevas con calidad
+        ok, actualiza el latido con `heartbeat` (si hay) y avisa al evaluador."""
         ...
 
 
@@ -54,10 +56,12 @@ async def ingest_batch(
 ) -> IngestResult:
     received_at = clock.now()
     check_not_in_future(readings, received_at)
+    classified = classify(readings, received_at)
     counts = await writer.store_and_enqueue(
         station.station_id,
         station.organization_id,
-        classify(readings, received_at),
+        classified,
         received_at,
+        heartbeat_reading(classified),
     )
     return IngestResult(received=len(readings), counts=counts)

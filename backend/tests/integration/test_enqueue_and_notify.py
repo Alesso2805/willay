@@ -136,8 +136,9 @@ async def test_notification_is_delivered_only_after_commit(
             counts = await SqlReadingWriter(conn).store_and_enqueue(
                 graph.station_id,
                 graph.organization_id,
-                [ClassifiedReading(now, 1.0, Quality.OK)],
+                [reading := ClassifiedReading(now, 1.0, Quality.OK)],
                 now,
+                reading,
             )
             assert counts.enqueued == 1
             # Filas escritas y NOTIFY emitido, pero la transacción sigue abierta: nadie
@@ -162,8 +163,9 @@ async def test_rolled_back_batch_never_notifies(
             await SqlReadingWriter(conn).store_and_enqueue(
                 graph.station_id,
                 graph.organization_id,
-                [ClassifiedReading(now, 1.0, Quality.OK)],
+                [reading := ClassifiedReading(now, 1.0, Quality.OK)],
                 now,
+                reading,
             )
             await transaction.rollback()
     finally:

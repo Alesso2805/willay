@@ -63,10 +63,14 @@ class SqlBatchCounter:
         return int(count)
 
 
-# Una sola sentencia: lecturas y cola se escriben juntas o no se escribe nada. El CTE
-# `stored` solo devuelve las filas realmente insertadas (ON CONFLICT DO NOTHING descarta
-# los duplicados), así que nunca se encola una lectura que ya existía. Las tardías se
-# guardan pero no se encolan: no entran en las ventanas de las reglas.
+# Una sola sentencia: lecturas, cola y latido se escriben juntos o no se escribe nada.
+# El CTE `stored` solo devuelve las filas realmente insertadas (ON CONFLICT DO NOTHING
+# descarta los duplicados), así que nunca se encola una lectura que ya existía. Las
+# tardías se guardan pero no se encolan: no entran en las ventanas de las reglas.
+#
+# El latido nunca retrocede: con dos lotes concurrentes, o un reenvío de lecturas
+# antiguas, gana siempre la recepción y la medición más recientes. En DO UPDATE las
+# expresiones leen la fila anterior (station_heartbeats.*), no las ya asignadas.
 _STORE_AND_ENQUEUE = text("""
     WITH batch AS (
         SELECT measured_at, value, quality
@@ -92,10 +96,30 @@ _STORE_AND_ENQUEUE = text("""
         WHERE quality = 'ok'
         ON CONFLICT (station_id, measured_at) DO NOTHING
         RETURNING 1
+    ),
+    heartbeat AS (
+        INSERT INTO ingest.station_heartbeats (station_id, last_seen_at, last_measured_at,
+                                               last_value, updated_at)
+        SELECT :station_id, :received_at, CAST(:hb_measured_at AS timestamptz),
+               CAST(:hb_value AS float8), :received_at
+        WHERE CAST(:hb_measured_at AS timestamptz) IS NOT NULL  -- lote solo de tardías
+        ON CONFLICT (station_id) DO UPDATE SET
+            last_seen_at = GREATEST(ingest.station_heartbeats.last_seen_at,
+                                    EXCLUDED.last_seen_at),
+            last_value = CASE
+                WHEN EXCLUDED.last_measured_at > ingest.station_heartbeats.last_measured_at
+                THEN EXCLUDED.last_value
+                ELSE ingest.station_heartbeats.last_value
+            END,
+            last_measured_at = GREATEST(ingest.station_heartbeats.last_measured_at,
+                                        EXCLUDED.last_measured_at),
+            updated_at = EXCLUDED.updated_at
+        RETURNING 1
     )
     SELECT (SELECT count(*) FROM stored) AS stored,
            (SELECT count(*) FROM stored WHERE quality = 'late') AS late,
-           (SELECT count(*) FROM enqueued) AS enqueued
+           (SELECT count(*) FROM enqueued) AS enqueued,
+           (SELECT count(*) FROM heartbeat) AS heartbeat
 """)
 
 
@@ -109,6 +133,7 @@ class SqlReadingWriter:
         organization_id: UUID,
         readings: Sequence[ClassifiedReading],
         received_at: datetime,
+        heartbeat: ClassifiedReading | None,
     ) -> StoreCounts:
         row = (
             await self._conn.execute(
@@ -120,6 +145,8 @@ class SqlReadingWriter:
                     "measured_at": [r.measured_at for r in readings],
                     "value": [r.value for r in readings],
                     "quality": [r.quality.value for r in readings],
+                    "hb_measured_at": heartbeat.measured_at if heartbeat else None,
+                    "hb_value": heartbeat.value if heartbeat else None,
                 },
             )
         ).one()

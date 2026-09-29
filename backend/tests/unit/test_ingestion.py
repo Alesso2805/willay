@@ -22,6 +22,7 @@ from vigia.ingestion.domain.readings import (
     Reading,
     check_not_in_future,
     classify,
+    heartbeat_reading,
     quality_of,
 )
 from vigia.shared.clock import FakeClock
@@ -63,6 +64,21 @@ def test_classify_sorts_by_measurement_and_marks_quality() -> None:
         ClassifiedReading(old.measured_at, 1.0, Quality.LATE),
         ClassifiedReading(recent.measured_at, 2.0, Quality.OK),
     ]
+
+
+def test_heartbeat_comes_from_the_latest_on_time_reading() -> None:
+    readings = [
+        ClassifiedReading(NOW - timedelta(hours=3), 9.0, Quality.LATE),
+        ClassifiedReading(NOW - timedelta(seconds=20), 1.0, Quality.OK),
+        ClassifiedReading(NOW - timedelta(seconds=10), 2.0, Quality.OK),
+    ]
+    assert heartbeat_reading(readings) == readings[2]
+
+
+def test_a_batch_of_only_late_readings_does_not_beat() -> None:
+    assert (
+        heartbeat_reading([ClassifiedReading(NOW - timedelta(hours=3), 9.0, Quality.LATE)]) is None
+    )
 
 
 # --- autenticación de estación -----------------------------------------------------
@@ -134,6 +150,7 @@ class FakeWriter:
     def __init__(self, existing: int = 0) -> None:
         self.existing = existing
         self.calls: list[tuple[list[ClassifiedReading], datetime]] = []
+        self.heartbeats: list[ClassifiedReading | None] = []
 
     async def store_and_enqueue(
         self,
@@ -141,8 +158,10 @@ class FakeWriter:
         organization_id: UUID,
         readings: Sequence[ClassifiedReading],
         received_at: datetime,
+        heartbeat: ClassifiedReading | None,
     ) -> StoreCounts:
         self.calls.append((list(readings), received_at))
+        self.heartbeats.append(heartbeat)
         new = readings[self.existing :]
         late = sum(1 for r in new if r.quality is Quality.LATE)
         return StoreCounts(stored=len(new), late=late, enqueued=len(new) - late)
@@ -166,6 +185,7 @@ async def test_batch_is_classified_sorted_and_stamped_with_the_clock() -> None:
         )
     ]
     assert (result.received, result.counts.stored, result.duplicates) == (2, 1, 1)
+    assert writer.heartbeats == [ClassifiedReading(NOW, 2.0, Quality.OK)]
 
 
 async def test_future_readings_reject_the_whole_batch() -> None:
