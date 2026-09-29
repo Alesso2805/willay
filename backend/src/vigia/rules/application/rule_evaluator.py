@@ -25,11 +25,11 @@ from vigia.incidents.application.open_incident import (
     TriggerOutcome,
     record_trigger,
 )
-from vigia.incidents.domain.incidents import EvidenceReading, dedup_key
+from vigia.incidents.domain.incidents import EvidenceReading, Worsening, dedup_key
 from vigia.rules.application.queue import QueuedReading
 from vigia.rules.domain.errors import InvalidRuleParamsError
-from vigia.rules.domain.rate_of_change import detect_change, parse_rate_of_change
-from vigia.rules.domain.threshold import fires, parse_threshold
+from vigia.rules.domain.rate_of_change import Direction, detect_change, parse_rate_of_change
+from vigia.rules.domain.threshold import Operator, fires, parse_threshold
 from vigia.shared.clock import Clock
 
 log = structlog.get_logger()
@@ -92,8 +92,11 @@ class RuleEvaluator:
             if trigger is None:
                 continue
             recorded = await record_trigger(self._incidents, tx, trigger, self._clock.now())
+            incident = str(recorded.incident_id)
             if recorded.outcome is TriggerOutcome.OPENED:
-                bound.info("incident_opened", incident_id=str(recorded.incident_id))
+                bound.info("incident_opened", incident_id=incident)
+            elif recorded.outcome is TriggerOutcome.READING_ADDED:
+                bound.info("incident_reading_added", incident_id=incident)
 
     async def _check(
         self, tx: AsyncConnection, rule: ApplicableRule, item: QueuedReading
@@ -115,7 +118,10 @@ class RuleEvaluator:
         )
         if not fires(params, [r.value for r in recent]):
             return None
-        return _trigger(rule, item, recent[0], tuple(reversed(recent)))  # cronológico
+        # Un umbral superior (gt, ge) se agrava hacia arriba; uno inferior, hacia abajo.
+        upper = params.operator in (Operator.GT, Operator.GE)
+        worsening = Worsening.HIGHER if upper else Worsening.LOWER
+        return _trigger(rule, item, recent[0], tuple(reversed(recent)), worsening)  # cronológico
 
     async def _check_rate_of_change(
         self, tx: AsyncConnection, rule: ApplicableRule, item: QueuedReading
@@ -130,8 +136,11 @@ class RuleEvaluator:
         if change is None:
             return None
         # Evidencia: la ventana completa, con el antes y el después de la variación. El
-        # valor disparador es la lectura que completó la caída o la subida.
-        return _trigger(rule, item, window[change.end], tuple(window))
+        # valor disparador es la lectura que completó la caída o la subida, y una caída se
+        # agrava con valores más bajos.
+        down = params.direction is Direction.DOWN
+        worsening = Worsening.LOWER if down else Worsening.HIGHER
+        return _trigger(rule, item, window[change.end], tuple(window), worsening)
 
 
 def _trigger(
@@ -139,6 +148,7 @@ def _trigger(
     item: QueuedReading,
     trigger_reading: EvidenceReading,
     evidence: tuple[EvidenceReading, ...],
+    worsening: Worsening,
 ) -> Trigger:
     return Trigger(
         organization_id=rule.organization_id,
@@ -152,4 +162,5 @@ def _trigger(
         dedup_key=dedup_key(rule.id, rule.zone_id),
         cooldown_s=rule.cooldown_s,
         evidence=evidence,
+        worsening=worsening,
     )

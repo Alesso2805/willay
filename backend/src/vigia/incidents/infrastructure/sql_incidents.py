@@ -10,6 +10,7 @@ from uuid_utils.compat import uuid7
 
 from vigia.incidents.application.open_incident import OpenResult, OpenStatus, Trigger
 from vigia.incidents.application.station_recovery import Recovery
+from vigia.incidents.domain.incidents import EvidenceReading
 
 # Una sola sentencia para las dos reglas de apertura:
 # - enfriamiento: no se inserta si la misma causa se resolvió después de :cooling_since;
@@ -54,6 +55,23 @@ _RECOVERED_EVENT = text("""
             CAST(:payload AS jsonb))
     ON CONFLICT (incident_id) WHERE event_type = 'station_recovered' DO NOTHING
     RETURNING id
+""")
+
+# FOR UPDATE sobre el incidente: serializa a dos evaluadores que lo agraven a la vez. Como
+# solo se agrega un reading_added cuando empeora, el último registrado es el peor.
+_LOCK_INCIDENT = text("SELECT trigger_value FROM core.incidents WHERE id = :id FOR UPDATE")
+_LAST_ADDED = text("""
+    SELECT CAST(payload->>'value' AS double precision) FROM core.incident_events
+    WHERE incident_id = :id AND event_type = 'reading_added'
+    ORDER BY id DESC
+    LIMIT 1
+""")
+
+_READING_ADDED_EVENT = text("""
+    INSERT INTO core.incident_events (incident_id, organization_id, occurred_at, event_type,
+                                      actor_type, payload)
+    VALUES (:incident_id, :organization_id, :now, 'reading_added', 'system',
+            CAST(:payload AS jsonb))
 """)
 
 
@@ -102,6 +120,31 @@ class SqlIncidentStore:
             },
         )
         return OpenResult(OpenStatus.OPENED, incident_id)
+
+    async def worst_value(self, tx: AsyncConnection, incident_id: UUID) -> float | None:
+        trigger_value = await tx.scalar(_LOCK_INCIDENT, {"id": incident_id})
+        last_added = await tx.scalar(_LAST_ADDED, {"id": incident_id})
+        worst = last_added if last_added is not None else trigger_value
+        return float(worst) if worst is not None else None
+
+    async def add_reading(
+        self,
+        tx: AsyncConnection,
+        incident_id: UUID,
+        organization_id: UUID,
+        reading: EvidenceReading,
+        now: datetime,
+    ) -> None:
+        payload = {"measured_at": reading.measured_at.isoformat(), "value": reading.value}
+        await tx.execute(
+            _READING_ADDED_EVENT,
+            {
+                "incident_id": incident_id,
+                "organization_id": organization_id,
+                "now": now,
+                "payload": json.dumps(payload),
+            },
+        )
 
     async def record_recovery(self, tx: AsyncConnection, recovery: Recovery, now: datetime) -> bool:
         payload = {

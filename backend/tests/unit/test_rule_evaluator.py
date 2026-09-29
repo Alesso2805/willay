@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from tests.support.incidents import FakeIncidentStore
-from vigia.incidents.domain.incidents import EvidenceReading
+from vigia.incidents.domain.incidents import EvidenceReading, Worsening
 from vigia.rules.application.queue import QueuedReading
 from vigia.rules.application.rule_evaluator import ApplicableRule, RuleEvaluator
 from vigia.shared.clock import FakeClock
@@ -107,14 +107,41 @@ async def test_a_broken_rule_is_skipped_and_the_next_one_still_runs() -> None:
     assert [t.rule_id for t in incidents.opened] == [good.id]
 
 
-async def test_the_trigger_carries_the_rule_cooldown() -> None:
+async def test_the_trigger_carries_the_rule_cooldown_and_how_it_worsens() -> None:
     incidents = FakeIncidentStore()
     await _evaluate(_rule(), incidents, 3.7, 3.6)
     [trigger] = incidents.opened
-    assert trigger.cooldown_s == 600
+    assert (trigger.cooldown_s, trigger.worsening) == (600, Worsening.HIGHER)
+
+
+async def test_an_active_threshold_incident_adds_only_readings_that_worsen_it() -> None:
+    rule, incidents = _rule(), FakeIncidentStore()
+    await _evaluate(rule, incidents, 3.7, 3.6)  # abre con 3,7
+    await _evaluate(rule, incidents, 3.9, 3.7)  # nuevo máximo: se agrega
+    await _evaluate(rule, incidents, 3.8, 3.9)  # sigue fuera de límite pero no empeora
+    await _evaluate(rule, incidents, 3.9, 3.8)  # iguala el peor: no lo empeora
+
+    assert len(incidents.opened) == 1
+    assert [r.value for r in incidents.added] == [3.9]
+
+
+async def test_a_lower_limit_worsens_downwards() -> None:
+    rule, incidents = _rule(operator="lt", value=0.5, consecutive=1), FakeIncidentStore()
+    await _evaluate(rule, incidents, 0.4)
+    await _evaluate(rule, incidents, 0.45)  # sigue bajo el límite, pero es mejor
+    await _evaluate(rule, incidents, 0.3)
+    assert [r.value for r in incidents.added] == [0.3]
+
+
+async def test_a_drop_worsens_with_a_lower_valley() -> None:
+    rule = _rule("rate_of_change", direction="down", delta=40.0, window_minutes=10)
+    incidents = FakeIncidentStore()
+    await _evaluate(rule, incidents, 34.0, 85.0)  # abre con el valle de 34
+    await _evaluate(rule, incidents, 30.0, 34.0, 85.0)  # la caída se profundiza
+    assert [r.value for r in incidents.added] == [30.0]
 
 
 async def test_nothing_is_opened_while_the_cause_cools_down() -> None:
     incidents = FakeIncidentStore(cooling_down=True)
     await _evaluate(_rule(), incidents, 3.7, 3.6)
-    assert incidents.opened == []
+    assert (incidents.opened, incidents.added) == ([], [])
