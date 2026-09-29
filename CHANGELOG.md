@@ -22,3 +22,7 @@ Todos los cambios visibles se documentan aquí. Formato [Keep a Changelog](https
 - Worker evaluador: toma lecturas de la cola con `SKIP LOCKED`, despierta con `LISTEN/NOTIFY` y marca como fallida una lectura tras 5 intentos (VIG-14).
 - Reglas de umbral e incidentes sin duplicados, con copia de las lecturas que los dispararon (VIG-15).
 - Reglas de tasa de cambio, medidas del pico al valle dentro de la ventana (VIG-16).
+- Worker `silence`: un incidente por estación que deja de reportar, registro de su recuperación y purga del rate limit (VIG-17).
+- Enfriamiento tras resolver un incidente y lecturas que lo agravan en su línea de tiempo (VIG-18).
+- API de incidentes: lista, detalle con línea de tiempo, confirmar y resolver (VIG-19).
+- Alertas por correo al abrir un incidente, con reintentos, hora local y enlace de confirmación; visibles en Mailpit (VIG-20).
