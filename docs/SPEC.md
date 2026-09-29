@@ -107,7 +107,7 @@ El MVP cubre el ciclo completo dato → regla → incidente → alerta → confi
 | Ingesta | Simulador | Escenarios normal, subida, caída brusca y apagado de sensor, reproducibles con semilla |
 | Ingesta | Latido de estación | `last_seen_at` = `received_at` del último lote con alguna lectura no tardía; `last_value` y `last_measured_at` = la medición no tardía más reciente |
 | Territorio | Zonas de riesgo | CRUD de polígonos en mapa, nivel de riesgo, población estimada |
-| Territorio | Estaciones | CRUD con ubicación, variable, unidad, intervalo esperado, multiplicador de silencio y API key rotable; el panel marca las estaciones sin zona |
+| Territorio | Estaciones | CRUD con ubicación, variable, unidad, intervalo esperado, multiplicador de silencio y API key rotable; el panel marca las estaciones sin zona. La unidad es fija por variable (caudal m3/s, nivel m, lluvia mm) para que una regla nunca compare unidades distintas; el código no cambia tras crear la estación (el nombre sí); al rotar la API key la anterior deja de valer al instante y la nueva se muestra una sola vez |
 | Reglas | Umbral | Valor fuera de límite durante N lecturas consecutivas con `quality = ok` |
 | Reglas | Tasa de cambio | Variación mayor a delta en una ventana de T minutos (subida o caída), solo con lecturas `ok` |
 | Reglas | Sensor silencioso | Se evalúa a partir de las reglas de silencio activas y sus estaciones: sin lectura durante K × intervalo esperado (K solo en `stations.silence_multiplier`); un incidente por estación silenciada; una estación sin zona no genera alertas; si la estación vuelve a reportar se registra station\_recovered y el operador resuelve el incidente (sin cierre automático) |
