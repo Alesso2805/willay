@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+# Mínimo privilegio: CI solo lee el repositorio.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -13,6 +17,7 @@ jobs:
   backend:
     name: Backend (Ruff, Mypy, Pytest)
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: backend
@@ -28,18 +33,30 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run mypy
       # Los tests de integración usan testcontainers; el runner de GitHub ya trae Docker.
+      # Incluye el test que falla si docs/openapi.json no está al día.
       - run: uv run pytest
 
   compose:
     name: Stack completo desde una base vacía
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
       - run: cp .env.example .env
       # --wait falla si algún healthcheck no llega a verde.
       - run: docker compose up -d --build --wait --wait-timeout 300
       - name: migrate terminó con éxito
         run: test "$(docker compose ps -a migrate --format '{{.ExitCode}}')" = "0"
+      - name: Humo de extremo a extremo (seed + 2 pasos del simulador)
+        run: |
+          make seed
+          make simulate ARGS="--scenario normal --stations 2 --seed 1 --steps 2 --interval 1" | tee simulate.log
+          # _format_tick marca con ¡...! cualquier respuesta distinta de 202.
+          ! grep -q '¡' simulate.log
       - name: Diagnóstico
         if: failure()
         run: docker compose ps -a && docker compose logs --tail 100
@@ -49,6 +66,7 @@ jobs:
   dashboard:
     name: Dashboard (ESLint, Vitest, build)
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: dashboard
