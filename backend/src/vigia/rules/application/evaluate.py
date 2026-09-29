@@ -27,14 +27,6 @@ class ReadingEvaluator(Protocol):
         ...
 
 
-class NoRulesEvaluator:
-    """VIG-14: solo el circuito de la cola. Las reglas de umbral y de tasa de cambio se
-    enchufan aquí en VIG-15 y VIG-16."""
-
-    async def evaluate(self, tx: AsyncConnection, item: QueuedReading) -> None:
-        return None
-
-
 @dataclass(frozen=True)
 class BatchResult:
     claimed: int

@@ -1,6 +1,7 @@
 """Filas mínimas para los tests de integración. Cada llamada crea su propia organización,
 así los tests no comparten datos aunque usen la misma base."""
 
+import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID
@@ -114,3 +115,41 @@ async def create_station_with_key(conn: asyncpg.Connection) -> tuple[Graph, str]
         graph.station_id,
     )
     return graph, key
+
+
+async def link_station(conn: asyncpg.Connection, graph: Graph, position: str = "in_zone") -> None:
+    """Asigna la estación del grafo a su zona (sin esto, ninguna regla le aplica)."""
+    await conn.execute(
+        "INSERT INTO core.zone_stations (zone_id, station_id, position) VALUES ($1, $2, $3)",
+        graph.zone_id,
+        graph.station_id,
+        position,
+    )
+
+
+async def create_rule(
+    conn: asyncpg.Connection,
+    graph: Graph,
+    rule_type: str,
+    params: dict[str, object],
+    *,
+    station_id: UUID | None = None,
+    severity: str = "warning",
+) -> UUID:
+    rule_id = uuid7()
+    await conn.execute(
+        """
+        INSERT INTO core.rules (id, organization_id, zone_id, station_id, type, params,
+                                severity, escalation_policy_id, cooldown_s)
+        VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, 600)
+        """,
+        rule_id,
+        graph.organization_id,
+        graph.zone_id,
+        station_id,
+        rule_type,
+        json.dumps(params),
+        severity,
+        graph.policy_id,
+    )
+    return rule_id
