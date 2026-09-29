@@ -9,5 +9,10 @@ export const routes: Routes = [
     // Carga diferida: Leaflet y Geoman solo se descargan al abrir el mapa.
     loadComponent: () => import('./zones/zones-page').then((m) => m.ZonesPage),
   },
+  {
+    path: 'estaciones',
+    title: 'Estaciones · Vigía',
+    loadComponent: () => import('./stations/stations-page').then((m) => m.StationsPage),
+  },
   { path: '**', redirectTo: '' },
 ];

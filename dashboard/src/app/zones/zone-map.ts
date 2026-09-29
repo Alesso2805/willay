@@ -9,16 +9,14 @@ import {
   output,
   viewChild,
 } from '@angular/core';
-// Orden importante: Leaflet define window.L y Geoman se engancha a ese global.
 import * as L from 'leaflet';
-import '@geoman-io/leaflet-geoman-free';
+import { createBaseMap } from '../map/base-map';
 import { RISK_LABELS, RISK_STYLES } from './zone-presentation';
 import { MultiPolygonGeometry, PolygonGeometry, Position, Zone } from './zones.api';
 
 export type MapMode = { kind: 'view' } | { kind: 'draw' } | { kind: 'edit'; zoneId: string };
 export type DrawnGeometry = PolygonGeometry | MultiPolygonGeometry;
 
-const RIMAC: L.LatLngExpression = [-11.95, -76.72];
 // Geoman no deja cerrar ni editar un polígono que se cruza consigo mismo. El servidor
 // igual lo valida con PostGIS: el mapa ayuda, la API decide.
 const NO_SELF_INTERSECTION = { allowSelfIntersection: false } as const;
@@ -62,11 +60,7 @@ export class ZoneMap {
   }
 
   private init(): void {
-    const map = L.map(this.container().nativeElement).setView(RIMAC, 11);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; colaboradores de OpenStreetMap',
-    }).addTo(map);
+    const map = createBaseMap(this.container().nativeElement);
     this.zoneLayer.addTo(map);
     map.on('pm:create', (event) => {
       this.draft = event.layer as L.Polygon;
