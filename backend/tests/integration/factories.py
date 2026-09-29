@@ -127,6 +127,29 @@ async def link_station(conn: asyncpg.Connection, graph: Graph, position: str = "
     )
 
 
+async def add_station(conn: asyncpg.Connection, graph: Graph, code: str) -> UUID:
+    """Otra estación de la organización del grafo, ya asignada a su zona."""
+    station_id = uuid7()
+    await conn.execute(
+        """
+        INSERT INTO core.stations (id, organization_id, code, name, variable, unit, location,
+                                   source, expected_interval_s, api_key_hash, api_key_rotated_at)
+        VALUES ($1, $2, $3, $3, 'discharge', 'm3/s',
+                ST_SetSRID(ST_MakePoint(-76.65, -11.95), 4326), 'simulator', 10, 'hash', $4)
+        """,
+        station_id,
+        graph.organization_id,
+        code,
+        T0,
+    )
+    await conn.execute(
+        "INSERT INTO core.zone_stations (zone_id, station_id, position) VALUES ($1, $2, 'in_zone')",
+        graph.zone_id,
+        station_id,
+    )
+    return station_id
+
+
 async def create_rule(
     conn: asyncpg.Connection,
     graph: Graph,
