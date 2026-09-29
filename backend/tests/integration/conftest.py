@@ -16,6 +16,7 @@ import asyncpg
 import pytest
 from alembic import command
 from alembic.config import Config
+from alembic.script import ScriptDirectory
 from testcontainers.core.container import DockerContainer
 
 from tests.support.tokens import TokenFactory
@@ -46,6 +47,13 @@ class Database:
     def app_url(self) -> str:
         """URL de SQLAlchemy con vigia_app, como VIGIA_DATABASE_URL en la API y los workers."""
         return self.app_dsn.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+
+def head_revision() -> str:
+    """Última revisión del historial, sin escribirla a mano en cada test."""
+    head = ScriptDirectory.from_config(Config(str(BACKEND_DIR / "alembic.ini"))).get_current_head()
+    assert head is not None
+    return head
 
 
 def _in_own_thread[T](fn: Callable[[], T]) -> T:

@@ -5,7 +5,7 @@ from datetime import timedelta
 import asyncpg
 import pytest
 
-from tests.integration.conftest import Database, migrate
+from tests.integration.conftest import Database, head_revision, migrate
 from tests.integration.factories import T0, create_graph, create_incident
 
 pytestmark = pytest.mark.integration
@@ -143,7 +143,7 @@ async def test_migrations_are_idempotent_and_reversible(
     database: Database, owner: asyncpg.Connection
 ) -> None:
     migrate(database)  # segunda vez: no-op
-    assert await owner.fetchval("SELECT version_num FROM alembic_version") == "0003"
+    assert await owner.fetchval("SELECT version_num FROM alembic_version") == head_revision()
 
     migrate(database, "downgrade", "base")
     assert not await owner.fetchval(
@@ -151,4 +151,4 @@ async def test_migrations_are_idempotent_and_reversible(
     )
 
     migrate(database)
-    assert await owner.fetchval("SELECT version_num FROM alembic_version") == "0003"
+    assert await owner.fetchval("SELECT version_num FROM alembic_version") == head_revision()

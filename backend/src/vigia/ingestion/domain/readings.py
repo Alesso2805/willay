@@ -49,6 +49,17 @@ def quality_of(measured_at: datetime, received_at: datetime) -> Quality:
     return Quality.LATE if received_at - measured_at > LATE_AFTER else Quality.OK
 
 
+def heartbeat_reading(readings: Sequence[ClassifiedReading]) -> ClassifiedReading | None:
+    """La lectura que actualiza el latido: la no tardía medida más recientemente.
+
+    None si el lote solo trae tardías: una estación que envía datos de hace horas no
+    demuestra estar viva ahora, y el detector de silencio debe seguir viéndola callada.
+    Los duplicados sí cuentan: reenviar lecturas recientes es señal de que comunica.
+    """
+    on_time = [r for r in readings if r.quality is Quality.OK]
+    return max(on_time, key=lambda r: r.measured_at) if on_time else None
+
+
 def classify(readings: Sequence[Reading], received_at: datetime) -> list[ClassifiedReading]:
     """Ordena por measured_at (las estaciones pueden enviar el lote desordenado) y
     marca la calidad de cada lectura según cuánto tardó en llegar."""
