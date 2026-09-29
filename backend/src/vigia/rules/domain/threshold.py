@@ -52,7 +52,11 @@ def parse_threshold(raw: Mapping[str, Any]) -> ThresholdParams:
         raise InvalidRuleParamsError(f"parámetros de umbral inválidos: {raw}") from exc
     if not isinstance(value, int | float) or isinstance(value, bool):
         raise InvalidRuleParamsError("value debe ser un número")
-    if not isinstance(consecutive, int) or not 1 <= consecutive <= MAX_CONSECUTIVE:
+    if (
+        not isinstance(consecutive, int)
+        or isinstance(consecutive, bool)  # bool es subclase de int: true pasaría como 1
+        or not 1 <= consecutive <= MAX_CONSECUTIVE
+    ):
         raise InvalidRuleParamsError(f"consecutive debe ser un entero entre 1 y {MAX_CONSECUTIVE}")
     return ThresholdParams(operator, float(value), consecutive)
 
