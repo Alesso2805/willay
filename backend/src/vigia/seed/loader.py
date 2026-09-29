@@ -11,7 +11,8 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from vigia.ingestion.infrastructure.api_keys import ApiKeyHasher, generate_api_key
+from vigia.ingestion.domain.api_keys import generate_api_key
+from vigia.ingestion.infrastructure.api_keys import ApiKeyHasher
 from vigia.seed import data
 from vigia.shared.clock import Clock
 
