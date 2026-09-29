@@ -114,7 +114,7 @@ El MVP cubre el ciclo completo dato → regla → incidente → alerta → confi
 | Reglas | Enfriamiento | Tras resolver un incidente, la misma causa no reabre otro durante `cooldown_s`; las lecturas se registran igual |
 | Incidentes | Apertura sin duplicados | Un solo incidente activo por causa. Mientras está activo, una lectura que sigue disparando la regla se agrega como evento `reading_added` solo si empeora el valor disparador (un nuevo máximo en un umbral superior, un nuevo mínimo en uno inferior o en una caída); igualarlo no cuenta, así que reprocesar una lectura no duplica eventos. La serie completa queda en las lecturas |
 | Incidentes | Evidencia | El evento de apertura guarda una copia de las lecturas que dispararon la regla |
-| Incidentes | Ciclo de vida | `open` → `acknowledged` → `resolved` (resolución: resuelto o falsa alarma) |
+| Incidentes | Ciclo de vida | `open` → `acknowledged` → `resolved` (resolución: resuelto o falsa alarma). Un incidente abierto también se puede resolver sin confirmarlo antes (p. ej. una falsa alarma evidente); el evento `resolved` registra quién lo hizo. `resolved` es final |
 | Alertas | Correo | SMTP, visible en Mailpit en local |
 | Alertas | Telegram | Vinculación del contacto por enlace de un solo uso; mensaje con botón de confirmación; worker con long polling (`getUpdates`) |
 | Alertas | Escalamiento | Si nadie confirma en `wait_s`, se notifica al siguiente nivel; al agotar el último nivel se registra un evento y el panel muestra el incidente en rojo |
