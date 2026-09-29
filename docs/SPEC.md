@@ -355,6 +355,20 @@ En un sistema de alertas, una alerta perdida es peor que una duplicada: toda dec
 | Accesibilidad | Panel con WCAG 2.1 AA en vistas principales; el estado nunca se comunica solo por color | axe y Lighthouse en CI |
 | Soporte de versiones | Ninguna dependencia principal sale de soporte durante el plan | Revisar calendarios de Python, Angular, PostgreSQL y Keycloak en el sprint 0 |
 
+**Permisos por rol.** Los roles salen de los realm roles del JWT (Keycloak es la única fuente). Cada endpoint declara el permiso que necesita, no una lista de roles; la matriz vive en `vigia/identity/domain/permissions.py` y esta tabla es su especificación. Varios roles suman sus permisos. Un usuario sin ninguno de los cuatro roles solo puede consultar `GET /v1/me`, para que el panel le explique por qué no ve nada.
+
+| Permiso | viewer | responder | operator | admin |
+| --- | :-: | :-: | :-: | :-: |
+| Ver mapa, zonas, estaciones, reglas e incidentes | ✔ | ✔ | ✔ | ✔ |
+| Confirmar incidentes y comentar | | ✔ | ✔ | ✔ |
+| Resolver incidentes (resuelto o falsa alarma) | | | ✔ | ✔ |
+| Gestionar zonas y estaciones (incluye rotar API keys) | | | ✔ | ✔ |
+| Gestionar reglas | | | ✔ | ✔ |
+| Ver datos de contacto (email, `chat_id`) | | | ✔ | ✔ |
+| Gestionar contactos y grupos | | | | ✔ |
+| Gestionar políticas de escalamiento | | | | ✔ |
+| Ver auditoría | | | | ✔ |
+
 **Riesgo ético explícito.** Una falsa alarma erosiona la confianza y una alerta perdida puede costar vidas. Vigía es una herramienta de apoyo para operadores y no reemplaza a los sistemas oficiales de alerta; así deben decirlo el producto, la documentación y la demo.
 
 ## Repositorio, convenciones y documentación viva
