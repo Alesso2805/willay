@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from tests.support.alerts import FakeAlerting
 from tests.support.incidents import FakeIncidentStore
 from vigia.incidents.application.station_recovery import Recovery
 from vigia.incidents.domain.incidents import EvidenceReading
@@ -70,7 +71,7 @@ async def _transaction() -> AsyncIterator[AsyncConnection]:
 def _checker(
     repository: Repository, incidents: FakeIncidentStore, clock: FakeClock
 ) -> SilenceChecker:
-    return SilenceChecker(repository, incidents, clock, _transaction)
+    return SilenceChecker(repository, incidents, clock, _transaction, alerts=FakeAlerting())
 
 
 async def test_only_silent_stations_open_an_incident() -> None:

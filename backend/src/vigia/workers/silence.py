@@ -8,6 +8,8 @@ en las estaciones que volvieron y purga las ventanas de rate limit de más de un
 
 import asyncio
 
+from vigia.alerts.application.planning import AlertPlanner
+from vigia.alerts.infrastructure.sql_alerts import SqlAlertRepository
 from vigia.incidents.infrastructure.sql_incidents import SqlIncidentStore
 from vigia.ingestion.domain.rate_limit import WINDOW_RETENTION
 from vigia.ingestion.infrastructure.repositories import SqlBatchCounter
@@ -31,7 +33,13 @@ async def run_silence(
 ) -> None:
     clock = clock or SystemClock()
     engine = create_engine(settings.database_url)
-    checker = SilenceChecker(SqlSilenceRepository(), SqlIncidentStore(), clock, engine.begin)
+    checker = SilenceChecker(
+        SqlSilenceRepository(),
+        SqlIncidentStore(),
+        clock,
+        engine.begin,
+        alerts=AlertPlanner(SqlAlertRepository()),
+    )
     rate_limits = SqlBatchCounter(engine)
 
     async def tick() -> None:

@@ -13,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from tests.integration.conftest import Database
 from tests.integration.evaluation import incidents, opened_payload
 from tests.integration.factories import Graph, add_station, create_graph, create_rule, link_station
+from vigia.alerts.application.planning import AlertPlanner
+from vigia.alerts.infrastructure.sql_alerts import SqlAlertRepository
 from vigia.incidents.infrastructure.sql_incidents import SqlIncidentStore
 from vigia.rules.application.silence_check import SilenceChecker
 from vigia.rules.infrastructure.sql_silence import SqlSilenceRepository
@@ -36,7 +38,13 @@ async def engine(database: Database) -> AsyncIterator[AsyncEngine]:
 
 
 def _checker(engine: AsyncEngine, clock: FakeClock) -> SilenceChecker:
-    return SilenceChecker(SqlSilenceRepository(), SqlIncidentStore(), clock, engine.begin)
+    return SilenceChecker(
+        SqlSilenceRepository(),
+        SqlIncidentStore(),
+        clock,
+        engine.begin,
+        alerts=AlertPlanner(SqlAlertRepository()),
+    )
 
 
 async def _heartbeat(owner: asyncpg.Connection, station_id: object, value: float = 84.2) -> None:
