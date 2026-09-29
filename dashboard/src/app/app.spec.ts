@@ -1,9 +1,11 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { of } from 'rxjs';
 import { App } from './app';
+import { routes } from './app.routes';
 import { Me } from './session';
 import { settings } from './settings';
 
@@ -26,6 +28,7 @@ function setup(isAuthenticated: boolean) {
   TestBed.configureTestingModule({
     imports: [App],
     providers: [
+      provideRouter(routes),
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: OidcSecurityService, useValue: oidc },
@@ -57,10 +60,12 @@ describe('App', () => {
   it('shows the user organization and roles after login', async () => {
     const { fixture, http, text } = setup(true);
     http.expectOne(`${settings.apiUrl}/v1/me`).flush(ME);
+    await TestBed.inject(Router).navigateByUrl('/');
     await fixture.whenStable();
     expect(text()).toContain(ME.organization_id);
     expect(text()).toContain('Operación');
     expect(text()).toContain('Cerrar sesión');
+    expect(text()).toContain('Zonas'); // navegación visible con sesión
   });
 
   it('explains a 403 from the API (zero or several organizations)', async () => {
