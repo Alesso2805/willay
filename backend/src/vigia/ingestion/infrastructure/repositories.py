@@ -62,6 +62,15 @@ class SqlBatchCounter:
             )
         return int(count)
 
+    async def purge(self, older_than: datetime) -> int:
+        """Borra las ventanas que empezaron antes de `older_than`; devuelve cuántas."""
+        async with self._engine.begin() as conn:
+            result = await conn.execute(
+                text("DELETE FROM ingest.rate_limit_windows WHERE window_start < :older_than"),
+                {"older_than": older_than},
+            )
+        return result.rowcount
+
 
 # Una sola sentencia: lecturas, cola y latido se escriben juntos o no se escribe nada.
 # El CTE `stored` solo devuelve las filas realmente insertadas (ON CONFLICT DO NOTHING

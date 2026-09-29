@@ -10,6 +10,9 @@ from datetime import datetime, timedelta
 
 MAX_BATCHES_PER_MINUTE = 60
 WINDOW = timedelta(minutes=1)
+# Solo se consulta la ventana del minuto en curso; las de más de una hora se purgan
+# (el worker silence, en cada ciclo) para que la tabla no crezca sin fin.
+WINDOW_RETENTION = timedelta(hours=1)
 
 
 class RateLimitExceededError(Exception):

@@ -1,6 +1,7 @@
 """VIG-17: el worker silence contra Postgres real, con el tiempo movido por FakeClock."""
 
 import asyncio
+import json
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -44,6 +45,23 @@ async def _heartbeat(owner: asyncpg.Connection, station_id: object, value: float
         " last_value, updated_at) VALUES ($1, $2, $3, $4, $2)",
         station_id, LAST_SEEN, LAST_SEEN - timedelta(seconds=2), value,
     )  # fmt: skip
+
+
+async def _report_again(owner: asyncpg.Connection, station_id: object, at: datetime) -> None:
+    await owner.execute(
+        "UPDATE ingest.station_heartbeats SET last_seen_at = $2, updated_at = $2"
+        " WHERE station_id = $1",
+        station_id,
+        at,
+    )
+
+
+async def _recovered_events(owner: asyncpg.Connection, incident_id: object) -> list[asyncpg.Record]:
+    return await owner.fetch(
+        "SELECT payload FROM core.incident_events"
+        " WHERE incident_id = $1 AND event_type = 'station_recovered'",
+        incident_id,
+    )
 
 
 async def _watched_station(owner: asyncpg.Connection) -> Graph:
@@ -145,22 +163,88 @@ async def test_stations_that_cannot_alert_are_ignored(
     assert await incidents(owner, graph) == []
 
 
-async def test_the_worker_process_opens_the_incident(
+async def test_a_station_that_reports_again_gets_station_recovered_once(
+    engine: AsyncEngine, owner: asyncpg.Connection
+) -> None:
+    graph = await _watched_station(owner)
+    clock = FakeClock(LAST_SEEN + THRESHOLD)
+    checker = _checker(engine, clock)
+    await checker.run()
+    [incident] = await incidents(owner, graph)
+
+    await checker.run()
+    assert await _recovered_events(owner, incident["id"]) == []  # sigue callada
+
+    back = LAST_SEEN + timedelta(minutes=2)
+    await _report_again(owner, graph.station_id, back)
+    clock.set(back + timedelta(seconds=5))
+    for _ in range(3):
+        await checker.run()
+
+    [event] = await _recovered_events(owner, incident["id"])
+    assert json.loads(event["payload"])["last_seen_at"] == back.isoformat()
+    [incident] = await incidents(owner, graph)
+    assert incident["status"] == "open"  # sin cierre automático: lo resuelve el operador
+
+
+async def test_two_workers_record_a_recovery_only_once(
+    engine: AsyncEngine, owner: asyncpg.Connection
+) -> None:
+    graph = await _watched_station(owner)
+    await _checker(engine, FakeClock(LAST_SEEN + THRESHOLD)).run()
+    [incident] = await incidents(owner, graph)
+    await _report_again(owner, graph.station_id, LAST_SEEN + timedelta(minutes=2))
+
+    # Los dos workers vieron la recuperación antes de que ninguno la registrara.
+    async with engine.begin() as tx:
+        [recovery] = [
+            r
+            for r in await SqlSilenceRepository().recoveries(tx)
+            if r.incident_id == incident["id"]
+        ]
+    store, now = SqlIncidentStore(), LAST_SEEN + timedelta(minutes=3)
+    recorded = []
+    for _ in range(2):
+        async with engine.begin() as tx:
+            recorded.append(await store.record_recovery(tx, recovery, now))
+
+    assert recorded == [True, False]  # el índice único de la migración 0005
+    assert len(await _recovered_events(owner, incident["id"])) == 1
+
+
+async def test_the_worker_process_opens_the_incident_and_purges_old_windows(
     database: Database, owner: asyncpg.Connection, tmp_path: Path
 ) -> None:
     graph = await _watched_station(owner)
+    now = LAST_SEEN + THRESHOLD
+    old, recent = now - timedelta(hours=2), now - timedelta(minutes=10)
+    for window in (old, recent):
+        await owner.execute(
+            "INSERT INTO ingest.rate_limit_windows (station_id, window_start, request_count)"
+            " VALUES ($1, $2, 1)",
+            graph.station_id,
+            window,
+        )
+
+    async def windows() -> list[datetime]:
+        rows = await owner.fetch(
+            "SELECT window_start FROM ingest.rate_limit_windows WHERE station_id = $1"
+            " ORDER BY window_start",
+            graph.station_id,
+        )
+        return [r["window_start"] for r in rows]
+
     settings = Settings(database_url=database.app_url, heartbeat_dir=tmp_path)
     stop = asyncio.Event()
-    worker = asyncio.create_task(
-        run_silence(settings, stop, clock=FakeClock(LAST_SEEN + THRESHOLD), interval_s=0.05)
-    )
+    worker = asyncio.create_task(run_silence(settings, stop, clock=FakeClock(now), interval_s=0.05))
     try:
         deadline = asyncio.get_running_loop().time() + 10
-        while not await incidents(owner, graph):
+        while not await incidents(owner, graph) or len(await windows()) > 1:
             if asyncio.get_running_loop().time() > deadline:
-                raise AssertionError("el worker no abrió el incidente a tiempo")
+                raise AssertionError("el worker no abrió el incidente ni purgó a tiempo")
             await asyncio.sleep(0.05)
     finally:
         stop.set()
         await worker
+    assert await windows() == [recent]  # solo se purga lo de más de una hora
     assert (tmp_path / "silence.alive").exists()  # latido del healthcheck
