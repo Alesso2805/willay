@@ -56,6 +56,7 @@ class SqlIncidentStore:
                 {"measured_at": r.measured_at.isoformat(), "value": r.value}
                 for r in trigger.evidence
             ],
+            "details": dict(trigger.details),
         }
         await tx.execute(
             _OPENED_EVENT,
