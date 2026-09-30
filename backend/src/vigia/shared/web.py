@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from vigia.shared.clock import Clock
+from vigia.shared.config import Settings
 
 
 async def db_connection(request: Request) -> AsyncIterator[AsyncConnection]:
@@ -31,9 +32,16 @@ def get_clock(request: Request) -> Clock:
     return clock
 
 
+def get_app_settings(request: Request) -> Settings:
+    """La configuración con que arrancó la app (en los tests, la del test)."""
+    settings: Settings = request.app.state.settings
+    return settings
+
+
 DbConnection = Annotated[AsyncConnection, Depends(db_connection)]
 EngineDep = Annotated[AsyncEngine, Depends(get_engine)]
 ClockDep = Annotated[Clock, Depends(get_clock)]
+SettingsDep = Annotated[Settings, Depends(get_app_settings)]
 
 
 def _json_safe(value: Any) -> Any:

@@ -15,6 +15,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from vigia.alerts.api.confirm_page import router as confirmation_router
+from vigia.alerts.api.contacts import router as contacts_router
 from vigia.alerts.api.policies import router as policies_router
 from vigia.identity.api.routes import router as identity_router
 from vigia.identity.infrastructure.jwt_verifier import JwtVerifier, jwks_key_resolver
@@ -36,6 +37,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         configure_logging(config.log_level)
+        app.state.settings = config
         app.state.clock = SystemClock()
         app.state.engine = create_engine(config.database_url)
         app.state.api_key_hasher = ApiKeyHasher()
@@ -70,4 +72,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(incidents_router)
     app.include_router(confirmation_router)
     app.include_router(policies_router)
+    app.include_router(contacts_router)
     return app

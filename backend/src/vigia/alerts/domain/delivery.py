@@ -38,8 +38,13 @@ class AckToken:
 
 
 def new_ack_token(now: datetime) -> AckToken:
+    return new_token(now, TOKEN_TTL)
+
+
+def new_token(now: datetime, ttl: timedelta) -> AckToken:
+    """Un token de 256 bits de un solo uso: también el de vincular Telegram (VIG-21)."""
     token = secrets.token_urlsafe(TOKEN_BYTES)
-    return AckToken(token, hash_ack_token(token), now + TOKEN_TTL)
+    return AckToken(token, hash_ack_token(token), now + ttl)
 
 
 def hash_ack_token(token: str) -> str:
