@@ -3,6 +3,7 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -35,6 +36,13 @@ class Settings(BaseSettings):
     smtp_username: str | None = None
     smtp_password: str | None = None
     smtp_timeout_s: float = 10.0
+
+    # Bot de Telegram (VIG-21/22): se crea con @BotFather y su token va solo en .env.
+    # SecretStr: se imprime enmascarado si alguien registra la configuración. Sin
+    # token, el worker telegram arranca deshabilitado y la API no genera enlaces.
+    telegram_bot_token: SecretStr | None = None
+    telegram_bot_username: str | None = None
+    telegram_api_url: str = "https://api.telegram.org"
 
 
 @lru_cache

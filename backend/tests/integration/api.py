@@ -2,6 +2,7 @@
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 import httpx2
 from fastapi import APIRouter
@@ -33,11 +34,12 @@ async def api_client(
     tokens: TokenFactory,
     *extra_routers: APIRouter,
     clock: Clock | None = None,
+    **settings: Any,
 ) -> AsyncIterator[httpx2.AsyncClient]:
     """Una instancia de la API. Llamarlo dos veces equivale a dos réplicas: cada una con
     su motor y su pool de conexiones, compartiendo solo la base de datos."""
     await ensure_seed(database)
-    app = create_app(Settings(database_url=database.app_url, oidc_issuer=ISSUER))
+    app = create_app(Settings(database_url=database.app_url, oidc_issuer=ISSUER, **settings))
     for router in extra_routers:
         app.include_router(router)
     app.dependency_overrides[get_verifier] = tokens.verifier
