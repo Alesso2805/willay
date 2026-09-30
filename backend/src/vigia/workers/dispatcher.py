@@ -1,15 +1,29 @@
-"""Worker dispatcher (VIG-20): `python -m vigia.workers.dispatcher`.
+"""Worker dispatcher (VIG-20, VIG-22): `python -m vigia.workers.dispatcher`.
 
-Envía las alertas de correo pendientes. Despierta con LISTEN vigia_alerts en cuanto el
-evaluador o el worker silence confirman un incidente nuevo, y consulta cada 5 s por si un
-aviso se perdió y para tomar los reintentos que ya vencieron. Telegram llega con VIG-22.
+Envía las alertas pendientes por correo y por Telegram. Despierta con LISTEN vigia_alerts
+en cuanto el evaluador, el worker silence o el de escalamiento confirman alertas nuevas, y
+consulta cada 5 s por si un aviso se perdió y para tomar los reintentos que ya vencieron.
+
+Cada canal se despacha por su lado: si Telegram no responde, el correo sigue saliendo
+(SPEC: la caída de un canal no detiene a los demás). Sin token de bot, las alertas de
+Telegram quedan pendientes hasta que se configure.
 """
 
 import asyncio
 
-from vigia.alerts.application.dispatch import EmailDispatcher, EmailSender
+import structlog
+
+from vigia.alerts.application.dispatch import (
+    AlertDispatcher,
+    DispatchResult,
+    EmailDispatcher,
+    EmailSender,
+    TelegramDispatcher,
+    TelegramSender,
+)
 from vigia.alerts.infrastructure.smtp import SmtpEmailSender
 from vigia.alerts.infrastructure.sql_dispatch import SqlDispatchQueue
+from vigia.alerts.infrastructure.telegram_api import TelegramBotApi
 from vigia.shared import notifications
 from vigia.shared.clock import Clock, SystemClock
 from vigia.shared.config import Settings
@@ -21,6 +35,8 @@ NAME = "dispatcher"
 POLL_INTERVAL_S = 5.0
 BATCH_SIZE = 10
 
+log = structlog.get_logger()
+
 
 async def run_dispatcher(
     settings: Settings,
@@ -28,30 +44,43 @@ async def run_dispatcher(
     *,
     clock: Clock | None = None,
     sender: EmailSender | None = None,
+    telegram: TelegramSender | None = None,
     poll_interval_s: float = POLL_INTERVAL_S,
     batch_size: int = BATCH_SIZE,
 ) -> None:
     clock = clock or SystemClock()
     engine = create_engine(settings.database_url)
-    email = EmailDispatcher(
-        SqlDispatchQueue(engine),
-        sender
-        or SmtpEmailSender(
-            settings.smtp_host,
-            settings.smtp_port,
-            settings.smtp_from,
-            timeout_s=settings.smtp_timeout_s,
-            start_tls=settings.smtp_start_tls,
-            username=settings.smtp_username,
-            password=settings.smtp_password,
-        ),
-        clock,
-        settings.public_url,
+    queue = SqlDispatchQueue(engine)
+    smtp = sender or SmtpEmailSender(
+        settings.smtp_host,
+        settings.smtp_port,
+        settings.smtp_from,
+        timeout_s=settings.smtp_timeout_s,
+        start_tls=settings.smtp_start_tls,
+        username=settings.smtp_username,
+        password=settings.smtp_password,
     )
+    dispatchers: list[AlertDispatcher] = [EmailDispatcher(queue, smtp, clock, settings.public_url)]
+    bot: TelegramBotApi | None = None
+    if telegram is None and settings.telegram_bot_token is not None:
+        bot = TelegramBotApi(
+            settings.telegram_bot_token.get_secret_value(), base_url=settings.telegram_api_url
+        )
+    telegram_sender: TelegramSender | None = telegram if telegram is not None else bot
+    if telegram_sender is not None:
+        dispatchers.append(TelegramDispatcher(queue, telegram_sender, clock))
 
     async def tick() -> bool:
-        result = await email.dispatch(batch_size)
-        return result.claimed == batch_size  # lote lleno: probablemente quedan más
+        results = await asyncio.gather(
+            *(d.dispatch(batch_size) for d in dispatchers), return_exceptions=True
+        )
+        done = [r for r in results if isinstance(r, DispatchResult)]
+        for result in results:
+            if isinstance(result, BaseException):
+                log.error("dispatch_channel_failed", exc_info=result)
+        if not done:
+            raise RuntimeError("ningún canal pudo despachar")  # el healthcheck lo muestra
+        return any(r.claimed == batch_size for r in done)  # lote lleno: quedan más
 
     try:
         dsn = asyncpg_dsn(settings.database_url)
@@ -59,6 +88,8 @@ async def run_dispatcher(
             heartbeat = settings.heartbeat_dir / f"{NAME}.alive"
             await run_loop(NAME, poll_interval_s, heartbeat, stop, tick, wakeup)
     finally:
+        if bot is not None:
+            await bot.aclose()
         await engine.dispose()
 
 

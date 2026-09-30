@@ -149,6 +149,7 @@ class SqlDispatchQueue:
                     attempt=r.attempts,
                     destination=r.destination,
                     message=message_from_row(r),
+                    channel=channel,
                 )
                 for r in rows
             ]
@@ -187,7 +188,7 @@ class SqlDispatchQueue:
         payload = {
             "alert_id": str(alert.alert_id),
             "contact_id": str(alert.contact_id),
-            "channel": "email",
+            "channel": alert.channel.value,
             "level_order": alert.level_order,
             "attempt": alert.attempt,
         } | extra
