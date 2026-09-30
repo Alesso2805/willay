@@ -1,10 +1,11 @@
-"""Ver y confirmar una alerta desde su enlace (VIG-23). También lo usará el botón de
-Telegram (VIG-22): el token es el mismo.
+"""Ver y confirmar una alerta desde su enlace (VIG-23) o desde el botón de Telegram
+(VIG-22): el token es el mismo.
 
 - `preview_confirmation` (GET) solo lee: abrir el enlace nunca confirma, porque los
   escáneres de correo abren los enlaces solos (SPEC).
 - `confirm_alert` (POST) bloquea la alerta: si llegan dos clics a la vez, el segundo ve
-  el token ya usado.
+  el token ya usado. Desde Telegram exige además que quien pulsa sea el destinatario:
+  el enlace del correo vale para quien lo tenga (SPEC), el botón solo en su chat.
 """
 
 from dataclasses import dataclass
@@ -30,6 +31,7 @@ class AlertToConfirm:
     incident_id: UUID
     organization_id: UUID
     contact_id: UUID
+    destination: str | None
     token_expires_at: datetime | None
     used_at: datetime | None  # cuándo se confirmó esta alerta; None si nunca
     incident_status: IncidentStatus
@@ -74,11 +76,16 @@ async def confirm_alert(
     confirmations: ConfirmationRepository,
     incidents: IncidentRepository,
     clock: Clock,
+    expected_destination: str | None = None,
 ) -> ConfirmationView:
+    """Con `expected_destination`, solo confirma si la alerta se envió ahí."""
     token_hash = hash_ack_token(token)
     alert = await confirmations.find(token_hash, lock=True)
     if alert is None:
         return ConfirmationView(ConfirmOutcome.UNKNOWN, None)
+    if expected_destination is not None and alert.destination != expected_destination:
+        # Sin la alerta: a quien no la recibió no se le cuenta nada del incidente.
+        return ConfirmationView(ConfirmOutcome.NOT_YOURS, None)
     problem = token_problem(alert.token_expires_at, alert.used_at, clock.now())
     if problem is not None:
         return ConfirmationView(problem, alert)

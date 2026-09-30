@@ -7,7 +7,7 @@ from collections.abc import Callable
 import httpx2
 import pytest
 
-from vigia.alerts.application.telegram_bot import TelegramError, Update
+from vigia.alerts.application.telegram_bot import Click, TelegramError, Update
 from vigia.alerts.infrastructure.telegram_api import TelegramBotApi
 
 TOKEN = "123456:SECRETO-del-bot"
@@ -32,14 +32,41 @@ async def test_updates_are_long_polled_from_the_offset() -> None:
                         "update_id": 7,
                         "message": {"chat": {"id": 42, "type": "private"}, "text": "/start abc"},
                     },
-                    {"update_id": 8, "callback_query": {"id": "x"}},  # aún no se atiende
+                    {
+                        "update_id": 8,
+                        "callback_query": {
+                            "id": "c8",
+                            "from": {"id": 42},
+                            "data": "t" * 43,
+                            "message": {
+                                "message_id": 5,
+                                "chat": {"id": 42, "type": "private"},
+                                "text": "Vigía · CRÍTICO",
+                            },
+                        },
+                    },
+                    # Mensaje de más de 48 h: Telegram ya no entrega su texto.
+                    {
+                        "update_id": 9,
+                        "callback_query": {
+                            "id": "c9",
+                            "from": {"id": 42},
+                            "message": {"message_id": 3, "chat": {"id": 42}, "date": 0},
+                        },
+                    },
+                    {"update_id": 10, "callback_query": {"id": "c10"}},  # ilegible
                 ],
             },
         )
 
     updates = await _api(handler).get_updates(offset=7, timeout_s=20)
 
-    assert updates == [Update(7, 42, "private", "/start abc"), Update(8)]
+    assert updates == [
+        Update(7, 42, "private", "/start abc"),
+        Update(8, click=Click("c8", 42, "t" * 43, 42, 5, "Vigía · CRÍTICO")),
+        Update(9, click=Click("c9", 42, None, 42, 3, None)),
+        Update(10),  # se confirma y se descarta: no bloquea a las siguientes
+    ]
     [request] = seen
     assert request.url.path == f"/bot{TOKEN}/getUpdates"
     assert json.loads(request.content) == {
@@ -107,4 +134,28 @@ async def test_an_alert_carries_a_confirm_button_with_the_token() -> None:
                 "inline_keyboard": [[{"text": "Confirmar que lo vi", "callback_data": token}]]
             },
         }
+    ]
+
+
+async def test_a_click_is_answered_and_the_button_removed() -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        calls.append((request.url.path.rsplit("/", 1)[1], json.loads(request.content)))
+        return httpx2.Response(200, json={"ok": True, "result": True})
+
+    api = _api(handler)
+    await api.answer_click("c8", "Gracias")
+    await api.edit_message(42, 5, "Vigía · CRÍTICO\n\nConfirmado por Ana")
+    assert calls == [
+        ("answerCallbackQuery", {"callback_query_id": "c8", "text": "Gracias"}),
+        (
+            "editMessageText",
+            {
+                "chat_id": 42,
+                "message_id": 5,
+                "text": "Vigía · CRÍTICO\n\nConfirmado por Ana",
+                "reply_markup": {"inline_keyboard": []},  # sin botón
+            },
+        ),
     ]

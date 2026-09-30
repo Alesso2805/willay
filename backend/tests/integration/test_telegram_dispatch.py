@@ -13,18 +13,15 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from tests.integration.conftest import Database
-from tests.integration.evaluation import Station
-from tests.integration.factories import (
-    Graph,
-    add_level,
-    create_contact,
-    create_graph,
-    create_group,
-    create_rule,
-    link_station,
+from tests.integration.factories import Graph
+from tests.integration.telegram import (
+    CHAT,
+    EMAIL,
+    FakeBot,
+    clear_pending_alerts,
+    telegram_incident,
 )
 from vigia.alerts.application.dispatch import TelegramDispatcher
-from vigia.alerts.application.telegram_bot import TelegramError
 from vigia.alerts.domain.email import EmailContent
 from vigia.alerts.infrastructure.sql_dispatch import SqlDispatchQueue
 from vigia.shared.clock import FakeClock, SystemClock
@@ -33,23 +30,6 @@ from vigia.shared.db import create_engine
 from vigia.workers.dispatcher import run_dispatcher
 
 pytestmark = pytest.mark.integration
-
-GT_35_ONCE = {"operator": "gt", "value": 3.5, "consecutive": 1}
-CHAT = 4242
-EMAIL = "ana.telegram@x.test"
-
-
-class FakeBot:
-    def __init__(self, *, failures: int = 0, down: bool = False) -> None:
-        self.failures, self.down = failures, down
-        self.calls = 0
-        self.sent: list[tuple[int, str, str]] = []
-
-    async def send_alert(self, chat_id: int, text: str, callback_data: str) -> None:
-        self.calls += 1
-        if self.down or self.calls <= self.failures:
-            raise TelegramError("sendMessage: 502 Bad Gateway")
-        self.sent.append((chat_id, text, callback_data))
 
 
 class FakeEmail:
@@ -62,24 +42,10 @@ class FakeEmail:
 
 @pytest.fixture
 async def engine(database: Database, owner: asyncpg.Connection) -> AsyncIterator[AsyncEngine]:
-    # Base compartida: el dispatcher solo debe ver las alertas de este test.
-    await owner.execute("DELETE FROM ingest.evaluation_queue")
-    await owner.execute("DELETE FROM core.alerts WHERE status = 'pending'")
+    await clear_pending_alerts(owner)
     engine = create_engine(database.app_url)
     yield engine
     await engine.dispose()
-
-
-async def _incident(engine: AsyncEngine, owner: asyncpg.Connection) -> Graph:
-    """Un incidente cuyo nivel 1 avisa a Ana por Telegram (vinculado) y por correo."""
-    graph = await create_graph(owner)
-    await link_station(owner, graph)
-    await create_rule(owner, graph, "threshold", GT_35_ONCE, station_id=graph.station_id)
-    ana = await create_contact(owner, graph, "Ana", email=EMAIL, telegram_chat_id=CHAT)
-    group = await create_group(owner, graph, ana)
-    await add_level(owner, graph, 1, (group, "telegram"), (group, "email"))
-    await Station(engine, graph).send(3.6)
-    return graph
 
 
 async def _alert(owner: asyncpg.Connection, graph: Graph, channel: str) -> asyncpg.Record:
@@ -106,7 +72,7 @@ async def _events(owner: asyncpg.Connection, alert_id: Any) -> list[dict[str, An
 async def test_a_telegram_alert_is_sent_with_its_confirm_button(
     engine: AsyncEngine, owner: asyncpg.Connection
 ) -> None:
-    graph = await _incident(engine, owner)
+    graph = await telegram_incident(engine, owner)
     bot = FakeBot()
     clock = FakeClock(SystemClock().now() + timedelta(seconds=1))
     await TelegramDispatcher(SqlDispatchQueue(engine), bot, clock).dispatch(10)
@@ -125,7 +91,7 @@ async def test_a_telegram_alert_is_sent_with_its_confirm_button(
 async def test_telegram_failing_twice_delivers_on_the_third_attempt(
     engine: AsyncEngine, owner: asyncpg.Connection
 ) -> None:
-    graph = await _incident(engine, owner)
+    graph = await telegram_incident(engine, owner)
     clock = FakeClock(SystemClock().now() + timedelta(seconds=1))
     dispatcher = TelegramDispatcher(SqlDispatchQueue(engine), FakeBot(failures=2), clock)
     for wait in (0, 5, 10):  # reintentos a los 5 y a los 10 s
@@ -146,7 +112,7 @@ async def test_telegram_failing_twice_delivers_on_the_third_attempt(
 async def test_a_telegram_outage_does_not_stop_the_email(
     engine: AsyncEngine, owner: asyncpg.Connection, database: Database, tmp_path: Path
 ) -> None:
-    graph = await _incident(engine, owner)
+    graph = await telegram_incident(engine, owner)
     smtp, bot = FakeEmail(), FakeBot(down=True)
     settings = Settings(database_url=database.app_url, heartbeat_dir=tmp_path)
     stop = asyncio.Event()

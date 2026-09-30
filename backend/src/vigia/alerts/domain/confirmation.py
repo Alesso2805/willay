@@ -16,6 +16,7 @@ class ConfirmOutcome(StrEnum):
     UNKNOWN = "unknown"  # ningún token coincide
     EXPIRED = "expired"
     USED = "used"
+    NOT_YOURS = "not_yours"  # el botón de Telegram lo pulsó otra persona (VIG-22)
 
 
 def token_problem(

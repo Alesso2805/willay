@@ -12,7 +12,7 @@ from typing import Any
 
 import httpx2
 
-from vigia.alerts.application.telegram_bot import TelegramError, Update
+from vigia.alerts.application.telegram_bot import Click, TelegramError, Update
 from vigia.alerts.domain.telegram import CONFIRM_BUTTON
 
 logging.getLogger("httpx2").setLevel(logging.WARNING)
@@ -54,6 +54,22 @@ class TelegramBotApi:
         }
         await self._call("sendMessage", payload, timeout_s=10)
 
+    async def answer_click(self, click_id: str, text: str) -> None:
+        """El aviso breve que Telegram muestra al pulsar; sin respuesta, el botón queda
+        cargando."""
+        payload = {"callback_query_id": click_id, "text": text}
+        await self._call("answerCallbackQuery", payload, timeout_s=10)
+
+    async def edit_message(self, chat_id: int, message_id: int, text: str) -> None:
+        """Un teclado vacío quita el botón: ya no hay nada que confirmar."""
+        payload = {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": text,
+            "reply_markup": {"inline_keyboard": []},
+        }
+        await self._call("editMessageText", payload, timeout_s=10)
+
     async def aclose(self) -> None:
         await self._client.aclose()
 
@@ -73,6 +89,9 @@ class TelegramBotApi:
 
 
 def _update(raw: dict[str, Any]) -> Update:
+    callback = raw.get("callback_query")
+    if callback is not None:
+        return Update(update_id=raw["update_id"], click=_click(callback))
     message = raw.get("message") or {}
     chat = message.get("chat") or {}
     return Update(
@@ -80,4 +99,22 @@ def _update(raw: dict[str, Any]) -> Update:
         chat_id=chat.get("id"),
         chat_type=chat.get("type"),
         text=message.get("text"),
+    )
+
+
+def _click(callback: dict[str, Any]) -> Click | None:
+    """None si le falta lo mínimo: una actualización que no se puede leer se confirma y se
+    descarta, nunca bloquea a las siguientes."""
+    sender = callback.get("from") or {}
+    if "id" not in callback or "id" not in sender:
+        return None
+    # Un mensaje de más de 48 h llega "inaccesible": con chat y message_id pero sin texto.
+    message = callback.get("message") or {}
+    return Click(
+        id=callback["id"],
+        from_id=sender["id"],
+        data=callback.get("data"),
+        chat_id=(message.get("chat") or {}).get("id"),
+        message_id=message.get("message_id"),
+        message_text=message.get("text"),
     )
