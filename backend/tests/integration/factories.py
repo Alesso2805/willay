@@ -91,8 +91,8 @@ async def create_incident(
     await conn.execute(
         """
         INSERT INTO core.incidents (id, organization_id, zone_id, rule_id, station_id,
-                                    severity, dedup_key, opened_at)
-        VALUES ($1, $2, $3, $4, $5, 'critical', $6, $7)
+                                    severity, dedup_key, opened_at, level_started_at)
+        VALUES ($1, $2, $3, $4, $5, 'critical', $6, $7, $7)
         """,
         incident_id,
         graph.organization_id,
