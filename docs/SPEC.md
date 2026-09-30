@@ -122,8 +122,14 @@ El MVP cubre el ciclo completo dato → regla → incidente → alerta → confi
 | Alertas | Confirmación | Token aleatorio de 256 bits (43 caracteres en base64url, dentro del límite de 64 de Telegram) guardado como hash, un solo uso, 24 h. El enlace del correo abre una página de la API, sin login, con el resumen del incidente y un botón Confirmar (POST): abrir el enlace nunca confirma, porque los escáneres de correo abren los enlaces solos y detendrían el escalamiento. Si el incidente ya estaba confirmado, la alerta queda registrada como vista sin cambiar quién lo confirmó; si ya estaba resuelto, no se cambia nada. Las alertas todavía pendientes de un incidente confirmado o resuelto no se envían: quedan omitidas con su motivo |
 | Panel | Mapa en vivo | Zonas por estado, estaciones con último valor y antigüedad, actualización por SSE autenticado y aislado por organización |
 | Panel | Detalle de incidente | Gráfico de lecturas, línea de tiempo, alertas por destinatario |
+| Panel | Sistema visual | Un catálogo único de estados (color, ícono y texto) para incidentes, severidades, zonas y estaciones; ningún estado se comunica solo por color; navegación según los permisos del usuario; usable a 360 px de ancho |
+| Panel | Bandeja de incidentes | Lista filtrable por estado y severidad, actualizada por SSE; un escalamiento agotado se destaca con texto además del color |
+| Panel | Acciones sobre incidentes | Confirmar, resolver (resuelto o falsa alarma) y comentar desde el detalle, según los permisos |
+| Panel | Lecturas fallidas | Lista de las lecturas con `failed_at` y reprocesamiento; aviso en el encabezado mientras haya alguna, porque cada una puede ser una alerta que no salió |
 | Seguridad | Identidad y roles | Keycloak 26 Organizations; un usuario pertenece a una sola organización; roles admin, operator, responder, viewer |
-| Auditoría | Registro de acciones | Cambios en zonas, estaciones, reglas, políticas y contactos |
+| Administración | Contactos y grupos | CRUD auditado; un contacto con historial (alertas o confirmaciones) no se borra: se lo quita de sus grupos para que deje de recibir; desde el panel se genera el enlace de Telegram y se desvincula |
+| Administración | Políticas de escalamiento | Edición desde el panel (historia Could; mientras tanto, por la API) |
+| Auditoría | Registro de acciones | Cambios en zonas, estaciones, reglas, políticas y contactos; el admin los consulta desde el panel con filtros |
 
 **Fuera del MVP:** SMS masivo y WhatsApp, app móvil, página pública de suscripción ciudadana, usuarios en varias organizaciones, exportación CAP (se diseña la entidad de alerta para facilitarla), modelos predictivos, facturación. Open-Meteo queda como capa de contexto opcional (historia "Could"): entrega caudal diario, no ve quebradas pequeñas y su API gratuita es de uso no comercial.
 
@@ -161,7 +167,7 @@ flowchart LR
 | `worker dispatcher` | Python, httpx2, aiosmtplib | Despierta con `NOTIFY` al crearse alertas; envía con 3 reintentos exponenciales |
 | `worker escalation` | Python | Cada 15 s escala incidentes cuyo nivel venció sin confirmación |
 | `worker telegram` | Python, long polling | Vincula `chat_id` de contactos y recibe clics de confirmación |
-| `dashboard` | Angular + Leaflet | Mapa, gestión de territorio y reglas, incidentes en vivo |
+| `dashboard` | Angular + Leaflet | Mapa e incidentes en vivo con sus acciones; gestión de territorio, reglas y contactos; auditoría y lecturas fallidas |
 | PostgreSQL 16 | PostGIS + TimescaleDB | Datos, geometrías, series temporales, cola, notificaciones y rate limit |
 | Keycloak 26 | OIDC + Organizations | Usuarios, organización de cada usuario y roles |
 
@@ -272,7 +278,7 @@ erDiagram
 
 ## Product backlog
 
-32 historias en 10 épicas (E0 a E9): 30 del MVP (125 puntos) y 2 opcionales, VIG-31 y VIG-32, de 3 puntos cada una. Prioridad MoSCoW (M = Must, S = Should, C = Could) y estimación en puntos (1, 2, 3, 5, 8).
+39 historias en 11 épicas (E0 a E10): 36 del MVP (153 puntos) y 3 opcionales, VIG-31, VIG-32 y VIG-37, de 3 puntos cada una. VIG-33 a VIG-39 se agregaron el 30 de septiembre de 2026, al revisar qué pantallas prometía esta especificación sin una historia que las construyera. Prioridad MoSCoW (M = Must, S = Should, C = Could) y estimación en puntos (1, 2, 3, 5, 8).
 
 | ID | Épica | Historia | Criterios de aceptación | Prio | Pts | Sprint |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -300,18 +306,25 @@ erDiagram
 | VIG-22 | E6 Alertas | Como contacto quiero recibir la alerta por Telegram | Mensaje con botón de confirmación (`callback_data` ≤ 64 caracteres); fallo registra `alert_failed` y reintenta 3 veces | M | 5 | 4 |
 | VIG-23 | E6 Alertas | Como contacto quiero confirmar la alerta con un clic | Token aleatorio de 256 bits guardado como hash, un solo uso, 24 h; funciona desde el correo y desde el botón de Telegram; confirmar detiene el escalamiento | M | 3 | 4 |
 | VIG-24 | E6 Alertas | Como admin quiero políticas de escalamiento por niveles | CRUD de políticas; worker `escalation` sube de nivel al vencer `wait_s`; canal faltante se omite y registra; al agotar el último nivel se registra `escalation_exhausted` | M | 5 | 4 |
-| VIG-25 | E7 Panel | Como operador quiero un mapa en vivo | Zonas por estado, estaciones con último valor y antigüedad; SSE con JWT en header vía `@microsoft/fetch-event-source`, aislado por organización con test; actualización < 2 s | M | 8 | 5 |
-| VIG-26 | E7 Panel | Como operador quiero ver el detalle de un incidente | Gráfico de lecturas, línea de tiempo completa, alertas por destinatario | M | 5 | 5 |
-| VIG-27 | E7 Panel | Como operador quiero gestionar reglas desde el panel | Formularios por tipo de regla; vista previa con las últimas 24 h de lecturas | S | 5 | 5 |
-| VIG-28 | E8 Observabilidad | Como desarrollador quiero medir la latencia de extremo a extremo | Métrica `received_to_alert_seconds`; logs JSON con `correlation_id` desde la lectura hasta la alerta | M | 3 | 6 |
-| VIG-29 | E8 Observabilidad | Como desarrollador quiero una prueba de carga | 50 estaciones × 1 lectura/10 s durante 30 min; cero lecturas `ok` sin `evaluated_at` pasados 120 s; p95 < 30 s | S | 3 | 6 |
-| VIG-30 | E8 Observabilidad | Como evaluador quiero una demo guiada | `make demo` reproduce el escenario Rímac con confirmación de ambos incidentes en el nivel 2; README con video y capturas | M | 3 | 6 |
-| VIG-31 | E9 Contexto | Como operador quiero ver el pronóstico de caudal como contexto en el mapa | Capa informativa con Open-Meteo sin participar en reglas; licencia revisada antes de uso comercial | C | 3 | 6 |
+| VIG-25 | E7 Panel | Como operador quiero un mapa en vivo | Zonas por estado, estaciones con último valor y antigüedad; SSE con JWT en header vía `@microsoft/fetch-event-source`, aislado por organización con test; actualización < 2 s; usa el catálogo visual de VIG-33 (estaciones silenciosas y sin zona distinguibles sin color); un incidente nuevo se anuncia de forma visible y por `aria-live` | M | 8 | 5 |
+| VIG-26 | E7 Panel | Como operador quiero ver el detalle de un incidente | Gráfico de lecturas (con la copia del evento `opened` si las lecturas ya expiraron), línea de tiempo completa, alertas por destinatario; el correo del destinatario solo lo ven admin y operator y el `chat_id` nunca se muestra (test de serialización por rol) | M | 5 | 5 |
+| VIG-27 | E7 Panel | Como operador quiero gestionar reglas desde el panel | CRUD REST de reglas con `params` validados por tipo y auditoría (hoy no existe); formularios por tipo de regla; vista previa con las últimas 24 h de lecturas | S | 8 | 6 |
+| VIG-28 | E8 Observabilidad | Como desarrollador quiero medir la latencia de extremo a extremo | Métrica `received_to_alert_seconds`; logs JSON con `correlation_id` desde la lectura hasta la alerta | M | 3 | 7 |
+| VIG-29 | E8 Observabilidad | Como desarrollador quiero una prueba de carga | 50 estaciones × 1 lectura/10 s durante 30 min; cero lecturas `ok` sin `evaluated_at` pasados 120 s; p95 < 30 s | S | 3 | 7 |
+| VIG-30 | E8 Observabilidad | Como evaluador quiero una demo guiada | `make demo` reproduce el escenario Rímac con confirmación de ambos incidentes en el nivel 2; README con video y capturas | M | 3 | 7 |
+| VIG-31 | E9 Contexto | Como operador quiero ver el pronóstico de caudal como contexto en el mapa | Capa informativa con Open-Meteo sin participar en reglas; licencia revisada antes de uso comercial | C | 3 | 7 |
 | VIG-32 | E9 Contexto | Como autoridad quiero recibir incidentes en formato CAP | Exportación CAP 1.2 de un incidente; validada contra el esquema oficial | C | 3 | Post-MVP |
+| VIG-33 | E7 Panel | Como operador quiero un panel coherente y accesible para leer el estado de un vistazo | Catálogo único de estados visuales (color, ícono y texto) para incidente, severidad, riesgo de zona y estación, sin colores de estado definidos por página; ningún estado solo por color, contraste ≥ 4.5:1 en texto y 3:1 en íconos y bordes; encabezado según permisos con el nombre de la organización (lo devuelve `/v1/me`) y del usuario; carga, vacío y error con un mismo componente; hora local, antigüedad relativa y unidades con formato común; vistas principales usables a 360 px sin scroll horizontal; axe (sin violaciones serious ni critical) y Lighthouse (accesibilidad ≥ 95) en CI | M | 5 | 5 |
+| VIG-34 | E7 Panel | Como operador quiero una bandeja de incidentes | Lista con estado, severidad, causa, zona, estación, apertura y nivel actual, los más recientes primero; filtros por estado (por defecto, abiertos y confirmados) y severidad, guardados en la URL; un escalamiento agotado se destaca en rojo con la etiqueta "Escalamiento agotado"; actualización por SSE y anuncio de incidentes nuevos por `aria-live`; sin incidentes muestra un estado vacío, no un error | M | 3 | 5 |
+| VIG-35 | E5 Incidentes | Como operador quiero confirmar, resolver y comentar un incidente desde el panel | Botones según permisos (confirmar: responder o superior; resolver: operator o superior); resolver pide elegir resuelto o falsa alarma y confirmar, porque es final; un 409 se explica y recarga el estado; `POST /v1/incidents/{id}/comments` (1 a 2000 caracteres, responder o superior, también en incidentes resueltos) crea un evento `comment` con su autor; tests por rol y de aislamiento | M | 3 | 5 |
+| VIG-36 | E10 Administración | Como admin quiero gestionar contactos y grupos | CRUD de contactos y de grupos (miembros y zona opcional): escribe admin, leen admin y operator, 403 al resto; cambios auditados; el `chat_id` nunca sale de la API, solo si Telegram está vinculado; borrar un contacto con alertas o confirmaciones devuelve 409 (se lo quita de sus grupos) y borrar un grupo que usa una política devuelve 409 indicando cuál; generar el enlace de Telegram (se muestra una vez, con Copiar y vencimiento) y desvincularlo, auditado; la pantalla marca a los contactos sin ningún canal | M | 8 | 6 |
+| VIG-37 | E10 Administración | Como admin quiero editar las políticas de escalamiento desde el panel | Pantalla sobre la API de VIG-24 con niveles ordenados, espera en minutos y grupos por canal; errores de validación junto a cada campo; aviso de que los cambios aplican también a los incidentes en curso; el 409 de una política que usan reglas se explica | C | 3 | 7 |
+| VIG-38 | E10 Administración | Como admin quiero ver la auditoría | `GET /v1/audit` solo para admin, con filtros por tipo de entidad, entidad, autor y fechas, paginado por cursor y más recientes primero; tabla con hora local, autor (o "el propio contacto" cuando lo pidió desde Telegram), acción y antes y después por campo; tests de permisos, aislamiento y paginación estable | S | 3 | 6 |
+| VIG-39 | E8 Observabilidad | Como operador quiero ver y reprocesar las lecturas que no se pudieron evaluar | Lista para operator y admin con estación, medición, intentos, fecha del fallo y último error; aviso con el número en el encabezado mientras haya alguna; reprocesar devuelve las filas elegidas a la cola con `NOTIFY` y queda auditado; el runbook pasa a usar el panel; test: la lectura reprocesada termina evaluada | M | 3 | 6 |
 
 ## Plan de sprints
 
-Siete sprints de dos semanas, del 28 de septiembre de 2026 al 3 de enero de 2027, pensados para avanzar fuera de tu jornada laboral. Cada sprint cierra con un objetivo demostrable.
+Ocho sprints de dos semanas, del 28 de septiembre de 2026 al 17 de enero de 2027, pensados para avanzar fuera de tu jornada laboral. Cada sprint cierra con un objetivo demostrable. El sprint 7 se agregó el 30 de septiembre de 2026 junto con VIG-33 a VIG-39: se prefirió sumar un sprint antes que recortar historias "Must".
 
 | Sprint | Fechas | Objetivo | Historias | Pts |
 | --- | --- | --- | --- | --- |
@@ -320,10 +333,11 @@ Siete sprints de dos semanas, del 28 de septiembre de 2026 al 3 de enero de 2027
 | 2 | 26 oct – 8 nov | Zonas, estaciones, evaluador confiable y reglas de umbral y tasa de cambio | VIG-12 a 16 | 23 |
 | 3 | 9 – 22 nov | Silencio detectado, incidentes sin duplicados y primer correo | VIG-17 a 20 | 16 |
 | 4 | 23 nov – 6 dic | Telegram vinculado, confirmación y escalamiento automático | VIG-21 a 24 | 16 |
-| 5 | 7 – 20 dic | Panel en vivo con mapa y detalle de incidente | VIG-25 a 27 | 18 |
-| 6 | 21 dic – 3 ene | Latencia medida, prueba de carga y demo Rímac grabada | VIG-28 a 30 (+ VIG-31 si hay tiempo) | 9 (+3) |
+| 5 | 7 – 20 dic | Panel en vivo accesible: mapa, bandeja y detalle de incidentes con sus acciones | VIG-33 (primero: el resto se construye sobre él), 25, 34, 26 y 35 | 24 |
+| 6 | 21 dic – 3 ene | Gestión desde el panel: contactos, lecturas fallidas, reglas y auditoría | VIG-36, 39, 27 y 38 | 22 |
+| 7 | 4 – 17 ene | Latencia medida, prueba de carga y demo Rímac grabada | VIG-28 a 30 (+ VIG-31 y VIG-37 si hay tiempo) | 9 (+6) |
 
-**Holgura.** El sprint 1 es el más cargado (25 puntos) y el sprint 6 cae en fiestas. Si un sprint no cierra, mueve VIG-27 y VIG-29 (ambas "Should") antes que recortar calidad en las historias "Must".
+**Holgura.** El sprint 1 es el más cargado (25 puntos) y el sprint 6 cae en fiestas. Si un sprint no cierra, mueve primero las historias "Should" (VIG-27, VIG-29 y VIG-38) antes que recortar calidad en las historias "Must".
 
 **Validación en paralelo.** Antes del sprint 4, entrevista al menos a 3 personas de gestión de riesgo (municipalidades en zonas de huaicos, COER regionales, ONGs de prevención). Pregunta cómo se enteran hoy de un evento, quién avisa a quién, cuánto tarda y qué canal usan. Prueba también las opciones de nombre comercial. Registra cada entrevista en `docs/research/` y ajusta el backlog antes del sprint 5.
 
@@ -364,6 +378,7 @@ En un sistema de alertas, una alerta perdida es peor que una duplicada: toda dec
 | Resolver incidentes (resuelto o falsa alarma) | | | ✔ | ✔ |
 | Gestionar zonas y estaciones (incluye rotar API keys) | | | ✔ | ✔ |
 | Gestionar reglas | | | ✔ | ✔ |
+| Ver y reprocesar lecturas con evaluación fallida | | | ✔ | ✔ |
 | Ver datos de contacto (email y si tiene Telegram vinculado; el `chat_id` nunca se muestra) | | | ✔ | ✔ |
 | Gestionar contactos y grupos | | | | ✔ |
 | Gestionar políticas de escalamiento | | | | ✔ |
