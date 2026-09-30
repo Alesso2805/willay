@@ -48,27 +48,45 @@ class EmailContent:
     body: str
 
 
-def compose_email(message: AlertMessage, confirm_url: str) -> EmailContent:
-    severity = SEVERITY_LABEL.get(message.severity, message.severity.upper())
-    cause = RULE_LABEL.get(message.rule_type, message.rule_type)
-    where = message.zone_name + (f" ({message.station_code})" if message.station_code else "")
-    local = message.opened_at.astimezone(ZoneInfo(message.timezone))
-
-    lines = [
-        f"Hola {message.contact_name}:",
-        "",
-        f"Vigía abrió {_phrase(message.severity)} en la zona {message.zone_name}.",
-        "",
-        f"  Causa:     {cause}",
+def summary(message: AlertMessage) -> list[tuple[str, str]]:
+    """Los datos del incidente como pares (etiqueta, valor): el correo y la página de
+    confirmación los muestran igual."""
+    fields = [
+        ("Severidad", SEVERITY_LABEL.get(message.severity, message.severity.upper())),
+        ("Causa", RULE_LABEL.get(message.rule_type, message.rule_type)),
+        ("Zona", message.zone_name),
     ]
     if message.station_code:
         station = message.station_code + (
             f" · {message.station_name}" if message.station_name else ""
         )
-        lines.append(f"  Estación:  {station}")
-    lines += [
-        f"  {_value_label(message)}{_value(message)}",
-        f"  Abierto:   {local:%d/%m/%Y %H:%M} ({message.timezone})",
+        fields.append(("Estación", station))
+    # En silencio el valor es el último conocido, no el que disparó la regla.
+    fields.append(("Último" if message.rule_type == "silence" else "Valor", _value(message)))
+    fields.append(("Abierto", local_time(message.opened_at, message.timezone)))
+    return fields
+
+
+def local_time(instant: datetime, timezone: str) -> str:
+    return f"{instant.astimezone(ZoneInfo(timezone)):%d/%m/%Y %H:%M} ({timezone})"
+
+
+def compose_email(message: AlertMessage, confirm_url: str) -> EmailContent:
+    severity = SEVERITY_LABEL.get(message.severity, message.severity.upper())
+    cause = RULE_LABEL.get(message.rule_type, message.rule_type)
+    where = message.zone_name + (f" ({message.station_code})" if message.station_code else "")
+    # Severidad y zona ya van en la frase de apertura; el resto, alineado en columnas.
+    details = [
+        f"  {label + ':':<11}{value}"
+        for label, value in summary(message)
+        if label not in ("Severidad", "Zona")
+    ]
+    lines = [
+        f"Hola {message.contact_name}:",
+        "",
+        f"Vigía abrió {_phrase(message.severity)} en la zona {message.zone_name}.",
+        "",
+        *details,
         "",
         "Confirma que lo viste en este enlace (vale 24 horas):",
         confirm_url,
@@ -85,11 +103,6 @@ def compose_email(message: AlertMessage, confirm_url: str) -> EmailContent:
 
 def _phrase(severity: str) -> str:
     return SEVERITY_PHRASE.get(severity, f"un incidente {severity.upper()}")
-
-
-def _value_label(message: AlertMessage) -> str:
-    # En silencio el valor es el último conocido, no el que disparó la regla.
-    return "Último:    " if message.rule_type == "silence" else "Valor:     "
 
 
 def _value(message: AlertMessage) -> str:

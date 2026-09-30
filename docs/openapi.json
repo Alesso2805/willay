@@ -1147,6 +1147,100 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/confirmar/{token}": {
+      "get": {
+        "operationId": "get_confirmation_confirmar__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Enlace no válido"
+          },
+          "410": {
+            "description": "El enlace venció o ya se usó"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Página de confirmación de una alerta (abrirla no confirma nada)",
+        "tags": [
+          "confirmation"
+        ]
+      },
+      "post": {
+        "operationId": "post_confirmation_confirmar__token__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Enlace no válido"
+          },
+          "410": {
+            "description": "El enlace venció o ya se usó"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirmar una alerta: confirma su incidente y detiene el escalamiento",
+        "tags": [
+          "confirmation"
+        ]
+      }
+    },
     "/health": {
       "get": {
         "operationId": "health_health_get",
