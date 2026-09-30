@@ -1,4 +1,4 @@
-"""Vincular el Telegram de un contacto (VIG-21) con un enlace de un solo uso.
+"""Telegram: vincular un contacto (VIG-21) y enviarle alertas con botón (VIG-22).
 
 El admin genera un enlace `https://t.me/<bot>?start=<token>` y se lo comparte al contacto
 por donde suela hablar con esa persona. Al abrirlo, Telegram le escribe al bot
@@ -6,11 +6,15 @@ por donde suela hablar con esa persona. Al abrirlo, Telegram le escribe al bot
 mano. El token (43 caracteres base64url) cabe en los 64 que admite `start` y solo usa
 los caracteres que Telegram permite ahí. Vale 7 días: un líder comunal puede tardar en
 abrirlo. Uno nuevo invalida el anterior.
+
+Al pulsar el botón de una alerta, Telegram muestra un aviso breve (máximo 200 caracteres)
+y el bot reemplaza el botón por una nota con quién confirmó y cuándo.
 """
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
-from vigia.alerts.domain.email import AlertMessage, summary
+from vigia.alerts.domain.confirmation import ConfirmOutcome
+from vigia.alerts.domain.email import AlertMessage, local_time, summary
 
 LINK_TTL = timedelta(days=7)
 MAX_START_PARAMETER = 64
@@ -63,3 +67,42 @@ def compose_alert_text(message: AlertMessage) -> str:
             "Herramienta de apoyo: no reemplaza los avisos oficiales (INDECI, COER, SISMATE).",
         ]
     )
+
+
+MAX_CLICK_ANSWER = 200
+
+CLICK_ANSWER = {
+    ConfirmOutcome.CONFIRMED: (
+        "Gracias: confirmaste la alerta. Vigía no avisará al siguiente nivel."
+    ),
+    ConfirmOutcome.ALREADY_ACKNOWLEDGED: (
+        "Gracias: quedó registrado que la viste. Otra persona ya había confirmado el incidente."
+    ),
+    ConfirmOutcome.ALREADY_RESOLVED: "Este incidente ya fue resuelto: no hace falta confirmarlo.",
+    ConfirmOutcome.USED: "Ya confirmaste esta alerta.",
+    ConfirmOutcome.EXPIRED: (
+        "Este botón venció (vale 24 horas). Si el incidente sigue abierto, comunícate con el "
+        "equipo de operaciones."
+    ),
+    ConfirmOutcome.UNKNOWN: "Esta alerta ya no es válida.",
+    ConfirmOutcome.NOT_YOURS: "Solo quien recibió esta alerta puede confirmarla.",
+}
+
+
+def closing_note(
+    outcome: ConfirmOutcome,
+    acknowledged_by: str | None,
+    acknowledged_at: datetime | None,
+    timezone: str,
+) -> str | None:
+    """La nota que reemplaza al botón, o None si el mensaje no se toca: un token
+    desconocido o un clic ajeno no dicen nada del incidente."""
+    if outcome in (ConfirmOutcome.UNKNOWN, ConfirmOutcome.NOT_YOURS):
+        return None
+    if outcome is ConfirmOutcome.ALREADY_RESOLVED:
+        return "Incidente resuelto: ya no hace falta confirmarlo."
+    if outcome is ConfirmOutcome.EXPIRED:
+        return "El botón venció (vale 24 horas)."
+    who = acknowledged_by or "otra persona"
+    when = f" el {local_time(acknowledged_at, timezone)}" if acknowledged_at is not None else ""
+    return f"Confirmado por {who}{when}."

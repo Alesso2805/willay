@@ -48,6 +48,7 @@ class Confirmations:
             incident_id=incidents.incident.id,
             organization_id=incidents.organization_id,
             contact_id=uuid4(),
+            destination="4242",
             token_expires_at=EXPIRES,
             used_at=None,
             incident_status=incidents.incident.status,
@@ -144,3 +145,28 @@ async def test_an_expired_or_unknown_token_changes_nothing() -> None:
     assert (expired.outcome, unknown.outcome) == (ConfirmOutcome.EXPIRED, ConfirmOutcome.UNKNOWN)
     assert unknown.alert is None
     assert (incidents.incident.status, incidents.events) == (OPEN, [])
+
+
+async def test_from_telegram_only_the_recipient_can_confirm() -> None:
+    incidents, confirmations = _setup()
+    clock = FakeClock(T0)
+
+    stranger = await confirm_alert(
+        TOKEN,
+        confirmations=confirmations,
+        incidents=incidents,
+        clock=clock,
+        expected_destination="999",
+    )
+    assert (stranger.outcome, stranger.alert) == (ConfirmOutcome.NOT_YOURS, None)
+    assert (incidents.incident.status, incidents.events) == (OPEN, [])
+    assert confirmations.alert.used_at is None
+
+    recipient = await confirm_alert(
+        TOKEN,
+        confirmations=confirmations,
+        incidents=incidents,
+        clock=clock,
+        expected_destination="4242",
+    )
+    assert recipient.outcome is ConfirmOutcome.CONFIRMED

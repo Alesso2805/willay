@@ -18,7 +18,7 @@ from vigia.incidents.domain.lifecycle import IncidentStatus
 # confirmó el incidente puede ser un usuario (con cuenta) o un contacto.
 # El f-string solo une fragmentos fijos de alert_messages; los datos van como parámetros.
 _FIND = f"""
-    SELECT a.id AS alert_id, a.incident_id, i.organization_id, a.contact_id,
+    SELECT a.id AS alert_id, a.incident_id, i.organization_id, a.contact_id, a.destination,
            a.ack_token_expires_at, a.acknowledged_at AS used_at,
            i.status AS incident_status, i.acknowledged_at AS incident_acknowledged_at,
            COALESCE(u.full_name, ack.full_name) AS acknowledged_by,
@@ -55,6 +55,7 @@ class SqlConfirmationRepository:
             incident_id=row.incident_id,
             organization_id=row.organization_id,
             contact_id=row.contact_id,
+            destination=row.destination,
             token_expires_at=row.ack_token_expires_at,
             used_at=row.used_at,
             incident_status=IncidentStatus(row.incident_status),

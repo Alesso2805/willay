@@ -1,8 +1,8 @@
-"""Worker telegram (VIG-21): `python -m vigia.workers.telegram`.
+"""Worker telegram (VIG-21, VIG-22): `python -m vigia.workers.telegram`.
 
-Long polling con `getUpdates` para vincular contactos (y, con VIG-22, recibir los clics de
-confirmación). Sin `VIGIA_TELEGRAM_BOT_TOKEN` arranca deshabilitado: solo late, para que
-`docker compose up` funcione sin un bot creado.
+Long polling con `getUpdates` para vincular contactos y recibir los clics en el botón de
+confirmación de las alertas. Sin `VIGIA_TELEGRAM_BOT_TOKEN` arranca deshabilitado: solo
+late, para que `docker compose up` funcione sin un bot creado.
 """
 
 import asyncio
@@ -10,8 +10,10 @@ import asyncio
 import structlog
 
 from vigia.alerts.application.telegram_bot import TelegramApi, TelegramPoller
+from vigia.alerts.infrastructure.sql_confirmation import SqlConfirmationRepository
 from vigia.alerts.infrastructure.sql_contact_links import SqlContactLinkRepository
 from vigia.alerts.infrastructure.telegram_api import TelegramBotApi
+from vigia.incidents.infrastructure.incidents_repository import SqlIncidentRepository
 from vigia.shared.audit import SqlAuditLog
 from vigia.shared.clock import Clock, SystemClock
 from vigia.shared.config import Settings
@@ -50,7 +52,15 @@ async def run_telegram(
 
     clock = clock or SystemClock()
     engine = create_engine(settings.database_url)
-    poller = TelegramPoller(bot, engine.begin, clock, SqlContactLinkRepository, SqlAuditLog)
+    poller = TelegramPoller(
+        bot,
+        engine.begin,
+        clock,
+        SqlContactLinkRepository,
+        SqlAuditLog,
+        SqlConfirmationRepository,
+        SqlIncidentRepository,
+    )
 
     async def tick() -> bool:
         # El long polling tarda hasta `poll_timeout_s`: ante una parada no se lo espera.
