@@ -109,6 +109,8 @@ services:
       VIGIA_OIDC_ISSUER: http://localhost:${VIGIA_KEYCLOAK_PORT:-8080}/realms/vigia
       VIGIA_OIDC_JWKS_URL: http://keycloak:8080/realms/vigia/protocol/openid-connect/certs
       VIGIA_OIDC_AUDIENCE: vigia-api
+      # Para armar los enlaces de vinculación de Telegram (sin él, la API responde 503).
+      VIGIA_TELEGRAM_BOT_USERNAME: ${VIGIA_TELEGRAM_BOT_USERNAME:-}
     ports:
       - "${VIGIA_API_PORT:-8000}:8000"
     depends_on:
@@ -159,6 +161,11 @@ services:
   worker-telegram:
     <<: *backend
     command: ["python", "-m", "vigia.workers.telegram"]
+    environment:
+      <<: *backend-env
+      # Sin token (vacío), el worker arranca deshabilitado y solo late.
+      VIGIA_TELEGRAM_BOT_TOKEN: ${VIGIA_TELEGRAM_BOT_TOKEN:-}
+      VIGIA_TELEGRAM_BOT_USERNAME: ${VIGIA_TELEGRAM_BOT_USERNAME:-}
     healthcheck:
       <<: *worker-healthcheck
       test: ["CMD", "python", "-m", "vigia.workers.healthcheck", "telegram"]

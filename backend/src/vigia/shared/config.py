@@ -3,7 +3,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import SecretStr
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     telegram_bot_token: SecretStr | None = None
     telegram_bot_username: str | None = None
     telegram_api_url: str = "https://api.telegram.org"
+
+    @field_validator("telegram_bot_token", "telegram_bot_username", mode="before")
+    @classmethod
+    def _empty_means_unset(cls, value: object) -> object:
+        # Compose pasa "" si la variable no está en .env: eso es "sin bot", no un token vacío.
+        return None if value == "" else value
 
 
 @lru_cache
