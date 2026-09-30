@@ -8,9 +8,12 @@ import pytest
 
 from vigia.incidents.application.lifecycle import (
     Actor,
+    ContactActor,
+    EventActor,
     Incident,
     IncidentEvent,
     IncidentNotFoundError,
+    acknowledge_as_contact,
     acknowledge_incident,
     resolve_incident,
 )
@@ -91,9 +94,14 @@ class Repository:
     async def lock_status(self, organization_id: UUID, incident_id: UUID) -> IncidentStatus | None:
         return self.incident.status if self._mine(organization_id, incident_id) else None
 
-    async def acknowledge(self, incident_id: UUID, user_id: UUID, now: datetime) -> None:
+    async def acknowledge(self, incident_id: UUID, actor: EventActor, now: datetime) -> None:
+        by_user = isinstance(actor, Actor)
         self.incident = replace(
-            self.incident, status=ACK, acknowledged_at=now, acknowledged_by_user_id=user_id
+            self.incident,
+            status=ACK,
+            acknowledged_at=now,
+            acknowledged_by_user_id=actor.actor_id if by_user else None,
+            acknowledged_by_contact_id=None if by_user else actor.actor_id,
         )
 
     async def resolve(self, incident_id: UUID, resolution: Resolution, now: datetime) -> None:
@@ -104,12 +112,12 @@ class Repository:
     async def add_event(
         self,
         incident_id: UUID,
-        actor: Actor,
+        actor: EventActor,
         event_type: str,
         payload: Mapping[str, Any],
         now: datetime,
     ) -> None:
-        self.events.append((event_type, actor.user_id, payload))
+        self.events.append((event_type, actor.actor_id, payload))
 
 
 ACTOR = Actor(uuid4(), uuid4())
@@ -159,3 +167,24 @@ async def test_another_organizations_incident_is_not_found() -> None:
             incidents=repository,
             clock=FakeClock(T0),
         )
+
+
+@pytest.mark.parametrize("before", [OPEN, ACK, RESOLVED])
+async def test_a_contact_acknowledges_only_an_open_incident_and_never_fails(
+    before: IncidentStatus,
+) -> None:
+    repository = Repository(ACTOR.organization_id, status=before)
+    contact = ContactActor(ACTOR.organization_id, uuid4())
+
+    previous = await acknowledge_as_contact(
+        contact, repository.incident.id, incidents=repository, clock=FakeClock(T0)
+    )
+
+    assert previous is before
+    if before is OPEN:
+        assert repository.incident.status is ACK
+        assert repository.incident.acknowledged_by_contact_id == contact.contact_id
+        assert repository.incident.acknowledged_by_user_id is None
+        assert repository.events == [("acknowledged", contact.contact_id, {})]
+    else:
+        assert (repository.incident.status, repository.events) == (before, [])

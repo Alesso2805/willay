@@ -5,6 +5,9 @@ Cada transición bloquea el incidente (FOR UPDATE) en la transacción de la peti
 dominio decide si es válida y el cambio y su evento se escriben juntos. Si dos
 operadores actúan a la vez, el segundo espera al primero, ve el estado nuevo y recibe
 una transición inválida (409) en lugar de pisarlo.
+
+Confirman usuarios de la plataforma (API) y contactos sin cuenta (enlace de su alerta,
+VIG-23); el evento y `acknowledged_by_*` registran cuál de los dos fue.
 """
 
 from collections.abc import Mapping, Sequence
@@ -24,8 +27,37 @@ from vigia.shared.clock import Clock
 
 @dataclass(frozen=True)
 class Actor:
+    """Un usuario de la plataforma, autenticado con su JWT."""
+
     organization_id: UUID  # el tenant: nunca sale del cuerpo de la petición
     user_id: UUID
+
+    @property
+    def actor_type(self) -> str:
+        return "user"
+
+    @property
+    def actor_id(self) -> UUID:
+        return self.user_id
+
+
+@dataclass(frozen=True)
+class ContactActor:
+    """Un contacto que confirma desde el enlace de su alerta (no tiene cuenta)."""
+
+    organization_id: UUID  # la de la alerta, no la de una sesión: no la hay
+    contact_id: UUID
+
+    @property
+    def actor_type(self) -> str:
+        return "contact"
+
+    @property
+    def actor_id(self) -> UUID:
+        return self.contact_id
+
+
+EventActor = Actor | ContactActor
 
 
 class IncidentNotFoundError(Exception):
@@ -81,14 +113,14 @@ class IncidentRepository(Protocol):
         """Estado actual, bloqueando el incidente hasta el final de la transacción."""
         ...
 
-    async def acknowledge(self, incident_id: UUID, user_id: UUID, now: datetime) -> None: ...
+    async def acknowledge(self, incident_id: UUID, actor: EventActor, now: datetime) -> None: ...
 
     async def resolve(self, incident_id: UUID, resolution: Resolution, now: datetime) -> None: ...
 
     async def add_event(
         self,
         incident_id: UUID,
-        actor: Actor,
+        actor: EventActor,
         event_type: str,
         payload: Mapping[str, Any],
         now: datetime,
@@ -101,9 +133,26 @@ async def acknowledge_incident(
     current = await _lock(actor, incident_id, incidents)
     ensure_allowed(Transition.ACKNOWLEDGE, current)
     now = clock.now()
-    await incidents.acknowledge(incident_id, actor.user_id, now)
+    await incidents.acknowledge(incident_id, actor, now)
     await incidents.add_event(incident_id, actor, "acknowledged", {}, now)
     return await _reload(actor, incident_id, incidents)
+
+
+async def acknowledge_as_contact(
+    actor: ContactActor, incident_id: UUID, *, incidents: IncidentRepository, clock: Clock
+) -> IncidentStatus:
+    """Confirma el incidente si sigue abierto y devuelve el estado que tenía.
+
+    A diferencia de la API, no lanza si otro se adelantó o si ya se resolvió: quien
+    confirma desde un enlace no cometió ningún error, solo llegó tarde, y la página se lo
+    explica.
+    """
+    current = await _lock(actor, incident_id, incidents)
+    if current is IncidentStatus.OPEN:
+        now = clock.now()
+        await incidents.acknowledge(incident_id, actor, now)
+        await incidents.add_event(incident_id, actor, "acknowledged", {}, now)
+    return current
 
 
 async def resolve_incident(
@@ -123,7 +172,9 @@ async def resolve_incident(
     return await _reload(actor, incident_id, incidents)
 
 
-async def _lock(actor: Actor, incident_id: UUID, incidents: IncidentRepository) -> IncidentStatus:
+async def _lock(
+    actor: EventActor, incident_id: UUID, incidents: IncidentRepository
+) -> IncidentStatus:
     current = await incidents.lock_status(actor.organization_id, incident_id)
     if current is None:
         raise IncidentNotFoundError(incident_id)
