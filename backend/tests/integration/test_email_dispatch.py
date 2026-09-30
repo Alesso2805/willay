@@ -18,6 +18,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
 from testcontainers.core.container import DockerContainer
 
+from tests.integration.api import api_client
 from tests.integration.conftest import Database
 from tests.integration.evaluation import Station, incidents
 from tests.integration.factories import (
@@ -28,6 +29,7 @@ from tests.integration.factories import (
     create_rule,
     link_station,
 )
+from tests.support.tokens import TokenFactory
 from vigia.alerts.application.dispatch import DeliveryError, EmailDispatcher
 from vigia.alerts.domain.alerts import Channel
 from vigia.alerts.domain.email import EmailContent
@@ -123,12 +125,13 @@ async def _alert_events(owner: asyncpg.Connection, alert_id: UUID) -> list[dict[
     return [{"type": r["event_type"]} | json.loads(r["payload"]) for r in rows]
 
 
-async def test_the_worker_emails_level_one_and_mailpit_receives_it(
+async def test_the_worker_emails_level_one_and_the_link_confirms_it(
     engine: AsyncEngine,
     owner: asyncpg.Connection,
     database: Database,
     mailpit: Mailpit,
     tmp_path: Path,
+    tokens: TokenFactory,
 ) -> None:
     settings = Settings(
         database_url=database.app_url,
@@ -176,6 +179,15 @@ async def test_the_worker_emails_level_one_and_mailpit_receives_it(
         incident["id"],
     )
     assert all("@" not in r["p"] for r in timeline)
+
+    # VIG-23, punta a punta: el enlace que llegó a Mailpit confirma el incidente.
+    async with api_client(database, tokens) as client:
+        page = await client.get(f"/confirmar/{match.group(1)}")
+        confirmed = await client.post(f"/confirmar/{match.group(1)}")
+    assert (page.status_code, "Confirmar que lo vi" in page.text) == (200, True)
+    assert (confirmed.status_code, "Confirmaste la alerta" in confirmed.text) == (200, True)
+    [incident] = await incidents(owner, station.graph)
+    assert incident["status"] == "acknowledged"
 
 
 class FailsTwice:
@@ -283,3 +295,40 @@ async def test_an_alert_whose_every_attempt_died_ends_failed(
         True,
         "el envío no terminó (el worker se detuvo)",
     )
+
+
+@pytest.mark.parametrize(
+    ("change", "reason"),
+    [
+        (
+            "status = 'acknowledged', acknowledged_at = now(), acknowledged_by_contact_id ="
+            " (SELECT contact_id FROM core.alerts WHERE incident_id = core.incidents.id LIMIT 1)",
+            "el incidente ya fue confirmado",
+        ),
+        (
+            "status = 'resolved', resolved_at = now(), resolution = 'false_alarm'",
+            "el incidente ya fue resuelto",
+        ),
+    ],
+    ids=["confirmado", "resuelto"],
+)
+async def test_pending_alerts_of_a_handled_incident_are_not_sent(
+    engine: AsyncEngine, owner: asyncpg.Connection, change: str, reason: str
+) -> None:
+    station, (ana, caro) = await _incident_alerting(engine, owner, "Ana", "Caro")
+    [incident] = await incidents(owner, station.graph)
+    await owner.execute(f"UPDATE core.incidents SET {change} WHERE id = $1", incident["id"])
+
+    sender = FailsTwice(0)
+    clock = FakeClock(SystemClock().now() + timedelta(seconds=1))
+    await EmailDispatcher(SqlDispatchQueue(engine), sender, clock, "http://x").dispatch(10)
+
+    assert sender.calls == 0
+    for address in (ana, caro):
+        assert (await _alert(owner, address))["status"] == "skipped"
+    skipped = await owner.fetch(
+        "SELECT payload->>'reason' AS reason FROM core.incident_events"
+        " WHERE incident_id = $1 AND event_type = 'alert_skipped'",
+        incident["id"],
+    )
+    assert [r["reason"] for r in skipped] == [reason, reason]
