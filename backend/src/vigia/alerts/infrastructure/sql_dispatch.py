@@ -10,7 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from vigia.alerts.application.dispatch import ClaimedAlert
 from vigia.alerts.domain.alerts import Channel
 from vigia.alerts.domain.delivery import MAX_ATTEMPTS, AckToken
-from vigia.alerts.domain.email import AlertMessage
+from vigia.alerts.infrastructure.alert_messages import (
+    MESSAGE_COLUMNS,
+    MESSAGE_JOINS,
+    message_from_row,
+)
 
 # Pendientes, vencidas y con todos sus intentos gastados: el worker murió en el último
 # envío sin dejar resultado. Se dan por fallidas, con su evento, en lugar de quedar
@@ -35,7 +39,7 @@ _ABANDON = text("""
 """)
 
 # El reclamo y los datos del mensaje en una sola sentencia.
-_CLAIM = text("""
+_CLAIM = text(f"""
     WITH due AS (
         SELECT id FROM core.alerts
         WHERE status = 'pending' AND channel = :channel AND next_attempt_at <= :now
@@ -49,19 +53,11 @@ _CLAIM = text("""
         FROM due WHERE a.id = due.id
         RETURNING a.id, a.incident_id, a.contact_id, a.level_order, a.attempts, a.destination
     )
-    SELECT c.id AS alert_id, c.incident_id, i.organization_id, c.contact_id, c.level_order,
-           c.attempts, c.destination, ct.full_name AS contact_name,
-           o.name AS organization_name, o.timezone, z.name AS zone_name, i.severity,
-           r.type AS rule_type, s.code AS station_code, s.name AS station_name, s.unit,
-           i.trigger_value, i.opened_at
-    FROM claimed c
-    JOIN core.incidents i ON i.id = c.incident_id
-    JOIN core.organizations o ON o.id = i.organization_id
-    JOIN core.risk_zones z ON z.id = i.zone_id
-    JOIN core.rules r ON r.id = i.rule_id
-    JOIN core.contacts ct ON ct.id = c.contact_id
-    LEFT JOIN core.stations s ON s.id = i.station_id
-    ORDER BY c.id
+    SELECT a.id AS alert_id, a.incident_id, i.organization_id, a.contact_id, a.attempts,
+           a.destination, {MESSAGE_COLUMNS}
+    FROM claimed a
+    {MESSAGE_JOINS}
+    ORDER BY a.id
 """)
 
 # `attempts = :attempt` en cada paso: si el reclamo venció y otro dispatcher la tomó, el
@@ -123,20 +119,7 @@ class SqlDispatchQueue:
                     level_order=r.level_order,
                     attempt=r.attempts,
                     destination=r.destination,
-                    message=AlertMessage(
-                        contact_name=r.contact_name,
-                        organization_name=r.organization_name,
-                        timezone=r.timezone,
-                        zone_name=r.zone_name,
-                        severity=r.severity,
-                        rule_type=r.rule_type,
-                        station_code=r.station_code,
-                        station_name=r.station_name,
-                        unit=r.unit,
-                        trigger_value=r.trigger_value,
-                        opened_at=r.opened_at,
-                        level_order=r.level_order,
-                    ),
+                    message=message_from_row(r),
                 )
                 for r in rows
             ]
