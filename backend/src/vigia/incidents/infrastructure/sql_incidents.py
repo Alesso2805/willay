@@ -20,11 +20,11 @@ from vigia.incidents.domain.incidents import EvidenceReading
 # Con INSERT ... SELECT los parámetros no toman el tipo de la columna: van con CAST.
 _OPEN = text("""
     INSERT INTO core.incidents (id, organization_id, zone_id, rule_id, station_id, severity,
-                                trigger_value, dedup_key, opened_at)
+                                trigger_value, dedup_key, opened_at, level_started_at)
     SELECT CAST(:id AS uuid), CAST(:organization_id AS uuid), CAST(:zone_id AS uuid),
            CAST(:rule_id AS uuid), CAST(:station_id AS uuid), CAST(:severity AS text),
            CAST(:trigger_value AS double precision), CAST(:dedup_key AS text),
-           CAST(:now AS timestamptz)
+           CAST(:now AS timestamptz), CAST(:now AS timestamptz)
     WHERE NOT EXISTS (
         SELECT 1 FROM core.incidents
         WHERE dedup_key = CAST(:dedup_key AS text) AND status = 'resolved'

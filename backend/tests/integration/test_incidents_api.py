@@ -66,8 +66,9 @@ async def _incident(owner: asyncpg.Connection, opened_at: datetime | None = None
     await owner.execute(
         """
         INSERT INTO core.incidents (id, organization_id, zone_id, rule_id, station_id,
-                                    severity, trigger_value, dedup_key, opened_at)
-        VALUES ($1, $2, $3, $4, $5, 'critical', 34.2, $6, $7)
+                                    severity, trigger_value, dedup_key, opened_at,
+                                    level_started_at)
+        VALUES ($1, $2, $3, $4, $5, 'critical', 34.2, $6, $7, $7)
         """,
         incident_id, data.RIMAC.id, DROP_RULE.zone_id, DROP_RULE.id, DROP_RULE.station_id,
         f"test:{uuid4()}", opened_at,
