@@ -1,4 +1,4 @@
-"""Enviar las alertas de correo pendientes (VIG-20; VIG-22 suma Telegram con el mismo patrón).
+"""Enviar las alertas pendientes por correo (VIG-20) y Telegram (VIG-22), con el mismo patrón.
 
 Como la cola de lecturas (ADR-0002), cada alerta pasa por transacciones cortas:
 1. reclamo: SKIP LOCKED, `attempts + 1` y visibility timeout de 60 s, así otro dispatcher
@@ -22,9 +22,11 @@ from uuid import UUID
 
 import structlog
 
+from vigia.alerts.application.telegram_bot import TelegramError
 from vigia.alerts.domain.alerts import Channel
 from vigia.alerts.domain.delivery import AckToken, new_ack_token, retry_at
 from vigia.alerts.domain.email import AlertMessage, EmailContent, compose_email
+from vigia.alerts.domain.telegram import compose_alert_text
 from vigia.shared.clock import Clock
 
 log = structlog.get_logger()
@@ -42,6 +44,7 @@ class ClaimedAlert:
     attempt: int
     destination: str
     message: AlertMessage
+    channel: Channel = Channel.EMAIL
 
 
 class DeliveryError(Exception):
@@ -83,18 +86,64 @@ class DispatchResult:
     failed: int
 
 
-class EmailDispatcher:
-    def __init__(
-        self, queue: DispatchQueue, sender: EmailSender, clock: Clock, confirm_base_url: str
-    ) -> None:
-        self._queue = queue
+class DeliveryChannel(Protocol):
+    """Cómo se entrega una alerta por un canal: arma su mensaje y lo envía."""
+
+    @property
+    def channel(self) -> Channel: ...
+
+    async def deliver(self, destination: str, message: AlertMessage, token: str) -> None:
+        """Lanza DeliveryError si el canal no la aceptó."""
+        ...
+
+
+class EmailChannel:
+    """Correo con el enlace a la página de confirmación (VIG-20, VIG-23)."""
+
+    channel = Channel.EMAIL
+
+    def __init__(self, sender: EmailSender, confirm_base_url: str) -> None:
         self._sender = sender
-        self._clock = clock
         self._confirm_base_url = confirm_base_url.rstrip("/")
+
+    async def deliver(self, destination: str, message: AlertMessage, token: str) -> None:
+        confirm_url = f"{self._confirm_base_url}/confirmar/{token}"
+        await self._sender.send(destination, compose_email(message, confirm_url))
+
+
+class TelegramSender(Protocol):
+    async def send_alert(self, chat_id: int, text: str, callback_data: str) -> None:
+        """Lanza TelegramError si Telegram no aceptó el mensaje."""
+        ...
+
+
+class TelegramChannel:
+    """Mensaje de Telegram con un botón cuyo `callback_data` es el token (VIG-22): 43
+    caracteres, dentro de los 64 que admite Telegram."""
+
+    channel = Channel.TELEGRAM
+
+    def __init__(self, api: TelegramSender) -> None:
+        self._api = api
+
+    async def deliver(self, destination: str, message: AlertMessage, token: str) -> None:
+        try:
+            await self._api.send_alert(int(destination), compose_alert_text(message), token)
+        except TelegramError as exc:
+            raise DeliveryError(str(exc)) from None
+
+
+class AlertDispatcher:
+    def __init__(self, queue: DispatchQueue, channel: DeliveryChannel, clock: Clock) -> None:
+        self._queue = queue
+        self._channel = channel
+        self._clock = clock
 
     async def dispatch(self, limit: int) -> DispatchResult:
         now = self._clock.now()
-        claimed = await self._queue.claim(Channel.EMAIL, now, now + VISIBILITY_TIMEOUT, limit)
+        claimed = await self._queue.claim(
+            self._channel.channel, now, now + VISIBILITY_TIMEOUT, limit
+        )
         outcomes = await asyncio.gather(
             *(self._deliver(alert) for alert in claimed), return_exceptions=True
         )
@@ -113,10 +162,11 @@ class EmailDispatcher:
         token = new_ack_token(self._clock.now())
         if not await self._queue.attach_token(alert, token):
             return None
-        content = compose_email(alert.message, f"{self._confirm_base_url}/confirmar/{token.token}")
-        bound = log.bind(alert_id=str(alert.alert_id), attempt=alert.attempt, channel="email")
+        bound = log.bind(
+            alert_id=str(alert.alert_id), attempt=alert.attempt, channel=alert.channel.value
+        )
         try:
-            await self._sender.send(alert.destination, content)
+            await self._channel.deliver(alert.destination, alert.message, token.token)
         except DeliveryError as exc:
             now = self._clock.now()
             retry = retry_at(alert.attempt, now)
@@ -126,3 +176,19 @@ class EmailDispatcher:
         await self._queue.sent(alert, self._clock.now())
         bound.info("alert_sent", incident_id=str(alert.incident_id))
         return True
+
+
+class EmailDispatcher(AlertDispatcher):
+    """Atajo del dispatcher de correo."""
+
+    def __init__(
+        self, queue: DispatchQueue, sender: EmailSender, clock: Clock, confirm_base_url: str
+    ) -> None:
+        super().__init__(queue, EmailChannel(sender, confirm_base_url), clock)
+
+
+class TelegramDispatcher(AlertDispatcher):
+    """Atajo del dispatcher de Telegram."""
+
+    def __init__(self, queue: DispatchQueue, api: TelegramSender, clock: Clock) -> None:
+        super().__init__(queue, TelegramChannel(api), clock)

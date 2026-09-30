@@ -10,6 +10,8 @@ abrirlo. Uno nuevo invalida el anterior.
 
 from datetime import timedelta
 
+from vigia.alerts.domain.email import AlertMessage, summary
+
 LINK_TTL = timedelta(days=7)
 MAX_START_PARAMETER = 64
 
@@ -40,3 +42,24 @@ def start_parameter(text: str) -> str | None:
 
 def is_start(text: str) -> bool:
     return text.strip().split(" ", 1)[0].split("@", 1)[0] == "/start"
+
+
+CONFIRM_BUTTON = "Confirmar que lo vi"
+
+
+def compose_alert_text(message: AlertMessage) -> str:
+    """El mensaje de una alerta por Telegram: el mismo resumen del correo, en texto plano
+    (sin Markdown: un nombre con `*` o `_` rompería el formato y Telegram lo rechazaría).
+    El botón de confirmación va aparte, con el token como `callback_data`."""
+    severity, cause, zone = (value for label, value in summary(message)[:3])
+    details = [f"{label}: {value}" for label, value in summary(message)[3:]]
+    return "\n".join(
+        [
+            f"Vigía · {severity}: {cause} en {zone}",
+            "",
+            *details,
+            "",
+            "Si nadie lo confirma, Vigía avisará al siguiente nivel.",
+            "Herramienta de apoyo: no reemplaza los avisos oficiales (INDECI, COER, SISMATE).",
+        ]
+    )

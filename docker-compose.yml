@@ -147,6 +147,8 @@ services:
       VIGIA_SMTP_PORT: "1025"
       # Base de los enlaces de confirmación de los correos: la API vista desde el navegador.
       VIGIA_PUBLIC_URL: http://localhost:${VIGIA_API_PORT:-8000}
+      # Sin token (vacío), las alertas de Telegram quedan pendientes.
+      VIGIA_TELEGRAM_BOT_TOKEN: ${VIGIA_TELEGRAM_BOT_TOKEN:-}
     healthcheck:
       <<: *worker-healthcheck
       test: ["CMD", "python", "-m", "vigia.workers.healthcheck", "dispatcher"]

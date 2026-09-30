@@ -13,6 +13,7 @@ from typing import Any
 import httpx2
 
 from vigia.alerts.application.telegram_bot import TelegramError, Update
+from vigia.alerts.domain.telegram import CONFIRM_BUTTON
 
 logging.getLogger("httpx2").setLevel(logging.WARNING)
 
@@ -42,6 +43,16 @@ class TelegramBotApi:
 
     async def send_message(self, chat_id: int, text: str) -> None:
         await self._call("sendMessage", {"chat_id": chat_id, "text": text}, timeout_s=10)
+
+    async def send_alert(self, chat_id: int, text: str, callback_data: str) -> None:
+        """Mensaje con un botón en línea: el clic llega al bot como `callback_query`."""
+        button = {"text": CONFIRM_BUTTON, "callback_data": callback_data}
+        payload = {
+            "chat_id": chat_id,
+            "text": text,
+            "reply_markup": {"inline_keyboard": [[button]]},
+        }
+        await self._call("sendMessage", payload, timeout_s=10)
 
     async def aclose(self) -> None:
         await self._client.aclose()

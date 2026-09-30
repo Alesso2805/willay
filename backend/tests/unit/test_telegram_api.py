@@ -88,3 +88,23 @@ async def test_errors_never_carry_the_token(
     # La traza completa (lo que registra el worker al fallar) tampoco lo lleva.
     trace = "".join(traceback.format_exception(caught.value))
     assert TOKEN not in trace
+
+
+async def test_an_alert_carries_a_confirm_button_with_the_token() -> None:
+    sent: list[dict[str, object]] = []
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        sent.append(json.loads(request.content))
+        return httpx2.Response(200, json={"ok": True, "result": {}})
+
+    token = "t" * 43
+    await _api(handler).send_alert(42, "Vigía · CRÍTICO", token)
+    assert sent == [
+        {
+            "chat_id": 42,
+            "text": "Vigía · CRÍTICO",
+            "reply_markup": {
+                "inline_keyboard": [[{"text": "Confirmar que lo vi", "callback_data": token}]]
+            },
+        }
+    ]
