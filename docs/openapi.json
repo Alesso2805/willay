@@ -1,6 +1,14 @@
 {
   "components": {
     "schemas": {
+      "Channel": {
+        "enum": [
+          "email",
+          "telegram"
+        ],
+        "title": "Channel",
+        "type": "string"
+      },
       "GeoJsonGeometry": {
         "description": "Polygon (lo que dibuja el mapa) o MultiPolygon. Coordenadas [longitud, latitud].",
         "properties": {
@@ -515,6 +523,54 @@
         "title": "IssuedKeyOut",
         "type": "object"
       },
+      "LevelIn": {
+        "additionalProperties": false,
+        "properties": {
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/TargetIn"
+            },
+            "title": "Targets",
+            "type": "array"
+          },
+          "wait_s": {
+            "title": "Wait S",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "wait_s",
+          "targets"
+        ],
+        "title": "LevelIn",
+        "type": "object"
+      },
+      "LevelOut": {
+        "properties": {
+          "level_order": {
+            "title": "Level Order",
+            "type": "integer"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/TargetOut"
+            },
+            "title": "Targets",
+            "type": "array"
+          },
+          "wait_s": {
+            "title": "Wait S",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "level_order",
+          "wait_s",
+          "targets"
+        ],
+        "title": "LevelOut",
+        "type": "object"
+      },
       "MeResponse": {
         "properties": {
           "email": {
@@ -582,6 +638,61 @@
         ],
         "title": "Permission",
         "type": "string"
+      },
+      "PolicyIn": {
+        "additionalProperties": false,
+        "properties": {
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/LevelIn"
+            },
+            "title": "Levels",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "levels"
+        ],
+        "title": "PolicyIn",
+        "type": "object"
+      },
+      "PolicyOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/LevelOut"
+            },
+            "title": "Levels",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "levels",
+          "created_at"
+        ],
+        "title": "PolicyOut",
+        "type": "object"
       },
       "ReadingBatchIn": {
         "additionalProperties": false,
@@ -926,6 +1037,48 @@
         "title": "StationStatus",
         "type": "string"
       },
+      "TargetIn": {
+        "additionalProperties": false,
+        "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "contact_group_id": {
+            "format": "uuid",
+            "title": "Contact Group Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contact_group_id",
+          "channel"
+        ],
+        "title": "TargetIn",
+        "type": "object"
+      },
+      "TargetOut": {
+        "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "contact_group_id": {
+            "format": "uuid",
+            "title": "Contact Group Id",
+            "type": "string"
+          },
+          "contact_group_name": {
+            "title": "Contact Group Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contact_group_id",
+          "contact_group_name",
+          "channel"
+        ],
+        "title": "TargetOut",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -1263,6 +1416,227 @@
         "summary": "Health",
         "tags": [
           "ops"
+        ]
+      }
+    },
+    "/v1/escalation-policies": {
+      "get": {
+        "operationId": "list_policies_v1_escalation_policies_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PolicyOut"
+                  },
+                  "title": "Response List Policies V1 Escalation Policies Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Políticas de escalamiento de la organización",
+        "tags": [
+          "alerts"
+        ]
+      },
+      "post": {
+        "operationId": "post_policy_v1_escalation_policies_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "Ya hay una política con ese nombre"
+          },
+          "422": {
+            "description": "Niveles inválidos o grupos que no son de la organización"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Crear una política",
+        "tags": [
+          "alerts"
+        ]
+      }
+    },
+    "/v1/escalation-policies/{policy_id}": {
+      "delete": {
+        "operationId": "delete_policy_route_v1_escalation_policies__policy_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "policy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Policy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No existe"
+          },
+          "409": {
+            "description": "Alguna regla la usa"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Borrar una política que ninguna regla usa",
+        "tags": [
+          "alerts"
+        ]
+      },
+      "get": {
+        "operationId": "get_policy_v1_escalation_policies__policy_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "policy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Policy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No existe"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Una política",
+        "tags": [
+          "alerts"
+        ]
+      },
+      "put": {
+        "operationId": "put_policy_v1_escalation_policies__policy_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "policy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Policy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No existe"
+          },
+          "409": {
+            "description": "Ya hay una política con ese nombre"
+          },
+          "422": {
+            "description": "Niveles inválidos o grupos que no son de la organización"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reemplazar una política (nombre y niveles); aplica a los incidentes en curso",
+        "tags": [
+          "alerts"
         ]
       }
     },
