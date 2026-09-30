@@ -9,7 +9,7 @@ from uuid import UUID
 from sqlalchemy import Row, text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from vigia.incidents.application.lifecycle import Actor, Incident, IncidentEvent
+from vigia.incidents.application.lifecycle import EventActor, Incident, IncidentEvent
 from vigia.incidents.domain.lifecycle import IncidentStatus, Resolution
 
 # La zona y la regla siempre existen (no se borran: se desactivan); la estación puede
@@ -52,9 +52,11 @@ _LOCK = text("""
     FOR UPDATE
 """)
 
+# Solo uno de los dos acknowledged_by_* queda con valor (CHECK de la migración 0002).
 _ACKNOWLEDGE = text("""
     UPDATE core.incidents
-    SET status = 'acknowledged', acknowledged_at = :now, acknowledged_by_user_id = :user_id
+    SET status = 'acknowledged', acknowledged_at = :now,
+        acknowledged_by_user_id = :user_id, acknowledged_by_contact_id = :contact_id
     WHERE id = :id
 """)
 
@@ -67,7 +69,7 @@ _RESOLVE = text("""
 _EVENT = text("""
     INSERT INTO core.incident_events (incident_id, organization_id, occurred_at, event_type,
                                       actor_type, actor_id, payload)
-    VALUES (:incident_id, :organization_id, :now, :event_type, 'user', :actor_id,
+    VALUES (:incident_id, :organization_id, :now, :event_type, :actor_type, :actor_id,
             CAST(:payload AS jsonb))
 """)
 
@@ -109,8 +111,17 @@ class SqlIncidentRepository:
         )
         return IncidentStatus(status) if status is not None else None
 
-    async def acknowledge(self, incident_id: UUID, user_id: UUID, now: datetime) -> None:
-        await self._conn.execute(_ACKNOWLEDGE, {"id": incident_id, "user_id": user_id, "now": now})
+    async def acknowledge(self, incident_id: UUID, actor: EventActor, now: datetime) -> None:
+        by_user = actor.actor_type == "user"
+        await self._conn.execute(
+            _ACKNOWLEDGE,
+            {
+                "id": incident_id,
+                "now": now,
+                "user_id": actor.actor_id if by_user else None,
+                "contact_id": None if by_user else actor.actor_id,
+            },
+        )
 
     async def resolve(self, incident_id: UUID, resolution: Resolution, now: datetime) -> None:
         await self._conn.execute(
@@ -120,7 +131,7 @@ class SqlIncidentRepository:
     async def add_event(
         self,
         incident_id: UUID,
-        actor: Actor,
+        actor: EventActor,
         event_type: str,
         payload: Mapping[str, Any],
         now: datetime,
@@ -132,7 +143,8 @@ class SqlIncidentRepository:
                 "organization_id": actor.organization_id,
                 "now": now,
                 "event_type": event_type,
-                "actor_id": actor.user_id,
+                "actor_type": actor.actor_type,
+                "actor_id": actor.actor_id,
                 "payload": json.dumps(dict(payload)),
             },
         )
