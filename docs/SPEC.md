@@ -349,7 +349,7 @@ En un sistema de alertas, una alerta perdida es peor que una duplicada: toda dec
 | Límite de uso | 60 lotes por minuto por estación, contados en Postgres, válido con varias réplicas | Test con 2 réplicas que recibe 429 |
 | Auditoría | `incident_events` y `audit_log` append-only a nivel de permisos de BD; permisos correctos también en tablas futuras | Tests con el rol `vigia_app` |
 | Evidencia | La línea de tiempo de un incidente sigue completa aunque las lecturas originales expiren | Test que borra lecturas y consulta el incidente |
-| Privacidad | Email y `chat_id` de contactos solo visibles para admin y operator; nunca en logs | Test de serialización por rol y revisión de logs |
+| Privacidad | El email de los contactos solo lo ven admin y operator; el `chat_id` nunca sale de la API (solo se informa si el contacto tiene Telegram vinculado); ninguno de los dos va a los logs | Test de serialización por rol y revisión de logs |
 | Observabilidad | Logs JSON con `correlation_id` de la lectura al incidente y la alerta; healthcheck en API y cada worker | Trazar un incidente de demo solo con logs |
 | Calidad | Cobertura ≥ 80 % en dominio; Ruff, Mypy strict y ESLint sin errores | GitHub Actions |
 | Accesibilidad | Panel con WCAG 2.1 AA en vistas principales; el estado nunca se comunica solo por color | axe y Lighthouse en CI |
@@ -364,7 +364,7 @@ En un sistema de alertas, una alerta perdida es peor que una duplicada: toda dec
 | Resolver incidentes (resuelto o falsa alarma) | | | ✔ | ✔ |
 | Gestionar zonas y estaciones (incluye rotar API keys) | | | ✔ | ✔ |
 | Gestionar reglas | | | ✔ | ✔ |
-| Ver datos de contacto (email, `chat_id`) | | | ✔ | ✔ |
+| Ver datos de contacto (email y si tiene Telegram vinculado; el `chat_id` nunca se muestra) | | | ✔ | ✔ |
 | Gestionar contactos y grupos | | | | ✔ |
 | Gestionar políticas de escalamiento | | | | ✔ |
 | Ver auditoría | | | | ✔ |
