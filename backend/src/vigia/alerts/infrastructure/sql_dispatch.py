@@ -8,13 +8,38 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from vigia.alerts.application.dispatch import ClaimedAlert
-from vigia.alerts.domain.alerts import Channel
+from vigia.alerts.domain.alerts import SKIP_ACKNOWLEDGED, SKIP_RESOLVED, Channel
 from vigia.alerts.domain.delivery import MAX_ATTEMPTS, AckToken
 from vigia.alerts.infrastructure.alert_messages import (
     MESSAGE_COLUMNS,
     MESSAGE_JOINS,
     message_from_row,
 )
+
+# Pendientes de un incidente que ya no está abierto: se omiten con su evento, también
+# las que otro dispatcher tiene reclamadas (su resultado ya no cuenta: exige `pending`).
+_CANCEL = text("""
+    WITH cancelled AS (
+        UPDATE core.alerts a
+        SET status = 'skipped', next_attempt_at = NULL
+        FROM core.incidents i
+        WHERE i.id = a.incident_id AND a.status = 'pending' AND a.channel = :channel
+          AND i.status <> 'open'
+        RETURNING a.id, a.incident_id, a.contact_id, a.level_order, i.organization_id,
+                  i.status AS incident_status
+    )
+    INSERT INTO core.incident_events (incident_id, organization_id, occurred_at, event_type,
+                                      actor_type, payload)
+    SELECT c.incident_id, c.organization_id, CAST(:now AS timestamptz), 'alert_skipped',
+           'system',
+           jsonb_build_object('alert_id', c.id, 'contact_id', c.contact_id,
+                              'channel', CAST(:channel AS text), 'level_order', c.level_order,
+                              'reason', CASE c.incident_status
+                                            WHEN 'acknowledged'
+                                            THEN CAST(:skip_acknowledged AS text)
+                                            ELSE CAST(:skip_resolved AS text) END)
+    FROM cancelled c
+""")
 
 # Pendientes, vencidas y con todos sus intentos gastados: el worker murió en el último
 # envío sin dejar resultado. Se dan por fallidas, con su evento, en lugar de quedar
@@ -106,6 +131,10 @@ class SqlDispatchQueue:
     ) -> list[ClaimedAlert]:
         params = {"channel": channel.value, "now": now, "max_attempts": MAX_ATTEMPTS}
         async with self._engine.begin() as tx:
+            await tx.execute(
+                _CANCEL,
+                params | {"skip_acknowledged": SKIP_ACKNOWLEDGED, "skip_resolved": SKIP_RESOLVED},
+            )
             await tx.execute(_ABANDON, params)
             rows = await tx.execute(
                 _CLAIM, params | {"visible_again_at": visible_again_at, "limit": limit}

@@ -52,8 +52,9 @@ class DispatchQueue(Protocol):
     async def claim(
         self, channel: Channel, now: datetime, visible_again_at: datetime, limit: int
     ) -> list[ClaimedAlert]:
-        """Reclama alertas pendientes y vencidas; da por fallidas las que agotaron sus
-        intentos sin resultado (el worker murió a mitad de un envío)."""
+        """Reclama alertas pendientes y vencidas de incidentes abiertos. Antes omite las
+        pendientes de incidentes ya confirmados o resueltos y da por fallidas las que
+        agotaron sus intentos sin resultado (el worker murió a mitad de un envío)."""
         ...
 
     async def attach_token(self, alert: ClaimedAlert, token: AckToken) -> bool:

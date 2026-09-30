@@ -41,6 +41,11 @@ class Target:
         return AlertStatus.PENDING if self.reachable else AlertStatus.SKIPPED
 
 
+# Una alerta pendiente de un incidente que ya no está abierto no se envía (SPEC): nadie
+# debe recibir un "confirma que lo viste" de algo ya atendido.
+SKIP_ACKNOWLEDGED = "el incidente ya fue confirmado"
+SKIP_RESOLVED = "el incidente ya fue resuelto"
+
 SKIP_REASON = {
     Channel.EMAIL: "el contacto no tiene correo",
     Channel.TELEGRAM: "el contacto no vinculó Telegram",
