@@ -3,7 +3,7 @@
 Product decisions (SPEC.md, scope, "Territorio - Estaciones" row):
 - The unit is not chosen: it follows from the variable, so a threshold rule never compares
   metres with centimetres.
-- The code identifies the station outside Vigía (documents, field crews, simulator key file):
+- The code identifies the station outside Willay (documents, field crews, simulator key file):
   fixed at creation and never changed. The name is editable.
 """
 

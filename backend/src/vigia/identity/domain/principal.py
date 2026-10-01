@@ -3,7 +3,7 @@
 - The `organization` claim is an object `{alias: {"id": uuid}}` with exactly one key; zero,
   several or any other shape is rejected (fail closed).
 - The tenant is identified by the Keycloak `id`, never by the alias.
-- Roles are the Keycloak realm roles Vigía knows; the rest are ignored.
+- Roles are the Keycloak realm roles Willay knows; the rest are ignored.
 """
 
 from collections.abc import Iterable, Mapping

@@ -1,4 +1,4 @@
-# Vigía local stack. `make up` creates .env from .env.example if it is missing.
+# Willay local stack. `make up` creates .env from .env.example if it is missing.
 # Startup order: postgres -> (keycloak, migrate) -> api, workers, dashboard.
 
 x-backend: &backend

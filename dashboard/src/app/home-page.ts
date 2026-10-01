@@ -17,7 +17,7 @@ interface Summary {
   at: number;
 }
 
-/** Home: what an operator wants to know on opening the dashboard, and who they are in Vigía. */
+/** Home: what an operator wants to know on opening the dashboard, and who they are in Willay. */
 @Component({
   selector: 'app-home-page',
   imports: [RouterLink, Icon, Notice, PageHeader],
@@ -31,9 +31,9 @@ interface Summary {
       @if (me.permissions.length === 0) {
         <!-- SPEC: without roles only /v1/me is allowed, so the dashboard explains why nothing shows. -->
         <app-notice tone="info" class="mb-6">
-          <p class="font-semibold">Tu usuario todavía no tiene un rol en Vigía</p>
+          <p class="font-semibold">Tu usuario todavía no tiene un rol en Willay</p>
           <p class="mt-1">
-            Por eso no ves zonas, estaciones ni incidentes. Pide a quien administra Vigía en tu
+            Por eso no ves zonas, estaciones ni incidentes. Pide a quien administra Willay en tu
             organización que te asigne uno.
           </p>
         </app-notice>

@@ -14,14 +14,14 @@ from vigia.alerts.domain.email import AlertMessage, local_time, summary
 LINK_TTL = timedelta(days=7)
 MAX_START_PARAMETER = 64
 
-LINKED = "Listo, {name}: desde ahora recibirás aquí las alertas de Vigía de {organization}."
+LINKED = "Listo, {name}: desde ahora recibirás aquí las alertas de Willay de {organization}."
 INVALID_LINK = (
-    "Este enlace no es válido o ya venció. Pide uno nuevo a quien administra Vigía en tu "
+    "Este enlace no es válido o ya venció. Pide uno nuevo a quien administra Willay en tu "
     "organización."
 )
 HOW_TO_LINK = (
-    "Este bot solo envía alertas de Vigía. Para recibirlas, abre el enlace que te compartió "
-    "quien administra Vigía en tu organización."
+    "Este bot solo envía alertas de Willay. Para recibirlas, abre el enlace que te compartió "
+    "quien administra Willay en tu organización."
 )
 
 
@@ -44,7 +44,7 @@ def is_start(text: str) -> bool:
 
 
 CONFIRM_BUTTON = "Confirmar que lo vi"
-ESCALATION_NOTE = "Si nadie lo confirma, Vigía avisará al siguiente nivel."
+ESCALATION_NOTE = "Si nadie lo confirma, Willay avisará al siguiente nivel."
 
 
 def compose_alert_text(message: AlertMessage) -> str:
@@ -55,7 +55,7 @@ def compose_alert_text(message: AlertMessage) -> str:
     details = [f"{label}: {value}" for label, value in summary(message)[3:]]
     return "\n".join(
         [
-            f"Vigía · {severity}: {cause} en {zone}",
+            f"Willay · {severity}: {cause} en {zone}",
             "",
             *details,
             "",
@@ -69,7 +69,7 @@ MAX_CLICK_ANSWER = 200
 
 CLICK_ANSWER = {
     ConfirmOutcome.CONFIRMED: (
-        "Gracias: confirmaste la alerta. Vigía no avisará al siguiente nivel."
+        "Gracias: confirmaste la alerta. Willay no avisará al siguiente nivel."
     ),
     ConfirmOutcome.ALREADY_ACKNOWLEDGED: (
         "Gracias: quedó registrado que la viste. Otra persona ya había confirmado el incidente."

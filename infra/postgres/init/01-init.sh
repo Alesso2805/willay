@@ -21,7 +21,7 @@ CREATE ROLE keycloak LOGIN PASSWORD :'kc_pw';
 CREATE DATABASE vigia OWNER vigia_owner;
 CREATE DATABASE keycloak OWNER keycloak;
 
--- Nobody but Vigía's roles connects to its database.
+-- Nobody but Willay's roles connects to its database.
 REVOKE ALL ON DATABASE vigia FROM PUBLIC;
 GRANT CONNECT ON DATABASE vigia TO vigia_app;
 REVOKE ALL ON DATABASE keycloak FROM PUBLIC;

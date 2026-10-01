@@ -37,7 +37,7 @@ class UserRepository(Protocol):
 
 
 class InvalidClaimsError(Exception):
-    """Required claims (sub, email) are missing: the token is unusable for Vigía (401)."""
+    """Required claims (sub, email) are missing: the token is unusable for Willay (401)."""
 
 
 async def authenticate(
@@ -49,7 +49,7 @@ async def authenticate(
     organization = await organizations.by_keycloak_id(membership.keycloak_org_id)
     if organization is None:
         raise UnknownOrganizationError(
-            f"organization {membership.keycloak_org_id} is not registered in Vigía"
+            f"organization {membership.keycloak_org_id} is not registered in Willay"
         )
     organization_id = organization.id
 

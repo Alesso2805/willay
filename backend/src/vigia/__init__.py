@@ -1,1 +1,1 @@
-"""Vigía: multi-tenant early-warning system."""
+"""Willay: multi-tenant early-warning system."""

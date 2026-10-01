@@ -156,7 +156,7 @@ async def test_the_worker_emails_level_one_and_the_link_confirms_it(
         await worker
 
     [message] = mailpit.messages_to(ana)
-    assert message["Subject"] == "[Vigía] ADVERTENCIA · Valor fuera de límite en Zona (EST-1)"
+    assert message["Subject"] == "[Willay] ADVERTENCIA · Valor fuera de límite en Zona (EST-1)"
     text = mailpit.text_of(message["ID"])
     assert "Hola Ana:" in text
     assert "Valor:     3.6 m3/s" in text

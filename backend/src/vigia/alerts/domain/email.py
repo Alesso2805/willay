@@ -2,7 +2,7 @@
 
 Plain text so it reads in any client, even a basic phone, without images or styles that
 may be blocked. Times use the organization's timezone (the database stores UTC). The
-footer states Vigía does not replace official warnings (SPEC: Explicit ethical risk).
+footer states Willay does not replace official warnings (SPEC: Explicit ethical risk).
 """
 
 from dataclasses import dataclass
@@ -83,21 +83,21 @@ def compose_email(message: AlertMessage, confirm_url: str) -> EmailContent:
     lines = [
         f"Hola {message.contact_name}:",
         "",
-        f"Vigía abrió {_phrase(message.severity)} en la zona {message.zone_name}.",
+        f"Willay abrió {_phrase(message.severity)} en la zona {message.zone_name}.",
         "",
         *details,
         "",
         "Confirma que lo viste en este enlace (vale 24 horas):",
         confirm_url,
         "",
-        "Si nadie lo confirma, Vigía avisará al siguiente nivel.",
+        "Si nadie lo confirma, Willay avisará al siguiente nivel.",
         "",
         "--",
-        f"Vigía · {message.organization_name}",
+        f"Willay · {message.organization_name}",
         "Herramienta de apoyo para operadores: no reemplaza los avisos oficiales",
         "(INDECI, COER, SISMATE).",
     ]
-    return EmailContent(subject=f"[Vigía] {severity} · {cause} en {where}", body="\n".join(lines))
+    return EmailContent(subject=f"[Willay] {severity} · {cause} en {where}", body="\n".join(lines))
 
 
 def _phrase(severity: str) -> str:

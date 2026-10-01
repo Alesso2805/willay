@@ -58,7 +58,7 @@ def test_the_ack_token_has_256_bits_and_only_its_hash_is_kept() -> None:
 
 def test_the_email_has_zone_severity_value_local_time_and_link() -> None:
     content = compose_email(MESSAGE, "http://localhost:8000/confirmar/abc")
-    assert content.subject == "[Vigía] CRÍTICO · Cambio brusco en Chosica (RIM-CHA-01)"
+    assert content.subject == "[Willay] CRÍTICO · Cambio brusco en Chosica (RIM-CHA-01)"
     body = content.body
     assert body.startswith("Hola Óscar Operador:")
     assert "incidente CRÍTICO en la zona Chosica" in body
