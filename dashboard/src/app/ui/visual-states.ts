@@ -60,6 +60,15 @@ export const STATION_STATES: Readonly<Record<StationState, VisualState>> = {
   inactive: { label: 'Inactiva', icon: 'pause', ...SLATE },
 };
 
+export type ConnectionState = 'connecting' | 'live' | 'reconnecting';
+
+/** The live channel (VIG-25): while it is down, what the dashboard shows may be stale. */
+export const CONNECTION_STATES: Readonly<Record<ConnectionState, VisualState>> = {
+  connecting: { label: 'Conectando…', icon: 'refresh', ...SLATE },
+  live: { label: 'En vivo', icon: 'broadcast', ...GREEN },
+  reconnecting: { label: 'Sin conexión en vivo', icon: 'signal-off', ...AMBER },
+};
+
 /** UI notices (errors, warnings): not states, but pages do not pick their colors either. */
 export type NoticeTone = 'error' | 'warning' | 'info';
 
@@ -76,4 +85,5 @@ export const ALL_CATALOGS = {
   severity: SEVERITIES,
   risk: RISK_LEVEL_STATES,
   station: STATION_STATES,
+  connection: CONNECTION_STATES,
 } as const;

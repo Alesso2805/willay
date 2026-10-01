@@ -6,6 +6,7 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { of } from 'rxjs';
 import { App } from './app';
 import { routes } from './app.routes';
+import { FakeLiveEvents, provideFakeLiveEvents } from './realtime/live-events.testing';
 import { Me } from './session';
 import { settings } from './settings';
 import { seriousViolations } from './ui/axe';
@@ -32,6 +33,7 @@ function setup(isAuthenticated: boolean) {
     authorize: vi.fn(),
     logoff: vi.fn(() => of(null)),
   };
+  const live = new FakeLiveEvents();
   TestBed.configureTestingModule({
     imports: [App],
     providers: [
@@ -39,12 +41,13 @@ function setup(isAuthenticated: boolean) {
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: OidcSecurityService, useValue: oidc },
+      provideFakeLiveEvents(live),
     ],
   });
   const fixture = TestBed.createComponent(App);
   const http = TestBed.inject(HttpTestingController);
   const text = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
-  return { fixture, http, oidc, text };
+  return { fixture, http, oidc, text, live };
 }
 
 describe('App', () => {
@@ -84,6 +87,33 @@ describe('App', () => {
     await fixture.whenStable();
     expect(navLabels(fixture.nativeElement)).toEqual(['Inicio']);
     expect(text()).toContain('todavía no tiene un rol en Willay');
+  });
+
+  it('opens the live channel after login and says whether the data is live', async () => {
+    const { fixture, http, text, live } = setup(true);
+    http.expectOne(`${settings.apiUrl}/v1/me`).flush(ME);
+    await fixture.whenStable();
+    expect(live.status()).toBe('connecting');
+    expect(text()).toContain('Conectando…');
+
+    live.status.set('live');
+    await fixture.whenStable();
+    expect(text()).toContain('En vivo');
+    expect(text()).not.toContain('Sin conexión en vivo');
+
+    live.status.set('reconnecting');
+    await fixture.whenStable();
+    const alert = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
+    expect(alert?.textContent).toContain('Sin conexión en vivo');
+    expect(alert?.textContent).toContain('cada 15 s');
+  });
+
+  it('opens no live channel for a user who may not see the data', async () => {
+    const { fixture, http, text, live } = setup(true);
+    http.expectOne(`${settings.apiUrl}/v1/me`).flush({ ...ME, roles: [], permissions: [] });
+    await fixture.whenStable();
+    expect(live.status()).toBe('off');
+    expect(text()).not.toContain('En vivo');
   });
 
   it('folds the navigation behind a menu button on narrow screens', async () => {
