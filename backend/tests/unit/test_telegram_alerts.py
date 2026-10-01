@@ -20,7 +20,7 @@ from vigia.alerts.domain.telegram import (
 def test_the_telegram_alert_has_the_same_summary_as_the_email() -> None:
     text = compose_alert_text(MESSAGE)
     lines = text.splitlines()
-    assert lines[0] == "Vigía · CRÍTICO: Cambio brusco en Chosica"
+    assert lines[0] == "Willay · CRÍTICO: Cambio brusco en Chosica"
     assert "Estación: RIM-CHA-01 · Chaclacayo (aguas abajo)" in lines
     assert "Valor: 35.11 m3/s" in lines
     assert "Abierto: 20/11/2026 09:00 (America/Lima)" in lines
@@ -84,6 +84,6 @@ def test_a_handled_alert_drops_the_escalation_warning() -> None:
 
     assert ESCALATION_NOTE in sent
     assert ESCALATION_NOTE not in closed  # no longer escalating, so the warning would be false
-    assert closed.startswith("Vigía · CRÍTICO: Cambio brusco en Chosica")
+    assert closed.startswith("Willay · CRÍTICO: Cambio brusco en Chosica")
     assert "no reemplaza los avisos oficiales" in closed  # the disclaimer stays
     assert closed.endswith("\n\nConfirmado por Ana.")

@@ -36,7 +36,7 @@ def render_preview(view: ConfirmationView) -> tuple[int, str]:
     message = alert.message
     body = [
         f"<p>Hola {escape(message.contact_name)}:</p>",
-        "<p>Vigía te avisó de este incidente. Confírmalo para que no se siga avisando al "
+        "<p>Willay te avisó de este incidente. Confírmalo para que no se siga avisando al "
         "siguiente nivel.</p>",
         _summary(alert),
     ]
@@ -55,7 +55,7 @@ def render_result(view: ConfirmationView) -> tuple[int, str]:
         return 200, _page(
             "¡Gracias! Confirmaste la alerta",
             [
-                "<p>Quedó registrado que la viste. Vigía no avisará al siguiente nivel.</p>",
+                "<p>Quedó registrado que la viste. Willay no avisará al siguiente nivel.</p>",
                 _summary(alert),
             ],
         )
@@ -120,8 +120,8 @@ def _page(title: str, body: list[str]) -> str:
         '<!doctype html><html lang="es"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         '<meta name="robots" content="noindex">'
-        f"<title>{escape(title)} · Vigía</title><style>{_STYLE}</style></head>"
+        f"<title>{escape(title)} · Willay</title><style>{_STYLE}</style></head>"
         f"<body><main><h1>{escape(title)}</h1>{''.join(body)}</main>"
-        "<footer>Vigía es una herramienta de apoyo para operadores: no reemplaza los avisos "
+        "<footer>Willay es una herramienta de apoyo para operadores: no reemplaza los avisos "
         "oficiales (INDECI, COER, SISMATE).</footer></body></html>"
     )

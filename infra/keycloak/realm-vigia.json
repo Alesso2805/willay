@@ -1,6 +1,6 @@
 {
   "realm": "vigia",
-  "displayName": "Vigía",
+  "displayName": "Willay",
   "enabled": true,
   "organizationsEnabled": true,
   "sslRequired": "external",
@@ -19,19 +19,19 @@
     "realm": [
       {
         "name": "admin",
-        "description": "Gestiona usuarios, políticas, reglas y territorio de su organización"
+        "description": "Manages users, policies, rules and territory of their organization"
       },
       {
         "name": "operator",
-        "description": "Opera el panel: territorio, reglas e incidentes"
+        "description": "Operates the dashboard: territory, rules and incidents"
       },
       {
         "name": "responder",
-        "description": "Confirma y atiende incidentes"
+        "description": "Acknowledges and handles incidents"
       },
       {
         "name": "viewer",
-        "description": "Solo lectura"
+        "description": "Read only"
       }
     ]
   },
@@ -706,7 +706,7 @@
   "clients": [
     {
       "clientId": "vigia-api",
-      "name": "Vigía API (audiencia)",
+      "name": "Willay API (audience)",
       "enabled": true,
       "publicClient": false,
       "bearerOnly": true,
@@ -716,7 +716,7 @@
     },
     {
       "clientId": "vigia-dashboard",
-      "name": "Vigía dashboard",
+      "name": "Willay dashboard",
       "enabled": true,
       "publicClient": true,
       "standardFlowEnabled": true,
@@ -758,7 +758,7 @@
     },
     {
       "clientId": "vigia-dev-cli",
-      "name": "Vigía CLI de desarrollo (solo local: password grant para curl y tests)",
+      "name": "Willay development CLI (local only: password grant for curl and tests)",
       "enabled": true,
       "publicClient": true,
       "standardFlowEnabled": false,
@@ -948,7 +948,7 @@
       "name": "Demo Rímac",
       "alias": "rimac",
       "enabled": true,
-      "description": "Organización de demostración: cuenca del río Rímac",
+      "description": "Demo organization: Rímac river basin",
       "domains": [
         {
           "name": "rimac.vigia.test",
@@ -978,7 +978,7 @@
       "name": "Prueba de aislamiento",
       "alias": "aislamiento",
       "enabled": true,
-      "description": "Organización para probar que ningún dato cruza tenants",
+      "description": "Organization to test that no data crosses tenants",
       "domains": [
         {
           "name": "aislamiento.vigia.test",

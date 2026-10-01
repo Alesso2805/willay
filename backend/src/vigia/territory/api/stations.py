@@ -113,7 +113,7 @@ class StationOut(BaseModel):
 
 class IssuedKeyOut(BaseModel):
     station: StationOut
-    api_key: str = Field(description="Shown only once; Vigía only stores its hash")
+    api_key: str = Field(description="Shown only once; Willay only stores its hash")
 
 
 @router.get("", summary="The organization's stations")

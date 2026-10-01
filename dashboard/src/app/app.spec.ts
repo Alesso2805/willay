@@ -83,7 +83,7 @@ describe('App', () => {
     await TestBed.inject(Router).navigateByUrl('/');
     await fixture.whenStable();
     expect(navLabels(fixture.nativeElement)).toEqual(['Inicio']);
-    expect(text()).toContain('todavía no tiene un rol en Vigía');
+    expect(text()).toContain('todavía no tiene un rol en Willay');
   });
 
   it('folds the navigation behind a menu button on narrow screens', async () => {

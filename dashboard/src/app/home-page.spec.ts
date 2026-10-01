@@ -108,7 +108,7 @@ describe('HomePage', () => {
   it('a user without roles gets an explanation and no requests that would be refused', async () => {
     const { fixture, http, text } = setup([]);
     await fixture.whenStable();
-    expect(text()).toContain('todavía no tiene un rol en Vigía');
+    expect(text()).toContain('todavía no tiene un rol en Willay');
     http.verify(); // without the "view" permission, no requests the API would refuse
   });
 });

@@ -34,7 +34,7 @@ export const ICONS = {
   menu: ['M4 6h16', 'M4 12h16', 'M4 18h16'],
   x: ['M18 6 6 18', 'M6 6l12 12'],
   plus: ['M12 5v14', 'M5 12h14'],
-  /** Vigía's provisional logo: a watching eye. */
+  /** Willay's provisional logo: a watching eye. */
   eye: ['M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z', 'M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z'],
   home: ['M3 10.5 12 3l9 7.5', 'M5 9.5V21h14V9.5', 'M10 21v-6h4v6'],
   map: ['M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z', 'M9 4v14', 'M15 6v14'],

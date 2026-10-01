@@ -41,7 +41,7 @@ async def test_updates_are_long_polled_from_the_offset() -> None:
                             "message": {
                                 "message_id": 5,
                                 "chat": {"id": 42, "type": "private"},
-                                "text": "Vigía · CRÍTICO",
+                                "text": "Willay · CRÍTICO",
                             },
                         },
                     },
@@ -63,7 +63,7 @@ async def test_updates_are_long_polled_from_the_offset() -> None:
 
     assert updates == [
         Update(7, 42, "private", "/start abc"),
-        Update(8, click=Click("c8", 42, "t" * 43, 42, 5, "Vigía · CRÍTICO")),
+        Update(8, click=Click("c8", 42, "t" * 43, 42, 5, "Willay · CRÍTICO")),
         Update(9, click=Click("c9", 42, None, 42, 3, None)),
         Update(10),  # acknowledged and dropped so it does not block the next ones
     ]
@@ -125,11 +125,11 @@ async def test_an_alert_carries_a_confirm_button_with_the_token() -> None:
         return httpx2.Response(200, json={"ok": True, "result": {}})
 
     token = "t" * 43
-    await _api(handler).send_alert(42, "Vigía · CRÍTICO", token)
+    await _api(handler).send_alert(42, "Willay · CRÍTICO", token)
     assert sent == [
         {
             "chat_id": 42,
-            "text": "Vigía · CRÍTICO",
+            "text": "Willay · CRÍTICO",
             "reply_markup": {
                 "inline_keyboard": [[{"text": "Confirmar que lo vi", "callback_data": token}]]
             },
@@ -146,7 +146,7 @@ async def test_a_click_is_answered_and_the_button_removed() -> None:
 
     api = _api(handler)
     await api.answer_click("c8", "Gracias")
-    await api.edit_message(42, 5, "Vigía · CRÍTICO\n\nConfirmado por Ana")
+    await api.edit_message(42, 5, "Willay · CRÍTICO\n\nConfirmado por Ana")
     assert calls == [
         ("answerCallbackQuery", {"callback_query_id": "c8", "text": "Gracias"}),
         (
@@ -154,7 +154,7 @@ async def test_a_click_is_answered_and_the_button_removed() -> None:
             {
                 "chat_id": 42,
                 "message_id": 5,
-                "text": "Vigía · CRÍTICO\n\nConfirmado por Ana",
+                "text": "Willay · CRÍTICO\n\nConfirmado por Ana",
                 "reply_markup": {"inline_keyboard": []},  # no button
             },
         ),

@@ -61,7 +61,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await listening
         await app.state.engine.dispose()
 
-    app = FastAPI(title="Vigía API", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Willay API", version="0.1.0", lifespan=lifespan)
     app.add_exception_handler(RequestValidationError, validation_error_handler)
     # The JWT goes in the Authorization header (never cookies): no allow_credentials needed.
     app.add_middleware(

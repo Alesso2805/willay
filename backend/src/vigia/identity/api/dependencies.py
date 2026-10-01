@@ -4,7 +4,7 @@ Every endpoint (and the SSE channel) receives the Principal and filters by
 `principal.organization_id`; there is no other way to learn the tenant.
 
 - 401: missing or invalid token (signature, issuer, audience, expiry, basic claims).
-- 403: valid token without exactly one organization registered in Vigía, or (with `require`)
+- 403: valid token without exactly one organization registered in Willay, or (with `require`)
   roles lacking the endpoint's permission.
 - 503: Keycloak does not answer the JWKS request.
 """
@@ -41,7 +41,7 @@ _UNAUTHORIZED = HTTPException(
 )
 _FORBIDDEN_TENANT = HTTPException(
     status.HTTP_403_FORBIDDEN,
-    detail="El usuario debe pertenecer a exactamente una organización registrada en Vigía",
+    detail="El usuario debe pertenecer a exactamente una organización registrada en Willay",
 )
 
 

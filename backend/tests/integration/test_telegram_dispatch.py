@@ -79,7 +79,7 @@ async def test_a_telegram_alert_is_sent_with_its_confirm_button(
 
     [(chat, text, token)] = bot.sent
     assert chat == CHAT
-    assert text.startswith("Vigía · ADVERTENCIA: Valor fuera de límite en Zona")
+    assert text.startswith("Willay · ADVERTENCIA: Valor fuera de límite en Zona")
     assert len(token) == 43  # callback_data: within Telegram's 64-character limit
     alert = await _alert(owner, graph, "telegram")
     assert (alert["status"], alert["destination"]) == ("sent", str(CHAT))

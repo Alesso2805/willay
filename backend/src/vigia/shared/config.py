@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     # Outgoing mail (dispatcher). Locally, Mailpit: no TLS or credentials.
     smtp_host: str = "localhost"
     smtp_port: int = 1025
-    smtp_from: str = "Vigía <alertas@vigia.local>"
+    smtp_from: str = "Willay <alertas@willay.local>"
     smtp_start_tls: bool = False
     smtp_username: str | None = None
     smtp_password: str | None = None
