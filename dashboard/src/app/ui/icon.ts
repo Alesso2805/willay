@@ -8,8 +8,10 @@ const CIRCLE = 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z';
 const OCTAGON = 'M7.86 2h8.28L22 7.86v8.28L16.14 22H7.86L2 16.14V7.86z';
 const TRIANGLE = 'M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z';
 const BELL = 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0';
-const WIFI = 'M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01';
-const PIN = 'M12 22s7-6.3 7-12a7 7 0 0 0-14 0c0 5.7 7 12 7 12zM14.5 10a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z';
+const WIFI =
+  'M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01';
+const PIN =
+  'M12 22s7-6.3 7-12a7 7 0 0 0-14 0c0 5.7 7 12 7 12zM14.5 10a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z';
 const SLASH = 'M2 2l20 20';
 const BAR = ['M5 20v-3', 'M10 20v-7', 'M15 20v-11', 'M20 20v-15'];
 
@@ -29,6 +31,8 @@ export const ICONS = {
   'signal-off': [WIFI, SLASH],
   'pin-off': [PIN, SLASH],
   pause: ['M8 5v14', 'M16 5v14'],
+  menu: ['M4 6h16', 'M4 12h16', 'M4 18h16'],
+  x: ['M18 6 6 18', 'M6 6l12 12'],
 } as const satisfies Record<string, readonly string[]>;
 
 export type IconName = keyof typeof ICONS;
