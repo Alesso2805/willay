@@ -1,99 +1,122 @@
-<header class="border-b border-slate-200 bg-white">
-  <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-3">
-    <div class="flex min-w-0 items-baseline gap-3">
-      <h1 class="text-2xl font-semibold text-slate-900">Vigía</h1>
-      @if (session.me(); as me) {
-        <span class="truncate text-sm text-slate-600">{{ me.organization_name }}</span>
-      }
-    </div>
-    @if (session.me(); as me) {
-      <!-- En pantallas angostas la navegación se pliega tras este botón; desde sm siempre se ve. -->
-      <button
-        type="button"
-        class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 sm:hidden"
-        aria-controls="menu-principal"
-        [attr.aria-expanded]="menuOpen()"
-        (click)="toggleMenu()"
-      >
-        <app-icon [name]="menuOpen() ? 'x' : 'menu'" />
-        Menú
-      </button>
+@if (session.me(); as me) {
+  <div class="min-h-screen lg:flex">
+    <aside class="bg-night-900 text-night-300 lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
+      <div class="flex items-center justify-between gap-3 px-4 py-3 lg:px-5 lg:py-6">
+        <a routerLink="/" class="flex min-w-0 items-center gap-3" (click)="menuOpen.set(false)">
+          <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-600 text-white">
+            <app-icon name="eye" [size]="20" />
+          </span>
+          <span class="min-w-0">
+            <span class="block font-semibold tracking-tight text-white">Vigía</span>
+            <span class="block truncate text-xs">{{ me.organization_name }}</span>
+          </span>
+        </a>
+        <!-- En pantallas angostas la navegación se pliega tras este botón; desde lg es una barra lateral fija. -->
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white ring-1 ring-night-700 hover:bg-night-800 lg:hidden"
+          aria-controls="menu-principal"
+          [attr.aria-expanded]="menuOpen()"
+          (click)="toggleMenu()"
+        >
+          <app-icon [name]="menuOpen() ? 'x' : 'menu'" />
+          Menú
+        </button>
+      </div>
+
       <div
         id="menu-principal"
-        class="w-full flex-col gap-3 sm:flex sm:w-auto sm:flex-1 sm:flex-row sm:items-center sm:justify-between"
+        class="flex-1 flex-col px-3 pb-4 lg:flex"
         [class.hidden]="!menuOpen()"
         [class.flex]="menuOpen()"
       >
-        <nav aria-label="Principal" class="flex flex-col gap-2 text-sm sm:flex-row sm:gap-4">
+        <nav aria-label="Principal" class="flex flex-col gap-1">
           @for (item of navItems(); track item.path) {
             <a
               [routerLink]="item.path"
-              routerLinkActive="font-semibold underline"
+              class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-night-800 hover:text-white"
+              routerLinkActive="bg-night-700 text-white"
               [routerLinkActiveOptions]="{ exact: item.exact }"
               ariaCurrentWhenActive="page"
               (click)="menuOpen.set(false)"
-              >{{ item.label }}</a
             >
+              <app-icon [name]="item.icon" [size]="18" />
+              {{ item.label }}
+            </a>
           }
         </nav>
-        <div class="flex items-center gap-3 text-sm text-slate-700">
-          <span>{{ me.full_name }}</span>
+
+        <div class="mt-6 border-t border-night-700 pt-4 lg:mt-auto">
+          <p class="truncate px-3 text-sm font-medium text-white">{{ me.full_name }}</p>
+          <p class="truncate px-3 text-xs">{{ roles(me.roles) }}</p>
           <button
             type="button"
-            class="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-slate-50"
+            class="mt-3 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-night-800 hover:text-white"
             (click)="session.logout()"
           >
+            <app-icon name="logout" [size]="18" />
             Cerrar sesión
           </button>
         </div>
       </div>
-    }
+    </aside>
+
+    <div class="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-64">
+      <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-6 lg:px-8 lg:py-8">
+        <!-- Las rutas solo existen con sesión válida: no hace falta un guard por página. -->
+        <router-outlet />
+      </main>
+      <footer class="mx-auto flex w-full max-w-7xl items-start gap-2 px-4 pb-6 text-xs text-slate-500 lg:px-8">
+        <app-icon name="info" [size]="14" />
+        <p>{{ disclaimer }}</p>
+      </footer>
+    </div>
   </div>
-</header>
-
-<main class="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8">
-  <aside class="rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-900" aria-labelledby="disclaimer-title">
-    <h2 id="disclaimer-title" class="font-semibold">Herramienta de apoyo</h2>
-    <p class="mt-1">
-      Vigía ayuda a detectar, decidir y avisar. No reemplaza a los sistemas oficiales de alerta
-      (INDECI, COER regionales, SISMATE).
-    </p>
-  </aside>
-
-  @switch (session.state().status) {
-    @case ('loading') {
-      <p class="text-slate-600" aria-live="polite">Cargando sesión…</p>
-    }
-    @case ('anonymous') {
-      <section>
-        <p class="text-slate-700">Inicia sesión con la cuenta de tu organización.</p>
-        <button
-          type="button"
-          class="mt-3 rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700"
-          (click)="session.login()"
-        >
-          Iniciar sesión
-        </button>
-      </section>
-    }
-    @case ('forbidden') {
-      <div role="alert" class="rounded-md border border-red-300 bg-red-50 p-4 text-red-900">
-        <p class="font-semibold">Acceso no permitido</p>
-        <p class="mt-1">
-          Tu usuario debe pertenecer a exactamente una organización registrada en Vigía.
-          Contacta a quien administra tu organización.
-        </p>
-        <button type="button" class="mt-3 underline" (click)="session.logout()">Cerrar sesión</button>
+} @else {
+  <div class="grid min-h-screen place-items-center bg-night-900 px-4 py-10">
+    <div class="w-full max-w-md">
+      <div class="mb-6 flex items-center gap-3">
+        <span class="grid size-11 place-items-center rounded-xl bg-brand-600 text-white">
+          <app-icon name="eye" [size]="24" />
+        </span>
+        <div>
+          <p class="text-xl font-semibold tracking-tight text-white">Vigía</p>
+          <p class="text-sm text-night-300">Alerta temprana para operadores y líderes comunales</p>
+        </div>
       </div>
-    }
-    @case ('error') {
-      <div role="alert" class="rounded-md border border-red-300 bg-red-50 p-4 text-red-900">
-        No se pudo conectar con Vigía. Intenta de nuevo en unos minutos.
-      </div>
-    }
-    @case ('ready') {
-      <!-- Las rutas solo existen con sesión válida: no hace falta un guard por página. -->
-      <router-outlet />
-    }
-  }
-</main>
+
+      <main class="rounded-2xl bg-white p-6 shadow-xl">
+        @switch (session.state().status) {
+          @case ('loading') {
+            <p class="text-slate-600" role="status" aria-live="polite">Cargando sesión…</p>
+          }
+          @case ('anonymous') {
+            <h1 class="text-lg font-semibold text-slate-900">Inicia sesión</h1>
+            <p class="mt-1 text-sm text-slate-600">Usa la cuenta de tu organización.</p>
+            <button type="button" class="btn-primary mt-5 w-full" (click)="session.login()">
+              Iniciar sesión
+            </button>
+          }
+          @case ('forbidden') {
+            <h1 class="text-lg font-semibold text-slate-900">Acceso no permitido</h1>
+            <app-notice class="mt-3">
+              Tu usuario debe pertenecer a exactamente una organización registrada en Vigía.
+              Contacta a quien administra tu organización.
+            </app-notice>
+            <button type="button" class="btn-secondary mt-4 w-full" (click)="session.logout()">
+              Cerrar sesión
+            </button>
+          }
+          @default {
+            <h1 class="text-lg font-semibold text-slate-900">Sin conexión</h1>
+            <app-notice class="mt-3">
+              No se pudo conectar con Vigía. Intenta de nuevo en unos minutos.
+            </app-notice>
+          }
+        }
+      </main>
+
+      <p class="mt-6 text-center text-xs leading-relaxed text-night-300">{{ disclaimer }}</p>
+    </div>
+  </div>
+}

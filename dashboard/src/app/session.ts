@@ -19,6 +19,17 @@ export interface Me {
   permissions: string[];
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Administración',
+  operator: 'Operación',
+  responder: 'Respuesta',
+  viewer: 'Lectura',
+};
+
+export function roleLabels(roles: readonly string[]): string {
+  return roles.map((role) => ROLE_LABELS[role] ?? role).join(', ') || 'Sin rol asignado';
+}
+
 export type SessionState =
   | { status: 'loading' }
   | { status: 'anonymous' }
