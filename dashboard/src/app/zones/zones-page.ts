@@ -1,8 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Session } from '../session';
+import { wholeNumber } from '../ui/formats';
+import { Icon } from '../ui/icon';
 import { LoadState, loadStatus } from '../ui/load-state';
 import { Notice } from '../ui/notice';
+import { PageHeader } from '../ui/page-header';
 import { StateBadge } from '../ui/state-badge';
 import { RISK_LEVEL_STATES } from '../ui/visual-states';
 import { DrawnGeometry, MapMode, ZoneMap } from './zone-map';
@@ -13,7 +16,7 @@ type Editing = { kind: 'new' } | { kind: 'edit'; zone: Zone };
 
 @Component({
   selector: 'app-zones-page',
-  imports: [ZoneMap, ReactiveFormsModule, LoadState, Notice, StateBadge],
+  imports: [ZoneMap, ReactiveFormsModule, LoadState, Notice, StateBadge, PageHeader, Icon],
   templateUrl: './zones-page.html',
 })
 export class ZonesPage {
@@ -23,6 +26,7 @@ export class ZonesPage {
   protected readonly riskLevels = RISK_LEVELS;
   protected readonly riskLabels = RISK_LABELS;
   protected readonly riskStates = RISK_LEVEL_STATES;
+  protected readonly count = wholeNumber;
 
   protected readonly zones = signal<Zone[]>([]);
   protected readonly loaded = signal(false);
@@ -30,6 +34,17 @@ export class ZonesPage {
   protected readonly listStatus = computed(() =>
     loadStatus(this.loaded(), this.loadFailed(), this.zones().length),
   );
+  /** "3 zonas activas · 1 de riesgo crítico · 80,500 personas" para leer de un vistazo. */
+  protected readonly subtitle = computed(() => {
+    if (!this.loaded()) return '';
+    const active = this.zones().filter((zone) => zone.is_active);
+    const critical = active.filter((zone) => zone.risk_level === 'critical').length;
+    const people = active.reduce((total, zone) => total + (zone.population_estimate ?? 0), 0);
+    const parts = [`${active.length} ${active.length === 1 ? 'zona activa' : 'zonas activas'}`];
+    if (critical > 0) parts.push(`${critical} de riesgo crítico`);
+    if (people > 0) parts.push(`${wholeNumber(people)} personas`);
+    return parts.join(' · ');
+  });
   protected readonly includeInactive = signal(false);
   protected readonly editing = signal<Editing | null>(null);
   protected readonly geometry = signal<DrawnGeometry | null>(null);

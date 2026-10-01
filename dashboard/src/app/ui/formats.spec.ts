@@ -1,4 +1,11 @@
-import { ageText, localTime, valueWithUnit } from './formats';
+import { ageText, localTime, valueWithUnit, wholeNumber } from './formats';
+
+describe('wholeNumber', () => {
+  it('groups thousands like in Peru', () => {
+    expect(wholeNumber(45000)).toBe('45,000');
+    expect(wholeNumber(800)).toBe('800');
+  });
+});
 
 describe('ageText', () => {
   const now = Date.parse('2026-10-27T09:00:00Z');

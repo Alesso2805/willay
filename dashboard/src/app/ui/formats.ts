@@ -29,12 +29,24 @@ export function localTime(iso: string, timezone: string): string {
   return `${part('day')}/${part('month')}/${part('year')} ${part('hour')}:${part('minute')}`;
 }
 
+const COUNT = new Intl.NumberFormat('es-PE', { maximumFractionDigits: 0 });
+
+/** Cantidades enteras para leer de un vistazo, como una población: 45,000. */
+export function wholeNumber(value: number): string {
+  return COUNT.format(value);
+}
+
 const NUMBER = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 6, useGrouping: false });
 
 /**
- * "83.234 m3/s": punto decimal (como en Perú) y hasta 6 cifras significativas, el mismo
- * número que muestran el correo y Telegram (formato `:g` de Python).
+ * "83.234": punto decimal (como en Perú) y hasta 6 cifras significativas, el mismo número
+ * que muestran el correo y Telegram (formato `:g` de Python).
  */
+export function measurement(value: number): string {
+  return NUMBER.format(value);
+}
+
+/** "83.234 m3/s". */
 export function valueWithUnit(value: number, unit: string): string {
-  return `${NUMBER.format(value)} ${unit}`;
+  return `${measurement(value)} ${unit}`;
 }
