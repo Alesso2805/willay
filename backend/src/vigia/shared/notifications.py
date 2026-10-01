@@ -13,3 +13,8 @@ EVALUATION_QUEUE = "vigia_evaluation_queue"
 # El evaluador y los workers avisan al dispatcher de que hay alertas pendientes en
 # core.alerts. Sin payload, por la misma razón: el dispatcher las toma con SKIP LOCKED.
 ALERTS = "vigia_alerts"
+
+# La base avisa a la API de cada evento de incidente y de cada latido de estación (VIG-25).
+# Lo emiten triggers (migración 0008, ADR-0007), con payload JSON: organization_id para
+# enrutarlo y lo mínimo para que el panel sepa qué refrescar. La API lo reenvía por SSE.
+EVENTS = "vigia_events"
