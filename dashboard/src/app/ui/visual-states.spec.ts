@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { contrastRatio } from './contrast';
 import { ICONS } from './icon';
 import { StateBadge } from './state-badge';
-import { ALL_CATALOGS, INCIDENT_STATES, VisualState } from './visual-states';
+import { ALL_CATALOGS, INCIDENT_STATES, NOTICE_TONES, VisualState } from './visual-states';
 
 const catalogs = Object.entries(ALL_CATALOGS).map(
   ([name, states]) => [name, Object.values(states) as VisualState[]] as const,
@@ -35,6 +35,16 @@ describe.each(catalogs)('visual states: %s', (_name, states) => {
     expect(new Set(states.map((s) => s.label)).size).toBe(states.length);
     expect(new Set(states.map((s) => s.icon)).size).toBe(states.length);
     for (const state of states) expect(ICONS[state.icon]).toBeDefined();
+  });
+});
+
+describe('notice tones', () => {
+  it('every notice is readable (≥ 4.5:1)', () => {
+    for (const [tone, palette] of Object.entries(NOTICE_TONES)) {
+      expect(contrastRatio(palette.foreground, palette.background), tone).toBeGreaterThanOrEqual(
+        4.5,
+      );
+    }
   });
 });
 
