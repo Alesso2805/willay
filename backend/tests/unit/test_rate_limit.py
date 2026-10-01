@@ -55,6 +55,6 @@ async def test_limit_is_per_station_and_resets_with_the_next_minute() -> None:
     with pytest.raises(RateLimitExceededError):
         await enforce_rate_limit(busy, clock, counter)
 
-    await enforce_rate_limit(quiet, clock, counter)  # otra estación no se ve afectada
-    clock.advance(timedelta(seconds=18))  # 09:16:00.3: nueva ventana
+    await enforce_rate_limit(quiet, clock, counter)  # other stations are unaffected
+    clock.advance(timedelta(seconds=18))  # 09:16:00.3: a new window
     await enforce_rate_limit(busy, clock, counter)

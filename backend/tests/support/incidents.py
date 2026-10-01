@@ -1,4 +1,4 @@
-"""IncidentStore en memoria para tests unitarios: deduplica por causa como Postgres."""
+"""In-memory IncidentStore for unit tests: deduplicates by cause like Postgres does."""
 
 from datetime import datetime
 from typing import Any
@@ -11,8 +11,8 @@ from vigia.incidents.domain.incidents import EvidenceReading
 
 class FakeIncidentStore:
     def __init__(self, *, cooling_down: bool = False, recovered_before: bool = False) -> None:
-        self.cooling_down = cooling_down  # toda causa está en enfriamiento
-        self.recovered_before = recovered_before  # otro worker ya anotó la recuperación
+        self.cooling_down = cooling_down  # every cause is in cooldown
+        self.recovered_before = recovered_before  # another worker already recorded the recovery
         self.opened: list[Trigger] = []
         self.added: list[EvidenceReading] = []
         self.recovered: list[tuple[Recovery, datetime]] = []

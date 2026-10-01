@@ -23,7 +23,7 @@ def test_seed_params_are_parsed() -> None:
     [
         {"value": 3.5, "consecutive": 2},
         {"operator": "between", "value": 3.5, "consecutive": 2},
-        {"operator": "gt", "value": "alto", "consecutive": 2},
+        {"operator": "gt", "value": "high", "consecutive": 2},
         {"operator": "gt", "value": True, "consecutive": 2},
         {"operator": "gt", "value": 3.5, "consecutive": 0},
         {"operator": "gt", "value": 3.5, "consecutive": 61},
@@ -39,7 +39,7 @@ def test_invalid_params_are_rejected(raw: dict[str, Any]) -> None:
 @pytest.mark.parametrize(
     ("operator", "reading", "breached"),
     [
-        (Operator.GT, 3.5, False),  # frontera: igual no supera
+        (Operator.GT, 3.5, False),  # boundary: equal does not exceed
         (Operator.GT, 3.5000001, True),
         (Operator.GE, 3.5, True),
         (Operator.GE, 3.4999999, False),
@@ -56,11 +56,11 @@ def test_limit_is_exact_at_the_boundary(operator: Operator, reading: float, brea
 @pytest.mark.parametrize(
     ("latest_first", "expected"),
     [
-        ([3.7, 3.6], True),  # las dos más recientes superan
-        ([3.7, 3.6, 1.0], True),  # lo anterior a la ventana no importa
-        ([3.7], False),  # aún no hay N lecturas
-        ([3.7, 3.5], False),  # la segunda está justo en el límite (gt)
-        ([3.4, 3.9], False),  # la más reciente ya volvió dentro
+        ([3.7, 3.6], True),  # the two latest exceed
+        ([3.7, 3.6, 1.0], True),  # readings before the window do not matter
+        ([3.7], False),  # fewer than N readings so far
+        ([3.7, 3.5], False),  # the second sits exactly on the limit (gt)
+        ([3.4, 3.9], False),  # the latest is already back within the limit
         ([], False),
     ],
 )

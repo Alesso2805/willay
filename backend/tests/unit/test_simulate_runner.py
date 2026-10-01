@@ -29,7 +29,7 @@ class FakeSender:
 
     async def send(self, api_key: str, measured_at: datetime, value: float) -> int:
         self.sent.append((api_key, measured_at, value))
-        self.clock.advance(self.latency)  # simula lo que tarda la petición
+        self.clock.advance(self.latency)  # simulates the request's latency
         return 202
 
 
@@ -68,17 +68,17 @@ async def test_rimac_demo_runs_in_simulated_time() -> None:
     clock = FakeClock(T0)
     sender = FakeSender(clock)
 
-    reports = await _run(stations, clock, sender, steps=40)  # 6 min 40 s de demo, en ms
+    reports = await _run(stations, clock, sender, steps=40)  # 6 min 40 s of demo time in ms
 
     upstream = [m for key, m, _ in sender.sent if key == f"key-{RIMAC_UPSTREAM}"]
     downstream = [(m, v) for key, m, v in sender.sent if key == f"key-{RIMAC_DOWNSTREAM}"]
     assert len(downstream) == 40
-    # Aguas arriba calla en el paso 30 (1 min + 4 min): su último lote es el del paso 29.
+    # Upstream goes silent at step 30 (1 min + 4 min): its last batch is step 29's.
     assert len(upstream) == 30
     assert upstream[-1] == T0 + timedelta(seconds=290)
     assert reports[30].values[RIMAC_UPSTREAM] is None
     assert RIMAC_UPSTREAM not in reports[30].statuses
-    # Lo enviado es exactamente la serie del dominio para esa semilla.
+    # What was sent is exactly the domain series for that seed.
     plan_down = next(p for p in plan if p.code == RIMAC_DOWNSTREAM)
     assert [v for _, v in downstream] == [value_at(plan_down, 42, s) for s in range(40)]
 
@@ -90,7 +90,7 @@ async def test_schedule_does_not_drift_with_slow_requests() -> None:
 
     await _run([SimulatedStation(plan[0], "k")], clock, sender, steps=4)
 
-    # Se agenda contra el inicio: los 3 s de cada envío no se acumulan (no 0, 13, 26, 39).
+    # Scheduled against the start: each send's 3 s do not pile up (not 0, 13, 26, 39).
     assert [m for _, m, _ in sender.sent] == [T0 + timedelta(seconds=s) for s in (0, 10, 20, 30)]
 
 

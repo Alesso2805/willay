@@ -25,4 +25,4 @@ def test_stale_heartbeat_is_dead(tmp_path: Path) -> None:
 
 
 def test_missing_heartbeat_is_dead(tmp_path: Path) -> None:
-    assert not is_alive(tmp_path / "nunca-arranco.alive", FakeClock(NOW))
+    assert not is_alive(tmp_path / "never-started.alive", FakeClock(NOW))

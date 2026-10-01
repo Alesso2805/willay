@@ -1,4 +1,4 @@
-"""VIG-15: reglas de umbral de punta a punta (ingesta → cola → evaluador → incidente)."""
+"""VIG-15: threshold rules end to end (ingestion → queue → evaluator → incident)."""
 
 from collections.abc import AsyncIterator
 from typing import Any
@@ -20,7 +20,7 @@ GT_35 = {"operator": "gt", "value": 3.5, "consecutive": 2}
 
 @pytest.fixture
 async def engine(database: Database, owner: asyncpg.Connection) -> AsyncIterator[AsyncEngine]:
-    await owner.execute("DELETE FROM ingest.evaluation_queue")  # base compartida
+    await owner.execute("DELETE FROM ingest.evaluation_queue")  # shared database
     engine = create_engine(database.app_url)
     yield engine
     await engine.dispose()
@@ -43,7 +43,7 @@ async def test_two_consecutive_readings_above_the_limit_open_one_incident(
     station, rule_id = await _station(engine, owner, severity="critical")
 
     await station.send(3.0, 3.6)
-    assert await incidents(owner, station.graph) == []  # una sola lectura fuera de límite
+    assert await incidents(owner, station.graph) == []  # only one reading out of bounds
 
     await station.send(3.7)
     [incident] = await incidents(owner, station.graph)
@@ -57,7 +57,7 @@ async def test_two_consecutive_readings_above_the_limit_open_one_incident(
     assert (incident["zone_id"], incident["station_id"]) == (graph.zone_id, graph.station_id)
 
     payload = await opened_payload(owner, incident["id"])
-    # La evidencia: las lecturas que dispararon la regla, en orden cronológico.
+    # The evidence: the readings that fired the rule, in chronological order.
     assert [r["value"] for r in payload["readings"]] == [3.6, 3.7]
     assert payload["rule_params"] == GT_35
 
@@ -91,7 +91,7 @@ async def test_late_readings_do_not_break_or_count_in_the_streak(
 ) -> None:
     station, _ = await _station(engine, owner)
     await station.send(3.6)
-    await station.write_late(1.0)  # dentro del límite, pero tardía: no cuenta
+    await station.write_late(1.0)  # within bounds, but late: it does not count
     await station.send(3.7)
     assert len(await incidents(owner, station.graph)) == 1
 
@@ -109,7 +109,7 @@ async def test_lower_limit_rules_fire_on_values_below(
 async def test_a_station_without_zone_never_alerts(
     engine: AsyncEngine, owner: asyncpg.Connection
 ) -> None:
-    graph = await create_graph(owner)  # sin link_station: la estación no está en la zona
+    graph = await create_graph(owner)  # no link_station: the station is not in the zone
     await create_rule(owner, graph, "threshold", GT_35, station_id=graph.station_id)
     station = Station(engine, graph)
     await station.send(9.0, 9.0, 9.0)
@@ -119,11 +119,11 @@ async def test_a_station_without_zone_never_alerts(
 @pytest.mark.parametrize(
     "deactivate",
     [
-        pytest.param("UPDATE core.rules SET is_active = false WHERE id = $1", id="regla-inactiva"),
+        pytest.param("UPDATE core.rules SET is_active = false WHERE id = $1", id="inactive-rule"),
         pytest.param(
             "UPDATE core.risk_zones SET is_active = false "
             "WHERE id = (SELECT zone_id FROM core.rules WHERE id = $1)",
-            id="zona-inactiva",
+            id="inactive-zone",
         ),
     ],
 )
@@ -141,7 +141,7 @@ async def test_a_zone_wide_rule_applies_to_every_station_in_the_zone(
 ) -> None:
     graph = await create_graph(owner)
     await link_station(owner, graph)
-    await create_rule(owner, graph, "threshold", GT_35)  # station_id nulo: toda la zona
+    await create_rule(owner, graph, "threshold", GT_35)  # null station_id: the whole zone
     station = Station(engine, graph)
     await station.send(4.0, 4.0)
     assert len(await incidents(owner, graph)) == 1
@@ -163,7 +163,7 @@ async def test_a_rule_with_broken_params_is_skipped_and_the_others_still_run(
 
     [incident] = await incidents(owner, station.graph)
     assert incident["rule_id"] == good_rule
-    assert not await owner.fetchval(  # la lectura no quedó fallida por la regla rota
+    assert not await owner.fetchval(  # the broken rule did not make the reading fail
         "SELECT count(*) FROM ingest.evaluation_queue WHERE station_id = $1",
         station.graph.station_id,
     )

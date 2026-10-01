@@ -42,7 +42,7 @@ class FakeIssuer:
 
     def issue(self, station_id: UUID) -> tuple[str, str]:
         self.issued += 1
-        key = f"{station_id}.secreto-{self.issued}"
+        key = f"{station_id}.secret-{self.issued}"
         return key, f"hash({key})"
 
 
@@ -146,7 +146,7 @@ async def test_rotation_replaces_the_hash_and_audits_only_the_date(stations: Fak
     )
 
     assert rotated.api_key != old_key
-    assert stations.hashes[station.id] == f"hash({rotated.api_key})"  # el viejo ya no está
+    assert stations.hashes[station.id] == f"hash({rotated.api_key})"  # the old one is gone
     assert rotated.station.api_key_rotated_at == T0 + timedelta(days=30)
     entry = audit.entries[-1]
     assert entry.action == "rotate_api_key"

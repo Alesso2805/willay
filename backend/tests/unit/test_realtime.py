@@ -16,12 +16,12 @@ def test_a_notification_becomes_an_event_without_its_organization() -> None:
 
 
 def test_unreadable_or_unknown_notifications_are_dropped() -> None:
-    assert parse_notification("no es json") is None
-    assert parse_notification(json.dumps({"type": "incident"})) is None  # sin organización
+    assert parse_notification("not json") is None
+    assert parse_notification(json.dumps({"type": "incident"})) is None  # no organization
     assert parse_notification(json.dumps({"organization_id": "x", "type": "incident"})) is None
-    unknown = json.dumps({"organization_id": str(ORG_A), "type": "otro"})
+    unknown = json.dumps({"organization_id": str(ORG_A), "type": "other"})
     assert parse_notification(unknown) is None
-    assert parse_notification(json.dumps(["lista"])) is None
+    assert parse_notification(json.dumps(["list"])) is None
 
 
 async def test_events_only_reach_their_own_organization() -> None:
@@ -30,7 +30,7 @@ async def test_events_only_reach_their_own_organization() -> None:
         broadcaster.publish(RealtimeEvent(ORG_A, "station", {"station_id": "s1"}))
         assert (await a.next()).data == {"station_id": "s1"}
         assert b.pending == 0
-    assert broadcaster.connections == 0  # al cerrar, la suscripción se va
+    assert broadcaster.connections == 0  # leaving the block drops the subscription
 
 
 async def test_a_slow_client_gets_a_resync_instead_of_a_growing_queue() -> None:

@@ -24,7 +24,7 @@ async def test_loop_touches_heartbeat_and_stops_on_signal(tmp_path: Path) -> Non
 async def test_loop_exits_promptly_when_stopped_during_wait(tmp_path: Path) -> None:
     heartbeat = tmp_path / "worker.alive"
     stop = asyncio.Event()
-    # Intervalo largo: si la parada no interrumpiera la espera, el test se colgaría.
+    # Long interval: if stopping did not interrupt the wait, the test would hang.
     task = asyncio.create_task(run_loop("silence", 60.0, heartbeat, stop))
     await asyncio.sleep(0.05)
     assert heartbeat.exists()
@@ -46,8 +46,8 @@ async def test_a_notification_wakes_the_loop_before_the_interval(tmp_path: Path)
         run_loop("evaluator", 60.0, tmp_path / "hb.alive", stop, tick, wakeup)
     )
     await asyncio.sleep(0.05)
-    assert ticks == 1  # esperando el intervalo de 60 s...
-    wakeup.set()  # ...hasta que llega un NOTIFY
+    assert ticks == 1  # waiting out the 60 s interval...
+    wakeup.set()  # ...until a NOTIFY arrives
     await asyncio.wait_for(task, timeout=1.0)
     assert ticks == 2
 
@@ -60,7 +60,7 @@ async def test_a_notification_during_work_is_not_lost(tmp_path: Path) -> None:
         nonlocal ticks
         ticks += 1
         if ticks == 1:
-            wakeup.set()  # el aviso llega mientras se procesa el lote anterior
+            wakeup.set()  # the wakeup arrives while the previous batch is running
         else:
             stop.set()
 
@@ -96,9 +96,9 @@ async def test_a_failing_tick_keeps_the_worker_alive_but_stops_the_heartbeat(
         calls += 1
         if calls == 3:
             stop.set()
-        raise ConnectionError("la base no responde")
+        raise ConnectionError("database not responding")
 
     await asyncio.wait_for(run_loop("evaluator", 0.01, heartbeat, stop, tick), timeout=1.0)
 
-    assert calls == 3  # siguió intentando
-    assert not heartbeat.exists()  # pero el healthcheck lo verá caído
+    assert calls == 3  # it kept trying
+    assert not heartbeat.exists()  # but the healthcheck will report it as down

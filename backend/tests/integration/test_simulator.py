@@ -1,4 +1,4 @@
-"""VIG-11: el simulador envía lotes reales a la API y quedan guardados y encolados."""
+"""VIG-11: the simulator sends real batches to the API and they are stored and enqueued."""
 
 from datetime import timedelta
 
@@ -21,7 +21,7 @@ async def test_simulated_station_feeds_the_real_api(
     database: Database, tokens: TokenFactory, owner: asyncpg.Connection
 ) -> None:
     graph, key = await create_station_with_key(owner)
-    # Un reloj para el simulador y la API: pasos de 10 s sin esperar de verdad.
+    # One clock shared by the simulator and the API: 10 s steps without really waiting.
     clock = FakeClock(SystemClock().now() - timedelta(minutes=2))
     plan = StationPlan("EST-1", "discharge", Behavior.SILENCE, event_step=4)
 

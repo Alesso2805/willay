@@ -1,4 +1,4 @@
-"""Estructura de la migración inicial: hypertable, restricciones y reversibilidad."""
+"""Structure of the initial migration: hypertable, constraints and reversibility."""
 
 from datetime import timedelta
 
@@ -48,7 +48,7 @@ async def test_readings_is_a_hypertable_with_columnstore_and_retention(
 async def test_app_can_write_readings_and_mark_them_evaluated(
     owner: asyncpg.Connection, app: asyncpg.Connection
 ) -> None:
-    # Los chunks de la hypertable heredan los permisos de la tabla padre.
+    # Hypertable chunks inherit the parent table's privileges.
     graph = await create_graph(owner)
     await app.execute(
         """
@@ -65,7 +65,7 @@ async def test_app_can_write_readings_and_mark_them_evaluated(
         T0 + timedelta(seconds=2),
         graph.station_id,
     )
-    # La misma (station_id, measured_at) otra vez choca con la PK: base del "duplicado ignorado".
+    # The same (station_id, measured_at) again hits the PK: the basis of "duplicate ignored".
     with pytest.raises(asyncpg.UniqueViolationError):
         await app.execute(
             """
@@ -129,7 +129,7 @@ async def test_only_one_active_incident_per_dedup_key(owner: asyncpg.Connection)
     with pytest.raises(asyncpg.UniqueViolationError, match="incidents_active_dedup_key"):
         await create_incident(owner, graph, dedup_key="k")
 
-    # Resuelto el primero, la misma causa puede abrir otro (el cooldown lo controla la app).
+    # Once the first is resolved, the same cause can open another (the app enforces cooldown).
     await owner.execute(
         "UPDATE core.incidents SET status = 'resolved', resolved_at = $2, "
         "resolution = 'false_alarm' WHERE id = $1",
@@ -142,7 +142,7 @@ async def test_only_one_active_incident_per_dedup_key(owner: asyncpg.Connection)
 async def test_migrations_are_idempotent_and_reversible(
     database: Database, owner: asyncpg.Connection
 ) -> None:
-    migrate(database)  # segunda vez: no-op
+    migrate(database)  # second run: no-op
     assert await owner.fetchval("SELECT version_num FROM alembic_version") == head_revision()
 
     migrate(database, "downgrade", "base")

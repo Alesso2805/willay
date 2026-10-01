@@ -1,8 +1,8 @@
-"""Postgres real para los tests de integración.
+"""Real Postgres for the integration tests.
 
-Levanta la misma imagen que docker-compose (timescaledb-ha) con el mismo script de
-init, así los roles, las extensiones y los permisos son los de producción, y aplica
-las migraciones con vigia_owner. Un contenedor por sesión de pytest.
+Starts the same image as docker-compose (timescaledb-ha) with the same init script, so
+roles, extensions and privileges match production, and applies the migrations as
+vigia_owner. One container per pytest session.
 """
 
 import asyncio
@@ -25,7 +25,7 @@ from vigia.shared.clock import FakeClock, SystemClock
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 INIT_DIR = BACKEND_DIR.parent / "infra" / "postgres" / "init"
 IMAGE = "timescale/timescaledb-ha:pg16-ts2.30"
-# Credenciales desechables: el contenedor vive lo que dura la sesión de tests.
+# Throwaway credentials: the container only lives as long as the test session.
 PASSWORDS = {
     "POSTGRES_PASSWORD": "test-postgres",
     "VIGIA_OWNER_PASSWORD": "test-owner",
@@ -45,20 +45,20 @@ class Database:
 
     @property
     def app_url(self) -> str:
-        """URL de SQLAlchemy con vigia_app, como VIGIA_DATABASE_URL en la API y los workers."""
+        """SQLAlchemy URL for vigia_app, like VIGIA_DATABASE_URL in the API and workers."""
         return self.app_dsn.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 
 def head_revision() -> str:
-    """Última revisión del historial, sin escribirla a mano en cada test."""
+    """Latest revision in the history, so tests do not hard-code it."""
     head = ScriptDirectory.from_config(Config(str(BACKEND_DIR / "alembic.ini"))).get_current_head()
     assert head is not None
     return head
 
 
 def _in_own_thread[T](fn: Callable[[], T]) -> T:
-    # migrations/env.py usa asyncio.run(), que falla si el hilo ya tiene un event loop
-    # (tests async de pytest-asyncio). Un hilo nuevo no tiene loop.
+    # migrations/env.py calls asyncio.run(), which fails if the thread already has an event
+    # loop (pytest-asyncio async tests). A fresh thread has none.
     with ThreadPoolExecutor(max_workers=1) as executor:
         return executor.submit(fn).result()
 
@@ -80,8 +80,9 @@ def migrate(db: Database, action: str = "upgrade", revision: str = "head") -> No
 
 
 async def _wait_until_ready(dsn: str, timeout_s: float = 90.0) -> None:
-    # Conectar como vigia_owner a la base vigia solo funciona cuando el script de init
-    # terminó (antes, el servidor temporal no escucha por TCP y el rol no existe).
+    # Connecting as vigia_owner to the vigia database only works once the init script has
+    # finished (before that, the temporary server does not listen on TCP and the role does
+    # not exist yet).
     deadline = asyncio.get_running_loop().time() + timeout_s
     while True:
         try:
@@ -120,14 +121,14 @@ def database() -> Iterator[Database]:
 
 @pytest.fixture
 def tokens() -> TokenFactory:
-    # Reloj real congelado al crear el fixture: los tokens deben ser válidos "ahora"
-    # para el verificador de la app, que también se construye con este reloj.
+    # Real clock frozen when the fixture is created: tokens must be valid "now" for the
+    # app's verifier, which is built with this same clock.
     return TokenFactory(FakeClock(SystemClock().now()))
 
 
 @pytest.fixture
 async def owner(database: Database) -> AsyncIterator[asyncpg.Connection]:
-    """Conexión como vigia_owner (el rol de las migraciones)."""
+    """Connection as vigia_owner (the migrations role)."""
     conn = await asyncpg.connect(database.owner_dsn)
     yield conn
     await conn.close()
@@ -135,7 +136,7 @@ async def owner(database: Database) -> AsyncIterator[asyncpg.Connection]:
 
 @pytest.fixture
 async def app(database: Database) -> AsyncIterator[asyncpg.Connection]:
-    """Conexión como vigia_app (el rol de la API y los workers)."""
+    """Connection as vigia_app (the API and workers role)."""
     conn = await asyncpg.connect(database.app_dsn)
     yield conn
     await conn.close()

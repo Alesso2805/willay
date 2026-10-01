@@ -1,4 +1,4 @@
-"""VIG-22 (parte 1): el dispatcher envía las alertas de Telegram con su botón."""
+"""VIG-22 (part 1): the dispatcher sends Telegram alerts with their button."""
 
 import asyncio
 import hashlib
@@ -80,7 +80,7 @@ async def test_a_telegram_alert_is_sent_with_its_confirm_button(
     [(chat, text, token)] = bot.sent
     assert chat == CHAT
     assert text.startswith("Vigía · ADVERTENCIA: Valor fuera de límite en Zona")
-    assert len(token) == 43  # callback_data: dentro de los 64 de Telegram
+    assert len(token) == 43  # callback_data: within Telegram's 64-character limit
     alert = await _alert(owner, graph, "telegram")
     assert (alert["status"], alert["destination"]) == ("sent", str(CHAT))
     assert alert["ack_token_hash"] == hashlib.sha256(token.encode()).hexdigest()
@@ -94,7 +94,7 @@ async def test_telegram_failing_twice_delivers_on_the_third_attempt(
     graph = await telegram_incident(engine, owner)
     clock = FakeClock(SystemClock().now() + timedelta(seconds=1))
     dispatcher = TelegramDispatcher(SqlDispatchQueue(engine), FakeBot(failures=2), clock)
-    for wait in (0, 5, 10):  # reintentos a los 5 y a los 10 s
+    for wait in (0, 5, 10):  # retries after 5 and 10 s
         clock.advance(timedelta(seconds=wait))
         await dispatcher.dispatch(10)
 
@@ -123,7 +123,7 @@ async def test_a_telegram_outage_does_not_stop_the_email(
         deadline = asyncio.get_running_loop().time() + 10
         while not (smtp.sent and bot.calls):
             if asyncio.get_running_loop().time() > deadline:
-                raise AssertionError("el dispatcher no intentó ambos canales")
+                raise AssertionError("the dispatcher did not try both channels")
             await asyncio.sleep(0.05)
     finally:
         stop.set()
@@ -135,4 +135,4 @@ async def test_a_telegram_outage_does_not_stop_the_email(
     assert (telegram["status"], telegram["last_error"]) == (
         "pending",
         "sendMessage: 502 Bad Gateway",
-    )  # se reintentará
+    )  # it will be retried

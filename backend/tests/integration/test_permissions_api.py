@@ -1,7 +1,7 @@
-"""VIG-07: 403 por rol, probado para cada rol del realm contra cada permiso.
+"""VIG-07: 403 by role, tested for every realm role against every permission.
 
-Todavía no hay endpoints de negocio, así que se monta una ruta de prueba por permiso
-protegida con `require(...)`, exactamente como la usarán los endpoints reales.
+A probe route per permission is mounted, protected with `require(...)` exactly as the real
+endpoints use it.
 """
 
 from collections.abc import AsyncIterator
@@ -17,11 +17,11 @@ from tests.integration.conftest import Database
 from tests.support.matrix import SPEC_MATRIX
 from tests.support.tokens import (
     RIMAC,
-    SUB_DOS_ORGS,
     SUB_RIMAC_ADMIN,
     SUB_RIMAC_OPERATOR,
     SUB_RIMAC_RESPONDER,
     SUB_RIMAC_VIEWER,
+    SUB_TWO_ORGS,
     TokenFactory,
 )
 from vigia.identity.api.dependencies import require
@@ -68,7 +68,7 @@ async def test_each_role_gets_exactly_its_permissions(
 
     if permission in SPEC_MATRIX[role]:
         assert response.status_code == 200, response.text
-        # require() devuelve el Principal: el endpoint sigue teniendo el tenant.
+        # require() returns the Principal, so the endpoint still has the tenant.
         assert response.json() == {"organization_id": str(data.RIMAC.id)}
     else:
         assert response.status_code == 403, response.text
@@ -100,10 +100,10 @@ async def test_me_lists_the_permissions_of_the_role(
 async def test_tenant_check_comes_before_permissions(
     client: httpx2.AsyncClient, tokens: TokenFactory
 ) -> None:
-    # Un admin de dos organizaciones no llega a evaluar permisos: 403 de tenant.
+    # An admin of two organizations never reaches the permission check: tenant 403.
     token = tokens.issue(
-        SUB_DOS_ORGS,
-        organization={**RIMAC, "aislamiento": {"id": str(data.AISLAMIENTO.keycloak_org_id)}},
+        SUB_TWO_ORGS,
+        organization={**RIMAC, "aislamiento": {"id": str(data.ISOLATION.keycloak_org_id)}},
         roles=("admin",),
     )
     response = await client.get(f"/test/permissions/{Permission.VIEW.value}", headers=bearer(token))

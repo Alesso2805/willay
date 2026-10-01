@@ -1,4 +1,4 @@
-"""VIG-10: latido de estación en ingest.station_heartbeats, contra la app y Postgres reales."""
+"""VIG-10: station heartbeat in ingest.station_heartbeats, against the real app and Postgres."""
 
 import asyncio
 import random
@@ -60,7 +60,7 @@ async def test_first_batch_creates_the_heartbeat_from_the_latest_on_time_reading
             client,
             key,
             (t - timedelta(seconds=10), 2.0),
-            (t - timedelta(hours=2), 9.0),  # tardía: no cuenta aunque su valor sea otro
+            (t - timedelta(hours=2), 9.0),  # late: it does not count, even with a different value
             (t - timedelta(seconds=30), 1.0),
         )
 
@@ -78,14 +78,14 @@ async def test_a_batch_of_only_late_readings_does_not_beat(
     t = clock.now()
     async with api_client(database, tokens, clock=clock) as client:
         await _post(client, key, (t - timedelta(hours=2), 9.0))
-        assert await _heartbeat(owner, graph) is None  # ni siquiera se crea
+        assert await _heartbeat(owner, graph) is None  # not even created
 
         await _post(client, key, (t - timedelta(seconds=5), 1.0))
         clock.advance(timedelta(minutes=10))
         await _post(client, key, (t - timedelta(hours=3), 8.0))
 
-    # Diez minutos después solo llegaron datos viejos: el latido sigue en t, y el
-    # detector de silencio verá a la estación callada, como debe.
+    # Ten minutes later only old data arrived: the heartbeat stays at t, so the silence
+    # detector sees the station as quiet, as it should.
     assert tuple(await _heartbeat(owner, graph) or ()) == (t, t - timedelta(seconds=5), 1.0)
 
 
@@ -101,12 +101,12 @@ async def test_backfill_of_older_readings_refreshes_seen_but_not_the_last_value(
     async with api_client(database, tokens, clock=clock) as client:
         await _post(client, key, (t - timedelta(seconds=10), 2.0))
         clock.advance(timedelta(seconds=30))
-        # La estación recupera su buffer: lecturas a tiempo pero anteriores a la última.
+        # The station flushes its buffer: on-time readings, but older than the latest one.
         await _post(client, key, (t - timedelta(seconds=50), 7.0))
 
     assert tuple(await _heartbeat(owner, graph) or ()) == (
-        t + timedelta(seconds=30),  # está viva ahora
-        t - timedelta(seconds=10),  # pero el último dato sigue siendo el mismo
+        t + timedelta(seconds=30),  # alive now
+        t - timedelta(seconds=10),  # but the latest data point is unchanged
         2.0,
     )
 
@@ -136,11 +136,11 @@ async def test_concurrent_batches_from_two_replicas_never_move_the_heartbeat_bac
 ) -> None:
     graph, key = station
     t = SystemClock().now()
-    # Dos réplicas con relojes que difieren 5 s, como dos servidores reales.
+    # Two replicas whose clocks differ by 5 s, like two real servers.
     clock_a, clock_b = FakeClock(t), FakeClock(t + timedelta(seconds=5))
     base = t - timedelta(seconds=40)
     order = list(range(20))
-    random.Random(7).shuffle(order)  # llegan desordenadas, con semilla fija
+    random.Random(7).shuffle(order)  # they arrive out of order, with a fixed seed
 
     async with (
         api_client(database, tokens, clock=clock_a) as replica_a,
@@ -154,7 +154,7 @@ async def test_concurrent_batches_from_two_replicas_never_move_the_heartbeat_bac
         )
 
     assert tuple(await _heartbeat(owner, graph) or ()) == (
-        t + timedelta(seconds=5),  # la recepción más reciente, venga de la réplica que venga
-        base + timedelta(seconds=19),  # la medición más reciente
-        19.0,  # y su valor, no el del último lote en confirmar
+        t + timedelta(seconds=5),  # the latest receipt, whichever replica it came from
+        base + timedelta(seconds=19),  # the latest measurement
+        19.0,  # and its value, not that of the last batch to commit
     )

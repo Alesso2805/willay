@@ -1,4 +1,4 @@
-"""VIG-08: 60 lotes por minuto y estación, contados en Postgres y válidos con 2 réplicas."""
+"""VIG-08: 60 batches per minute per station, counted in Postgres and valid with 2 replicas."""
 
 import asyncio
 from collections import Counter
@@ -21,7 +21,7 @@ pytestmark = pytest.mark.integration
 
 @pytest.fixture
 def clock() -> FakeClock:
-    # Congelado: el test nunca cruza un cambio de minuto a mitad de camino.
+    # Frozen, so the test never crosses a minute boundary halfway through.
     return FakeClock(SystemClock().now())
 
 
@@ -49,8 +49,8 @@ async def test_limit_is_shared_by_two_api_replicas_under_concurrency(
         api_client(database, tokens, clock=clock) as replica_a,
         api_client(database, tokens, clock=clock) as replica_b,
     ):
-        # 70 lotes a la vez, repartidos entre dos instancias con pools distintos:
-        # solo el upsert atómico en Postgres puede mantener la cuenta exacta.
+        # 70 concurrent batches split across two instances with separate pools: only the
+        # atomic upsert in Postgres can keep the count exact.
         responses = await asyncio.gather(
             *(
                 (replica_a if n % 2 else replica_b).post(
@@ -67,7 +67,7 @@ async def test_limit_is_shared_by_two_api_replicas_under_concurrency(
     stored = await owner.fetchval(
         "SELECT count(*) FROM ingest.readings WHERE station_id = $1", graph.station_id
     )
-    assert stored == MAX_BATCHES_PER_MINUTE  # los rechazados no guardan nada
+    assert stored == MAX_BATCHES_PER_MINUTE  # rejected batches store nothing
 
 
 async def test_next_minute_opens_a_new_window(
@@ -92,7 +92,7 @@ async def test_next_minute_opens_a_new_window(
 async def test_invalid_batches_also_count(
     database: Database, tokens: TokenFactory, clock: FakeClock, station: tuple[Graph, str]
 ) -> None:
-    # El límite protege a la API de una estación desbocada, envíe lo que envíe.
+    # The limit protects the API from a runaway station, whatever it sends.
     _, key = station
     async with api_client(database, tokens, clock=clock) as client:
         future = clock.now() + timedelta(hours=1)

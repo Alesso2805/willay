@@ -1,4 +1,4 @@
-"""VIG-24: el worker escalation contra Postgres real, con el tiempo movido por FakeClock."""
+"""VIG-24: the escalation worker against real Postgres, with time driven by FakeClock."""
 
 import asyncio
 import json
@@ -39,8 +39,8 @@ GT_35_ONCE = {"operator": "gt", "value": 3.5, "consecutive": 1}
 
 @pytest.fixture
 async def engine(database: Database, owner: asyncpg.Connection) -> AsyncIterator[AsyncEngine]:
-    # Base compartida: el worker recorre todos los incidentes abiertos; los de otros tests
-    # (casi todos con políticas sin niveles) no deben ocupar su cupo por ciclo.
+    # Shared database: the worker scans every open incident, and those from other tests
+    # (mostly with policies without levels) must not use up its per-cycle quota.
     await owner.execute("DELETE FROM ingest.evaluation_queue")
     await owner.execute(
         "UPDATE core.incidents SET escalation_exhausted_at = opened_at"
@@ -59,7 +59,7 @@ class Case:
 async def _incident(
     engine: AsyncEngine, owner: asyncpg.Connection, *, level_one_reachable: bool = True
 ) -> Case:
-    """Un incidente abierto con la política de la demo: 3 niveles de 120, 180 y 300 s."""
+    """An open incident with the demo policy: 3 levels of 120, 180 and 300 s."""
     graph = await create_graph(owner)
     await link_station(owner, graph)
     await create_rule(owner, graph, "threshold", GT_35_ONCE, station_id=graph.station_id)
@@ -157,7 +157,7 @@ async def test_the_policy_runs_out_after_its_last_level(
     case = await _incident(engine, owner)
     clock = FakeClock(case.opened_at)
     escalator = _escalator(engine, clock)
-    for wait in (120, 180, 300):  # cada plazo cuenta desde que se avisó a ese nivel
+    for wait in (120, 180, 300):  # each wait counts from when that level was notified
         clock.advance(timedelta(seconds=wait))
         await escalator.run()
 
@@ -190,9 +190,9 @@ async def test_policy_changes_apply_to_incidents_in_progress(
     escalator = _escalator(engine, clock)
     for wait in (120, 180):
         clock.advance(timedelta(seconds=wait))
-        await escalator.run()  # queda en el nivel 3, el último
+        await escalator.run()  # it ends at level 3, the last one
 
-    # Un admin agrega un cuarto nivel mientras el incidente escala.
+    # An admin adds a fourth level while the incident is escalating.
     dani = await create_contact(owner, case.graph, "Dani", email="dani@x.test")
     await add_level(owner, case.graph, 4, (await create_group(owner, case.graph, dani), "email"))
     clock.advance(timedelta(seconds=300))
@@ -226,7 +226,7 @@ async def test_the_worker_process_escalates(
         deadline = asyncio.get_running_loop().time() + 10
         while (await _level(owner, case))["current_level"] != 2:
             if asyncio.get_running_loop().time() > deadline:
-                raise AssertionError("el worker no escaló a tiempo")
+                raise AssertionError("the worker did not escalate in time")
             await asyncio.sleep(0.05)
     finally:
         stop.set()

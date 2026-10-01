@@ -1,4 +1,4 @@
-"""IncidentRepository en memoria para tests unitarios: un solo incidente."""
+"""In-memory IncidentRepository for unit tests: a single incident."""
 
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
@@ -19,8 +19,6 @@ OPEN, ACK, RESOLVED = IncidentStatus.OPEN, IncidentStatus.ACKNOWLEDGED, Incident
 
 
 class FakeIncidentRepository:
-    """Un incidente en memoria, con los eventos que se le escriben."""
-
     def __init__(self, organization_id: UUID, status: IncidentStatus = OPEN) -> None:
         self.incident = Incident(
             id=uuid4(),

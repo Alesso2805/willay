@@ -1,4 +1,4 @@
-"""VIG-16: reglas de tasa de cambio de punta a punta, con el escenario `drop` del simulador."""
+"""VIG-16: rate-of-change rules end to end, with the simulator's `drop` scenario."""
 
 from collections.abc import AsyncIterator
 from typing import Any
@@ -16,14 +16,14 @@ from vigia.shared.db import create_engine
 
 pytestmark = pytest.mark.integration
 
-# La regla del seed para la estación aguas abajo del Rímac.
+# The seed rule for the Rímac downstream station.
 DOWN_40 = {"direction": "down", "delta": 40.0, "window_minutes": 10}
 DROP_STEP = 30
 
 
 @pytest.fixture
 async def engine(database: Database, owner: asyncpg.Connection) -> AsyncIterator[AsyncEngine]:
-    await owner.execute("DELETE FROM ingest.evaluation_queue")  # base compartida
+    await owner.execute("DELETE FROM ingest.evaluation_queue")  # shared database
     engine = create_engine(database.app_url)
     yield engine
     await engine.dispose()
@@ -43,7 +43,7 @@ async def _station(
 
 
 def _drop_scenario(steps: int) -> list[float]:
-    """Caudal del escenario `drop` (semilla 42): ~85 m3/s con ruido y 34 desde DROP_STEP."""
+    """Discharge of the `drop` scenario (seed 42): ~85 m3/s with noise, then 34 from DROP_STEP."""
     [plan] = build_plan(
         Scenario.DROP, [("RIM-CHA-01", "discharge")], event_step=DROP_STEP, interval_s=10
     )
@@ -59,19 +59,19 @@ async def test_the_drop_scenario_opens_one_incident_at_the_drop(
     values = _drop_scenario(DROP_STEP + 15)
 
     await station.send(*values[:DROP_STEP])
-    assert await incidents(owner, station.graph) == []  # el ruido (±2 %) no es una caída
+    assert await incidents(owner, station.graph) == []  # the noise (±2 %) is not a drop
 
     await station.send(values[DROP_STEP])
     [incident] = await incidents(owner, station.graph)
     assert incident["dedup_key"] == f"{rule_id}:{station.graph.zone_id}"
-    assert incident["trigger_value"] == values[DROP_STEP]  # la primera lectura tras la caída
+    assert incident["trigger_value"] == values[DROP_STEP]  # the first reading after the drop
 
-    # Evidencia: la ventana completa, las 30 lecturas previas y la de la caída.
+    # Evidence: the whole window, the 30 previous readings plus the drop.
     payload = await opened_payload(owner, incident["id"])
     assert [r["value"] for r in payload["readings"]] == values[: DROP_STEP + 1]
     assert payload["rule_params"] == DOWN_40
 
-    # La caída sigue dentro de la ventana en las lecturas siguientes: mismo incidente.
+    # The drop stays inside the window for the next readings: same incident.
     await station.send(*values[DROP_STEP + 1 :])
     assert len(await incidents(owner, station.graph)) == 1
 
@@ -79,7 +79,7 @@ async def test_the_drop_scenario_opens_one_incident_at_the_drop(
 async def test_a_slow_decline_never_exceeds_delta_within_the_window(
     engine: AsyncEngine, owner: asyncpg.Connection
 ) -> None:
-    # 3 m3/s por minuto durante 24 minutos: 72 en total, pero a lo sumo 30 en 10 minutos.
+    # 3 m3/s per minute for 24 minutes: 72 in total, but at most 30 within 10 minutes.
     station, _ = await _station(engine, owner, interval_s=60)
     await station.send(*(100.0 - 3 * i for i in range(25)))
     assert await incidents(owner, station.graph) == []
@@ -90,7 +90,7 @@ async def test_the_window_includes_the_reading_exactly_t_minutes_before(
     engine: AsyncEngine, owner: asyncpg.Connection, gap_minutes: int, opened: int
 ) -> None:
     station, _ = await _station(engine, owner, interval_s=gap_minutes * 60)
-    await station.send(100.0, 59.0)  # cae 41 en `gap_minutes`
+    await station.send(100.0, 59.0)  # drops 41 in `gap_minutes`
     assert len(await incidents(owner, station.graph)) == opened
 
 
@@ -99,7 +99,7 @@ async def test_late_readings_are_not_part_of_the_window(
 ) -> None:
     station, _ = await _station(engine, owner)
     await station.send(85.0)
-    await station.write_late(10.0)  # una caída enorme, pero tardía: no cuenta
+    await station.write_late(10.0)  # a huge drop, but late: it does not count
     await station.send(84.0)
     assert await incidents(owner, station.graph) == []
 
@@ -113,6 +113,6 @@ async def test_an_up_rule_fires_on_a_sudden_rise(
     await station.send(2.0, 2.1, 3.0)
     assert await incidents(owner, station.graph) == []
 
-    await station.send(3.6)  # 2,0 → 3,6 m en 30 s
+    await station.send(3.6)  # 2.0 → 3.6 m in 30 s
     [incident] = await incidents(owner, station.graph)
     assert incident["trigger_value"] == 3.6

@@ -22,7 +22,7 @@ def _policy(*levels: LevelData, name: str = "Protocolo") -> PolicyData:
 def test_a_sensible_policy_is_valid() -> None:
     policy = _policy(
         LevelData(120, (EMAIL,)),
-        LevelData(180, (EMAIL, Target(GROUP, Channel.TELEGRAM))),  # mismo grupo, otro canal
+        LevelData(180, (EMAIL, Target(GROUP, Channel.TELEGRAM))),  # same group, another channel
     )
     validate_policy(policy)
     assert policy.group_ids == {GROUP}

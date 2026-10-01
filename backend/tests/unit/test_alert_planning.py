@@ -25,7 +25,7 @@ TX = cast(AsyncConnection, object())
     [
         ("operador@rimac.vigia.test", AlertStatus.PENDING),
         (None, AlertStatus.SKIPPED),
-        ("   ", AlertStatus.SKIPPED),  # un correo en blanco no es un destino
+        ("   ", AlertStatus.SKIPPED),  # a blank email is not a destination
     ],
 )
 def test_a_target_without_its_channel_is_skipped(
@@ -124,7 +124,7 @@ async def test_only_opening_an_incident_alerts_its_first_level() -> None:
     )
     incidents, alerting = FakeIncidentStore(), FakeAlerting()
 
-    for value in (3.7, 3.9, 3.8):  # abre, se agrava, sin cambios
+    for value in (3.7, 3.9, 3.8):  # opens, worsens, unchanged
         evaluator = RuleEvaluator(
             Rules(rule), History(value), incidents, FakeClock(T0), alerts=alerting
         )

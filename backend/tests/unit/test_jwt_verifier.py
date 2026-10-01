@@ -38,24 +38,24 @@ async def test_expiry_is_checked_with_the_injected_clock(
 ) -> None:
     token = tokens.issue(SUB_RIMAC_OPERATOR, lifetime=timedelta(minutes=5))
     verifier = tokens.verifier()
-    clock.advance(timedelta(minutes=5, seconds=30))  # dentro del margen de 30 s
+    clock.advance(timedelta(minutes=5, seconds=30))  # within the 30 s leeway
     await verifier.verify(token)
     clock.advance(timedelta(seconds=1))
-    with pytest.raises(TokenInvalidError, match="expiró"):
+    with pytest.raises(TokenInvalidError, match="expired"):
         await verifier.verify(token)
 
 
 async def test_token_not_yet_valid_is_rejected(tokens: TokenFactory) -> None:
     claims = tokens.claims(SUB_RIMAC_OPERATOR, nbf=int((NOW + timedelta(minutes=5)).timestamp()))
-    with pytest.raises(TokenInvalidError, match="aún no"):
+    with pytest.raises(TokenInvalidError, match="not valid yet"):
         await tokens.verifier().verify(tokens.sign(claims))
 
 
 @pytest.mark.parametrize(
     "override",
     [
-        {"aud": "otro-cliente"},
-        {"iss": "http://keycloak.test/realms/otro"},
+        {"aud": "other-client"},
+        {"iss": "http://keycloak.test/realms/other"},
     ],
 )
 async def test_wrong_audience_or_issuer_is_rejected(
@@ -97,8 +97,8 @@ async def test_alg_none_is_rejected(tokens: TokenFactory) -> None:
 
 
 async def test_hs256_signed_with_the_public_key_is_rejected(tokens: TokenFactory) -> None:
-    # Ataque clásico: la clave pública es conocida; el atacante la usa como secreto HMAC
-    # esperando que el verificador acepte HS256. Se arma a mano porque PyJWT ni lo firma.
+    # Classic attack: the public key is known, so the attacker uses it as the HMAC secret
+    # hoping the verifier accepts HS256. Built by hand because PyJWT refuses to sign it.
     public_pem = tokens.public_key.public_bytes(
         serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
     )
@@ -111,4 +111,4 @@ async def test_hs256_signed_with_the_public_key_is_rejected(tokens: TokenFactory
 
 async def test_garbage_is_rejected(tokens: TokenFactory) -> None:
     with pytest.raises(TokenInvalidError):
-        await tokens.verifier().verify("esto.no.es-un-jwt")
+        await tokens.verifier().verify("this.is.not-a-jwt")

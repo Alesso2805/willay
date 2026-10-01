@@ -17,7 +17,7 @@ from vigia.alerts.domain.delivery import AckToken, hash_ack_token, new_ack_token
 from vigia.alerts.domain.email import AlertMessage, EmailContent, compose_email
 from vigia.shared.clock import FakeClock
 
-T0 = datetime(2026, 11, 20, 14, 0, tzinfo=UTC)  # 09:00 en Lima (UTC-5)
+T0 = datetime(2026, 11, 20, 14, 0, tzinfo=UTC)  # 09:00 in Lima (UTC-5)
 
 MESSAGE = AlertMessage(
     contact_name="Óscar Operador",
@@ -48,7 +48,7 @@ def test_three_exponential_retries_then_give_up(
 
 def test_the_ack_token_has_256_bits_and_only_its_hash_is_kept() -> None:
     first, second = new_ack_token(T0), new_ack_token(T0)
-    assert len(first.token) == 43  # base64url de 32 bytes: cabe en los 64 de Telegram
+    assert len(first.token) == 43  # base64url of 32 bytes: fits Telegram's 64-char limit
     assert re.fullmatch(r"[A-Za-z0-9_-]{43}", first.token)
     assert first.token_hash == hashlib.sha256(first.token.encode()).hexdigest()
     assert first.token_hash == hash_ack_token(first.token)
@@ -64,7 +64,7 @@ def test_the_email_has_zone_severity_value_local_time_and_link() -> None:
     assert "incidente CRÍTICO en la zona Chosica" in body
     assert "RIM-CHA-01 · Chaclacayo (aguas abajo)" in body
     assert "Valor:     35.11 m3/s" in body
-    assert "Abierto:   20/11/2026 09:00 (America/Lima)" in body  # hora local, no UTC
+    assert "Abierto:   20/11/2026 09:00 (America/Lima)" in body  # local time, not UTC
     assert "http://localhost:8000/confirmar/abc" in body
     assert "no reemplaza los avisos oficiales" in body
 
@@ -140,7 +140,7 @@ async def test_a_sent_alert_carries_the_link_of_its_stored_token() -> None:
     [(to, content)] = sender.messages
     [token] = queue.tokens
     assert to == "ana@x.test"
-    # El enlace lleva el token en claro; la base, solo su hash.
+    # The link carries the plain token; the database keeps only its hash.
     assert f"http://localhost:8000/confirmar/{token.token}" in content.body
     assert len(queue.delivered) == 1
 
@@ -159,7 +159,7 @@ async def test_a_lost_claim_sends_nothing() -> None:
 
 async def test_an_unexpected_error_does_not_stop_the_other_alerts() -> None:
     class Flaky(Sender):
-        """El primer envío explota con un error que no es de entrega (un bug)."""
+        """The first send blows up with a non-delivery error (a bug)."""
 
         calls = 0
 
@@ -171,5 +171,5 @@ async def test_an_unexpected_error_does_not_stop_the_other_alerts() -> None:
 
     queue, sender = Queue(_claimed(), _claimed()), Flaky()
     result = await _dispatcher(queue, sender).dispatch(10)
-    # La que falló por un error inesperado queda reclamada: se reintenta al vencer.
+    # The alert that hit an unexpected error stays claimed and is retried when the claim expires.
     assert result == DispatchResult(2, 1, 0)

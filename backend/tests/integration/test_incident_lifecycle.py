@@ -1,4 +1,4 @@
-"""VIG-18: incidentes sin duplicados: enfriamiento, lecturas que los agravan y carrera."""
+"""VIG-18: incidents without duplicates: cooldown, worsening readings and races."""
 
 import asyncio
 import json
@@ -30,13 +30,13 @@ from vigia.shared.db import create_engine
 pytestmark = pytest.mark.integration
 
 GT_35_ONCE = {"operator": "gt", "value": 3.5, "consecutive": 1}
-COOLDOWN = timedelta(seconds=600)  # el de create_rule
+COOLDOWN = timedelta(seconds=600)  # the one create_rule uses
 T0 = datetime(2026, 11, 20, 14, 0, tzinfo=UTC)
 
 
 @pytest.fixture
 async def engine(database: Database, owner: asyncpg.Connection) -> AsyncIterator[AsyncEngine]:
-    await owner.execute("DELETE FROM ingest.evaluation_queue")  # base compartida
+    await owner.execute("DELETE FROM ingest.evaluation_queue")  # shared database
     engine = create_engine(database.app_url)
     yield engine
     await engine.dispose()
@@ -82,14 +82,14 @@ async def test_a_resolved_cause_does_not_reopen_during_its_cooldown(
     await station.send(3.8)
     assert [i["status"] for i in await incidents(owner, station.graph)] == ["resolved"]
 
-    clock.advance(timedelta(seconds=2))  # el enfriamiento terminó
+    clock.advance(timedelta(seconds=2))  # the cooldown is over
     await station.send(3.9)
     reopened = await incidents(owner, station.graph)
     assert [(i["status"], i["trigger_value"]) for i in reopened] == [
         ("resolved", 3.6),
         ("open", 3.9),
     ]
-    # Durante el enfriamiento no hubo incidente, pero las lecturas se guardaron igual.
+    # No incident during the cooldown, but the readings were stored anyway.
     assert (
         await owner.fetchval(
             "SELECT count(*) FROM ingest.readings WHERE station_id = $1",
@@ -121,7 +121,7 @@ async def test_reprocessing_a_reading_adds_nothing(
     [incident] = await incidents(owner, station.graph)
     before = await _timeline(owner, incident["id"])
 
-    # La misma lectura (4,0) evaluada otra vez, como tras un reintento de la cola.
+    # The same reading (4.0) evaluated again, as after a queue retry.
     measured_at = await owner.fetchval(
         "SELECT max(measured_at) FROM ingest.readings WHERE station_id = $1",
         station.graph.station_id,
@@ -135,7 +135,7 @@ async def test_reprocessing_a_reading_adds_nothing(
 
 
 class _MeetBeforeOpening(SqlIncidentStore):
-    """Hace que dos evaluadores lleguen a la vez a abrir el incidente."""
+    """Makes two evaluators reach the incident opening at the same time."""
 
     def __init__(self, barrier: asyncio.Barrier) -> None:
         self._barrier = barrier
@@ -173,12 +173,12 @@ async def test_two_evaluators_racing_on_the_same_cause_open_one_incident(
             clock,
             alerts=AlertPlanner(SqlAlertRepository()),
         )
-        await process_batch(queue, rules, engine.begin, limit=1)  # una lectura cada uno
+        await process_batch(queue, rules, engine.begin, limit=1)  # one reading each
 
     async with asyncio.timeout(10):
         await asyncio.gather(evaluator(), evaluator())
 
     assert len(await incidents(owner, graph)) == 1
-    assert not await owner.fetchval(  # las dos lecturas quedaron evaluadas
+    assert not await owner.fetchval(  # both readings were evaluated
         "SELECT count(*) FROM ingest.evaluation_queue WHERE station_id = $1", graph.station_id
     )

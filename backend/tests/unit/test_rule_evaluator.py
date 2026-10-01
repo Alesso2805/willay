@@ -35,7 +35,7 @@ class Rules:
 
 class History:
     def __init__(self, *values: float) -> None:
-        # La última primero, como la consulta real.
+        # Latest first, like the real query.
         self.readings = [
             EvidenceReading(T0 - timedelta(seconds=10 * i), v) for i, v in enumerate(values)
         ]
@@ -52,11 +52,11 @@ class History:
         self, tx: Any, station_id: UUID, since: datetime, until: datetime
     ) -> list[EvidenceReading]:
         self.windows.append((since, until))
-        return list(reversed(self.readings))  # cronológico
+        return list(reversed(self.readings))  # chronological
 
 
 async def _evaluate(rule: ApplicableRule, incidents: FakeIncidentStore, *values: float) -> None:
-    """Evalúa la lectura con este historial (la última primero)."""
+    """Evaluates the reading against this history (latest first)."""
     await RuleEvaluator(
         Rules(rule), History(*values), incidents, FakeClock(T0), alerts=FakeAlerting()
     ).evaluate(TX, ITEM)
@@ -71,8 +71,8 @@ async def test_a_firing_threshold_opens_an_incident_with_its_evidence() -> None:
     [trigger] = incidents.opened
     assert trigger.dedup_key == f"{rule.id}:{rule.zone_id}"
     assert trigger.trigger_value == 3.7
-    assert [r.value for r in trigger.evidence] == [3.6, 3.7]  # cronológico
-    assert history.limits == [2]  # pide solo las N lecturas que necesita
+    assert [r.value for r in trigger.evidence] == [3.6, 3.7]  # chronological
+    assert history.limits == [2]  # asks only for the N readings it needs
 
 
 async def test_nothing_is_opened_when_the_rule_does_not_fire() -> None:
@@ -85,15 +85,15 @@ async def test_nothing_is_opened_when_the_rule_does_not_fire() -> None:
 
 async def test_a_sudden_drop_opens_an_incident_with_the_whole_window_as_evidence() -> None:
     rule = _rule("rate_of_change", direction="down", delta=40.0, window_minutes=10)
-    incidents, history = FakeIncidentStore(), History(60.0, 34.0, 85.0, 84.0)  # la última primero
+    incidents, history = FakeIncidentStore(), History(60.0, 34.0, 85.0, 84.0)  # latest first
     await RuleEvaluator(
         Rules(rule), history, incidents, FakeClock(T0), alerts=FakeAlerting()
     ).evaluate(TX, ITEM)
 
     [trigger] = incidents.opened
-    assert trigger.trigger_value == 34.0  # la lectura que completó la caída
+    assert trigger.trigger_value == 34.0  # the reading that completed the drop
     assert [r.value for r in trigger.evidence] == [84.0, 85.0, 34.0, 60.0]
-    # La ventana termina en la lectura evaluada, no en el reloj.
+    # The window ends at the evaluated reading, not at the clock.
     assert history.windows == [(T0 - timedelta(minutes=10), T0)]
 
 
@@ -123,10 +123,10 @@ async def test_the_trigger_carries_the_rule_cooldown_and_how_it_worsens() -> Non
 
 async def test_an_active_threshold_incident_adds_only_readings_that_worsen_it() -> None:
     rule, incidents = _rule(), FakeIncidentStore()
-    await _evaluate(rule, incidents, 3.7, 3.6)  # abre con 3,7
-    await _evaluate(rule, incidents, 3.9, 3.7)  # nuevo máximo: se agrega
-    await _evaluate(rule, incidents, 3.8, 3.9)  # sigue fuera de límite pero no empeora
-    await _evaluate(rule, incidents, 3.9, 3.8)  # iguala el peor: no lo empeora
+    await _evaluate(rule, incidents, 3.7, 3.6)  # opens at 3.7
+    await _evaluate(rule, incidents, 3.9, 3.7)  # new maximum: added
+    await _evaluate(rule, incidents, 3.8, 3.9)  # still out of bounds but not worse
+    await _evaluate(rule, incidents, 3.9, 3.8)  # ties the worst value, which is not worse
 
     assert len(incidents.opened) == 1
     assert [r.value for r in incidents.added] == [3.9]
@@ -135,7 +135,7 @@ async def test_an_active_threshold_incident_adds_only_readings_that_worsen_it() 
 async def test_a_lower_limit_worsens_downwards() -> None:
     rule, incidents = _rule(operator="lt", value=0.5, consecutive=1), FakeIncidentStore()
     await _evaluate(rule, incidents, 0.4)
-    await _evaluate(rule, incidents, 0.45)  # sigue bajo el límite, pero es mejor
+    await _evaluate(rule, incidents, 0.45)  # still below the limit, but better
     await _evaluate(rule, incidents, 0.3)
     assert [r.value for r in incidents.added] == [0.3]
 
@@ -143,8 +143,8 @@ async def test_a_lower_limit_worsens_downwards() -> None:
 async def test_a_drop_worsens_with_a_lower_valley() -> None:
     rule = _rule("rate_of_change", direction="down", delta=40.0, window_minutes=10)
     incidents = FakeIncidentStore()
-    await _evaluate(rule, incidents, 34.0, 85.0)  # abre con el valle de 34
-    await _evaluate(rule, incidents, 30.0, 34.0, 85.0)  # la caída se profundiza
+    await _evaluate(rule, incidents, 34.0, 85.0)  # opens at the valley of 34
+    await _evaluate(rule, incidents, 30.0, 34.0, 85.0)  # the drop deepens
     assert [r.value for r in incidents.added] == [30.0]
 
 

@@ -1,4 +1,4 @@
-"""VIG-24: CRUD de políticas de escalamiento contra la app y Postgres reales."""
+"""VIG-24: escalation policy CRUD against the real app and Postgres."""
 
 import json
 from collections.abc import AsyncIterator
@@ -12,9 +12,9 @@ import pytest
 from tests.integration.api import api_client, bearer
 from tests.integration.conftest import Database
 from tests.support.tokens import (
-    AISLAMIENTO,
+    ISOLATION,
     RIMAC,
-    SUB_AISLAMIENTO_ADMIN,
+    SUB_ISOLATION_ADMIN,
     SUB_RIMAC_ADMIN,
     SUB_RIMAC_OPERATOR,
     SUB_RIMAC_VIEWER,
@@ -46,13 +46,13 @@ def _body(**overrides: Any) -> dict[str, Any]:
         "levels": [
             {
                 "wait_s": 120,
-                "targets": [{"contact_group_id": str(data.G_OPERADORES), "channel": "email"}],
+                "targets": [{"contact_group_id": str(data.G_OPERATORS), "channel": "email"}],
             },
             {
                 "wait_s": 300,
                 "targets": [
-                    {"contact_group_id": str(data.G_BRIGADA), "channel": "email"},
-                    {"contact_group_id": str(data.G_BRIGADA), "channel": "telegram"},
+                    {"contact_group_id": str(data.G_BRIGADE), "channel": "email"},
+                    {"contact_group_id": str(data.G_BRIGADE), "channel": "telegram"},
                 ],
             },
         ],
@@ -85,7 +85,7 @@ async def test_an_admin_creates_edits_and_deletes_a_policy_all_audited(
     ]
     assert policy["levels"][0]["targets"] == [
         {
-            "contact_group_id": str(data.G_OPERADORES),
+            "contact_group_id": str(data.G_OPERATORS),
             "contact_group_name": "Operadores de turno",
             "channel": "email",
         }
@@ -137,20 +137,18 @@ async def test_names_are_unique_per_organization(
             [
                 {
                     "wait_s": 0,
-                    "targets": [{"contact_group_id": str(data.G_OPERADORES), "channel": "email"}],
+                    "targets": [{"contact_group_id": str(data.G_OPERATORS), "channel": "email"}],
                 }
             ],
             "invalid_policy",
         ),
         ([{"wait_s": 120, "targets": []}], "invalid_policy"),
-        # Un grupo de otra organización no existe para esta.
+        # A group from another organization does not exist for this one.
         (
             [
                 {
                     "wait_s": 120,
-                    "targets": [
-                        {"contact_group_id": str(data.G_EQUIPO_PRUEBA), "channel": "email"}
-                    ],
+                    "targets": [{"contact_group_id": str(data.G_TEST_TEAM), "channel": "email"}],
                 }
             ],
             "unknown_contact_group",
@@ -160,7 +158,7 @@ async def test_names_are_unique_per_organization(
             "unknown_contact_group",
         ),
     ],
-    ids=["sin-niveles", "espera-0", "sin-destinos", "grupo-de-otra-org", "grupo-inexistente"],
+    ids=["no-levels", "zero-wait", "no-targets", "group-from-other-org", "unknown-group"],
 )
 async def test_invalid_policies_get_422(
     client: httpx2.AsyncClient, admin: dict[str, str], levels: list[Any], reason: str
@@ -192,11 +190,11 @@ async def test_only_admins_manage_policies_but_everyone_reads_them(
 async def test_another_organization_sees_nothing(
     client: httpx2.AsyncClient, tokens: TokenFactory
 ) -> None:
-    other = _as(tokens, SUB_AISLAMIENTO_ADMIN, "admin", organization=AISLAMIENTO)
+    other = _as(tokens, SUB_ISOLATION_ADMIN, "admin", organization=ISOLATION)
     assert (
         await client.get(f"/v1/escalation-policies/{data.P_RIMAC}", headers=other)
     ).status_code == 404
     put = await client.put(f"/v1/escalation-policies/{data.P_RIMAC}", json=_body(), headers=other)
     assert put.status_code == 404
     listed = (await client.get("/v1/escalation-policies", headers=other)).json()
-    assert {p["id"] for p in listed} == {str(data.P_AISLAMIENTO)}
+    assert {p["id"] for p in listed} == {str(data.P_ISOLATION)}

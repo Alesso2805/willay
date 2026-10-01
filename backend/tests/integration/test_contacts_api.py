@@ -1,4 +1,4 @@
-"""VIG-21: el enlace para vincular Telegram, contra la app y Postgres reales."""
+"""VIG-21: the Telegram linking URL, against the real app and Postgres."""
 
 import hashlib
 from collections.abc import AsyncIterator
@@ -13,9 +13,9 @@ import pytest
 from tests.integration.api import api_client, bearer
 from tests.integration.conftest import Database
 from tests.support.tokens import (
-    AISLAMIENTO,
+    ISOLATION,
     RIMAC,
-    SUB_AISLAMIENTO_ADMIN,
+    SUB_ISOLATION_ADMIN,
     SUB_RIMAC_ADMIN,
     SUB_RIMAC_OPERATOR,
     TokenFactory,
@@ -26,7 +26,7 @@ from vigia.shared.clock import SystemClock
 pytestmark = pytest.mark.integration
 
 BOT = "VigiaAlertasBot"
-ROSA = data.C_BRIGADA  # Rosa Brigada, del seed (Rímac)
+ROSA = data.C_BRIGADE  # Rosa Brigada, from the seed (Rímac)
 
 
 @pytest.fixture
@@ -55,7 +55,7 @@ async def test_an_admin_gets_a_single_use_link_shown_once(
     prefix = f"https://t.me/{BOT}?start="
     assert url.startswith(prefix)
     token = url.removeprefix(prefix)
-    assert len(token) == 43  # dentro de los 64 que admite Telegram en `start`
+    assert len(token) == 43  # within the 64 characters Telegram allows in `start`
 
     row = await owner.fetchrow(
         "SELECT telegram_link_token_hash, telegram_link_expires_at FROM core.contacts"
@@ -74,7 +74,7 @@ async def test_an_admin_gets_a_single_use_link_shown_once(
     )
     assert token not in audit
 
-    # Otro enlace invalida el anterior: solo queda el hash del último.
+    # A new link invalidates the previous one: only the latest hash is kept.
     again = (await _link(client, admin)).json()["url"].removeprefix(prefix)
     stored = await owner.fetchval(
         "SELECT telegram_link_token_hash FROM core.contacts WHERE id = $1", ROSA
@@ -86,12 +86,12 @@ async def test_only_admins_of_the_organization_can_create_links(
     client: httpx2.AsyncClient, tokens: TokenFactory
 ) -> None:
     operator = _as(tokens, SUB_RIMAC_OPERATOR, "operator")
-    other_admin = _as(tokens, SUB_AISLAMIENTO_ADMIN, "admin", organization=AISLAMIENTO)
+    other_admin = _as(tokens, SUB_ISOLATION_ADMIN, "admin", organization=ISOLATION)
     assert (await _link(client, operator)).status_code == 403
     assert (await _link(client, other_admin)).status_code == 404
 
 
 async def test_without_a_bot_there_is_no_link(database: Database, tokens: TokenFactory) -> None:
-    async with api_client(database, tokens) as client:  # sin VIGIA_TELEGRAM_BOT_USERNAME
+    async with api_client(database, tokens) as client:  # no VIGIA_TELEGRAM_BOT_USERNAME
         response = await _link(client, _as(tokens, SUB_RIMAC_ADMIN, "admin"))
     assert response.status_code == 503

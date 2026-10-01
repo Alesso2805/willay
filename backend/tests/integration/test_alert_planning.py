@@ -1,4 +1,4 @@
-"""VIG-20 (parte 1): al abrirse un incidente se crean las alertas de su nivel 1."""
+"""VIG-20 (part 1): opening an incident creates the alerts of its level 1."""
 
 import asyncio
 import json
@@ -37,14 +37,14 @@ GT_35_ONCE = {"operator": "gt", "value": 3.5, "consecutive": 1}
 
 @pytest.fixture
 async def engine(database: Database, owner: asyncpg.Connection) -> AsyncIterator[AsyncEngine]:
-    await owner.execute("DELETE FROM ingest.evaluation_queue")  # base compartida
+    await owner.execute("DELETE FROM ingest.evaluation_queue")  # shared database
     engine = create_engine(database.app_url)
     yield engine
     await engine.dispose()
 
 
 class People:
-    """Ana tiene correo y Telegram; Beto, nada; Caro, solo correo."""
+    """Ana has email and Telegram; Beto has nothing; Caro has only email."""
 
     def __init__(self, ana: UUID, beto: UUID, caro: UUID) -> None:
         self.ana, self.beto, self.caro = ana, beto, caro
@@ -55,9 +55,9 @@ async def _policy(owner: asyncpg.Connection, graph: Graph) -> People:
     beto = await create_contact(owner, graph, "Beto")
     caro = await create_contact(owner, graph, "Caro", email="caro@x.test")
     operators = await create_group(owner, graph, ana, beto)
-    field = await create_group(owner, graph, ana, caro)  # Ana está en los dos grupos
+    field = await create_group(owner, graph, ana, caro)  # Ana is in both groups
     await add_level(owner, graph, 1, (operators, "email"), (field, "email"), (field, "telegram"))
-    await add_level(owner, graph, 2, (operators, "email"))  # al abrir solo se alerta el 1
+    await add_level(owner, graph, 2, (operators, "email"))  # opening alerts only level 1
     return People(ana, beto, caro)
 
 
@@ -85,7 +85,7 @@ async def test_opening_creates_one_alert_per_contact_and_channel_of_level_one(
 
     [incident] = await incidents(owner, station.graph)
     assert await _alerts(owner, incident["id"]) == {
-        (people.ana, "email", "ana@x.test", "pending", 1, True),  # una sola, aunque esté en 2
+        (people.ana, "email", "ana@x.test", "pending", 1, True),  # only one, though in 2 groups
         (people.caro, "email", "caro@x.test", "pending", 1, True),
         (people.ana, "telegram", "111", "pending", 1, True),
         (people.beto, "email", None, "skipped", 1, False),
@@ -105,7 +105,7 @@ async def test_opening_creates_one_alert_per_contact_and_channel_of_level_one(
         (str(people.beto), "email", "el contacto no tiene correo"),
         (str(people.caro), "telegram", "el contacto no vinculó Telegram"),
     }
-    # El destino es un dato personal: no va en la línea de tiempo.
+    # The destination is personal data: it stays out of the timeline.
     assert "@" not in " ".join(r["payload"] for r in skipped)
 
 
@@ -150,7 +150,7 @@ async def test_an_alert_to_be_sent_always_has_a_destination(
 async def test_a_silence_incident_alerts_its_first_level_too(
     engine: AsyncEngine, owner: asyncpg.Connection
 ) -> None:
-    graph = await create_graph(owner)  # con su regla de silencio
+    graph = await create_graph(owner)  # with its silence rule
     await link_station(owner, graph)
     last_seen = datetime(2026, 11, 20, 14, 0, tzinfo=UTC)
     await owner.execute(

@@ -1,4 +1,4 @@
-"""VIG-25: el canal SSE `/v1/events` contra Postgres real y un servidor uvicorn real."""
+"""VIG-25: the `/v1/events` SSE channel against real Postgres and a real uvicorn server."""
 
 import asyncio
 import json
@@ -15,9 +15,9 @@ import pytest
 from tests.integration.api import bearer, serve_api
 from tests.integration.conftest import Database
 from tests.support.tokens import (
-    AISLAMIENTO,
+    ISOLATION,
     RIMAC,
-    SUB_AISLAMIENTO_ADMIN,
+    SUB_ISOLATION_ADMIN,
     SUB_RIMAC_OPERATOR,
     TokenFactory,
 )
@@ -27,14 +27,14 @@ pytestmark = pytest.mark.integration
 
 
 class EventStream:
-    """Lee un stream SSE evento por evento; ignora los comentarios de keepalive."""
+    """Reads an SSE stream event by event, skipping keepalive comments."""
 
     def __init__(self, response: httpx2.Response) -> None:
         self._lines = response.aiter_lines()
 
     async def next(self) -> tuple[str, dict[str, Any]] | None:
-        """El siguiente evento, o None si el servidor cerró el stream. Quien llama pone
-        el límite de espera con `asyncio.timeout`."""
+        """The next event, or None if the server closed the stream. The caller sets the
+        wait limit with `asyncio.timeout`."""
         event, data = "message", ""
         async for line in self._lines:
             if line.startswith(":"):
@@ -63,7 +63,7 @@ async def stream(base_url: str, token: str) -> AsyncIterator[EventStream]:
 
 
 async def _heartbeat(owner: asyncpg.Connection, station: UUID, value: float) -> None:
-    """Como la ingesta: el upsert del latido es lo que dispara el aviso."""
+    """Like ingestion: the heartbeat upsert is what fires the notification."""
     await owner.execute(
         """
         INSERT INTO ingest.station_heartbeats
@@ -82,14 +82,14 @@ async def test_each_organization_only_hears_its_own_events_within_two_seconds(
     database: Database, tokens: TokenFactory, owner: asyncpg.Connection
 ) -> None:
     rimac_token = tokens.issue(SUB_RIMAC_OPERATOR, organization=RIMAC)
-    other_token = tokens.issue(SUB_AISLAMIENTO_ADMIN, organization=AISLAMIENTO, roles=("admin",))
+    other_token = tokens.issue(SUB_ISOLATION_ADMIN, organization=ISOLATION, roles=("admin",))
     async with (
         serve_api(database, tokens) as base_url,
         stream(base_url, rimac_token) as rimac,
         stream(base_url, other_token) as other,
     ):
         await _heartbeat(owner, data.S_CHACLACAYO, 41.5)
-        async with asyncio.timeout(2):  # SPEC: actualización < 2 s
+        async with asyncio.timeout(2):  # SPEC: update < 2 s
             event = await rimac.next()
         assert event is not None
         kind, payload = event
@@ -98,9 +98,9 @@ async def test_each_organization_only_hears_its_own_events_within_two_seconds(
             str(data.S_CHACLACAYO),
             41.5,
         )
-        assert "organization_id" not in payload  # el navegador ya sabe de quién es
+        assert "organization_id" not in payload  # the browser already knows whose it is
 
-        # La otra organización no oyó el latido de Rímac: lo primero que recibe es el suyo.
+        # The other organization did not hear Rímac's heartbeat: the first thing it gets is its own.
         await _heartbeat(owner, data.S_AIS_1, 2.0)
         async with asyncio.timeout(2):
             event = await other.next()
@@ -108,7 +108,7 @@ async def test_each_organization_only_hears_its_own_events_within_two_seconds(
         assert event[1]["station_id"] == str(data.S_AIS_1)
         with pytest.raises(TimeoutError):
             async with asyncio.timeout(1):
-                await rimac.next()  # y Rímac no oyó el de aislamiento
+                await rimac.next()  # and Rímac did not hear the isolation org's one
 
 
 async def test_the_stream_ends_when_its_token_expires(
@@ -116,7 +116,7 @@ async def test_the_stream_ends_when_its_token_expires(
 ) -> None:
     token = tokens.issue(SUB_RIMAC_OPERATOR, organization=RIMAC, lifetime=timedelta(seconds=3))
     async with serve_api(database, tokens) as base_url, stream(base_url, token) as events:
-        # Cierra por su cuenta: el cliente se reconecta con un token vigente.
+        # The server closes it on its own; the client reconnects with a valid token.
         async with asyncio.timeout(6):
             assert await events.next() is None
 
@@ -124,7 +124,7 @@ async def test_the_stream_ends_when_its_token_expires(
 @pytest.mark.parametrize(
     ("roles", "status"),
     [(None, 401), ((), 403)],
-    ids=["sin-token", "sin-rol"],
+    ids=["no-token", "no-role"],
 )
 async def test_no_token_or_no_role_gets_no_stream(
     database: Database, tokens: TokenFactory, roles: tuple[str, ...] | None, status: int

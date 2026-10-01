@@ -1,4 +1,4 @@
-"""VIG-23: la página de confirmación contra la app y Postgres reales."""
+"""VIG-23: the confirmation page against the real app and Postgres."""
 
 import asyncio
 from collections.abc import AsyncIterator
@@ -33,7 +33,7 @@ GT_35_ONCE = {"operator": "gt", "value": 3.5, "consecutive": 1}
 
 @pytest.fixture
 async def engine(database: Database, owner: asyncpg.Connection) -> AsyncIterator[AsyncEngine]:
-    await owner.execute("DELETE FROM ingest.evaluation_queue")  # base compartida
+    await owner.execute("DELETE FROM ingest.evaluation_queue")  # shared database
     engine = create_engine(database.app_url)
     yield engine
     await engine.dispose()
@@ -46,7 +46,7 @@ async def client(database: Database, tokens: TokenFactory) -> AsyncIterator[http
 
 
 class Case:
-    """Un incidente abierto con una alerta enviada a cada contacto, con su token."""
+    """An open incident with an alert sent to each contact, each with its token."""
 
     def __init__(self, incident_id: UUID, contacts: dict[str, UUID], links: dict[str, str]):
         self.incident_id, self.contacts, self.links = incident_id, contacts, links
@@ -72,7 +72,7 @@ async def _case(
     links = {}
     for name, contact_id in contacts.items():
         token = new_ack_token(now - timedelta(hours=25) if expired else now)
-        # Como si el dispatcher la hubiera enviado con este token.
+        # As if the dispatcher had sent it with this token.
         await owner.execute(
             "UPDATE core.alerts SET status = 'sent', sent_at = $1, ack_token_hash = $2,"
             " ack_token_expires_at = $3 WHERE incident_id = $4 AND contact_id = $5",
@@ -108,7 +108,7 @@ async def test_opening_the_link_shows_the_incident_and_changes_nothing(
     case = await _case(engine, owner, "Ana")
     before = await _state(owner, case)
 
-    for _ in range(2):  # un escáner de correo y luego la persona
+    for _ in range(2):  # an email scanner, then the person
         page = await client.get(case.links["Ana"])
         assert page.status_code == 200
     html = page.text
@@ -116,7 +116,7 @@ async def test_opening_the_link_shows_the_incident_and_changes_nothing(
     assert "<dt>Causa</dt><dd>Valor fuera de límite</dd>" in html
     assert "<dt>Valor</dt><dd>3.6 m3/s</dd>" in html
     assert '<form method="post"><button type="submit">Confirmar que lo vi</button>' in html
-    # El token está en la URL: nada de Referer, caché ni indexación; sin scripts.
+    # The token is in the URL: no Referer, caching or indexing; no scripts.
     assert page.headers["cache-control"] == "no-store"
     assert page.headers["referrer-policy"] == "no-referrer"
     assert "default-src 'none'" in page.headers["content-security-policy"]
@@ -148,7 +148,7 @@ async def test_the_button_confirms_the_incident_as_the_contact_once(
     assert (event["actor_type"], event["actor_id"]) == ("contact", case.contacts["Ana"])
     assert await _alert_status(owner, case, "Ana") == "acknowledged"
 
-    # Un solo uso: el segundo clic y el enlace ya no sirven.
+    # Single use: the second click and the link no longer work.
     again = await client.post(case.links["Ana"])
     assert (again.status_code, "ya se usó" in again.text) == (410, True)
     assert (await client.get(case.links["Ana"])).status_code == 410
@@ -168,7 +168,7 @@ async def test_a_late_contact_is_recorded_as_having_seen_it(
     assert result.status_code == 200
     assert "quedó registrado que la viste" in result.text
     state = await _state(owner, case)
-    assert state["acknowledged_by_contact_id"] == case.contacts["Ana"]  # no cambia quién
+    assert state["acknowledged_by_contact_id"] == case.contacts["Ana"]  # still Ana
     assert await _alert_status(owner, case, "Caro") == "acknowledged"
 
 
@@ -216,7 +216,7 @@ async def test_two_clicks_at_once_confirm_only_once(
     engine: AsyncEngine, owner: asyncpg.Connection, database: Database, tokens: TokenFactory
 ) -> None:
     case = await _case(engine, owner, "Ana")
-    # Dos réplicas de la API: el doble clic llega a dos procesos distintos.
+    # Two API replicas: the double click reaches two different processes.
     async with api_client(database, tokens) as first, api_client(database, tokens) as second:
         responses = await asyncio.gather(
             first.post(case.links["Ana"]), second.post(case.links["Ana"])

@@ -1,4 +1,4 @@
-"""VIG-22 (parte 2): confirmar un incidente con el botón de la alerta de Telegram."""
+"""VIG-22 (part 2): confirming an incident with the Telegram alert button."""
 
 from collections.abc import AsyncIterator
 from pathlib import Path
@@ -39,7 +39,7 @@ async def engine(database: Database, owner: asyncpg.Connection) -> AsyncIterator
 
 
 async def _alert_sent(engine: AsyncEngine, owner: asyncpg.Connection) -> tuple[Graph, str, str]:
-    """El incidente con su alerta ya enviada: el texto que vio Ana y el token del botón."""
+    """The incident with its alert already sent: the text Ana saw and the button token."""
     graph = await telegram_incident(engine, owner)
     bot = FakeBot()
     await TelegramDispatcher(SqlDispatchQueue(engine), bot, SystemClock()).dispatch(10)
@@ -74,7 +74,7 @@ async def test_the_recipient_confirms_with_the_button(
     engine: AsyncEngine, owner: asyncpg.Connection, database: Database, tmp_path: Path
 ) -> None:
     graph, text, token = await _alert_sent(engine, owner)
-    # Doble toque: el segundo clic llega con el token ya usado.
+    # Double tap: the second click arrives with the token already used.
     api = FakeTelegram(_click(600, token, text), _click(601, token, text))
 
     async def both_confirmed() -> bool:
@@ -96,7 +96,7 @@ async def test_the_recipient_confirms_with_the_button(
     chat, message_id, edited = api.edits[0]
     assert (chat, message_id) == (CHAT, MESSAGE_ID)
     kept, note = edited.rsplit("\n\n", 1)
-    # Lo que Ana vio se conserva, salvo el aviso de escalamiento: ya no va a pasar.
+    # What Ana saw is kept, except the escalation notice: it will no longer happen.
     assert ESCALATION_NOTE in text
     assert kept.split("\n") == [line for line in text.split("\n") if line != ESCALATION_NOTE]
     assert note.startswith("Confirmado por Ana el ")
@@ -130,7 +130,7 @@ async def test_a_telegram_failure_does_not_undo_the_confirmation(
     api = FakeTelegram(_click(800, token, text), fail_replies=True)
 
     async def confirmed() -> bool:
-        return 801 in api.offsets  # la actualización se confirma aunque Telegram falle
+        return 801 in api.offsets  # the update is acknowledged even though Telegram fails
 
     await run_telegram_until(database, tmp_path, api, confirmed)
 
