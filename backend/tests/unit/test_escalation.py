@@ -12,9 +12,9 @@ from vigia.alerts.application.escalation import EscalationCycle, Escalator
 from vigia.alerts.domain.escalation import Decision, LevelState, Step, decide
 from vigia.shared.clock import FakeClock
 
-T0 = datetime(2026, 11, 20, 14, 0, tzinfo=UTC)  # cuando se avisó al nivel actual
+T0 = datetime(2026, 11, 20, 14, 0, tzinfo=UTC)  # when the current level was alerted
 INCIDENT = uuid4()
-DEMO_POLICY = {1: 120, 2: 180, 3: 300}  # la política del Rímac en el seed
+DEMO_POLICY = {1: 120, 2: 180, 3: 300}  # the Rímac policy in the seed
 
 
 def _state(**kw: Any) -> LevelState:
@@ -38,12 +38,12 @@ def _state(**kw: Any) -> LevelState:
             T0 + timedelta(seconds=300),
             Decision(Step.EXHAUST, "nadie confirmó en 300 s"),
         ),
-        (  # sin envíos: vence en el acto
+        (  # nothing was sent: the level expires at once
             _state(nobody_alerted=True),
             T0,
             Decision(Step.ESCALATE, "el nivel 1 no pudo avisar a nadie"),
         ),
-        (  # un admin quitó el nivel mientras el incidente escalaba
+        (  # an admin removed the level while the incident was escalating
             _state(current_level=2, wait_s=None, next_level=None),
             T0,
             Decision(Step.EXHAUST, "el nivel 2 ya no existe en la política"),
@@ -55,7 +55,7 @@ def test_when_a_level_expires(state: LevelState, now: datetime, decision: Decisi
 
 
 class Incident:
-    """Un incidente abierto con la política de la demo, en memoria."""
+    """An open in-memory incident under the demo policy."""
 
     def __init__(self, alerting: FakeAlerting, policy: dict[int, int] = DEMO_POLICY) -> None:
         self.alerting, self.policy = alerting, policy
@@ -69,7 +69,7 @@ class Incident:
 
     async def lock(self, tx: Any, incident_id: UUID) -> LevelState | None:
         if not self.open or self.exhausted_at is not None:
-            return None  # confirmado, resuelto o agotado
+            return None  # acknowledged, resolved or exhausted
         return LevelState(
             current_level=self.level,
             level_started_at=self.started,
@@ -108,7 +108,7 @@ async def test_the_next_level_is_alerted_once_the_wait_is_over() -> None:
     clock.advance(timedelta(seconds=1))
     assert await escalator.run() == EscalationCycle(escalated=1, exhausted=0)
 
-    assert (incident.level, incident.started) == (2, clock.now())  # su plazo empieza ahora
+    assert (incident.level, incident.started) == (2, clock.now())  # its wait starts now
     assert alerting.levels == [(INCIDENT, 2)]
     assert incident.events == [
         ("escalated", {"from_level": 1, "to_level": 2, "reason": "nadie confirmó en 120 s"})
@@ -148,6 +148,6 @@ async def test_the_last_level_exhausts_the_policy_once() -> None:
 async def test_an_acknowledged_incident_does_not_escalate() -> None:
     alerting = FakeAlerting()
     incident = Incident(alerting)
-    incident.open = False  # alguien lo confirmó
+    incident.open = False  # someone acknowledged it
     cycle = await _escalator(incident, FakeClock(T0 + timedelta(hours=1))).run()
     assert (cycle, alerting.levels, incident.events) == (EscalationCycle(0, 0), [], [])

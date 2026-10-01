@@ -1,4 +1,4 @@
-"""Permisos del rol vigia_app (criterios de aceptación de VIG-03)."""
+"""Privileges of the vigia_app role (VIG-03 acceptance criteria)."""
 
 import asyncpg
 import pytest
@@ -15,7 +15,7 @@ APPEND_ONLY = ["core.incident_events", "core.audit_log"]
 async def test_app_cannot_update_or_delete_append_only_tables(
     app: asyncpg.Connection, table: str
 ) -> None:
-    # El chequeo de privilegios ocurre antes de mirar filas: WHERE false basta.
+    # Privileges are checked before any row is read, so WHERE false is enough.
     with pytest.raises(asyncpg.InsufficientPrivilegeError):
         await app.execute(f"UPDATE {table} SET organization_id = organization_id WHERE false")
     with pytest.raises(asyncpg.InsufficientPrivilegeError):
@@ -70,13 +70,13 @@ async def test_app_can_append_to_audit_log_but_not_rewrite_it(
 async def test_table_created_later_by_owner_is_granted_to_app(
     owner: asyncpg.Connection, app: asyncpg.Connection, schema: str
 ) -> None:
-    # Lo mismo que hará cualquier migración futura: vigia_owner crea una tabla.
+    # What any future migration does: vigia_owner creates a table.
     table = f"{schema}.future_{uuid7().hex[:8]}"
     await owner.execute(f"CREATE TABLE {table} (id bigint GENERATED ALWAYS AS IDENTITY, v int)")
     try:
         for privilege in ("SELECT", "INSERT", "UPDATE", "DELETE"):
             assert await app.fetchval("SELECT has_table_privilege($1, $2)", table, privilege)
-        # La identity necesita USAGE sobre su secuencia, también otorgado por defecto.
+        # The identity column needs USAGE on its sequence, also granted by default.
         await app.execute(f"INSERT INTO {table} (v) VALUES (1)")
         await app.execute(f"UPDATE {table} SET v = 2")
         await app.execute(f"DELETE FROM {table}")

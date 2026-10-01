@@ -1,5 +1,5 @@
-"""Filas mínimas para los tests de integración. Cada llamada crea su propia organización,
-así los tests no comparten datos aunque usen la misma base."""
+"""Minimal rows for the integration tests. Each call creates its own organization, so tests
+do not share data even though they use the same database."""
 
 import json
 from dataclasses import dataclass
@@ -14,7 +14,7 @@ from vigia.ingestion.domain.api_keys import generate_api_key
 from vigia.ingestion.infrastructure.api_keys import ApiKeyHasher
 
 T0 = datetime(2026, 10, 1, 8, 40, tzinfo=UTC)
-# Parámetros mínimos de Argon2id: los tests ejercitan el flujo, no el costo del hash.
+# Minimal Argon2id parameters: the tests exercise the flow, not the cost of hashing.
 FAST_HASHER = ApiKeyHasher(PasswordHasher(time_cost=1, memory_cost=8, parallelism=1))
 
 
@@ -39,7 +39,7 @@ async def create_organization(conn: asyncpg.Connection) -> UUID:
 
 
 async def create_graph(conn: asyncpg.Connection) -> Graph:
-    """Organización con una zona, una estación, una política y una regla."""
+    """Organization with one zone, one station, one policy and one rule."""
     org_id = await create_organization(conn)
     zone_id, station_id, policy_id, rule_id = uuid7(), uuid7(), uuid7(), uuid7()
     await conn.execute(
@@ -106,7 +106,7 @@ async def create_incident(
 
 
 async def create_station_with_key(conn: asyncpg.Connection) -> tuple[Graph, str]:
-    """Estación nueva (en su propia organización) y su API key en claro."""
+    """A new station (in its own organization) and its plaintext API key."""
     graph = await create_graph(conn)
     key = generate_api_key(graph.station_id)
     await conn.execute(
@@ -118,7 +118,7 @@ async def create_station_with_key(conn: asyncpg.Connection) -> tuple[Graph, str]
 
 
 async def link_station(conn: asyncpg.Connection, graph: Graph, position: str = "in_zone") -> None:
-    """Asigna la estación del grafo a su zona (sin esto, ninguna regla le aplica)."""
+    """Assigns the graph's station to its zone (without this, no rule applies to it)."""
     await conn.execute(
         "INSERT INTO core.zone_stations (zone_id, station_id, position) VALUES ($1, $2, $3)",
         graph.zone_id,
@@ -128,7 +128,7 @@ async def link_station(conn: asyncpg.Connection, graph: Graph, position: str = "
 
 
 async def add_station(conn: asyncpg.Connection, graph: Graph, code: str) -> UUID:
-    """Otra estación de la organización del grafo, ya asignada a su zona."""
+    """Another station in the graph's organization, already assigned to its zone."""
     station_id = uuid7()
     await conn.execute(
         """
@@ -217,7 +217,7 @@ async def add_level(
     *targets: tuple[UUID, str],
     wait_s: int = 120,
 ) -> UUID:
-    """Nivel de la política del grafo; `targets` son pares (grupo, canal)."""
+    """A level of the graph's policy; `targets` are (group, channel) pairs."""
     level_id = uuid7()
     await conn.execute(
         "INSERT INTO core.escalation_levels (id, policy_id, level_order, wait_s)"

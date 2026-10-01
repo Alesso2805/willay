@@ -40,7 +40,7 @@ class FakeQueue:
 
 
 class Transactions:
-    """Transacción falsa que registra commits y rollbacks."""
+    """Fake transaction factory that counts commits and rollbacks."""
 
     def __init__(self) -> None:
         self.commits = 0
@@ -62,7 +62,7 @@ class Evaluator:
 
     async def evaluate(self, tx: Any, item: QueuedReading) -> None:
         if item.queue_id in self.fails_on:
-            raise ValueError(f"regla rota para {item.queue_id}")
+            raise ValueError(f"rule broken for {item.queue_id}")
 
 
 async def test_each_reading_is_evaluated_and_completed_in_its_own_transaction() -> None:
@@ -79,8 +79,8 @@ async def test_one_failing_reading_does_not_stop_the_others() -> None:
 
     assert (result.completed, result.failed) == (2, 1)
     assert queue.completed == [1, 3]
-    assert queue.failed == [(2, "ValueError: regla rota para 2")]
-    assert transactions.rollbacks == 1  # lo escrito para la 2 se revierte
+    assert queue.failed == [(2, "ValueError: rule broken for 2")]
+    assert transactions.rollbacks == 1  # whatever was written for reading 2 is rolled back
 
 
 async def test_a_lost_claim_rolls_back_and_is_not_counted_as_a_failure() -> None:
@@ -92,8 +92,8 @@ async def test_a_lost_claim_rolls_back_and_is_not_counted_as_a_failure() -> None
 
 
 async def test_cancellation_is_not_swallowed() -> None:
-    # Parar el proceso no es un fallo de la lectura: no gasta un intento como "fallido";
-    # la fila queda tomada y vuelve cuando vence su timeout.
+    # Stopping the process is not a failure of the reading: it must not spend an attempt as
+    # "failed"; the row stays claimed and returns when its visibility timeout expires.
     class Cancelled:
         async def evaluate(self, tx: Any, item: QueuedReading) -> None:
             raise asyncio.CancelledError

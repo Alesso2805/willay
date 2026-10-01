@@ -32,7 +32,7 @@ STATION = uuid4()
 ORG = uuid4()
 
 
-# --- dominio -----------------------------------------------------------------------
+# --- domain ------------------------------------------------------------------------
 
 
 def test_readings_up_to_the_clock_skew_are_accepted() -> None:
@@ -53,7 +53,7 @@ def test_readings_beyond_the_clock_skew_are_reported_by_index() -> None:
 
 
 def test_a_reading_is_late_only_after_more_than_one_hour() -> None:
-    assert quality_of(NOW - LATE_AFTER, NOW) is Quality.OK  # justo 1 h: todavía a tiempo
+    assert quality_of(NOW - LATE_AFTER, NOW) is Quality.OK  # exactly 1 h: still on time
     assert quality_of(NOW - LATE_AFTER - timedelta(microseconds=1), NOW) is Quality.LATE
 
 
@@ -81,7 +81,7 @@ def test_a_batch_of_only_late_readings_does_not_beat() -> None:
     )
 
 
-# --- autenticación de estación -----------------------------------------------------
+# --- station authentication --------------------------------------------------------
 
 
 class FakeVerifier:
@@ -113,7 +113,7 @@ async def test_valid_key_identifies_station_and_its_organization() -> None:
     assert station == AuthenticatedStation(STATION, ORG)
 
 
-@pytest.mark.parametrize("raw", [None, "", "sin-formato", "no-uuid.secreto"])
+@pytest.mark.parametrize("raw", [None, "", "no-format", "not-a-uuid.secret"])
 async def test_missing_or_malformed_key_is_rejected(raw: str | None) -> None:
     with pytest.raises(InvalidApiKeyError):
         await authenticate_station(raw, FakeCredentials(), FakeVerifier())
@@ -128,7 +128,7 @@ async def test_wrong_secret_is_rejected() -> None:
 
 
 async def test_unknown_station_still_pays_a_hash_verification() -> None:
-    # Sin esto, responder más rápido a ids inexistentes revelaría qué estaciones existen.
+    # Otherwise, answering unknown ids faster would reveal which stations exist.
     verifier = FakeVerifier()
     with pytest.raises(InvalidApiKeyError):
         await authenticate_station(generate_api_key(uuid4()), FakeCredentials(), verifier)
@@ -143,7 +143,7 @@ async def test_inactive_station_is_forbidden_even_with_the_right_key() -> None:
         )
 
 
-# --- ingesta -----------------------------------------------------------------------
+# --- ingestion ---------------------------------------------------------------------
 
 
 class FakeWriter:
@@ -197,4 +197,4 @@ async def test_future_readings_reject_the_whole_batch() -> None:
             FakeClock(NOW),
             writer,
         )
-    assert writer.calls == []  # nada se guarda: el lote es todo o nada
+    assert writer.calls == []  # nothing is stored: the batch is all or nothing

@@ -1,4 +1,4 @@
-"""VIG-21: el worker telegram vincula contactos, contra Postgres real y un Telegram falso."""
+"""VIG-21: the telegram worker links contacts, against real Postgres and a fake Telegram."""
 
 import asyncio
 from collections.abc import AsyncIterator
@@ -42,7 +42,7 @@ async def _contact_with_link(
     now = SystemClock().now() - (timedelta(days=8) if expired else timedelta())
     async with engine.begin() as tx:
         link = await create_telegram_link(
-            Actor(graph.organization_id, graph.organization_id),  # actor irrelevante aquí
+            Actor(graph.organization_id, graph.organization_id),  # the actor does not matter here
             contact,
             contacts=SqlContactLinkRepository(tx),
             audit=SqlAuditLog(tx),
@@ -77,7 +77,7 @@ async def test_opening_the_link_links_the_chat_and_confirms_the_update(
     [(chat, reply)] = api.replies
     assert chat == 4242
     assert reply.startswith("Listo, Lucho Quispe")
-    assert api.offsets[0] is None  # arrancó pidiendo lo que Telegram no dio por atendido
+    assert api.offsets[0] is None  # first poll asks for every unacknowledged update
     audit = await owner.fetchval(
         "SELECT count(*) FROM core.audit_log WHERE entity_id = $1 AND action = 'telegram_linked'",
         contact,
@@ -88,7 +88,7 @@ async def test_opening_the_link_links_the_chat_and_confirms_the_update(
 @pytest.mark.parametrize(
     ("text", "reply"),
     [("/start " + "x" * 43, INVALID_LINK), ("/start", HOW_TO_LINK), ("hola", HOW_TO_LINK)],
-    ids=["token-desconocido", "sin-token", "otro-mensaje"],
+    ids=["unknown-token", "no-token", "other-message"],
 )
 async def test_other_messages_get_a_helpful_reply(
     database: Database, tmp_path: Path, text: str, reply: str
@@ -150,7 +150,7 @@ async def test_without_a_bot_token_the_worker_only_beats(
     deadline = asyncio.get_running_loop().time() + 10
     while not beat.exists():
         if asyncio.get_running_loop().time() > deadline:
-            raise AssertionError("sin latido")
+            raise AssertionError("no heartbeat")
         await asyncio.sleep(0.02)
     stop.set()
     await worker

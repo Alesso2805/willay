@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from vigia.api.main import create_app
 from vigia.shared.config import Settings
 
-# Sin `with TestClient(...)` el lifespan no corre: no se conecta a ninguna base.
+# Without `with TestClient(...)` the lifespan does not run, so no database is touched.
 SETTINGS = Settings(database_url="postgresql+asyncpg://unused/unused")
 
 

@@ -14,7 +14,7 @@ from vigia.identity.domain.principal import (
 )
 
 RIMAC_ID = "1d44f4b3-b1df-457f-b717-20926a20166e"
-AISLAMIENTO_ID = "d32ffb77-666e-4986-8234-9f1db8437302"
+ISOLATION_ID = "d32ffb77-666e-4986-8234-9f1db8437302"
 
 
 def test_single_organization_is_resolved_by_id() -> None:
@@ -28,16 +28,16 @@ def test_single_organization_is_resolved_by_id() -> None:
         (None, NoOrganizationError),
         ({}, NoOrganizationError),
         (
-            {"rimac": {"id": RIMAC_ID}, "aislamiento": {"id": AISLAMIENTO_ID}},
+            {"rimac": {"id": RIMAC_ID}, "aislamiento": {"id": ISOLATION_ID}},
             MultipleOrganizationsError,
         ),
-        # Formato sin "Add organization id": solo alias. No sirve para resolver el tenant.
+        # Format without "Add organization id": aliases only, useless to resolve the tenant.
         (["rimac"], MalformedOrganizationClaimError),
-        # Lo que emiten dos mappers a la vez (visto en VIG-02): también se rechaza.
+        # What two mappers emit at once (seen in VIG-02): also rejected.
         (["rimac", {"rimac": {"id": RIMAC_ID}}], MalformedOrganizationClaimError),
         ({"rimac": {}}, MalformedOrganizationClaimError),
         ({"rimac": {"id": 42}}, MalformedOrganizationClaimError),
-        ({"rimac": {"id": "no-es-uuid"}}, MalformedOrganizationClaimError),
+        ({"rimac": {"id": "not-a-uuid"}}, MalformedOrganizationClaimError),
         ({"rimac": "1d44f4b3"}, MalformedOrganizationClaimError),
         ("rimac", MalformedOrganizationClaimError),
     ],
@@ -50,7 +50,7 @@ def test_anything_but_exactly_one_organization_is_rejected(
 
 
 def test_all_tenant_errors_share_a_base_class() -> None:
-    # La API traduce TenantError a 403 sin distinguir la causa.
+    # The API maps every TenantError to 403 regardless of the cause.
     for error in (NoOrganizationError, MultipleOrganizationsError, MalformedOrganizationClaimError):
         assert issubclass(error, TenantError)
 

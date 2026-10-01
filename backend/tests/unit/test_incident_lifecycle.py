@@ -31,9 +31,9 @@ OPEN, ACK, RESOLVED = IncidentStatus.OPEN, IncidentStatus.ACKNOWLEDGED, Incident
         (Transition.ACKNOWLEDGE, OPEN, True),
         (Transition.ACKNOWLEDGE, ACK, False),
         (Transition.ACKNOWLEDGE, RESOLVED, False),
-        (Transition.RESOLVE, OPEN, True),  # decisión de producto: sin confirmar antes
+        (Transition.RESOLVE, OPEN, True),  # product decision: no acknowledgement needed first
         (Transition.RESOLVE, ACK, True),
-        (Transition.RESOLVE, RESOLVED, False),  # resuelto es final
+        (Transition.RESOLVE, RESOLVED, False),  # resolved is final
     ],
 )
 def test_transitions(transition: Transition, current: IncidentStatus, allowed: bool) -> None:

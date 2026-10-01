@@ -1,7 +1,7 @@
-"""Copia literal de la tabla SPEC.md, sección "Permisos por rol".
+"""Verbatim copy of the SPEC.md table in the "Permissions by role" section.
 
-Los tests comparan la matriz del código contra esta copia: si alguien cambia una sin la
-otra, falla CI y se revisa también la especificación.
+Tests compare the code's matrix against this copy: changing one without the other
+fails CI, so the specification gets reviewed too.
 """
 
 from vigia.identity.domain.permissions import Permission

@@ -1,4 +1,4 @@
-"""VIG-20 (parte 2): el dispatcher envía las alertas de correo; llegan a un Mailpit real."""
+"""VIG-20 (part 2): the dispatcher sends email alerts, which reach a real Mailpit."""
 
 import asyncio
 import hashlib
@@ -41,7 +41,7 @@ from vigia.workers.dispatcher import run_dispatcher
 
 pytestmark = pytest.mark.integration
 
-MAILPIT_IMAGE = "axllent/mailpit:v1.31.2"  # la misma versión que docker-compose.yml
+MAILPIT_IMAGE = "axllent/mailpit:v1.31.2"  # the same version as docker-compose.yml
 GT_35_ONCE = {"operator": "gt", "value": 3.5, "consecutive": 1}
 
 
@@ -79,7 +79,7 @@ def mailpit() -> Iterator[Mailpit]:
 
 @pytest.fixture
 async def engine(database: Database, owner: asyncpg.Connection) -> AsyncIterator[AsyncEngine]:
-    # Base compartida: el dispatcher solo debe ver las alertas de este test.
+    # Shared database: the dispatcher must only see this test's alerts.
     await owner.execute("DELETE FROM ingest.evaluation_queue")
     await owner.execute("DELETE FROM core.alerts WHERE status = 'pending'")
     engine = create_engine(database.app_url)
@@ -90,7 +90,7 @@ async def engine(database: Database, owner: asyncpg.Connection) -> AsyncIterator
 async def _incident_alerting(
     engine: AsyncEngine, owner: asyncpg.Connection, *names: str
 ) -> tuple[Station, list[str]]:
-    """Abre un incidente cuyo nivel 1 avisa por correo a un contacto por nombre."""
+    """Opens an incident whose level 1 emails one contact per name."""
     graph = await create_graph(owner)
     await link_station(owner, graph)
     await create_rule(owner, graph, "threshold", GT_35_ONCE, station_id=graph.station_id)
@@ -141,7 +141,7 @@ async def test_the_worker_emails_level_one_and_the_link_confirms_it(
         public_url="http://vigia.test",
     )
     stop = asyncio.Event()
-    # Consulta cada 60 s: si el correo llega enseguida, lo despertó el NOTIFY.
+    # Polls every 60 s, so if the email arrives right away the NOTIFY woke it up.
     worker = asyncio.create_task(run_dispatcher(settings, stop, poll_interval_s=60.0))
     await asyncio.sleep(0.5)
     try:
@@ -149,7 +149,7 @@ async def test_the_worker_emails_level_one_and_the_link_confirms_it(
         deadline = asyncio.get_running_loop().time() + 10
         while not (mailpit.messages_to(ana) and mailpit.messages_to(caro)):
             if asyncio.get_running_loop().time() > deadline:
-                raise AssertionError("los correos no llegaron a Mailpit")
+                raise AssertionError("the emails did not reach Mailpit")
             await asyncio.sleep(0.1)
     finally:
         stop.set()
@@ -164,7 +164,7 @@ async def test_the_worker_emails_level_one_and_the_link_confirms_it(
     assert match is not None
 
     alert = await _alert(owner, ana)
-    # El enlace funciona: su token corresponde al hash guardado, válido 24 h.
+    # The link works: its token matches the stored hash, valid for 24 h.
     assert alert["ack_token_hash"] == hashlib.sha256(match.group(1).encode()).hexdigest()
     assert alert["ack_token_expires_at"] - alert["sent_at"] == pytest.approx(
         timedelta(hours=24), abs=timedelta(seconds=5)
@@ -173,14 +173,14 @@ async def test_the_worker_emails_level_one_and_the_link_confirms_it(
     [incident] = await incidents(owner, station.graph)
     events = await _alert_events(owner, alert["id"])
     assert [(e["type"], e["attempt"]) for e in events] == [("alert_sent", 1)]
-    # Ni el correo ni la dirección quedan en la línea de tiempo.
+    # Neither the email nor the address ends up in the timeline.
     timeline = await owner.fetch(
         "SELECT payload::text AS p FROM core.incident_events WHERE incident_id = $1",
         incident["id"],
     )
     assert all("@" not in r["p"] for r in timeline)
 
-    # VIG-23, punta a punta: el enlace que llegó a Mailpit confirma el incidente.
+    # VIG-23 end to end: the link delivered to Mailpit acknowledges the incident.
     async with api_client(database, tokens) as client:
         page = await client.get(f"/confirmar/{match.group(1)}")
         confirmed = await client.post(f"/confirmar/{match.group(1)}")
@@ -191,7 +191,7 @@ async def test_the_worker_emails_level_one_and_the_link_confirms_it(
 
 
 class FailsTwice:
-    """Canal simulado que falla dos veces y luego entrega (SPEC: NFR Fiabilidad)."""
+    """Simulated channel that fails twice and then delivers (SPEC: reliability NFR)."""
 
     def __init__(self, failures: int = 2) -> None:
         self.failures = failures
@@ -210,12 +210,12 @@ async def test_a_channel_failing_twice_delivers_on_the_third_attempt(
     clock = FakeClock(SystemClock().now() + timedelta(seconds=1))
     dispatcher = EmailDispatcher(SqlDispatchQueue(engine), FailsTwice(), clock, "http://x")
 
-    await dispatcher.dispatch(10)  # intento 1: falla, reintento a los 5 s
-    await dispatcher.dispatch(10)  # aún no venció: no hace nada
+    await dispatcher.dispatch(10)  # attempt 1: fails, retry in 5 s
+    await dispatcher.dispatch(10)  # not due yet: does nothing
     clock.advance(timedelta(seconds=5))
-    await dispatcher.dispatch(10)  # intento 2: falla, reintento a los 10 s
+    await dispatcher.dispatch(10)  # attempt 2: fails, retry in 10 s
     clock.advance(timedelta(seconds=10))
-    await dispatcher.dispatch(10)  # intento 3: entrega
+    await dispatcher.dispatch(10)  # attempt 3: delivers
 
     alert = await _alert(owner, ana)
     assert (alert["status"], alert["attempts"], alert["last_error"]) == ("sent", 3, None)
@@ -235,7 +235,7 @@ async def test_after_three_retries_the_alert_is_failed_for_good(
     clock = FakeClock(SystemClock().now() + timedelta(seconds=1))
     dispatcher = EmailDispatcher(SqlDispatchQueue(engine), FailsTwice(99), clock, "http://x")
 
-    for wait in (0, 5, 10, 20, 60):  # el último ya no encuentra nada que reintentar
+    for wait in (0, 5, 10, 20, 60):  # the last one finds nothing left to retry
         clock.advance(timedelta(seconds=wait))
         await dispatcher.dispatch(10)
 
@@ -257,7 +257,7 @@ async def test_a_dispatcher_that_dies_mid_send_leaves_the_alert_for_a_retry(
     clock = FakeClock(SystemClock().now() + timedelta(seconds=1))
     queue = SqlDispatchQueue(engine)
 
-    # Reclamó y murió antes de dejar resultado.
+    # It claimed the alert and died before recording a result.
     [claimed] = await queue.claim(
         Channel.EMAIL, clock.now(), clock.now() + timedelta(seconds=60), 10
     )
@@ -266,9 +266,9 @@ async def test_a_dispatcher_that_dies_mid_send_leaves_the_alert_for_a_retry(
     delivered = FailsTwice(0)
     dispatcher = EmailDispatcher(queue, delivered, clock, "http://x")
     await dispatcher.dispatch(10)
-    assert delivered.calls == 0  # sigue reclamada: nadie más la envía
+    assert delivered.calls == 0  # still claimed: nobody else sends it
     clock.advance(timedelta(seconds=61))
-    await dispatcher.dispatch(10)  # venció el reclamo: se reintenta
+    await dispatcher.dispatch(10)  # the claim expired: it is retried
 
     alert = await _alert(owner, ana)
     assert (alert["status"], alert["attempts"], delivered.calls) == ("sent", 2, 1)
@@ -280,7 +280,7 @@ async def test_an_alert_whose_every_attempt_died_ends_failed(
     _, (ana,) = await _incident_alerting(engine, owner, "Ana")
     clock = FakeClock(SystemClock().now() + timedelta(seconds=1))
     queue = SqlDispatchQueue(engine)
-    for _ in range(4):  # cuatro reclamos sin resultado: el worker murió cada vez
+    for _ in range(4):  # four claims without a result: the worker died every time
         await queue.claim(Channel.EMAIL, clock.now(), clock.now() + timedelta(seconds=60), 10)
         clock.advance(timedelta(seconds=61))
 
@@ -310,7 +310,7 @@ async def test_an_alert_whose_every_attempt_died_ends_failed(
             "el incidente ya fue resuelto",
         ),
     ],
-    ids=["confirmado", "resuelto"],
+    ids=["acknowledged", "resolved"],
 )
 async def test_pending_alerts_of_a_handled_incident_are_not_sent(
     engine: AsyncEngine, owner: asyncpg.Connection, change: str, reason: str

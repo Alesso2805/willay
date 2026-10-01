@@ -1,4 +1,4 @@
-"""Ayudas para probar reglas de punta a punta: ingesta → cola → evaluador → incidente."""
+"""Helpers to test rules end to end: ingestion → queue → evaluator → incident."""
 
 import json
 from datetime import datetime, timedelta
@@ -21,8 +21,8 @@ from vigia.shared.clock import Clock, SystemClock
 
 
 class Station:
-    """Una estación que envía lecturas cada `interval_s` y un evaluador que las procesa
-    una a una, como el worker real."""
+    """A station that sends a reading every `interval_s` and an evaluator that processes
+    them one by one, like the real worker."""
 
     def __init__(
         self,
@@ -52,7 +52,7 @@ class Station:
             await process_batch(self.queue, self.evaluator, self.engine.begin, limit=10)
 
     async def write_late(self, value: float) -> None:
-        """Una lectura tardía (> 1 h) intercalada: se guarda pero no se encola."""
+        """An interleaved late reading (> 1 h): it is stored but not enqueued."""
         await self._write(ClassifiedReading(self._next_time(), value, Quality.LATE))
 
     def _next_time(self) -> datetime:

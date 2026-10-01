@@ -15,8 +15,8 @@ from vigia.rules.application.silence_check import SilenceChecker, SilenceCycle, 
 from vigia.rules.domain.silence import is_silent, silence_threshold
 from vigia.shared.clock import FakeClock
 
-T0 = datetime(2026, 11, 9, 8, 50, tzinfo=UTC)  # último latido
-THIRTY_S = timedelta(seconds=30)  # K = 3 * intervalo de 10 s
+T0 = datetime(2026, 11, 9, 8, 50, tzinfo=UTC)  # last heartbeat
+THIRTY_S = timedelta(seconds=30)  # K = 3 times a 10 s interval
 
 
 def test_the_threshold_is_k_times_the_expected_interval() -> None:
@@ -76,7 +76,7 @@ def _checker(
 
 async def test_only_silent_stations_open_an_incident() -> None:
     silent = _station(T0)
-    almost = _station(T0 + timedelta(seconds=1))  # le falta 1 s
+    almost = _station(T0 + timedelta(seconds=1))  # 1 s short
     never = _station(None)
     incidents = FakeIncidentStore()
 
@@ -103,7 +103,7 @@ async def test_the_trigger_names_the_station_and_keeps_its_last_reading() -> Non
 
     [trigger] = incidents.opened
     assert trigger.rule_type == "silence"
-    # Con la estación en la causa: dos estaciones calladas son dos incidentes.
+    # The station is part of the cause: two silent stations are two incidents.
     assert trigger.dedup_key == f"{station.rule_id}:{station.zone_id}:{station.station_id}"
     assert trigger.trigger_value == 84.2
     assert trigger.evidence == (EvidenceReading(T0 - timedelta(seconds=2), 84.2),)
@@ -145,7 +145,7 @@ async def test_a_station_that_reports_again_is_recorded_as_recovered() -> None:
 
     assert cycle.recovered == 1
     assert incidents.recovered == [(recovery, clock.now())]
-    assert incidents.opened == []  # la recuperación no abre ni cierra nada
+    assert incidents.opened == []  # a recovery neither opens nor closes anything
 
 
 async def test_a_recovery_recorded_by_another_worker_is_not_counted() -> None:

@@ -1,4 +1,4 @@
-"""El cliente de la Bot API contra un Telegram simulado (MockTransport, sin red)."""
+"""The Bot API client against a simulated Telegram (MockTransport, no network)."""
 
 import json
 import traceback
@@ -10,7 +10,7 @@ import pytest
 from vigia.alerts.application.telegram_bot import Click, TelegramError, Update
 from vigia.alerts.infrastructure.telegram_api import TelegramBotApi
 
-TOKEN = "123456:SECRETO-del-bot"
+TOKEN = "123456:SECRET-bot-token"
 
 
 def _api(handler: Callable[[httpx2.Request], httpx2.Response]) -> TelegramBotApi:
@@ -45,7 +45,7 @@ async def test_updates_are_long_polled_from_the_offset() -> None:
                             },
                         },
                     },
-                    # Mensaje de más de 48 h: Telegram ya no entrega su texto.
+                    # A message older than 48 h: Telegram no longer sends its text.
                     {
                         "update_id": 9,
                         "callback_query": {
@@ -54,7 +54,7 @@ async def test_updates_are_long_polled_from_the_offset() -> None:
                             "message": {"message_id": 3, "chat": {"id": 42}, "date": 0},
                         },
                     },
-                    {"update_id": 10, "callback_query": {"id": "c10"}},  # ilegible
+                    {"update_id": 10, "callback_query": {"id": "c10"}},  # unreadable
                 ],
             },
         )
@@ -65,7 +65,7 @@ async def test_updates_are_long_polled_from_the_offset() -> None:
         Update(7, 42, "private", "/start abc"),
         Update(8, click=Click("c8", 42, "t" * 43, 42, 5, "Vigía · CRÍTICO")),
         Update(9, click=Click("c9", 42, None, 42, 3, None)),
-        Update(10),  # se confirma y se descarta: no bloquea a las siguientes
+        Update(10),  # acknowledged and dropped so it does not block the next ones
     ]
     [request] = seen
     assert request.url.path == f"/bot{TOKEN}/getUpdates"
@@ -88,7 +88,7 @@ async def test_a_message_is_sent_to_the_chat() -> None:
 
 
 def _unreachable(request: httpx2.Request) -> httpx2.Response:
-    # Como los errores reales de httpx2: el mensaje repite la URL, con el token dentro.
+    # Like real httpx2 errors: the message repeats the URL, token included.
     raise httpx2.ConnectError(f"cannot reach {request.url}", request=request)
 
 
@@ -103,7 +103,7 @@ def _unreachable(request: httpx2.Request) -> httpx2.Response:
             "getUpdates: 401 Unauthorized",
         ),
     ],
-    ids=["sin-red", "token-rechazado"],
+    ids=["no-network", "token-rejected"],
 )
 async def test_errors_never_carry_the_token(
     handler: Callable[[httpx2.Request], httpx2.Response], message: str
@@ -112,7 +112,7 @@ async def test_errors_never_carry_the_token(
         await _api(handler).get_updates(offset=None, timeout_s=1)
 
     assert str(caught.value) == message
-    # La traza completa (lo que registra el worker al fallar) tampoco lo lleva.
+    # Nor does the full traceback, which is what the worker logs on failure.
     trace = "".join(traceback.format_exception(caught.value))
     assert TOKEN not in trace
 
@@ -155,7 +155,7 @@ async def test_a_click_is_answered_and_the_button_removed() -> None:
                 "chat_id": 42,
                 "message_id": 5,
                 "text": "Vigía · CRÍTICO\n\nConfirmado por Ana",
-                "reply_markup": {"inline_keyboard": []},  # sin botón
+                "reply_markup": {"inline_keyboard": []},  # no button
             },
         ),
     ]

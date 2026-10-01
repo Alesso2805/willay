@@ -1,4 +1,4 @@
-"""Seed (VIG-04): conteos, idempotencia y API keys verificables."""
+"""Seed (VIG-04): counts, idempotency and verifiable API keys."""
 
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
@@ -22,7 +22,7 @@ SEED_ORGS = [org.id for org in data.ORGANIZATIONS]
 
 @pytest.fixture
 async def engine(database: Database) -> AsyncIterator[AsyncEngine]:
-    # El seed corre como vigia_app, igual que en `make seed`.
+    # The seed runs as vigia_app, as in `make seed`.
     engine = create_engine(database.app_url)
     yield engine
     await engine.dispose()
@@ -55,7 +55,7 @@ async def test_seed_creates_expected_data_and_is_idempotent(
     hashes = await _hashes(owner)
 
     second = await _seed(engine)
-    assert second == []  # nada nuevo: no se emiten ni cambian claves
+    assert second == []  # nothing new: no keys are issued or changed
     assert await _hashes(owner) == hashes
 
     in_orgs = "WHERE organization_id = ANY($1)"
@@ -70,11 +70,11 @@ async def test_seed_creates_expected_data_and_is_idempotent(
     )
     assert rimac_levels == 3
 
-    # La estación sin zona existe y no tiene filas en zone_stations.
+    # The station without a zone exists and has no rows in zone_stations.
     assert not await owner.fetchval(
-        "SELECT count(*) FROM core.zone_stations WHERE station_id = $1", data.S_SIN_ZONA
+        "SELECT count(*) FROM core.zone_stations WHERE station_id = $1", data.S_UNZONED
     )
-    # Los ids de Keycloak coinciden con el realm.
+    # The Keycloak ids match the realm.
     kc_ids = await owner.fetch(
         "SELECT keycloak_org_id FROM core.organizations WHERE id = ANY($1)", SEED_ORGS
     )
@@ -87,7 +87,7 @@ async def test_seed_creates_expected_data_and_is_idempotent(
 async def test_issued_keys_verify_and_rotation_invalidates_old_ones(
     engine: AsyncEngine, owner: asyncpg.Connection
 ) -> None:
-    await _seed(engine)  # puede no emitir nada si otro test ya sembró
+    await _seed(engine)  # may issue nothing if another test already seeded
     before = await _seed(engine, rotate_keys=True)
     assert {k.station_code for k in before} == {s.code for s in data.STATIONS}
 

@@ -1,4 +1,4 @@
-"""VIG-17: el worker silence contra Postgres real, con el tiempo movido por FakeClock."""
+"""VIG-17: the silence worker against real Postgres, with time driven by FakeClock."""
 
 import asyncio
 import json
@@ -26,7 +26,7 @@ from vigia.workers.silence import INTERVAL_S, run_silence
 pytestmark = pytest.mark.integration
 
 LAST_SEEN = datetime(2026, 11, 9, 8, 50, tzinfo=UTC)
-# Las estaciones de las factories: intervalo de 10 s y K = 3 por defecto.
+# Factory stations: 10 s interval and the default K = 3.
 THRESHOLD = timedelta(seconds=30)
 
 
@@ -73,7 +73,7 @@ async def _recovered_events(owner: asyncpg.Connection, incident_id: object) -> l
 
 
 async def _watched_station(owner: asyncpg.Connection) -> Graph:
-    """Estación con zona y latido, vigilada por la regla de silencio de create_graph."""
+    """A station with a zone and a heartbeat, watched by the silence rule of create_graph."""
     graph = await create_graph(owner)
     await link_station(owner, graph)
     await _heartbeat(owner, graph.station_id)
@@ -84,7 +84,7 @@ async def test_the_incident_opens_before_k_times_the_interval_plus_30_s(
     engine: AsyncEngine, owner: asyncpg.Connection
 ) -> None:
     graph = await _watched_station(owner)
-    # Ciclos cada 15 s, empezando en una fase cualquiera respecto del último latido.
+    # Cycles every 15 s, starting at an arbitrary phase relative to the last heartbeat.
     clock = FakeClock(LAST_SEEN + timedelta(seconds=7))
     checker = _checker(engine, clock)
     while not await incidents(owner, graph):
@@ -106,7 +106,7 @@ async def test_the_incident_opens_before_k_times_the_interval_plus_30_s(
 
     payload = await opened_payload(owner, incident["id"])
     assert payload["rule_type"] == "silence"
-    assert [r["value"] for r in payload["readings"]] == [84.2]  # la última lectura conocida
+    assert [r["value"] for r in payload["readings"]] == [84.2]  # the last known reading
     assert payload["details"] == {
         "last_seen_at": LAST_SEEN.isoformat(),
         "expected_interval_s": 10,
@@ -129,7 +129,7 @@ async def test_later_cycles_do_not_open_a_second_incident(
 async def test_a_resolved_silence_does_not_reopen_until_its_cooldown_ends(
     engine: AsyncEngine, owner: asyncpg.Connection
 ) -> None:
-    graph = await _watched_station(owner)  # la regla de create_graph enfría 600 s
+    graph = await _watched_station(owner)  # create_graph's rule has a 600 s cooldown
     clock = FakeClock(LAST_SEEN + THRESHOLD)
     checker = _checker(engine, clock)
     await checker.run()
@@ -141,7 +141,7 @@ async def test_a_resolved_silence_does_not_reopen_until_its_cooldown_ends(
         clock.now(),
     )
 
-    clock.advance(timedelta(seconds=599))  # la estación sigue callada
+    clock.advance(timedelta(seconds=599))  # the station is still silent
     await checker.run()
     assert len(await incidents(owner, graph)) == 1
 
@@ -155,7 +155,7 @@ async def test_a_zone_wide_rule_opens_one_incident_per_silent_station(
 ) -> None:
     graph = await _watched_station(owner)
     await owner.execute("UPDATE core.rules SET is_active = false WHERE id = $1", graph.rule_id)
-    zone_rule = await create_rule(owner, graph, "silence", {})  # station_id nulo: toda la zona
+    zone_rule = await create_rule(owner, graph, "silence", {})  # null station_id: the whole zone
     second = await add_station(owner, graph, "EST-2")
     await _heartbeat(owner, second)
 
@@ -169,20 +169,20 @@ async def test_a_zone_wide_rule_opens_one_incident_per_silent_station(
 @pytest.mark.parametrize(
     "setup",
     [
-        pytest.param("DELETE FROM core.zone_stations WHERE station_id = $1", id="sin-zona"),
+        pytest.param("DELETE FROM core.zone_stations WHERE station_id = $1", id="no-zone"),
         pytest.param(
-            "DELETE FROM ingest.station_heartbeats WHERE station_id = $1", id="nunca-reporto"
+            "DELETE FROM ingest.station_heartbeats WHERE station_id = $1", id="never-reported"
         ),
         pytest.param(
-            "UPDATE core.stations SET status = 'inactive' WHERE id = $1", id="estacion-inactiva"
+            "UPDATE core.stations SET status = 'inactive' WHERE id = $1", id="inactive-station"
         ),
         pytest.param(
-            "UPDATE core.rules SET is_active = false WHERE station_id = $1", id="regla-inactiva"
+            "UPDATE core.rules SET is_active = false WHERE station_id = $1", id="inactive-rule"
         ),
         pytest.param(
             "UPDATE core.risk_zones SET is_active = false "
             "WHERE id = (SELECT zone_id FROM core.rules WHERE station_id = $1)",
-            id="zona-inactiva",
+            id="inactive-zone",
         ),
     ],
 )
@@ -205,7 +205,7 @@ async def test_a_station_that_reports_again_gets_station_recovered_once(
     [incident] = await incidents(owner, graph)
 
     await checker.run()
-    assert await _recovered_events(owner, incident["id"]) == []  # sigue callada
+    assert await _recovered_events(owner, incident["id"]) == []  # still silent
 
     back = LAST_SEEN + timedelta(minutes=2)
     await _report_again(owner, graph.station_id, back)
@@ -216,7 +216,7 @@ async def test_a_station_that_reports_again_gets_station_recovered_once(
     [event] = await _recovered_events(owner, incident["id"])
     assert json.loads(event["payload"])["last_seen_at"] == back.isoformat()
     [incident] = await incidents(owner, graph)
-    assert incident["status"] == "open"  # sin cierre automático: lo resuelve el operador
+    assert incident["status"] == "open"  # no automatic closing: the operator resolves it
 
 
 async def test_two_workers_record_a_recovery_only_once(
@@ -227,7 +227,7 @@ async def test_two_workers_record_a_recovery_only_once(
     [incident] = await incidents(owner, graph)
     await _report_again(owner, graph.station_id, LAST_SEEN + timedelta(minutes=2))
 
-    # Los dos workers vieron la recuperación antes de que ninguno la registrara.
+    # Both workers saw the recovery before either of them recorded it.
     async with engine.begin() as tx:
         [recovery] = [
             r
@@ -240,7 +240,7 @@ async def test_two_workers_record_a_recovery_only_once(
         async with engine.begin() as tx:
             recorded.append(await store.record_recovery(tx, recovery, now))
 
-    assert recorded == [True, False]  # el índice único de la migración 0005
+    assert recorded == [True, False]  # the unique index from migration 0005
     assert len(await _recovered_events(owner, incident["id"])) == 1
 
 
@@ -273,10 +273,10 @@ async def test_the_worker_process_opens_the_incident_and_purges_old_windows(
         deadline = asyncio.get_running_loop().time() + 10
         while not await incidents(owner, graph) or len(await windows()) > 1:
             if asyncio.get_running_loop().time() > deadline:
-                raise AssertionError("el worker no abrió el incidente ni purgó a tiempo")
+                raise AssertionError("the worker did not open the incident and purge in time")
             await asyncio.sleep(0.05)
     finally:
         stop.set()
         await worker
-    assert await windows() == [recent]  # solo se purga lo de más de una hora
-    assert (tmp_path / "silence.alive").exists()  # latido del healthcheck
+    assert await windows() == [recent]  # only windows older than one hour are purged
+    assert (tmp_path / "silence.alive").exists()  # healthcheck heartbeat

@@ -30,15 +30,15 @@ def test_fake_clock_normalizes_to_utc() -> None:
 
 
 def test_fake_clock_rejects_naive_datetimes() -> None:
-    with pytest.raises(ValueError, match="zona horaria"):
-        FakeClock(datetime(2026, 10, 1))  # noqa: DTZ001 - es justo lo que se prueba
+    with pytest.raises(ValueError, match="timezone-aware"):
+        FakeClock(datetime(2026, 10, 1))  # noqa: DTZ001 - exactly what is under test
     clock = FakeClock(START)
-    with pytest.raises(ValueError, match="zona horaria"):
+    with pytest.raises(ValueError, match="timezone-aware"):
         clock.set(datetime(2026, 10, 1))  # noqa: DTZ001
 
 
 def test_fake_clock_does_not_go_backwards() -> None:
-    with pytest.raises(ValueError, match="no retrocede"):
+    with pytest.raises(ValueError, match="does not go back"):
         FakeClock(START).advance(timedelta(seconds=-1))
 
 

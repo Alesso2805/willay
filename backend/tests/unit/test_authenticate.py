@@ -73,7 +73,7 @@ async def test_organization_unknown_to_vigia_is_rejected_without_creating_user()
 
 
 async def test_multiple_organizations_are_rejected_before_any_lookup() -> None:
-    claim = {"rimac": {"id": str(KC_RIMAC)}, "otra": {"id": str(ORG_RIMAC)}}
+    claim = {"rimac": {"id": str(KC_RIMAC)}, "other": {"id": str(ORG_RIMAC)}}
     with pytest.raises(MultipleOrganizationsError):
         await authenticate(_claims(organization=claim), FakeOrganizations({}), FakeUsers())
 

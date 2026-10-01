@@ -36,7 +36,7 @@ async def test_a_rejected_message_is_a_delivery_failure_to_retry() -> None:
     with pytest.raises(DeliveryError) as caught:
         await TelegramChannel(Rejecting()).deliver("4242", MESSAGE, "t" * 43)
     assert "403" in str(caught.value)
-    # Sin la excepción original encadenada: nada de Telegram viaja en la traza.
+    # The original exception is not chained, so nothing from Telegram leaks into the traceback.
     assert "TelegramError" not in "".join(traceback.format_exception(caught.value))
 
 
@@ -69,7 +69,7 @@ ACK_AT = datetime(2026, 11, 20, 14, 5, tzinfo=UTC)
         ),
         (ConfirmOutcome.EXPIRED, None, "El botón venció (vale 24 horas)."),
         (ConfirmOutcome.UNKNOWN, None, None),
-        (ConfirmOutcome.NOT_YOURS, None, None),  # un clic ajeno no dice nada del incidente
+        (ConfirmOutcome.NOT_YOURS, None, None),  # a stranger's click reveals nothing
     ],
 )
 def test_the_button_is_replaced_by_who_confirmed_and_when(
@@ -83,7 +83,7 @@ def test_a_handled_alert_drops_the_escalation_warning() -> None:
     closed = closed_text(sent, "Confirmado por Ana.")
 
     assert ESCALATION_NOTE in sent
-    assert ESCALATION_NOTE not in closed  # ya no escala: el aviso dejaría de ser cierto
+    assert ESCALATION_NOTE not in closed  # no longer escalating, so the warning would be false
     assert closed.startswith("Vigía · CRÍTICO: Cambio brusco en Chosica")
-    assert "no reemplaza los avisos oficiales" in closed  # el descargo se queda
+    assert "no reemplaza los avisos oficiales" in closed  # the disclaimer stays
     assert closed.endswith("\n\nConfirmado por Ana.")

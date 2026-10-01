@@ -1,4 +1,4 @@
-"""Cliente HTTP contra la app real (Postgres real, JWT firmados por TokenFactory)."""
+"""HTTP client against the real app (real Postgres, JWTs signed by TokenFactory)."""
 
 import asyncio
 from collections.abc import AsyncIterator
@@ -21,7 +21,7 @@ from vigia.shared.db import create_engine
 
 
 async def ensure_seed(database: Database) -> None:
-    """Carga el seed (idempotente): las organizaciones deben existir para resolver el tenant."""
+    """Loads the seed (idempotent): the organizations must exist to resolve the tenant."""
     engine = create_engine(database.app_url)
     try:
         async with engine.begin() as conn:
@@ -38,8 +38,8 @@ async def api_client(
     clock: Clock | None = None,
     **settings: Any,
 ) -> AsyncIterator[httpx2.AsyncClient]:
-    """Una instancia de la API. Llamarlo dos veces equivale a dos réplicas: cada una con
-    su motor y su pool de conexiones, compartiendo solo la base de datos."""
+    """One API instance. Calling it twice is like running two replicas: each has its own
+    engine and connection pool, and they share only the database."""
     await ensure_seed(database)
     app = create_app(Settings(database_url=database.app_url, oidc_issuer=ISSUER, **settings))
     for router in extra_routers:
@@ -47,7 +47,7 @@ async def api_client(
     app.dependency_overrides[get_verifier] = tokens.verifier
     async with app.router.lifespan_context(app):
         if clock is not None:
-            app.state.clock = clock  # el lifespan pone SystemClock; se reemplaza después
+            app.state.clock = clock  # the lifespan sets SystemClock; replace it afterwards
         transport = httpx2.ASGITransport(app=app)
         async with httpx2.AsyncClient(transport=transport, base_url="http://test") as client:
             yield client
@@ -55,10 +55,10 @@ async def api_client(
 
 @asynccontextmanager
 async def serve_api(database: Database, tokens: TokenFactory) -> AsyncIterator[str]:
-    """La misma app servida por uvicorn en un puerto libre; devuelve su URL base.
+    """The same app served by uvicorn on a free port; yields its base URL.
 
-    Para respuestas que no terminan (SSE): el transporte ASGI de httpx2 espera la respuesta
-    completa antes de entregarla, así que un stream nunca llegaría.
+    Needed for responses that never end (SSE): httpx2's ASGI transport waits for the full
+    response before returning it, so a stream would never arrive.
     """
     await ensure_seed(database)
     app = create_app(Settings(database_url=database.app_url, oidc_issuer=ISSUER))
@@ -66,17 +66,17 @@ async def serve_api(database: Database, tokens: TokenFactory) -> AsyncIterator[s
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=0, log_level="warning"))
     serving = asyncio.create_task(server.serve())
     try:
-        for _ in range(500):  # uvicorn no expone un evento de arranque: hasta 10 s
+        for _ in range(500):  # uvicorn exposes no startup event: wait up to 10 s
             if server.started:
                 break
             await asyncio.sleep(0.02)
         else:
-            raise RuntimeError("uvicorn no arrancó")
+            raise RuntimeError("uvicorn did not start")
         port = server.servers[0].sockets[0].getsockname()[1]
         yield f"http://127.0.0.1:{port}"
     finally:
         server.should_exit = True
-        server.force_exit = True  # no esperar a que cierren los streams abiertos
+        server.force_exit = True  # do not wait for open streams to close
         await serving
 
 

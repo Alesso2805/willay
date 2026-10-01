@@ -16,7 +16,7 @@ from vigia.ingestion.domain.simulation import (
 )
 
 DISCHARGE = StationPlan("RIM-CHA-01", "discharge", Behavior.NORMAL)
-# Tolerancia de ruido: 5 sigmas sobre el ±2 % relativo.
+# Noise tolerance: 5 sigmas over the ±2 % relative noise.
 NOISE = 0.10
 
 
@@ -29,9 +29,9 @@ def test_same_seed_gives_the_same_series() -> None:
 
 
 def test_series_is_reproducible_across_processes_and_machines() -> None:
-    # Valores "dorados": random.Random con semilla de texto usa SHA-512, no hash(), así
-    # que no cambia con PYTHONHASHSEED ni entre máquinas. Si este test falla, la demo
-    # grabada ya no es reproducible con la misma semilla.
+    # Golden values: random.Random seeded with a string uses SHA-512, not hash(), so it does
+    # not change with PYTHONHASHSEED or across machines. If this test fails, the recorded
+    # demo is no longer reproducible with the same seed.
     assert _series(DISCHARGE, 42, 3) == [85.813, 85.33, 82.858]
 
 
@@ -40,7 +40,6 @@ def test_different_seeds_give_different_series() -> None:
 
 
 def test_a_step_does_not_depend_on_what_was_computed_before() -> None:
-    # Acceso directo al paso 37 = el mismo valor que al recorrer la serie completa.
     assert value_at(DISCHARGE, 42, 37) == _series(DISCHARGE, 42)[37]
 
 
@@ -60,7 +59,7 @@ def test_drop_falls_by_more_than_the_demo_rule_delta_at_the_event_step() -> None
     assert before is not None
     assert after is not None
     assert abs(after - BASELINES["discharge"] * DROP_FACTOR) < BASELINES["discharge"] * NOISE
-    # La regla de tasa de cambio del seed pide una caída mayor a 40 m3/s.
+    # The seed's rate-of-change rule needs a drop greater than 40 m3/s.
     assert before - after > 40.0
 
 
@@ -71,7 +70,7 @@ def test_rise_ramps_up_to_twice_the_baseline_and_crosses_the_seed_threshold() ->
     assert end is not None
     assert start < 2.2
     assert abs(end - BASELINES["water_level"] * RISE_FACTOR) < 0.4
-    assert end > 3.5  # umbral de la regla de RIM-CHO-01 en el seed
+    assert end > 3.5  # threshold of the RIM-CHO-01 rule in the seed
 
 
 def test_silence_stops_emitting_at_the_event_step() -> None:

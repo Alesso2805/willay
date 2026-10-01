@@ -1,7 +1,7 @@
-"""VIG-14b: el proceso evaluador (run_evaluator) contra Postgres real.
+"""VIG-14b: the evaluator process (run_evaluator) against real Postgres.
 
-"Matar el worker" se simula cancelando su tarea en mitad de una evaluación: igual que con
-un SIGKILL, la transacción abierta nunca confirma y Postgres la descarta.
+"Killing the worker" is simulated by cancelling its task mid-evaluation: as with a SIGKILL,
+the open transaction never commits and Postgres discards it.
 """
 
 import asyncio
@@ -30,7 +30,7 @@ pytestmark = pytest.mark.integration
 
 @pytest.fixture
 async def graph(owner: asyncpg.Connection) -> Graph:
-    # Base compartida: se vacía la cola para que los workers solo vean las filas del test.
+    # Shared database: empty the queue so the workers only see this test's rows.
     await owner.execute("DELETE FROM ingest.evaluation_queue")
     return await create_graph(owner)
 
@@ -59,7 +59,7 @@ async def _eventually(check: Callable[[], Awaitable[bool]], within_s: float = 10
     deadline = asyncio.get_running_loop().time() + within_s
     while not await check():
         if asyncio.get_running_loop().time() > deadline:
-            raise AssertionError("la condición no se cumplió a tiempo")
+            raise AssertionError("the condition was not met in time")
         await asyncio.sleep(0.05)
 
 
@@ -76,12 +76,12 @@ async def test_a_notify_wakes_the_worker_long_before_the_polling_interval(
 ) -> None:
     stop = asyncio.Event()
     worker = _start(settings, stop, poll_interval_s=60.0)
-    await asyncio.sleep(0.5)  # primera vuelta vacía; ya escucha y duerme 60 s
+    await asyncio.sleep(0.5)  # first loop is empty; it now listens and sleeps 60 s
 
     now = SystemClock().now()
     engine = create_engine(database.app_url)
     try:
-        async with engine.begin() as tx:  # la ingesta: lectura + cola + NOTIFY, un commit
+        async with engine.begin() as tx:  # like ingestion: reading + queue + NOTIFY, one commit
             reading = ClassifiedReading(now, 3.2, Quality.OK)
             await SqlReadingWriter(tx).store_and_enqueue(
                 graph.station_id, graph.organization_id, [reading], now, reading
@@ -91,7 +91,7 @@ async def test_a_notify_wakes_the_worker_long_before_the_polling_interval(
     started = asyncio.get_running_loop().time()
 
     await _eventually(lambda: _queue_empty(owner), within_s=5.0)
-    assert asyncio.get_running_loop().time() - started < 5.0  # no esperó los 60 s
+    assert asyncio.get_running_loop().time() - started < 5.0  # it did not wait the 60 s
     assert await owner.fetchval(
         "SELECT evaluated_at IS NOT NULL FROM ingest.readings WHERE station_id = $1",
         graph.station_id,
@@ -109,14 +109,14 @@ async def test_killing_the_worker_mid_evaluation_leaves_the_row_for_a_retry(
 
     class HangsForever:
         async def evaluate(self, tx: AsyncConnection, item: QueuedReading) -> None:
-            await tx.execute(text("SELECT 1"))  # deja la transacción abierta
+            await tx.execute(text("SELECT 1"))  # leaves the transaction open
             entered.set()
             await asyncio.Event().wait()
 
     stop = asyncio.Event()
     worker = _start(settings, stop, clock=clock, evaluator=HangsForever(), poll_interval_s=0.05)
     await asyncio.wait_for(entered.wait(), timeout=5)
-    worker.cancel()  # "matar" el proceso a mitad de la evaluación
+    worker.cancel()  # "kill" the process mid-evaluation
     with pytest.raises(asyncio.CancelledError):
         await worker
 
@@ -127,7 +127,7 @@ async def test_killing_the_worker_mid_evaluation_leaves_the_row_for_a_retry(
         "SELECT evaluated_at FROM ingest.readings WHERE station_id = $1", graph.station_id
     )
 
-    clock.advance(VISIBILITY_TIMEOUT + timedelta(seconds=1))  # vence el timeout
+    clock.advance(VISIBILITY_TIMEOUT + timedelta(seconds=1))  # the timeout expires
     stop = asyncio.Event()
     survivor = _start(settings, stop, clock=clock, poll_interval_s=0.05)
     await _eventually(lambda: _queue_empty(owner))
@@ -148,7 +148,7 @@ async def test_two_workers_evaluate_every_row_exactly_once(
     class Records:
         async def evaluate(self, tx: AsyncConnection, item: QueuedReading) -> None:
             seen.append(item.queue_id)
-            await asyncio.sleep(0.005)  # da tiempo a que ambos workers se crucen
+            await asyncio.sleep(0.005)  # gives both workers time to overlap
 
     stop = asyncio.Event()
     workers = [
@@ -173,10 +173,10 @@ async def test_a_poison_row_ends_failed_without_blocking_the_others(
     class FailsOnOne:
         async def evaluate(self, tx: AsyncConnection, item: QueuedReading) -> None:
             if item.measured_at == poison:
-                raise ValueError("lectura que rompe la regla")
+                raise ValueError("reading that breaks the rule")
 
     async def time_passes() -> None:
-        while True:  # cada vuelta vence el visibility timeout de la fila fallida
+        while True:  # each loop expires the failed row's visibility timeout
             await asyncio.sleep(0.05)
             clock.advance(VISIBILITY_TIMEOUT + timedelta(seconds=1))
 
@@ -198,9 +198,9 @@ async def test_a_poison_row_ends_failed_without_blocking_the_others(
     row = await owner.fetchrow("SELECT attempts, last_error FROM ingest.evaluation_queue")
     assert row is not None
     assert row["attempts"] == MAX_ATTEMPTS
-    assert "lectura que rompe la regla" in row["last_error"]
+    assert "reading that breaks the rule" in row["last_error"]
     evaluated = await owner.fetchval(
         "SELECT count(*) FROM ingest.readings WHERE station_id = $1 AND evaluated_at IS NOT NULL",
         graph.station_id,
     )
-    assert evaluated == 4  # las otras cuatro se evaluaron normalmente
+    assert evaluated == 4  # the other four were evaluated normally

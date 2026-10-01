@@ -1,4 +1,4 @@
-"""VIG-06: autenticación, resolución del tenant y 401/403 contra la app y Postgres reales."""
+"""VIG-06: authentication, tenant resolution and 401/403 against the real app and Postgres."""
 
 from collections.abc import AsyncIterator, Callable
 from datetime import timedelta
@@ -12,12 +12,12 @@ from uuid_utils.compat import uuid7
 from tests.integration.api import api_client, bearer
 from tests.integration.conftest import Database
 from tests.support.tokens import (
-    AISLAMIENTO,
+    ISOLATION,
     RIMAC,
-    SUB_AISLAMIENTO_ADMIN,
-    SUB_DOS_ORGS,
+    SUB_ISOLATION_ADMIN,
+    SUB_NO_ORG,
     SUB_RIMAC_OPERATOR,
-    SUB_SIN_ORG,
+    SUB_TWO_ORGS,
     TokenFactory,
 )
 from vigia.seed import data
@@ -40,7 +40,7 @@ async def test_each_seed_organization_sees_itself(
 ) -> None:
     rimac = await _me(client, tokens.issue(SUB_RIMAC_OPERATOR, organization=RIMAC))
     aislamiento = await _me(
-        client, tokens.issue(SUB_AISLAMIENTO_ADMIN, organization=AISLAMIENTO, roles=("admin",))
+        client, tokens.issue(SUB_ISOLATION_ADMIN, organization=ISOLATION, roles=("admin",))
     )
 
     assert rimac.status_code == 200, rimac.text
@@ -49,7 +49,7 @@ async def test_each_seed_organization_sees_itself(
     assert rimac.json()["organization_timezone"] == "America/Lima"
     assert rimac.json()["roles"] == ["operator"]
     assert aislamiento.status_code == 200, aislamiento.text
-    assert aislamiento.json()["organization_id"] == str(data.AISLAMIENTO.id)
+    assert aislamiento.json()["organization_id"] == str(data.ISOLATION.id)
     assert aislamiento.json()["organization_name"] == "Prueba de aislamiento"
     assert aislamiento.json()["roles"] == ["admin"]
 
@@ -57,10 +57,10 @@ async def test_each_seed_organization_sees_itself(
 @pytest.mark.parametrize(
     ("sub", "organization"),
     [
-        pytest.param(SUB_SIN_ORG, None, id="sin-org"),
-        pytest.param(SUB_DOS_ORGS, {**RIMAC, **AISLAMIENTO}, id="dos-orgs"),
-        pytest.param(SUB_SIN_ORG, {"fantasma": {"id": str(uuid7())}}, id="org-no-registrada"),
-        pytest.param(SUB_SIN_ORG, ["rimac"], id="formato-lista"),
+        pytest.param(SUB_NO_ORG, None, id="no-org"),
+        pytest.param(SUB_TWO_ORGS, {**RIMAC, **ISOLATION}, id="two-orgs"),
+        pytest.param(SUB_NO_ORG, {"fantasma": {"id": str(uuid7())}}, id="unregistered-org"),
+        pytest.param(SUB_NO_ORG, ["rimac"], id="list-format"),
     ],
 )
 async def test_anything_but_one_registered_organization_gets_403(
@@ -73,17 +73,17 @@ async def test_anything_but_one_registered_organization_gets_403(
 @pytest.mark.parametrize(
     "make_token",
     [
-        pytest.param(lambda t: None, id="sin-token"),
-        pytest.param(lambda t: "no-es-un-jwt", id="basura"),
+        pytest.param(lambda t: None, id="no-token"),
+        pytest.param(lambda t: "no-es-un-jwt", id="garbage"),
         pytest.param(
             lambda t: t.issue(
                 SUB_RIMAC_OPERATOR, organization=RIMAC, lifetime=-timedelta(minutes=5)
             ),
-            id="expirado",
+            id="expired",
         ),
         pytest.param(
             lambda t: t.issue(SUB_RIMAC_OPERATOR, organization=RIMAC, aud="otro-cliente"),
-            id="otra-audiencia",
+            id="other-audience",
         ),
     ],
 )
@@ -100,7 +100,7 @@ async def test_invalid_or_missing_token_gets_401(
 async def test_user_row_is_created_once_and_follows_keycloak(
     client: httpx2.AsyncClient, tokens: TokenFactory, owner: asyncpg.Connection
 ) -> None:
-    sub = uuid7()  # usuario nuevo, para no chocar con otros tests
+    sub = uuid7()  # a new user, so it does not clash with other tests
     first = tokens.issue(sub, organization=RIMAC, email=f"{sub}@rimac.vigia.test", name="Ana")
     renamed = tokens.issue(sub, organization=RIMAC, email=f"{sub}@rimac.vigia.test", name="Ana M.")
 

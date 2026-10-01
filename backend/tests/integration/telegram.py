@@ -1,4 +1,4 @@
-"""Telegram falso y un incidente con alerta de Telegram, para los tests de VIG-21 y VIG-22."""
+"""Fake Telegram and an incident with a Telegram alert, for the VIG-21 and VIG-22 tests."""
 
 import asyncio
 from collections.abc import Awaitable, Callable
@@ -28,7 +28,7 @@ EMAIL = "ana.telegram@x.test"
 
 
 class FakeBot:
-    """El lado que envía (dispatcher): falla las primeras `failures` veces o siempre."""
+    """The sending side (dispatcher): fails the first `failures` times, or always."""
 
     def __init__(self, *, failures: int = 0, down: bool = False) -> None:
         self.failures, self.down = failures, down
@@ -43,7 +43,7 @@ class FakeBot:
 
 
 class FakeTelegram:
-    """El lado que recibe (worker telegram): entrega actualizaciones hasta que se confirman."""
+    """The receiving side (telegram worker): delivers updates until they are acknowledged."""
 
     def __init__(self, *updates: Update, fail_replies: bool = False) -> None:
         self.pending = list(updates)
@@ -55,10 +55,10 @@ class FakeTelegram:
 
     async def get_updates(self, offset: int | None, timeout_s: int) -> list[Update]:
         self.offsets.append(offset)
-        if offset is not None:  # pedir desde `offset` confirma las anteriores
+        if offset is not None:  # asking from `offset` acknowledges the earlier ones
             self.pending = [u for u in self.pending if u.update_id >= offset]
         if not self.pending:
-            await asyncio.sleep(0.02)  # long polling sin novedades
+            await asyncio.sleep(0.02)  # long polling with nothing new
         return list(self.pending)
 
     async def send_message(self, chat_id: int, text: str) -> None:
@@ -88,7 +88,7 @@ async def run_telegram_until(
         deadline = asyncio.get_running_loop().time() + 10
         while not await done():
             if asyncio.get_running_loop().time() > deadline:
-                raise AssertionError("el worker no terminó a tiempo")
+                raise AssertionError("the worker did not finish in time")
             await asyncio.sleep(0.02)
     finally:
         stop.set()
@@ -96,13 +96,13 @@ async def run_telegram_until(
 
 
 async def clear_pending_alerts(owner: asyncpg.Connection) -> None:
-    """Base compartida: un dispatcher solo debe ver las alertas del test que lo corre."""
+    """Shared database: a dispatcher must only see the alerts of the test that runs it."""
     await owner.execute("DELETE FROM ingest.evaluation_queue")
     await owner.execute("DELETE FROM core.alerts WHERE status = 'pending'")
 
 
 async def telegram_incident(engine: AsyncEngine, owner: asyncpg.Connection) -> Graph:
-    """Un incidente cuyo nivel 1 avisa a Ana por Telegram (vinculado) y por correo."""
+    """An incident whose level 1 notifies Ana by Telegram (linked) and by email."""
     graph = await create_graph(owner)
     await link_station(owner, graph)
     await create_rule(owner, graph, "threshold", GT_35_ONCE, station_id=graph.station_id)

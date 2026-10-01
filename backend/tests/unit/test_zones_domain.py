@@ -34,35 +34,35 @@ def test_multipolygon_with_a_hole_is_accepted() -> None:
 @pytest.mark.parametrize(
     ("geojson", "reason"),
     [
-        pytest.param({"type": "Point", "coordinates": [-76.7, -11.9]}, "Polygon", id="punto"),
-        pytest.param({"type": "Polygon", "coordinates": []}, "anillo exterior", id="sin-anillos"),
-        pytest.param({"type": "MultiPolygon", "coordinates": []}, "no tiene", id="sin-polígonos"),
+        pytest.param({"type": "Point", "coordinates": [-76.7, -11.9]}, "Polygon", id="point"),
+        pytest.param({"type": "Polygon", "coordinates": []}, "anillo exterior", id="no-rings"),
+        pytest.param({"type": "MultiPolygon", "coordinates": []}, "no tiene", id="no-polygons"),
         pytest.param(
-            {"type": "Polygon", "coordinates": [SQUARE[:-1]]}, "no está cerrado", id="abierto"
+            {"type": "Polygon", "coordinates": [SQUARE[:-1]]}, "no está cerrado", id="open-ring"
         ),
         pytest.param(
             {"type": "Polygon", "coordinates": [[SQUARE[0], SQUARE[1], SQUARE[0]]]},
             "al menos 3",
-            id="dos-vértices",
+            id="two-vertices",
         ),
         pytest.param(
             {
                 "type": "Polygon",
-                # Tokio invertido: latitud 139 imposible. (Lima invertida sería válida.)
+                # Tokyo with lat/lon swapped: latitude 139 is impossible (swapped Lima would pass).
                 "coordinates": [[[35.6, 139.6], [35.7, 139.6], [35.7, 139.8], [35.6, 139.6]]],
             },
             "invertidas",
-            id="lat-lon-invertidas",
+            id="swapped-lat-lon",
         ),
         pytest.param(
             {"type": "Polygon", "coordinates": [[["a", "b"], [1, 1], [1, 2], ["a", "b"]]]},
             "números",
-            id="no-numérico",
+            id="non-numeric",
         ),
         pytest.param(
             {"type": "Polygon", "coordinates": [[[1], [2], [3], [1]]]},
             "longitud, latitud",
-            id="posición-corta",
+            id="short-position",
         ),
     ],
 )

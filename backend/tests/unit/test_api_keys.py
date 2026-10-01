@@ -22,7 +22,7 @@ def test_generated_keys_are_unique() -> None:
 
 @pytest.mark.parametrize(
     "raw",
-    ["", "sin-punto", "no-es-uuid.secreto", f"{STATION}.", f".{STATION}"],
+    ["", "no-dot", "not-a-uuid.secret", f"{STATION}.", f".{STATION}"],
 )
 def test_parse_rejects_malformed_keys(raw: str) -> None:
     assert parse_api_key(raw) is None
@@ -35,4 +35,4 @@ def test_hash_is_argon2id_and_verifies_only_the_right_key() -> None:
     assert hashed.startswith("$argon2id$")
     assert hasher.verify(hashed, key)
     assert not hasher.verify(hashed, generate_api_key(STATION))
-    assert not hasher.verify("no-es-un-hash", key)
+    assert not hasher.verify("not-a-hash", key)

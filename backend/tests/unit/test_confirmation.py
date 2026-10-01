@@ -24,9 +24,9 @@ EXPIRES = T0 + timedelta(hours=24)
     ("expires_at", "used_at", "now", "problem"),
     [
         (EXPIRES, None, EXPIRES - timedelta(microseconds=1), None),
-        (EXPIRES, None, EXPIRES, ConfirmOutcome.EXPIRED),  # a las 24 h exactas ya no vale
-        (None, None, T0, ConfirmOutcome.EXPIRED),  # sin token vigente
-        (EXPIRES, T0, T0, ConfirmOutcome.USED),  # un solo uso
+        (EXPIRES, None, EXPIRES, ConfirmOutcome.EXPIRED),  # no longer valid at exactly 24 h
+        (None, None, T0, ConfirmOutcome.EXPIRED),  # no current token
+        (EXPIRES, T0, T0, ConfirmOutcome.USED),  # single use
     ],
 )
 def test_a_token_is_single_use_and_lasts_24_hours(
@@ -39,7 +39,7 @@ def test_a_token_is_single_use_and_lasts_24_hours(
 
 
 class Confirmations:
-    """Una alerta con su token; el estado del incidente sale del repositorio falso."""
+    """One alert with its token; the incident status comes from the fake repository."""
 
     def __init__(self, incidents: FakeIncidentRepository) -> None:
         self.incidents = incidents
@@ -98,7 +98,7 @@ async def test_confirming_acknowledges_the_incident_as_the_contact() -> None:
     )
 
     assert view.outcome is ConfirmOutcome.CONFIRMED
-    assert confirmations.locks[0] is True  # bloqueada: dos clics no confirman dos veces
+    assert confirmations.locks[0] is True  # locked so two clicks do not confirm twice
     contact = confirmations.alert.contact_id
     assert incidents.incident.acknowledged_by_contact_id == contact
     assert incidents.events == [("acknowledged", contact, {})]
@@ -117,7 +117,7 @@ async def test_someone_else_was_first_the_alert_is_recorded_as_seen() -> None:
     )
 
     assert view.outcome is ConfirmOutcome.ALREADY_ACKNOWLEDGED
-    assert incidents.events == []  # quién confirmó el incidente no cambia
+    assert incidents.events == []  # who acknowledged the incident does not change
     assert confirmations.alert.used_at == T0
 
 

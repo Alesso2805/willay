@@ -1,4 +1,4 @@
-"""VIG-13: CRUD de estaciones, asociación a zonas y rotación de la API key."""
+"""VIG-13: station CRUD, zone assignment and API key rotation."""
 
 from collections.abc import AsyncIterator
 from typing import Any
@@ -11,9 +11,9 @@ import pytest
 from tests.integration.api import api_client, bearer
 from tests.integration.conftest import Database
 from tests.support.tokens import (
-    AISLAMIENTO,
+    ISOLATION,
     RIMAC,
-    SUB_AISLAMIENTO_ADMIN,
+    SUB_ISOLATION_ADMIN,
     SUB_RIMAC_OPERATOR,
     SUB_RIMAC_VIEWER,
     TokenFactory,
@@ -42,7 +42,7 @@ def viewer(tokens: TokenFactory) -> dict[str, str]:
 
 @pytest.fixture
 def other_org_admin(tokens: TokenFactory) -> dict[str, str]:
-    return bearer(tokens.issue(SUB_AISLAMIENTO_ADMIN, organization=AISLAMIENTO, roles=("admin",)))
+    return bearer(tokens.issue(SUB_ISOLATION_ADMIN, organization=ISOLATION, roles=("admin",)))
 
 
 def _station(**overrides: Any) -> dict[str, Any]:
@@ -59,7 +59,7 @@ def _station(**overrides: Any) -> dict[str, Any]:
 
 
 def _editable(station: dict[str, Any], **overrides: Any) -> dict[str, Any]:
-    """Cuerpo de PUT a partir de una estación leída (sin código ni campos de solo lectura)."""
+    """PUT body built from a fetched station (without the code or read-only fields)."""
     keys = ("name", "variable", "location", "source", "expected_interval_s",
             "silence_multiplier", "status", "zones")  # fmt: skip
     return {**{k: station[k] for k in keys}, **overrides}
@@ -88,13 +88,13 @@ async def test_created_station_gets_a_working_key_shown_once(
     assert response.headers["cache-control"] == "no-store"
     created = response.json()
     station = created["station"]
-    assert station["code"] == "TST-LOWER"  # normalizado
-    assert station["unit"] == "m3/s"  # derivada de la variable
+    assert station["code"] == "TST-LOWER"  # normalized
+    assert station["unit"] == "m3/s"  # derived from the variable
     assert station["zones"] == [{"zone_id": str(data.Z_CHOSICA), "position": "downstream"}]
     assert station["has_zone"] is True
-    # La clave devuelta funciona de inmediato en la ingesta...
+    # The returned key works right away for ingestion...
     assert await _send_reading(client, created["api_key"]) == 202
-    # ...y no vuelve a aparecer en ninguna lectura posterior.
+    # ...and never shows up again in any later read.
     fetched = (await client.get(f"/v1/stations/{station['id']}", headers=operator)).json()
     assert "api_key" not in fetched
     assert fetched["heartbeat"]["last_value"] == 80.0
@@ -115,7 +115,7 @@ async def test_rotating_the_key_revokes_the_old_one_at_once(
     assert await _send_reading(client, old_key) == 401
     assert await _send_reading(client, new_key) == 202
 
-    # Ni la clave ni su hash quedan en la auditoría.
+    # Neither the key nor its hash ends up in the audit log.
     audit = await owner.fetch(
         "SELECT action, before::text AS before, after::text AS after FROM core.audit_log "
         "WHERE entity_type = 'station' AND entity_id = $1 ORDER BY id",
@@ -137,14 +137,14 @@ async def test_duplicate_code_in_the_same_organization_gets_409(
     again = await client.post("/v1/stations", json=_station(code=code.upper()), headers=operator)
     assert again.status_code == 409
 
-    # El mismo código en otra organización sí vale: la unicidad es por tenant.
+    # The same code in another organization is fine: uniqueness is per tenant.
     other = _station(code=code, zones=[])
     assert (
         await client.post("/v1/stations", json=other, headers=other_org_admin)
     ).status_code == 201
 
 
-FOREIGN_ZONE = [{"zone_id": str(data.Z_PRUEBA), "position": "in_zone"}]
+FOREIGN_ZONE = [{"zone_id": str(data.Z_TEST), "position": "in_zone"}]
 UNKNOWN_ZONE = [{"zone_id": str(uuid4()), "position": "in_zone"}]
 REPEATED_ZONE = [
     {"zone_id": str(data.Z_CHOSICA), "position": "upstream"},
@@ -156,11 +156,11 @@ TOKYO_SWAPPED = {"type": "Point", "coordinates": [-11.9, 139.6]}
 @pytest.mark.parametrize(
     ("overrides", "field"),
     [
-        pytest.param({"zones": FOREIGN_ZONE}, "zones", id="zona-de-otra-org"),
-        pytest.param({"zones": UNKNOWN_ZONE}, "zones", id="zona-inexistente"),
-        pytest.param({"zones": REPEATED_ZONE}, "zones", id="zona-repetida"),
-        pytest.param({"code": "con espacio"}, "code", id="código-inválido"),
-        pytest.param({"location": TOKYO_SWAPPED}, "location", id="fuera-de-rango"),
+        pytest.param({"zones": FOREIGN_ZONE}, "zones", id="zone-from-other-org"),
+        pytest.param({"zones": UNKNOWN_ZONE}, "zones", id="unknown-zone"),
+        pytest.param({"zones": REPEATED_ZONE}, "zones", id="repeated-zone"),
+        pytest.param({"code": "con espacio"}, "code", id="invalid-code"),
+        pytest.param({"location": TOKYO_SWAPPED}, "location", id="out-of-range"),
     ],
 )
 async def test_invalid_stations_get_422(
@@ -174,10 +174,10 @@ async def test_invalid_stations_get_422(
 @pytest.mark.parametrize(
     "overrides",
     [
-        pytest.param({"variable": "temperature"}, id="variable-desconocida"),
-        pytest.param({"expected_interval_s": 1}, id="intervalo-muy-corto"),
-        pytest.param({"silence_multiplier": 0}, id="k-cero"),
-        pytest.param({"unit": "cm"}, id="unidad-no-editable"),
+        pytest.param({"variable": "temperature"}, id="unknown-variable"),
+        pytest.param({"expected_interval_s": 1}, id="interval-too-short"),
+        pytest.param({"silence_multiplier": 0}, id="zero-k"),
+        pytest.param({"unit": "cm"}, id="unit-not-editable"),
     ],
 )
 async def test_invalid_attributes_get_422(
@@ -206,7 +206,7 @@ async def test_put_changes_zones_and_keeps_the_code(
     updated = response.json()
     assert (updated["name"], updated["code"]) == ("Renombrada", station["code"])
     assert {z["position"] for z in updated["zones"]} == {"upstream", "in_zone"}
-    # El código no se puede enviar en PUT: el cuerpo lo rechaza.
+    # The code cannot be sent in a PUT: the body schema rejects it.
     with_code = {**body, "code": "OTRO-01"}
     rejected = await client.put(f"/v1/stations/{station['id']}", json=with_code, headers=operator)
     assert rejected.status_code == 422
@@ -217,7 +217,7 @@ async def test_stations_without_zone_are_marked(
 ) -> None:
     stations = (await client.get("/v1/stations", headers=viewer)).json()
     by_id = {s["id"]: s for s in stations}
-    assert by_id[str(data.S_SIN_ZONA)]["has_zone"] is False
+    assert by_id[str(data.S_UNZONED)]["has_zone"] is False
     assert by_id[str(data.S_CHACLACAYO)]["has_zone"] is True
 
 

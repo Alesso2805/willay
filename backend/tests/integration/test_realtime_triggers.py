@@ -1,4 +1,4 @@
-"""VIG-25 (ADR-0007): la base avisa de cada evento de incidente y de cada latido."""
+"""VIG-25 (ADR-0007): the database announces every incident event and every heartbeat."""
 
 import asyncio
 import json
@@ -39,7 +39,7 @@ async def test_a_reading_that_opens_an_incident_announces_both_changes(
         notifications.EVENTS, lambda *args: heard.append(json.loads(args[3]))
     )
     try:
-        await Station(engine, graph).send(3.6)  # latido + incidente abierto, como en la ingesta
+        await Station(engine, graph).send(3.6)  # heartbeat + opened incident, as in ingestion
         mine = [n for n in heard if n["organization_id"] == str(graph.organization_id)]
         async with asyncio.timeout(5):
             while not any(n["type"] == "incident" for n in mine):
@@ -53,4 +53,4 @@ async def test_a_reading_that_opens_an_incident_announces_both_changes(
     assert stations[0]["last_value"] == 3.6
     opened = [n for n in mine if n["type"] == "incident" and n["event"] == "opened"]
     assert len(opened) == 1
-    assert set(opened[0]) == {"organization_id", "type", "incident_id", "event"}  # nada personal
+    assert set(opened[0]) == {"organization_id", "type", "incident_id", "event"}  # no personal data

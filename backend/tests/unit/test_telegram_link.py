@@ -25,11 +25,11 @@ TOKEN = "a" * 43
     ("text", "token"),
     [
         (f"/start {TOKEN}", TOKEN),
-        (f"/start@VigiaAlertasBot {TOKEN}", TOKEN),  # así llega desde un grupo
+        (f"/start@VigiaAlertasBot {TOKEN}", TOKEN),  # the form it takes in a group chat
         (f"  /start   {TOKEN}  ", TOKEN),
-        ("/start", None),  # abrió el bot sin enlace
-        ("hola", None),
-        ("/start " + "a" * 65, None),  # Telegram no admite más de 64
+        ("/start", None),  # opened the bot without a link
+        ("hello", None),
+        ("/start " + "a" * 65, None),  # Telegram allows at most 64
     ],
 )
 def test_the_token_comes_in_the_start_command(text: str, token: str | None) -> None:
@@ -111,7 +111,7 @@ async def test_a_link_needs_the_bot_and_a_contact_of_the_organization() -> None:
         await create_telegram_link(
             ACTOR, uuid4(), contacts=contacts, audit=audit, clock=FakeClock(T0), bot_username=None
         )
-    other = Contacts(uuid4())  # el contacto es de otra organización
+    other = Contacts(uuid4())  # the contact belongs to another organization
     with pytest.raises(ContactNotFoundError):
         await create_telegram_link(
             ACTOR,
@@ -132,7 +132,7 @@ async def test_opening_the_link_links_the_chat_once() -> None:
     assert "Demo Rímac" in reply
     assert contacts.chat_id == 42
     assert audit.entries[-1].action == "telegram_linked"
-    assert "42" not in str(audit.entries[-1].after)  # el chat_id es un dato personal
+    assert "42" not in str(audit.entries[-1].after)  # the chat_id is personal data
 
     again = await handle_start(99, f"/start {token}", contacts=contacts, audit=audit, clock=clock)
     assert (again, contacts.chat_id) == (INVALID_LINK, 42)

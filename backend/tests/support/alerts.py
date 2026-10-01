@@ -1,4 +1,4 @@
-"""IncidentAlerting en memoria para tests unitarios: registra qué niveles se alertaron."""
+"""In-memory IncidentAlerting for unit tests: records which levels were alerted."""
 
 from datetime import datetime
 from typing import Any
@@ -9,7 +9,7 @@ from vigia.alerts.application.planning import LevelAlerts
 
 class FakeAlerting:
     def __init__(self, *, unreachable: frozenset[int] = frozenset()) -> None:
-        self.unreachable = unreachable  # niveles cuyos contactos no tienen el canal
+        self.unreachable = unreachable  # levels whose contacts lack the channel
         self.levels: list[tuple[UUID, int]] = []
 
     async def alert_level(

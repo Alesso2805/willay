@@ -1,4 +1,4 @@
-"""VIG-09: lecturas tardías y NOTIFY al evaluador, contra Postgres real."""
+"""VIG-09: late readings and NOTIFY to the evaluator, against real Postgres."""
 
 import asyncio
 from collections.abc import AsyncIterator
@@ -21,12 +21,13 @@ from vigia.shared.db import create_engine
 
 pytestmark = pytest.mark.integration
 
-# Esperar la *ausencia* de un aviso exige un plazo; es corto porque en local llega en ms.
+# Waiting for the *absence* of a notification needs a deadline; it is short because
+# locally notifications arrive within milliseconds.
 SILENCE_S = 0.5
 
 
 class Listener:
-    """LISTEN en una conexión aparte, como hará el worker evaluador."""
+    """LISTEN on a separate connection, as the evaluator worker does."""
 
     def __init__(self) -> None:
         self.received = asyncio.Event()
@@ -100,19 +101,19 @@ async def test_accepted_batch_wakes_up_the_evaluator(
     assert await listener.arrived()
 
 
-@pytest.mark.parametrize("kind", ["solo-duplicados", "solo-tardias"])
+@pytest.mark.parametrize("kind", ["only-duplicates", "only-late"])
 async def test_nothing_enqueued_means_no_notification(
     client: httpx2.AsyncClient, station: tuple[Graph, str], database: Database, kind: str
 ) -> None:
     _, key = station
     now = SystemClock().now()
-    if kind == "solo-duplicados":
+    if kind == "only-duplicates":
         await client.post("/v1/readings", json=_batch(now), headers={"X-Api-Key": key})
         body = _batch(now)
     else:
         body = _batch(now - timedelta(hours=3))
 
-    # Se escucha después del primer envío: solo interesa el aviso del segundo lote.
+    # Listen only after the first post: only the second batch's notification matters.
     conn = await asyncpg.connect(database.app_dsn)
     listener = Listener()
     await conn.add_listener(notifications.EVALUATION_QUEUE, listener)
@@ -141,8 +142,8 @@ async def test_notification_is_delivered_only_after_commit(
                 reading,
             )
             assert counts.enqueued == 1
-            # Filas escritas y NOTIFY emitido, pero la transacción sigue abierta: nadie
-            # se entera todavía. El evaluador no puede despertar por filas que no ve.
+            # Rows written and NOTIFY issued, but the transaction is still open, so nobody
+            # hears it yet: the evaluator must not wake up for rows it cannot see.
             assert not await listener.arrived(within_s=SILENCE_S)
 
             await transaction.commit()

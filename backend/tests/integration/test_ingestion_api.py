@@ -1,4 +1,4 @@
-"""VIG-08: POST /v1/readings contra la app y Postgres reales."""
+"""VIG-08: POST /v1/readings against the real app and Postgres."""
 
 from collections.abc import AsyncIterator
 from datetime import datetime, timedelta
@@ -48,7 +48,7 @@ async def test_batch_is_stored_and_enqueued_in_the_same_transaction(
 ) -> None:
     graph, key = station
     t0 = _now() - timedelta(minutes=1)
-    # Desordenado a propósito y con otro offset horario: la API normaliza a UTC.
+    # Deliberately out of order and with another UTC offset: the API normalizes to UTC.
     lima = t0.astimezone(datetime.fromisoformat("2026-01-01T00:00:00-05:00").tzinfo)
     body = _batch(t0 + timedelta(seconds=20), lima, t0 + timedelta(seconds=10))
 
@@ -71,7 +71,7 @@ async def test_batch_is_stored_and_enqueued_in_the_same_transaction(
         t0 + timedelta(seconds=10),
         t0 + timedelta(seconds=20),
     ]
-    # El tenant sale de la estación dueña de la clave, no del cuerpo de la petición.
+    # The tenant comes from the station that owns the key, not from the request body.
     assert {r["organization_id"] for r in readings} == {graph.organization_id}
     assert {r["quality"] for r in readings} == {"ok"}
     assert [q["measured_at"] for q in queue] == [r["measured_at"] for r in readings]
@@ -114,10 +114,10 @@ async def test_a_full_batch_of_500_is_accepted(
 @pytest.mark.parametrize(
     "make_key",
     [
-        pytest.param(lambda g, k: None, id="sin-clave"),
-        pytest.param(lambda g, k: "basura", id="mal-formada"),
-        pytest.param(lambda g, k: generate_api_key(g.station_id), id="secreto-incorrecto"),
-        pytest.param(lambda g, k: generate_api_key(g.zone_id), id="estacion-inexistente"),
+        pytest.param(lambda g, k: None, id="no-key"),
+        pytest.param(lambda g, k: "basura", id="malformed"),
+        pytest.param(lambda g, k: generate_api_key(g.station_id), id="wrong-secret"),
+        pytest.param(lambda g, k: generate_api_key(g.zone_id), id="unknown-station"),
     ],
 )
 async def test_missing_or_invalid_key_gets_401(
@@ -130,7 +130,7 @@ async def test_missing_or_invalid_key_gets_401(
 
 
 async def test_authentication_comes_before_validation(client: httpx2.AsyncClient) -> None:
-    # Sin clave válida no se revela qué espera el cuerpo: 401, no 422.
+    # Without a valid key, do not reveal what the body expects: 401, not 422.
     response = await _post(client, "basura", {"no": "es un lote"})
     assert response.status_code == 401
 
@@ -149,26 +149,26 @@ async def test_inactive_station_gets_403(
 @pytest.mark.parametrize(
     "make_body",
     [
-        pytest.param(lambda now: {"readings": []}, id="lote-vacio"),
+        pytest.param(lambda now: {"readings": []}, id="empty-batch"),
         pytest.param(
             lambda now: _batch(*(now - timedelta(seconds=i) for i in range(MAX_BATCH_SIZE + 1))),
-            id="mas-de-500",
+            id="more-than-500",
         ),
         pytest.param(
             lambda now: {"readings": [{"measured_at": "2026-10-01T08:00:00", "value": 1}]},
-            id="sin-zona-horaria",
+            id="no-timezone",
         ),
         pytest.param(
             lambda now: {"readings": [{"measured_at": now.isoformat(), "value": "alto"}]},
-            id="valor-no-numerico",
+            id="non-numeric-value",
         ),
         pytest.param(
             lambda now: {
                 "readings": [{"measured_at": now.isoformat(), "value": 1, "station_id": "x"}]
             },
-            id="campo-extra",
+            id="extra-field",
         ),
-        pytest.param(lambda now: {}, id="sin-readings"),
+        pytest.param(lambda now: {}, id="no-readings"),
     ],
 )
 async def test_invalid_batches_get_422_and_store_nothing(
@@ -187,7 +187,7 @@ async def test_invalid_batches_get_422_and_store_nothing(
 
 async def test_nan_is_rejected(client: httpx2.AsyncClient, station: tuple[Graph, str]) -> None:
     _, key = station
-    # NaN no es JSON estándar, pero muchos clientes lo emiten; se rechaza igual.
+    # NaN is not standard JSON, but many clients emit it; it is rejected anyway.
     raw = f'{{"readings": [{{"measured_at": "{_now().isoformat()}", "value": NaN}}]}}'
     response = await client.post(
         "/v1/readings",

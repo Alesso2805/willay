@@ -1,4 +1,4 @@
-"""VIG-14a: EvaluationQueue sobre Postgres (SKIP LOCKED, visibility timeout, failed_at)."""
+"""VIG-14a: EvaluationQueue on Postgres (SKIP LOCKED, visibility timeout, failed_at)."""
 
 import asyncio
 from collections.abc import AsyncIterator
@@ -22,7 +22,7 @@ T0 = datetime(2026, 10, 28, 9, 0, tzinfo=UTC)
 
 @pytest.fixture
 async def engine(database: Database, owner: asyncpg.Connection) -> AsyncIterator[AsyncEngine]:
-    # La base es compartida y otros tests dejan filas en la cola que nadie evalúa aún.
+    # The database is shared and other tests leave queue rows that nobody evaluates yet.
     await owner.execute("DELETE FROM ingest.evaluation_queue")
     engine = create_engine(database.app_url)
     yield engine
@@ -35,7 +35,7 @@ def clock() -> FakeClock:
 
 
 async def _enqueue(owner: asyncpg.Connection, graph: Graph, count: int) -> list[datetime]:
-    """Lecturas y sus filas de cola, disponibles desde T0."""
+    """Readings and their queue rows, available from T0."""
     measured = [T0 - timedelta(seconds=10 * (count - i)) for i in range(count)]
     for m in measured:
         await owner.execute(
@@ -67,11 +67,11 @@ async def test_claim_hides_rows_for_the_visibility_timeout(
 
     first = await queue.claim(10)
 
-    assert [i.measured_at for i in first] == measured  # en orden de medición
+    assert [i.measured_at for i in first] == measured  # in measurement order
     assert {i.attempt for i in first} == {1}
-    # El intento y el timeout ya están confirmados, antes de evaluar nada.
+    # The attempt and the timeout are already committed, before anything is evaluated.
     assert {r["available_at"] for r in await _queue(owner)} == {T0 + VISIBILITY_TIMEOUT}
-    assert await queue.claim(10) == []  # invisibles mientras dura el timeout
+    assert await queue.claim(10) == []  # invisible while the timeout lasts
 
     clock.advance(VISIBILITY_TIMEOUT + timedelta(seconds=1))
     again = await queue.claim(10)
@@ -107,12 +107,12 @@ async def test_a_crash_during_evaluation_rolls_back_and_the_row_comes_back(
     async def crash_before_commit() -> None:
         async with engine.begin() as tx:
             await queue.complete(tx, item)
-            raise RuntimeError("el worker muere antes del commit")
+            raise RuntimeError("the worker dies before the commit")
 
     with pytest.raises(RuntimeError):
         await crash_before_commit()
 
-    # Todo revertido: la fila sigue en la cola, con su intento contado, y sin evaluar.
+    # Everything rolled back: the row is still queued, its attempt counted, and unevaluated.
     [row] = await _queue(owner)
     assert row["attempts"] == 1
     assert not await owner.fetchval(
@@ -131,7 +131,7 @@ async def test_a_worker_that_lost_its_claim_cannot_complete(
     slow, fast = PostgresEvaluationQueue(engine, clock), PostgresEvaluationQueue(engine, clock)
     [stale] = await slow.claim(10)
     clock.advance(VISIBILITY_TIMEOUT + timedelta(seconds=1))
-    [fresh] = await fast.claim(10)  # el timeout venció: otro worker la retoma
+    [fresh] = await fast.claim(10)  # the timeout expired: another worker takes it over
 
     with pytest.raises(LostClaimError):
         async with engine.begin() as tx:
@@ -152,14 +152,14 @@ async def test_a_row_that_always_fails_is_marked_failed_at_the_fifth_attempt(
     finals = []
     for _ in range(MAX_ATTEMPTS):
         [item] = await queue.claim(10)
-        finals.append(await queue.fail(item, f"falla en el intento {item.attempt}"))
+        finals.append(await queue.fail(item, f"fails on attempt {item.attempt}"))
         clock.advance(VISIBILITY_TIMEOUT + timedelta(seconds=1))
 
     assert finals == [False, False, False, False, True]
     [row] = await _queue(owner)
     assert row["failed_at"] is not None
-    assert row["last_error"] == "falla en el intento 5"
-    assert await queue.claim(10) == []  # ya no bloquea la cola
+    assert row["last_error"] == "fails on attempt 5"
+    assert await queue.claim(10) == []  # it no longer blocks the queue
 
 
 async def test_a_row_abandoned_during_its_last_attempt_is_marked_failed(
@@ -167,7 +167,7 @@ async def test_a_row_abandoned_during_its_last_attempt_is_marked_failed(
 ) -> None:
     graph = await create_graph(owner)
     await _enqueue(owner, graph, 1)
-    # El worker murió durante el quinto intento: nunca llegó a complete() ni a fail().
+    # The worker died during the fifth attempt: it never reached complete() or fail().
     await owner.execute("UPDATE ingest.evaluation_queue SET attempts = $1", MAX_ATTEMPTS)
 
     assert await PostgresEvaluationQueue(engine, clock).claim(10) == []
@@ -181,7 +181,7 @@ async def test_two_evaluators_never_claim_the_same_row(
 ) -> None:
     graph = await create_graph(owner)
     await _enqueue(owner, graph, 200)
-    other_engine = create_engine(database.app_url)  # otro proceso: otro pool de conexiones
+    other_engine = create_engine(database.app_url)  # another process: another connection pool
     try:
         a = PostgresEvaluationQueue(engine, clock)
         b = PostgresEvaluationQueue(other_engine, clock)
@@ -191,4 +191,4 @@ async def test_two_evaluators_never_claim_the_same_row(
 
     claimed = [item.queue_id for batch in batches for item in batch]
     assert len(claimed) == 200
-    assert len(set(claimed)) == 200  # ninguna fila en dos lotes
+    assert len(set(claimed)) == 200  # no row in two batches

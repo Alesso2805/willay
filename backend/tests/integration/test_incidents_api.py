@@ -1,4 +1,4 @@
-"""VIG-19: consultar, confirmar y resolver incidentes contra la app y Postgres reales."""
+"""VIG-19: reading, acknowledging and resolving incidents against the real app and Postgres."""
 
 import asyncio
 from collections.abc import AsyncIterator
@@ -14,9 +14,9 @@ from uuid_utils.compat import uuid7
 from tests.integration.api import api_client, bearer
 from tests.integration.conftest import Database
 from tests.support.tokens import (
-    AISLAMIENTO,
+    ISOLATION,
     RIMAC,
-    SUB_AISLAMIENTO_ADMIN,
+    SUB_ISOLATION_ADMIN,
     SUB_RIMAC_OPERATOR,
     SUB_RIMAC_RESPONDER,
     SUB_RIMAC_VIEWER,
@@ -27,7 +27,7 @@ from vigia.shared.clock import SystemClock
 
 pytestmark = pytest.mark.integration
 
-DROP_RULE = data.RULES[0]  # caída de caudal aguas abajo del Rímac
+DROP_RULE = data.RULES[0]  # discharge drop downstream on the Rímac
 
 
 @pytest.fixture
@@ -56,10 +56,10 @@ def viewer(tokens: TokenFactory) -> dict[str, str]:
 
 
 async def _incident(owner: asyncpg.Connection, opened_at: datetime | None = None) -> str:
-    """Un incidente abierto en la organización Rímac del seed, con su evento `opened`.
+    """An open incident in the seed's Rímac organization, with its `opened` event.
 
-    Por defecto se abrió hace una hora: los eventos que agregue la API (con la hora real)
-    quedan después en la línea de tiempo, que se ordena por occurred_at.
+    By default it was opened an hour ago, so the events the API adds (at the real time)
+    come after it in the timeline, which is ordered by occurred_at.
     """
     opened_at = opened_at or SystemClock().now() - timedelta(hours=1)
     incident_id = uuid7()
@@ -99,7 +99,7 @@ async def test_a_responder_acknowledges_and_the_timeline_says_who(
     incident = response.json()
     assert incident["status"] == "acknowledged"
     assert incident["acknowledged_by_user_id"] == str(SUB_RIMAC_RESPONDER)
-    assert incident["acknowledged_by_contact_id"] is None  # CHECK: exactamente uno
+    assert incident["acknowledged_by_contact_id"] is None  # CHECK: exactly one
     assert (incident["zone_name"], incident["station_code"]) == ("Chosica", "RIM-CHA-01")
 
     detail = (await client.get(f"/v1/incidents/{incident_id}", headers=responder)).json()
@@ -119,7 +119,7 @@ async def test_an_operator_resolves_an_open_incident_as_a_false_alarm(
     incident = response.json()
     assert (incident["status"], incident["resolution"]) == ("resolved", "false_alarm")
     assert incident["resolved_at"] is not None
-    assert incident["acknowledged_by_user_id"] is None  # resolver no confirma
+    assert incident["acknowledged_by_user_id"] is None  # resolving does not acknowledge
 
     detail = (await client.get(f"/v1/incidents/{incident_id}", headers=operator)).json()
     resolved = detail["timeline"][-1]
@@ -155,7 +155,7 @@ async def test_each_transition_needs_its_permission(
     assert (await _post(client, incident_id, "acknowledge", viewer)).status_code == 403
     resolve = await _post(client, incident_id, "resolve", responder, resolution="resolved")
     assert resolve.status_code == 403
-    # Ver sí puede cualquiera, y nada cambió.
+    # Anyone can view it, and nothing changed.
     detail = await client.get(f"/v1/incidents/{incident_id}", headers=viewer)
     assert (detail.status_code, detail.json()["status"]) == (200, "open")
 
@@ -164,7 +164,7 @@ async def test_another_organization_gets_404(
     client: httpx2.AsyncClient, owner: asyncpg.Connection, tokens: TokenFactory
 ) -> None:
     incident_id = await _incident(owner)
-    admin = _as(tokens, SUB_AISLAMIENTO_ADMIN, "admin", organization=AISLAMIENTO)
+    admin = _as(tokens, SUB_ISOLATION_ADMIN, "admin", organization=ISOLATION)
 
     assert (await client.get(f"/v1/incidents/{incident_id}", headers=admin)).status_code == 404
     assert (await _post(client, incident_id, "acknowledge", admin)).status_code == 404
@@ -172,7 +172,7 @@ async def test_another_organization_gets_404(
     assert resolve.status_code == 404
     listed = (await client.get("/v1/incidents", headers=admin)).json()
     assert incident_id not in {i["id"] for i in listed}
-    # Nada cambió: ni el estado ni la línea de tiempo.
+    # Nothing changed: neither the status nor the timeline.
     row = await owner.fetchrow(
         "SELECT i.status, (SELECT count(*) FROM core.incident_events e"
         " WHERE e.incident_id = i.id) AS events FROM core.incidents i WHERE i.id = $1",
@@ -185,7 +185,7 @@ async def test_another_organization_gets_404(
 async def test_the_list_filters_by_status_and_shows_the_newest_first(
     client: httpx2.AsyncClient, owner: asyncpg.Connection, operator: dict[str, str]
 ) -> None:
-    # En el futuro lejano: quedan primeros aunque la base compartida tenga otros incidentes.
+    # In the far future, so they come first even if the shared database has other incidents.
     base = datetime(2090, 1, 1, tzinfo=UTC) + timedelta(minutes=uuid4().int % 100_000)
     oldest, middle, newest = [
         await _incident(owner, base + timedelta(minutes=m)) for m in (0, 1, 2)
@@ -216,7 +216,7 @@ async def test_two_operators_resolving_at_once_get_one_200_and_one_409(
     database: Database, owner: asyncpg.Connection, tokens: TokenFactory, operator: dict[str, str]
 ) -> None:
     incident_id = await _incident(owner)
-    # Dos réplicas de la API: cada una con su pool, compartiendo solo la base.
+    # Two API replicas, each with its own pool, sharing only the database.
     async with api_client(database, tokens) as first, api_client(database, tokens) as second:
         responses = await asyncio.gather(
             _post(first, incident_id, "resolve", operator, resolution="resolved"),
