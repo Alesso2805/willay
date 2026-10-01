@@ -591,6 +591,15 @@
             "title": "Organization Id",
             "type": "string"
           },
+          "organization_name": {
+            "title": "Organization Name",
+            "type": "string"
+          },
+          "organization_timezone": {
+            "description": "Zona horaria IANA de la organización: el panel muestra las horas en ella.",
+            "title": "Organization Timezone",
+            "type": "string"
+          },
           "permissions": {
             "description": "Para que el panel oculte acciones; la API las valida igual en cada endpoint.",
             "items": {
@@ -618,6 +627,8 @@
           "full_name",
           "organization_id",
           "keycloak_org_id",
+          "organization_name",
+          "organization_timezone",
           "roles",
           "permissions"
         ],

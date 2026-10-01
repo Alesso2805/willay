@@ -21,8 +21,15 @@ class UserProfile:
     full_name: str
 
 
+@dataclass(frozen=True)
+class Organization:
+    id: UUID
+    name: str
+    timezone: str  # IANA: el panel y los mensajes muestran las horas en esta zona
+
+
 class OrganizationRepository(Protocol):
-    async def id_by_keycloak_id(self, keycloak_org_id: UUID) -> UUID | None: ...
+    async def by_keycloak_id(self, keycloak_org_id: UUID) -> Organization | None: ...
 
 
 class UserRepository(Protocol):
@@ -39,11 +46,12 @@ async def authenticate(
     users: UserRepository,
 ) -> Principal:
     membership = single_organization(claims.get("organization"))
-    organization_id = await organizations.id_by_keycloak_id(membership.keycloak_org_id)
-    if organization_id is None:
+    organization = await organizations.by_keycloak_id(membership.keycloak_org_id)
+    if organization is None:
         raise UnknownOrganizationError(
             f"organización {membership.keycloak_org_id} sin alta en Vigía"
         )
+    organization_id = organization.id
 
     try:
         user_id = UUID(str(claims["sub"]))
@@ -62,6 +70,8 @@ async def authenticate(
         user_id=user_id,
         organization_id=organization_id,
         keycloak_org_id=membership.keycloak_org_id,
+        organization_name=organization.name,
+        organization_timezone=organization.timezone,
         email=email,
         full_name=full_name,
         roles=known_roles(raw_roles),
