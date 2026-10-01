@@ -12,12 +12,12 @@ from fastapi import APIRouter
 from tests.integration.conftest import Database
 from tests.integration.factories import FAST_HASHER
 from tests.support.tokens import ISSUER, TokenFactory
-from vigia.api.main import create_app
-from vigia.identity.api.dependencies import get_verifier
-from vigia.seed.loader import load_seed
-from vigia.shared.clock import Clock, SystemClock
-from vigia.shared.config import Settings
-from vigia.shared.db import create_engine
+from willay.api.main import create_app
+from willay.identity.api.dependencies import get_verifier
+from willay.seed.loader import load_seed
+from willay.shared.clock import Clock, SystemClock
+from willay.shared.config import Settings
+from willay.shared.db import create_engine
 
 
 async def ensure_seed(database: Database) -> None:

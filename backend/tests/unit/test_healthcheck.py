@@ -2,8 +2,8 @@ import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from vigia.shared.clock import FakeClock
-from vigia.workers.healthcheck import is_alive
+from willay.shared.clock import FakeClock
+from willay.workers.healthcheck import is_alive
 
 NOW = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
 

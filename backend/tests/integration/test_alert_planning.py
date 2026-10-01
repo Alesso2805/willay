@@ -21,14 +21,14 @@ from tests.integration.factories import (
     create_rule,
     link_station,
 )
-from vigia.alerts.application.planning import AlertPlanner
-from vigia.alerts.infrastructure.sql_alerts import SqlAlertRepository
-from vigia.incidents.infrastructure.sql_incidents import SqlIncidentStore
-from vigia.rules.application.silence_check import SilenceChecker
-from vigia.rules.infrastructure.sql_silence import SqlSilenceRepository
-from vigia.shared import notifications
-from vigia.shared.clock import FakeClock
-from vigia.shared.db import create_engine
+from willay.alerts.application.planning import AlertPlanner
+from willay.alerts.infrastructure.sql_alerts import SqlAlertRepository
+from willay.incidents.infrastructure.sql_incidents import SqlIncidentStore
+from willay.rules.application.silence_check import SilenceChecker
+from willay.rules.infrastructure.sql_silence import SqlSilenceRepository
+from willay.shared import notifications
+from willay.shared.clock import FakeClock
+from willay.shared.db import create_engine
 
 pytestmark = pytest.mark.integration
 

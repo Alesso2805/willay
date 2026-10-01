@@ -24,10 +24,10 @@ from tests.support.tokens import (
     SUB_TWO_ORGS,
     TokenFactory,
 )
-from vigia.identity.api.dependencies import require
-from vigia.identity.domain.permissions import Permission
-from vigia.identity.domain.principal import Principal, Role
-from vigia.seed import data
+from willay.identity.api.dependencies import require
+from willay.identity.domain.permissions import Permission
+from willay.identity.domain.principal import Principal, Role
+from willay.seed import data
 
 pytestmark = pytest.mark.integration
 

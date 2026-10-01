@@ -35,16 +35,16 @@ test-dashboard:
 	cd dashboard && npm test -- --watch=false
 
 openapi: ## Regenerate docs/openapi.json (a test fails if it is out of date)
-	cd backend && uv run python -m vigia.api.openapi ../docs/openapi.json
+	cd backend && uv run python -m willay.api.openapi ../docs/openapi.json
 
-migrate: .env ## Apply the Alembic migrations as vigia_owner
+migrate: .env ## Apply the Alembic migrations as willay_owner
 	$(COMPOSE) run --rm migrate
 
 # Runs with your uid so that .secrets/station-keys.json belongs to you and not to the container user.
 seed: .env ## Load the demo data and print the API keys (ARGS=--rotate-keys to rotate them)
 	@mkdir -p .secrets
 	$(COMPOSE) run --rm --user "$$(id -u):$$(id -g)" -v "$(CURDIR)/.secrets:/secrets" \
-		migrate python -m vigia.seed --keys-file /secrets/station-keys.json $(ARGS)
+		migrate python -m willay.seed --keys-file /secrets/station-keys.json $(ARGS)
 
 simulate: ## Station simulator against the local API (ARGS="--scenario rimac --seed 42")
 	cd backend && uv run simulate --keys-file ../.secrets/station-keys.json $(ARGS)

@@ -10,8 +10,8 @@ import asyncpg
 from argon2 import PasswordHasher
 from uuid_utils.compat import uuid7
 
-from vigia.ingestion.domain.api_keys import generate_api_key
-from vigia.ingestion.infrastructure.api_keys import ApiKeyHasher
+from willay.ingestion.domain.api_keys import generate_api_key
+from willay.ingestion.infrastructure.api_keys import ApiKeyHasher
 
 T0 = datetime(2026, 10, 1, 8, 40, tzinfo=UTC)
 # Minimal Argon2id parameters: the tests exercise the flow, not the cost of hashing.

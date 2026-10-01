@@ -30,14 +30,14 @@ from tests.integration.factories import (
     link_station,
 )
 from tests.support.tokens import TokenFactory
-from vigia.alerts.application.dispatch import DeliveryError, EmailDispatcher
-from vigia.alerts.domain.alerts import Channel
-from vigia.alerts.domain.email import EmailContent
-from vigia.alerts.infrastructure.sql_dispatch import SqlDispatchQueue
-from vigia.shared.clock import FakeClock, SystemClock
-from vigia.shared.config import Settings
-from vigia.shared.db import create_engine
-from vigia.workers.dispatcher import run_dispatcher
+from willay.alerts.application.dispatch import DeliveryError, EmailDispatcher
+from willay.alerts.domain.alerts import Channel
+from willay.alerts.domain.email import EmailContent
+from willay.alerts.infrastructure.sql_dispatch import SqlDispatchQueue
+from willay.shared.clock import FakeClock, SystemClock
+from willay.shared.config import Settings
+from willay.shared.db import create_engine
+from willay.workers.dispatcher import run_dispatcher
 
 pytestmark = pytest.mark.integration
 
@@ -138,7 +138,7 @@ async def test_the_worker_emails_level_one_and_the_link_confirms_it(
         heartbeat_dir=tmp_path,
         smtp_host=mailpit.smtp_host,
         smtp_port=mailpit.smtp_port,
-        public_url="http://vigia.test",
+        public_url="http://willay.test",
     )
     stop = asyncio.Event()
     # Polls every 60 s, so if the email arrives right away the NOTIFY woke it up.
@@ -160,7 +160,7 @@ async def test_the_worker_emails_level_one_and_the_link_confirms_it(
     text = mailpit.text_of(message["ID"])
     assert "Hola Ana:" in text
     assert "Valor:     3.6 m3/s" in text
-    match = re.search(r"http://vigia\.test/confirmar/([A-Za-z0-9_-]{43})", text)
+    match = re.search(r"http://willay\.test/confirmar/([A-Za-z0-9_-]{43})", text)
     assert match is not None
 
     alert = await _alert(owner, ana)

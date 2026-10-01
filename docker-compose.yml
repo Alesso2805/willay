@@ -1,13 +1,15 @@
 # Willay local stack. `make up` creates .env from .env.example if it is missing.
 # Startup order: postgres -> (keycloak, migrate) -> api, workers, dashboard.
 
+name: willay
+
 x-backend: &backend
   build: ./backend
-  image: vigia-backend:dev
+  image: willay-backend:dev
   restart: unless-stopped
   environment: &backend-env
-    VIGIA_DATABASE_URL: postgresql+asyncpg://vigia_app:${VIGIA_APP_PASSWORD:?}@postgres:5432/vigia
-    VIGIA_LOG_LEVEL: ${VIGIA_LOG_LEVEL:-INFO}
+    WILLAY_DATABASE_URL: postgresql+asyncpg://willay_app:${WILLAY_APP_PASSWORD:?}@postgres:5432/willay
+    WILLAY_LOG_LEVEL: ${WILLAY_LOG_LEVEL:-INFO}
   depends_on: &after-migrate
     migrate:
       condition: service_completed_successfully
@@ -25,18 +27,18 @@ services:
     command: ["postgres", "-c", "timescaledb.telemetry_level=off"]
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
-      VIGIA_OWNER_PASSWORD: ${VIGIA_OWNER_PASSWORD:?}
-      VIGIA_APP_PASSWORD: ${VIGIA_APP_PASSWORD:?}
+      WILLAY_OWNER_PASSWORD: ${WILLAY_OWNER_PASSWORD:?}
+      WILLAY_APP_PASSWORD: ${WILLAY_APP_PASSWORD:?}
       KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?}
     volumes:
       - pgdata:/home/postgres/pgdata
       - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
     ports:
-      - "${VIGIA_PG_PORT:-5433}:5432"
+      - "${WILLAY_PG_PORT:-5433}:5432"
     healthcheck:
       # -h 127.0.0.1: during the init the temporary server only listens on the socket,
       # so the healthcheck does not turn green before the databases and roles exist.
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d vigia"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d willay"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -53,14 +55,14 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?}
       KC_HEALTH_ENABLED: "true"
-      KC_HOSTNAME: http://localhost:${VIGIA_KEYCLOAK_PORT:-8080}
+      KC_HOSTNAME: http://localhost:${WILLAY_KEYCLOAK_PORT:-8080}
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
-      # ${VIGIA_DEV_USER_PASSWORD} placeholder in realm-vigia.json
-      VIGIA_DEV_USER_PASSWORD: ${VIGIA_DEV_USER_PASSWORD:?}
+      # ${WILLAY_DEV_USER_PASSWORD} placeholder in realm-willay.json
+      WILLAY_DEV_USER_PASSWORD: ${WILLAY_DEV_USER_PASSWORD:?}
     volumes:
       - ./infra/keycloak:/opt/keycloak/data/import:ro
     ports:
-      - "${VIGIA_KEYCLOAK_PORT:-8080}:8080"
+      - "${WILLAY_KEYCLOAK_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -81,7 +83,7 @@ services:
     image: axllent/mailpit:v1.31.2
     restart: unless-stopped
     ports:
-      - "${VIGIA_MAILPIT_UI_PORT:-8025}:8025"
+      - "${WILLAY_MAILPIT_UI_PORT:-8025}:8025"
     healthcheck:
       test: ["CMD", "/mailpit", "readyz"]
       interval: 10s
@@ -90,29 +92,29 @@ services:
 
   migrate:
     build: ./backend
-    image: vigia-backend:dev
+    image: willay-backend:dev
     restart: "no"
     command: ["alembic", "upgrade", "head"]
     environment:
-      VIGIA_MIGRATE_DATABASE_URL: postgresql+asyncpg://vigia_owner:${VIGIA_OWNER_PASSWORD:?}@postgres:5432/vigia
-      VIGIA_DATABASE_URL: postgresql+asyncpg://vigia_app:${VIGIA_APP_PASSWORD:?}@postgres:5432/vigia
+      WILLAY_MIGRATE_DATABASE_URL: postgresql+asyncpg://willay_owner:${WILLAY_OWNER_PASSWORD:?}@postgres:5432/willay
+      WILLAY_DATABASE_URL: postgresql+asyncpg://willay_app:${WILLAY_APP_PASSWORD:?}@postgres:5432/willay
     depends_on:
       postgres:
         condition: service_healthy
 
   api:
     <<: *backend
-    command: ["uvicorn", "--factory", "vigia.api.main:create_app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["uvicorn", "--factory", "willay.api.main:create_app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
       <<: *backend-env
       # iss = public URL the browser uses to request the token; the JWKS goes over the internal network.
-      VIGIA_OIDC_ISSUER: http://localhost:${VIGIA_KEYCLOAK_PORT:-8080}/realms/vigia
-      VIGIA_OIDC_JWKS_URL: http://keycloak:8080/realms/vigia/protocol/openid-connect/certs
-      VIGIA_OIDC_AUDIENCE: vigia-api
+      WILLAY_OIDC_ISSUER: http://localhost:${WILLAY_KEYCLOAK_PORT:-8080}/realms/willay
+      WILLAY_OIDC_JWKS_URL: http://keycloak:8080/realms/willay/protocol/openid-connect/certs
+      WILLAY_OIDC_AUDIENCE: willay-api
       # To build the Telegram linking links (without it, the API answers 503).
-      VIGIA_TELEGRAM_BOT_USERNAME: ${VIGIA_TELEGRAM_BOT_USERNAME:-}
+      WILLAY_TELEGRAM_BOT_USERNAME: ${WILLAY_TELEGRAM_BOT_USERNAME:-}
     ports:
-      - "${VIGIA_API_PORT:-8000}:8000"
+      - "${WILLAY_API_PORT:-8000}:8000"
     depends_on:
       <<: *after-migrate
       keycloak:
@@ -126,58 +128,58 @@ services:
 
   worker-evaluator:
     <<: *backend
-    command: ["python", "-m", "vigia.workers.evaluator"]
+    command: ["python", "-m", "willay.workers.evaluator"]
     healthcheck:
       <<: *worker-healthcheck
-      test: ["CMD", "python", "-m", "vigia.workers.healthcheck", "evaluator"]
+      test: ["CMD", "python", "-m", "willay.workers.healthcheck", "evaluator"]
 
   worker-silence:
     <<: *backend
-    command: ["python", "-m", "vigia.workers.silence"]
+    command: ["python", "-m", "willay.workers.silence"]
     healthcheck:
       <<: *worker-healthcheck
-      test: ["CMD", "python", "-m", "vigia.workers.healthcheck", "silence"]
+      test: ["CMD", "python", "-m", "willay.workers.healthcheck", "silence"]
 
   worker-dispatcher:
     <<: *backend
-    command: ["python", "-m", "vigia.workers.dispatcher"]
+    command: ["python", "-m", "willay.workers.dispatcher"]
     environment:
       <<: *backend-env
-      VIGIA_SMTP_HOST: mailpit
-      VIGIA_SMTP_PORT: "1025"
+      WILLAY_SMTP_HOST: mailpit
+      WILLAY_SMTP_PORT: "1025"
       # Base of the confirmation links in the emails: the API as seen from the browser.
-      VIGIA_PUBLIC_URL: http://localhost:${VIGIA_API_PORT:-8000}
+      WILLAY_PUBLIC_URL: http://localhost:${WILLAY_API_PORT:-8000}
       # Without a token (empty), Telegram alerts stay pending.
-      VIGIA_TELEGRAM_BOT_TOKEN: ${VIGIA_TELEGRAM_BOT_TOKEN:-}
+      WILLAY_TELEGRAM_BOT_TOKEN: ${WILLAY_TELEGRAM_BOT_TOKEN:-}
     healthcheck:
       <<: *worker-healthcheck
-      test: ["CMD", "python", "-m", "vigia.workers.healthcheck", "dispatcher"]
+      test: ["CMD", "python", "-m", "willay.workers.healthcheck", "dispatcher"]
 
   worker-escalation:
     <<: *backend
-    command: ["python", "-m", "vigia.workers.escalation"]
+    command: ["python", "-m", "willay.workers.escalation"]
     healthcheck:
       <<: *worker-healthcheck
-      test: ["CMD", "python", "-m", "vigia.workers.healthcheck", "escalation"]
+      test: ["CMD", "python", "-m", "willay.workers.healthcheck", "escalation"]
 
   worker-telegram:
     <<: *backend
-    command: ["python", "-m", "vigia.workers.telegram"]
+    command: ["python", "-m", "willay.workers.telegram"]
     environment:
       <<: *backend-env
       # Without a token (empty), the worker starts disabled and only sends heartbeats.
-      VIGIA_TELEGRAM_BOT_TOKEN: ${VIGIA_TELEGRAM_BOT_TOKEN:-}
-      VIGIA_TELEGRAM_BOT_USERNAME: ${VIGIA_TELEGRAM_BOT_USERNAME:-}
+      WILLAY_TELEGRAM_BOT_TOKEN: ${WILLAY_TELEGRAM_BOT_TOKEN:-}
+      WILLAY_TELEGRAM_BOT_USERNAME: ${WILLAY_TELEGRAM_BOT_USERNAME:-}
     healthcheck:
       <<: *worker-healthcheck
-      test: ["CMD", "python", "-m", "vigia.workers.healthcheck", "telegram"]
+      test: ["CMD", "python", "-m", "willay.workers.healthcheck", "telegram"]
 
   dashboard:
     build: ./dashboard
-    image: vigia-dashboard:dev
+    image: willay-dashboard:dev
     restart: unless-stopped
     ports:
-      - "${VIGIA_DASHBOARD_PORT:-4200}:80"
+      - "${WILLAY_DASHBOARD_PORT:-4200}:80"
     depends_on: *after-migrate
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1/healthz"]

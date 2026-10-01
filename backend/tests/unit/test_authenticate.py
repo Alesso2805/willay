@@ -3,13 +3,13 @@ from uuid import UUID
 
 import pytest
 
-from vigia.identity.application.authenticate import (
+from willay.identity.application.authenticate import (
     InvalidClaimsError,
     Organization,
     UserProfile,
     authenticate,
 )
-from vigia.identity.domain.principal import (
+from willay.identity.domain.principal import (
     MultipleOrganizationsError,
     Role,
     UnknownOrganizationError,
@@ -40,10 +40,10 @@ class FakeUsers:
 def _claims(**overrides: Any) -> dict[str, Any]:
     claims: dict[str, Any] = {
         "sub": str(SUB),
-        "email": "operador@rimac.vigia.test",
+        "email": "operador@rimac.willay.test",
         "name": "Óscar Operador Rímac",
         "organization": {"rimac": {"id": str(KC_RIMAC)}},
-        "realm_access": {"roles": ["operator", "default-roles-vigia"]},
+        "realm_access": {"roles": ["operator", "default-roles-willay"]},
     }
     claims.update(overrides)
     return claims
@@ -61,11 +61,11 @@ async def test_resolves_tenant_roles_and_upserts_user() -> None:
     assert principal.user_id == SUB
     assert principal.roles == {Role.OPERATOR}
     assert users.upserted == [
-        UserProfile(SUB, ORG_RIMAC, "operador@rimac.vigia.test", "Óscar Operador Rímac")
+        UserProfile(SUB, ORG_RIMAC, "operador@rimac.willay.test", "Óscar Operador Rímac")
     ]
 
 
-async def test_organization_unknown_to_vigia_is_rejected_without_creating_user() -> None:
+async def test_organization_unknown_to_willay_is_rejected_without_creating_user() -> None:
     users = FakeUsers()
     with pytest.raises(UnknownOrganizationError):
         await authenticate(_claims(), FakeOrganizations({}), users)

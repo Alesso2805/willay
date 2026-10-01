@@ -3,15 +3,15 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from vigia.ingestion.application.rate_limit import enforce_rate_limit
-from vigia.ingestion.domain.rate_limit import (
+from willay.ingestion.application.rate_limit import enforce_rate_limit
+from willay.ingestion.domain.rate_limit import (
     MAX_BATCHES_PER_MINUTE,
     RateLimitExceededError,
     check_count,
     seconds_until_next_window,
     window_start,
 )
-from vigia.shared.clock import FakeClock
+from willay.shared.clock import FakeClock
 
 NOW = datetime(2026, 10, 12, 9, 15, 42, 300_000, tzinfo=UTC)
 

@@ -4,8 +4,8 @@ Tests compare the code's matrix against this copy: changing one without the othe
 fails CI, so the specification gets reviewed too.
 """
 
-from vigia.identity.domain.permissions import Permission
-from vigia.identity.domain.principal import Role
+from willay.identity.domain.permissions import Permission
+from willay.identity.domain.principal import Role
 
 SPEC_MATRIX: dict[Role, frozenset[Permission]] = {
     Role.VIEWER: frozenset({Permission.VIEW}),

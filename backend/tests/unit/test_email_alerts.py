@@ -6,16 +6,16 @@ from uuid import uuid4
 
 import pytest
 
-from vigia.alerts.application.dispatch import (
+from willay.alerts.application.dispatch import (
     ClaimedAlert,
     DeliveryError,
     DispatchResult,
     EmailDispatcher,
 )
-from vigia.alerts.domain.alerts import Channel
-from vigia.alerts.domain.delivery import AckToken, hash_ack_token, new_ack_token, retry_at
-from vigia.alerts.domain.email import AlertMessage, EmailContent, compose_email
-from vigia.shared.clock import FakeClock
+from willay.alerts.domain.alerts import Channel
+from willay.alerts.domain.delivery import AckToken, hash_ack_token, new_ack_token, retry_at
+from willay.alerts.domain.email import AlertMessage, EmailContent, compose_email
+from willay.shared.clock import FakeClock
 
 T0 = datetime(2026, 11, 20, 14, 0, tzinfo=UTC)  # 09:00 in Lima (UTC-5)
 

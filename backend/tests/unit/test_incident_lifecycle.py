@@ -4,7 +4,7 @@ from uuid import uuid4
 import pytest
 
 from tests.support.lifecycle import FakeIncidentRepository as Repository
-from vigia.incidents.application.lifecycle import (
+from willay.incidents.application.lifecycle import (
     Actor,
     ContactActor,
     IncidentNotFoundError,
@@ -12,14 +12,14 @@ from vigia.incidents.application.lifecycle import (
     acknowledge_incident,
     resolve_incident,
 )
-from vigia.incidents.domain.lifecycle import (
+from willay.incidents.domain.lifecycle import (
     IncidentStatus,
     InvalidTransitionError,
     Resolution,
     Transition,
     ensure_allowed,
 )
-from vigia.shared.clock import FakeClock
+from willay.shared.clock import FakeClock
 
 T0 = datetime(2026, 11, 20, 14, 0, tzinfo=UTC)
 OPEN, ACK, RESOLVED = IncidentStatus.OPEN, IncidentStatus.ACKNOWLEDGED, IncidentStatus.RESOLVED

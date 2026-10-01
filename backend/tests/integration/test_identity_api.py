@@ -20,7 +20,7 @@ from tests.support.tokens import (
     SUB_TWO_ORGS,
     TokenFactory,
 )
-from vigia.seed import data
+from willay.seed import data
 
 pytestmark = pytest.mark.integration
 
@@ -101,8 +101,8 @@ async def test_user_row_is_created_once_and_follows_keycloak(
     client: httpx2.AsyncClient, tokens: TokenFactory, owner: asyncpg.Connection
 ) -> None:
     sub = uuid7()  # a new user, so it does not clash with other tests
-    first = tokens.issue(sub, organization=RIMAC, email=f"{sub}@rimac.vigia.test", name="Ana")
-    renamed = tokens.issue(sub, organization=RIMAC, email=f"{sub}@rimac.vigia.test", name="Ana M.")
+    first = tokens.issue(sub, organization=RIMAC, email=f"{sub}@rimac.willay.test", name="Ana")
+    renamed = tokens.issue(sub, organization=RIMAC, email=f"{sub}@rimac.willay.test", name="Ana M.")
 
     assert (await _me(client, first)).status_code == 200
     assert (await _me(client, first)).status_code == 200

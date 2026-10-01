@@ -17,13 +17,13 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from tests.integration.conftest import Database
 from tests.integration.factories import Graph, create_graph
-from vigia.ingestion.domain.readings import ClassifiedReading, Quality
-from vigia.ingestion.infrastructure.repositories import SqlReadingWriter
-from vigia.rules.application.queue import MAX_ATTEMPTS, VISIBILITY_TIMEOUT, QueuedReading
-from vigia.shared.clock import FakeClock, SystemClock
-from vigia.shared.config import Settings
-from vigia.shared.db import create_engine
-from vigia.workers.evaluator import run_evaluator
+from willay.ingestion.domain.readings import ClassifiedReading, Quality
+from willay.ingestion.infrastructure.repositories import SqlReadingWriter
+from willay.rules.application.queue import MAX_ATTEMPTS, VISIBILITY_TIMEOUT, QueuedReading
+from willay.shared.clock import FakeClock, SystemClock
+from willay.shared.config import Settings
+from willay.shared.db import create_engine
+from willay.workers.evaluator import run_evaluator
 
 pytestmark = pytest.mark.integration
 

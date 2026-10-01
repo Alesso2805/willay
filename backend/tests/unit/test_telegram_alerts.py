@@ -4,10 +4,10 @@ from datetime import UTC, datetime
 import pytest
 
 from tests.unit.test_email_alerts import MESSAGE
-from vigia.alerts.application.dispatch import DeliveryError, TelegramChannel
-from vigia.alerts.application.telegram_bot import TelegramError
-from vigia.alerts.domain.confirmation import ConfirmOutcome
-from vigia.alerts.domain.telegram import (
+from willay.alerts.application.dispatch import DeliveryError, TelegramChannel
+from willay.alerts.application.telegram_bot import TelegramError
+from willay.alerts.domain.confirmation import ConfirmOutcome
+from willay.alerts.domain.telegram import (
     CLICK_ANSWER,
     ESCALATION_NOTE,
     MAX_CLICK_ANSWER,

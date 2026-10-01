@@ -9,10 +9,10 @@ from tests.integration.api import api_client
 from tests.integration.conftest import Database
 from tests.integration.factories import create_station_with_key
 from tests.support.tokens import TokenFactory
-from vigia.ingestion.application.simulate import SimulatedStation, TickReport, run_simulation
-from vigia.ingestion.domain.simulation import Behavior, StationPlan, value_at
-from vigia.ingestion.infrastructure.http_sender import HttpReadingSender
-from vigia.shared.clock import FakeClock, SystemClock
+from willay.ingestion.application.simulate import SimulatedStation, TickReport, run_simulation
+from willay.ingestion.domain.simulation import Behavior, StationPlan, value_at
+from willay.ingestion.infrastructure.http_sender import HttpReadingSender
+from willay.shared.clock import FakeClock, SystemClock
 
 pytestmark = pytest.mark.integration
 

@@ -2,7 +2,7 @@ from uuid import uuid4
 
 import pytest
 
-from vigia.territory.domain.stations import (
+from willay.territory.domain.stations import (
     InvalidStationError,
     Location,
     Source,

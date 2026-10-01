@@ -2,8 +2,8 @@ from uuid import uuid4
 
 import pytest
 
-from vigia.alerts.domain.alerts import Channel
-from vigia.alerts.domain.policies import (
+from willay.alerts.domain.alerts import Channel
+from willay.alerts.domain.policies import (
     InvalidPolicyError,
     LevelData,
     PolicyData,

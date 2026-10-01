@@ -4,9 +4,9 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from vigia.shared.audit import AuditEntry
-from vigia.shared.clock import FakeClock
-from vigia.territory.application.zones import (
+from willay.shared.audit import AuditEntry
+from willay.shared.clock import FakeClock
+from willay.territory.application.zones import (
     Actor,
     Zone,
     ZoneNotFoundError,
@@ -14,7 +14,7 @@ from vigia.territory.application.zones import (
     deactivate_zone,
     update_zone,
 )
-from vigia.territory.domain.zones import (
+from willay.territory.domain.zones import (
     InvalidGeometryError,
     MultiPolygonCoords,
     RiskLevel,

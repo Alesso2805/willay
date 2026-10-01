@@ -13,7 +13,7 @@ from tests.integration.api import api_client
 from tests.integration.conftest import Database
 from tests.integration.factories import Graph, create_station_with_key
 from tests.support.tokens import TokenFactory
-from vigia.shared.clock import FakeClock, SystemClock
+from willay.shared.clock import FakeClock, SystemClock
 
 pytestmark = pytest.mark.integration
 

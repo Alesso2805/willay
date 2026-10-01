@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from vigia.api.openapi import render
+from willay.api.openapi import render
 
 CONTRACT = Path(__file__).resolve().parents[3] / "docs" / "openapi.json"
 

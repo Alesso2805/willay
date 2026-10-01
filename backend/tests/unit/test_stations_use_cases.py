@@ -5,9 +5,9 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from vigia.shared.audit import AuditEntry
-from vigia.shared.clock import FakeClock
-from vigia.territory.application.stations import (
+from willay.shared.audit import AuditEntry
+from willay.shared.clock import FakeClock
+from willay.territory.application.stations import (
     Station,
     StationNotFoundError,
     create_station,
@@ -15,8 +15,8 @@ from vigia.territory.application.stations import (
     rotate_api_key,
     update_station,
 )
-from vigia.territory.application.zones import Actor
-from vigia.territory.domain.stations import (
+from willay.territory.application.zones import Actor
+from willay.territory.domain.stations import (
     InvalidStationError,
     Location,
     Source,

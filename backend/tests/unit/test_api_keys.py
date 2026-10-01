@@ -2,8 +2,8 @@ from uuid import UUID
 
 import pytest
 
-from vigia.ingestion.domain.api_keys import generate_api_key, parse_api_key
-from vigia.ingestion.infrastructure.api_keys import ApiKeyHasher
+from willay.ingestion.domain.api_keys import generate_api_key, parse_api_key
+from willay.ingestion.infrastructure.api_keys import ApiKeyHasher
 
 STATION = UUID("01a0dc43-cd2d-7522-8430-867cee8f89ce")
 

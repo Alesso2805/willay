@@ -6,15 +6,15 @@ import pytest
 
 from tests.support.lifecycle import ACK, OPEN, RESOLVED, T0, FakeIncidentRepository
 from tests.unit.test_email_alerts import MESSAGE
-from vigia.alerts.application.confirmation import (
+from willay.alerts.application.confirmation import (
     AlertToConfirm,
     confirm_alert,
     preview_confirmation,
 )
-from vigia.alerts.domain.confirmation import ConfirmOutcome, token_problem
-from vigia.alerts.domain.delivery import hash_ack_token
-from vigia.incidents.domain.lifecycle import IncidentStatus
-from vigia.shared.clock import FakeClock
+from willay.alerts.domain.confirmation import ConfirmOutcome, token_problem
+from willay.alerts.domain.delivery import hash_ack_token
+from willay.incidents.domain.lifecycle import IncidentStatus
+from willay.shared.clock import FakeClock
 
 TOKEN = "t" * 43
 EXPIRES = T0 + timedelta(hours=24)

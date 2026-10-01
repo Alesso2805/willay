@@ -1,5 +1,5 @@
 [project]
-name = "vigia"
+name = "willay"
 version = "0.1.0"
 description = "Willay: multi-tenant early warning system"
 readme = "README.md"
@@ -23,7 +23,7 @@ dependencies = [
 
 [project.scripts]
 # Station simulator (VIG-11): `uv run simulate --scenario rimac --seed 42`
-simulate = "vigia.ingestion.api.simulator_cli:main"
+simulate = "willay.ingestion.api.simulator_cli:main"
 
 [build-system]
 requires = ["uv_build>=0.11,<0.12"]
@@ -56,13 +56,13 @@ select = [
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 # CLAUDE.md rule: time comes in only through the Clock protocol.
-"datetime.datetime.now".msg = "Use vigia.shared.clock.Clock; datetime.now() only lives in SystemClock."
-"datetime.datetime.utcnow".msg = "Use vigia.shared.clock.Clock."
-"datetime.datetime.today".msg = "Use vigia.shared.clock.Clock."
-"time.time".msg = "Use vigia.shared.clock.Clock (or time.monotonic to measure durations)."
+"datetime.datetime.now".msg = "Use willay.shared.clock.Clock; datetime.now() only lives in SystemClock."
+"datetime.datetime.utcnow".msg = "Use willay.shared.clock.Clock."
+"datetime.datetime.today".msg = "Use willay.shared.clock.Clock."
+"time.time".msg = "Use willay.shared.clock.Clock (or time.monotonic to measure durations)."
 
 [tool.ruff.lint.per-file-ignores]
-"src/vigia/shared/clock.py" = ["TID251"]
+"src/willay/shared/clock.py" = ["TID251"]
 
 [tool.mypy]
 python_version = "3.12"

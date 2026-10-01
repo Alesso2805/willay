@@ -1,7 +1,7 @@
 import asyncio
 from pathlib import Path
 
-from vigia.workers._runner import run_loop
+from willay.workers._runner import run_loop
 
 
 async def test_loop_touches_heartbeat_and_stops_on_signal(tmp_path: Path) -> None:

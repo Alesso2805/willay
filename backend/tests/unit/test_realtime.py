@@ -1,8 +1,8 @@
 import json
 from uuid import uuid4
 
-from vigia.realtime.application.broadcaster import Broadcaster
-from vigia.realtime.domain.events import RESYNC, RealtimeEvent, parse_notification
+from willay.realtime.application.broadcaster import Broadcaster
+from willay.realtime.domain.events import RESYNC, RealtimeEvent, parse_notification
 
 ORG_A, ORG_B = uuid4(), uuid4()
 

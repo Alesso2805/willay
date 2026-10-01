@@ -12,7 +12,7 @@ import { seriousViolations } from './ui/axe';
 
 const ME: Me = {
   user_id: 'c144b510-2abd-4844-ad5e-13e700b29fba',
-  email: 'operador@rimac.vigia.test',
+  email: 'operador@rimac.willay.test',
   full_name: 'Óscar Operador Rímac',
   organization_id: '01a0dc43-cd2d-7522-8430-867cee8f89ce',
   keycloak_org_id: '1d44f4b3-b1df-457f-b717-20926a20166e',

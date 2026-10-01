@@ -10,10 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from tests.integration.conftest import Database
 from tests.integration.factories import FAST_HASHER
-from vigia.seed import data
-from vigia.seed.loader import IssuedKey, load_seed
-from vigia.shared.clock import FakeClock
-from vigia.shared.db import create_engine
+from willay.seed import data
+from willay.seed.loader import IssuedKey, load_seed
+from willay.shared.clock import FakeClock
+from willay.shared.db import create_engine
 
 pytestmark = pytest.mark.integration
 
@@ -22,7 +22,7 @@ SEED_ORGS = [org.id for org in data.ORGANIZATIONS]
 
 @pytest.fixture
 async def engine(database: Database) -> AsyncIterator[AsyncEngine]:
-    # The seed runs as vigia_app, as in `make seed`.
+    # The seed runs as willay_app, as in `make seed`.
     engine = create_engine(database.app_url)
     yield engine
     await engine.dispose()

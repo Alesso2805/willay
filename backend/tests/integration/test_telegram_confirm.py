@@ -17,13 +17,13 @@ from tests.integration.telegram import (
     run_telegram_until,
     telegram_incident,
 )
-from vigia.alerts.application.dispatch import TelegramDispatcher
-from vigia.alerts.application.telegram_bot import Click, Update
-from vigia.alerts.domain.confirmation import ConfirmOutcome
-from vigia.alerts.domain.telegram import CLICK_ANSWER, ESCALATION_NOTE
-from vigia.alerts.infrastructure.sql_dispatch import SqlDispatchQueue
-from vigia.shared.clock import SystemClock
-from vigia.shared.db import create_engine
+from willay.alerts.application.dispatch import TelegramDispatcher
+from willay.alerts.application.telegram_bot import Click, Update
+from willay.alerts.domain.confirmation import ConfirmOutcome
+from willay.alerts.domain.telegram import CLICK_ANSWER, ESCALATION_NOTE
+from willay.alerts.infrastructure.sql_dispatch import SqlDispatchQueue
+from willay.shared.clock import SystemClock
+from willay.shared.db import create_engine
 
 pytestmark = pytest.mark.integration
 

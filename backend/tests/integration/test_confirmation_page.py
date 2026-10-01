@@ -22,9 +22,9 @@ from tests.integration.factories import (
     link_station,
 )
 from tests.support.tokens import TokenFactory
-from vigia.alerts.domain.delivery import new_ack_token
-from vigia.shared.clock import SystemClock
-from vigia.shared.db import create_engine
+from willay.alerts.domain.delivery import new_ack_token
+from willay.shared.clock import SystemClock
+from willay.shared.db import create_engine
 
 pytestmark = pytest.mark.integration
 

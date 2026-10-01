@@ -1,6 +1,6 @@
 import pytest
 
-from vigia.ingestion.domain.simulation import (
+from willay.ingestion.domain.simulation import (
     BASELINES,
     DROP_FACTOR,
     RIMAC_DOWNSTREAM,

@@ -8,16 +8,16 @@ import asyncpg
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from tests.integration.factories import Graph
-from vigia.alerts.application.planning import AlertPlanner
-from vigia.alerts.infrastructure.sql_alerts import SqlAlertRepository
-from vigia.incidents.infrastructure.sql_incidents import SqlIncidentStore
-from vigia.ingestion.domain.readings import ClassifiedReading, Quality
-from vigia.ingestion.infrastructure.repositories import SqlReadingWriter
-from vigia.rules.application.evaluate import process_batch
-from vigia.rules.application.rule_evaluator import RuleEvaluator
-from vigia.rules.infrastructure.pg_queue import PostgresEvaluationQueue
-from vigia.rules.infrastructure.sql_rules import SqlReadingHistory, SqlRuleRepository
-from vigia.shared.clock import Clock, SystemClock
+from willay.alerts.application.planning import AlertPlanner
+from willay.alerts.infrastructure.sql_alerts import SqlAlertRepository
+from willay.incidents.infrastructure.sql_incidents import SqlIncidentStore
+from willay.ingestion.domain.readings import ClassifiedReading, Quality
+from willay.ingestion.infrastructure.repositories import SqlReadingWriter
+from willay.rules.application.evaluate import process_batch
+from willay.rules.application.rule_evaluator import RuleEvaluator
+from willay.rules.infrastructure.pg_queue import PostgresEvaluationQueue
+from willay.rules.infrastructure.sql_rules import SqlReadingHistory, SqlRuleRepository
+from willay.shared.clock import Clock, SystemClock
 
 
 class Station:

@@ -8,9 +8,9 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from tests.support.alerts import FakeAlerting
-from vigia.alerts.application.escalation import EscalationCycle, Escalator
-from vigia.alerts.domain.escalation import Decision, LevelState, Step, decide
-from vigia.shared.clock import FakeClock
+from willay.alerts.application.escalation import EscalationCycle, Escalator
+from willay.alerts.domain.escalation import Decision, LevelState, Step, decide
+from willay.shared.clock import FakeClock
 
 T0 = datetime(2026, 11, 20, 14, 0, tzinfo=UTC)  # when the current level was alerted
 INCIDENT = uuid4()

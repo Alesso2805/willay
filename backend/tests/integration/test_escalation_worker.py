@@ -23,14 +23,14 @@ from tests.integration.factories import (
     create_rule,
     link_station,
 )
-from vigia.alerts.application.escalation import Escalator
-from vigia.alerts.application.planning import AlertPlanner
-from vigia.alerts.infrastructure.sql_alerts import SqlAlertRepository
-from vigia.alerts.infrastructure.sql_escalation import SqlEscalationRepository
-from vigia.shared.clock import FakeClock
-from vigia.shared.config import Settings
-from vigia.shared.db import create_engine
-from vigia.workers.escalation import run_escalation
+from willay.alerts.application.escalation import Escalator
+from willay.alerts.application.planning import AlertPlanner
+from willay.alerts.infrastructure.sql_alerts import SqlAlertRepository
+from willay.alerts.infrastructure.sql_escalation import SqlEscalationRepository
+from willay.shared.clock import FakeClock
+from willay.shared.config import Settings
+from willay.shared.db import create_engine
+from willay.workers.escalation import run_escalation
 
 pytestmark = pytest.mark.integration
 

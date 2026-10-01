@@ -10,10 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from tests.integration.conftest import Database
 from tests.integration.factories import Graph, create_graph
-from vigia.rules.application.queue import MAX_ATTEMPTS, VISIBILITY_TIMEOUT, LostClaimError
-from vigia.rules.infrastructure.pg_queue import PostgresEvaluationQueue
-from vigia.shared.clock import FakeClock
-from vigia.shared.db import create_engine
+from willay.rules.application.queue import MAX_ATTEMPTS, VISIBILITY_TIMEOUT, LostClaimError
+from willay.rules.infrastructure.pg_queue import PostgresEvaluationQueue
+from willay.shared.clock import FakeClock
+from willay.shared.db import create_engine
 
 pytestmark = pytest.mark.integration
 

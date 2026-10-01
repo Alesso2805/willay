@@ -3,8 +3,8 @@ from uuid import uuid4
 import pytest
 
 from tests.support.matrix import SPEC_MATRIX
-from vigia.identity.domain.permissions import GRANTS, Permission, can, permissions_of
-from vigia.identity.domain.principal import Principal, Role
+from willay.identity.domain.permissions import GRANTS, Permission, can, permissions_of
+from willay.identity.domain.principal import Principal, Role
 
 
 def _principal(*roles: Role) -> Principal:
@@ -14,7 +14,7 @@ def _principal(*roles: Role) -> Principal:
         keycloak_org_id=uuid4(),
         organization_name="Org",
         organization_timezone="America/Lima",
-        email="x@vigia.test",
+        email="x@willay.test",
         full_name="X",
         roles=frozenset(roles),
     )
