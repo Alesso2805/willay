@@ -123,6 +123,7 @@ The MVP covers the full data → rule → incident → alert → acknowledgement
 | Dashboard | Live map | Zones by status, stations with last value and its age, updated via authenticated SSE isolated per organization |
 | Dashboard | Incident detail | Readings chart, timeline, alerts per recipient |
 | Dashboard | Visual system | A single catalog of statuses (color, icon and text) for incidents, severities, zones and stations; no status is conveyed by color alone; navigation according to the user's permissions; usable at 360 px wide |
+| Dashboard | Bilingual product | Spanish by default, English available: the dashboard follows each user's choice, and emails, Telegram and the confirmation page follow each contact's language (VIG-40) |
 | Dashboard | Incident inbox | List filterable by status and severity, updated via SSE; an exhausted escalation is highlighted with text in addition to color |
 | Dashboard | Incident actions | Acknowledge, resolve (resolved or false alarm) and comment from the detail view, according to permissions |
 | Dashboard | Failed readings | List of the readings with `failed_at` and reprocessing; a notice in the header while there is any, because each one may be an alert that did not go out |
@@ -278,7 +279,7 @@ erDiagram
 
 ## Product backlog
 
-39 stories in 11 epics (E0 to E10): 36 in the MVP (153 points) and 3 optional ones, VIG-31, VIG-32 and VIG-37, of 3 points each. VIG-33 to VIG-39 were added on September 30, 2026, after reviewing which screens this specification promised without a story that built them. MoSCoW priority (M = Must, S = Should, C = Could) and estimate in points (1, 2, 3, 5, 8).
+40 stories in 11 epics (E0 to E10): 37 in the MVP (161 points) and 3 optional ones, VIG-31, VIG-32 and VIG-37, of 3 points each. VIG-33 to VIG-39 were added on September 30, 2026, after reviewing which screens this specification promised without a story that built them. MoSCoW priority (M = Must, S = Should, C = Could) and estimate in points (1, 2, 3, 5, 8). VIG-40 (bilingual product) was added the same day, when the codebase and its documentation moved to English.
 
 | ID | Epic | Story | Acceptance criteria | Prio | Pts | Sprint |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -321,6 +322,7 @@ erDiagram
 | VIG-37 | E10 Administration | As an admin I want to edit escalation policies from the dashboard | Screen on top of the VIG-24 API with ordered levels, wait in minutes and groups per channel; validation errors next to each field; a notice that changes also apply to ongoing incidents; the 409 for a policy used by rules is explained | C | 3 | 7 |
 | VIG-38 | E10 Administration | As an admin I want to see the audit log | `GET /v1/audit` for admin only, with filters by entity type, entity, author and dates, cursor-paginated, most recent first; table with local time, author (or "el propio contacto", i.e. "the contact themselves", when the contact requested it from Telegram), action, and before and after per field; permission, isolation and stable pagination tests | S | 3 | 6 |
 | VIG-39 | E8 Observability | As an operator I want to see and reprocess the readings that could not be evaluated | List for operator and admin with station, measurement, attempts, failure date and last error; a notice with the count in the header while there is any; reprocessing returns the selected rows to the queue with `NOTIFY` and is audited; the runbook switches to using the dashboard; test: the reprocessed reading ends up evaluated | M | 3 | 6 |
+| VIG-40 | E7 Dashboard | As an operator I want to use Vigía in Spanish or English | Every user-facing string (dashboard, alert emails, Telegram messages, confirmation page, API error messages) lives in translation files for `es` and `en`, none hard-coded; the dashboard uses the language each user chooses (saved per user) or, failing that, the browser's, with Spanish as the default; emails, Telegram and the confirmation page use the contact's language (new `contacts.language`, defaulting to the organization's); API errors carry a stable `code` plus a message in the request's `Accept-Language`; a test fails if a key is missing in either language | S | 8 | 7 |
 
 ## Sprint plan
 
@@ -335,9 +337,9 @@ Eight two-week sprints, from September 28, 2026 to January 17, 2027, designed to
 | 4 | Nov 23 – Dec 6 | Telegram linked, acknowledgement and automatic escalation | VIG-21 to 24 | 16 |
 | 5 | Dec 7 – 20 | Accessible live dashboard: map, inbox and incident detail with their actions | VIG-33 (first: the rest is built on it), 25, 34, 26 and 35 | 24 |
 | 6 | Dec 21 – Jan 3 | Management from the dashboard: contacts, failed readings, rules and audit | VIG-36, 39, 27 and 38 | 22 |
-| 7 | Jan 4 – 17 | Latency measured, load test and recorded Rímac demo | VIG-28 to 30 (+ VIG-31 and VIG-37 if there is time) | 9 (+6) |
+| 7 | Jan 4 – 17 | Latency measured, load test, bilingual product and recorded Rímac demo | VIG-28 to 30 and VIG-40 (+ VIG-31 and VIG-37 if there is time) | 17 (+6) |
 
-**Buffer.** Sprint 1 is the most loaded (25 points) and sprint 6 falls during the holidays. If a sprint does not close, first move out the "Should" stories (VIG-27, VIG-29 and VIG-38) rather than cutting quality on the "Must" stories.
+**Buffer.** Sprint 1 is the most loaded (25 points) and sprint 6 falls during the holidays. If a sprint does not close, first move out the "Should" stories (VIG-27, VIG-29, VIG-38 and VIG-40) rather than cutting quality on the "Must" stories.
 
 **Validation.** The original plan called for interviewing, before sprint 4, at least 3 people working in risk management (municipalities in huaico-prone areas, regional COERs, prevention NGOs): how they find out about an event today, who warns whom, how long it takes and which channel they use, and which commercial name they prefer. On September 30, 2026 it was decided not to conduct them during the MVP. Accepted risk: the dashboard (sprints 5 and 6) is built on the assumptions of this specification, not on what real operators ask for. Mitigation: small screens focused on what the demo requires, and the recorded demo (VIG-30) as material for validation after the MVP, together with the commercial name. When interviews take place, they are recorded in `docs/research/` and the backlog is adjusted accordingly.
 
@@ -442,4 +444,4 @@ Each module in `src/vigia/` follows the layers `domain`, `application`, `infrast
 3. ADR-0003: TimescaleDB for readings, with compression, retention, `evaluated_at` and an evidence copy in the incidents. It constrains deployment: self-managed Postgres (container or VM) or Timescale Cloud, because AWS RDS does not offer the extension, and compression and retention are under Timescale's TSL license, not Apache.
 4. ADR-0004: Keycloak 26 Organizations as the source of tenant and roles; one-organization-per-user rule; the tenant is resolved only by the organization id included by the mapper.
 
-**Conventions.** Branches `feat/VIG-NN-description`; Conventional Commits; pull requests reference the story and include the definition-of-done checklist; tables and columns in English `snake_case`; documentation in English; user-facing product text (dashboard, emails, Telegram, confirmation page, API error messages) is in Spanish until the bilingual (i18n) story.
+**Conventions.** Branches `feat/VIG-NN-description`; Conventional Commits; pull requests reference the story and include the definition-of-done checklist; tables and columns in English `snake_case`; documentation in English; user-facing product text (dashboard, emails, Telegram, confirmation page, API error messages) is in Spanish until the bilingual story (VIG-40).
