@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { NOTICE_TONES, NoticeTone } from './visual-states';
 
 /**
- * Aviso con su tono (VIG-33). Un error o una advertencia se anuncian de inmediato
- * (`role="alert"`); la información, sin interrumpir (`role="status"`).
+ * Notice with its tone (VIG-33). An error or a warning is announced immediately
+ * (`role="alert"`); information, without interrupting (`role="status"`).
  */
 @Component({
   selector: 'app-notice',

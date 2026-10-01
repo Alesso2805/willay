@@ -1,6 +1,6 @@
 /**
- * URLs del entorno local (docker compose). Para otros entornos se sustituirá por
- * configuración en tiempo de ejecución; no contiene secretos: el cliente OIDC es público.
+ * Local environment URLs (docker compose). Other environments will replace this with runtime
+ * configuration. It holds no secrets: the OIDC client is public.
  */
 export const settings = {
   apiUrl: 'http://localhost:8000',

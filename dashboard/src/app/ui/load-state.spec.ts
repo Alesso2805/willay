@@ -6,7 +6,7 @@ describe('loadStatus', () => {
     expect(loadStatus(false, false, 0)).toBe('loading');
     expect(loadStatus(true, false, 0)).toBe('empty');
     expect(loadStatus(true, false, 3)).toBe('ready');
-    expect(loadStatus(true, true, 3)).toBe('error'); // un error se muestra aunque haya datos viejos
+    expect(loadStatus(true, true, 3)).toBe('error'); // an error is shown even with stale data
   });
 });
 

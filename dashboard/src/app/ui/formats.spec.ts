@@ -15,7 +15,7 @@ describe('ageText', () => {
     expect(ageText('2026-10-27T08:57:00Z', now)).toBe('hace 3 min');
     expect(ageText('2026-10-27T06:00:00Z', now)).toBe('hace 3 h');
     expect(ageText('2026-10-25T09:00:00Z', now)).toBe('hace 2 d');
-    expect(ageText('2026-10-27T09:00:05Z', now)).toBe('hace 0 s'); // reloj adelantado
+    expect(ageText('2026-10-27T09:00:05Z', now)).toBe('hace 0 s'); // clock running ahead
   });
 });
 

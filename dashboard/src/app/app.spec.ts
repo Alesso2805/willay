@@ -70,7 +70,7 @@ describe('App', () => {
     await TestBed.inject(Router).navigateByUrl('/');
     await fixture.whenStable();
     expect(text()).toContain('Demo Rímac');
-    expect(text()).not.toContain(ME.organization_id); // nunca el uuid
+    expect(text()).not.toContain(ME.organization_id); // never the uuid
     expect(text()).toContain('America/Lima');
     expect(text()).toContain('Operación');
     expect(text()).toContain('Cerrar sesión');
@@ -94,7 +94,7 @@ describe('App', () => {
     const button = root.querySelector<HTMLButtonElement>('button[aria-controls="menu-principal"]');
     const menu = root.querySelector('#menu-principal');
     expect(button?.getAttribute('aria-expanded')).toBe('false');
-    expect(menu?.classList).toContain('hidden'); // sm:flex la muestra desde 640 px
+    expect(menu?.classList).toContain('hidden'); // lg:flex shows it from 1024 px
 
     button?.click();
     await fixture.whenStable();

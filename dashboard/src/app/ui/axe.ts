@@ -1,11 +1,11 @@
 import axe from 'axe-core';
 
 /**
- * Violaciones serias o críticas de axe-core en lo que el componente dibujó (VIG-33). Solo
- * para los tests: Lighthouse usa este mismo motor para su puntaje de accesibilidad.
+ * Serious or critical axe-core violations in what the component rendered (VIG-33). Tests only:
+ * Lighthouse uses this same engine for its accessibility score.
  *
- * El contraste de color no se mide aquí, porque jsdom no calcula estilos reales. Lo cubren
- * los tests del catálogo visual, que miden cada color de estado y de aviso.
+ * Color contrast is not checked here because jsdom does not compute real styles. The visual
+ * catalog tests cover it by measuring every state and notice color.
  */
 export async function seriousViolations(element: Element): Promise<string[]> {
   const result = await axe.run(element, {

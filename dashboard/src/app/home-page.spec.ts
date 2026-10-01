@@ -99,7 +99,7 @@ describe('HomePage', () => {
     await fixture.whenStable();
 
     expect(text()).toContain('1 sin confirmar · 1 confirmados · 1 con escalamiento agotado');
-    expect(text()).toContain('1 de 2'); // la estación callada hace 10 min no cuenta
+    expect(text()).toContain('1 de 2'); // the station silent for 10 min does not count
     expect(text()).toContain('1 sin reportar · 1 sin zona');
     expect(text()).toContain('1 de riesgo crítico · 1 alto');
     expect(await seriousViolations(fixture.nativeElement)).toEqual([]);
@@ -109,6 +109,6 @@ describe('HomePage', () => {
     const { fixture, http, text } = setup([]);
     await fixture.whenStable();
     expect(text()).toContain('todavía no tiene un rol en Vigía');
-    http.verify(); // sin permiso "view", nada de pedir datos que la API rechazaría
+    http.verify(); // without the "view" permission, no requests the API would refuse
   });
 });

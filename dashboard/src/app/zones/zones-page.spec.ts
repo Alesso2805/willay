@@ -9,8 +9,8 @@ import { DrawnGeometry, MapMode, ZoneMap } from './zone-map';
 import { ZonesPage } from './zones-page';
 import { Position, Zone } from './zones.api';
 
-// Leaflet no funciona bien en jsdom: el mapa real se reemplaza por uno falso que expone
-// las mismas entradas y salidas. Aquí se prueba la lógica de la página, no Leaflet.
+// Leaflet does not work well in jsdom: the real map is replaced by a fake one exposing the
+// same inputs and outputs. This tests the page logic, not Leaflet.
 @Component({ selector: 'app-zone-map', template: '' })
 class FakeZoneMap {
   readonly zones = input<Zone[]>([]);
@@ -85,7 +85,7 @@ describe('ZonesPage', () => {
     expect(await seriousViolations(fixture.nativeElement)).toEqual([]);
 
     button('Cancelar')?.click();
-    // Una recarga que falla: el aviso de error también tiene que ser accesible.
+    // A failing reload: the error notice must be accessible too.
     (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('input[type="checkbox"]')?.click();
     http
       .expectOne(`${URL}?include_inactive=true`)

@@ -63,7 +63,7 @@ export class StationsPage {
   protected readonly status = signal('');
   protected readonly issued = signal<{ code: string; key: string } | null>(null);
   protected readonly copied = signal(false);
-  /** Reloj de la vista para "hace N s"; se refresca cada 15 s. */
+  /** View clock for the relative ages ("hace N s"); refreshed every 15 s. */
   protected readonly now = signal(Date.now());
 
   protected readonly canManage = computed(
@@ -72,7 +72,7 @@ export class StationsPage {
   protected readonly zoneNames = computed(
     () => new Map(this.zones().map((zone) => [zone.id, zone.name])),
   );
-  /** "7 estaciones · 6 reportando · 1 sin reportar · 1 sin zona" para leer de un vistazo. */
+  /** "7 estaciones · 6 reportando · 1 sin reportar · 1 sin zona", readable at a glance. */
   protected readonly subtitle = computed(() => {
     if (!this.loaded()) return '';
     const active = this.stations().filter((station) => station.status === 'active');
@@ -108,9 +108,9 @@ export class StationsPage {
 
   constructor() {
     this.load();
-    // El reloj y los latidos avanzan juntos: si solo avanzara el reloj, una estación que
-    // sigue reportando aparecería "Sin reportar" a los K × intervalo de abrir la página.
-    // VIG-25 reemplaza este sondeo por eventos SSE.
+    // The clock and the heartbeats advance together: if only the clock advanced, a station
+    // that keeps reporting would show "Sin reportar" K × interval after opening the page.
+    // VIG-25 replaces this polling with SSE events.
     const timer = setInterval(() => {
       this.now.set(Date.now());
       this.loadStations();
@@ -147,7 +147,7 @@ export class StationsPage {
     return ageText(iso, this.now());
   }
 
-  /** Hora exacta en la zona de la organización, para el `title` de la antigüedad. */
+  /** Exact time in the organization's time zone, for the `title` of the age. */
   protected time(iso: string): string {
     const timezone = this.session.me()?.organization_timezone ?? 'UTC';
     return localTime(iso, timezone);
@@ -321,6 +321,6 @@ export class StationsPage {
 }
 
 function round6(value: number): number {
-  // 6 decimales ≈ 0,1 m: más precisión que la de un clic en el mapa no aporta nada.
+  // 6 decimals ≈ 0.1 m: more precision than a map click is pointless.
   return Math.round(value * 1e6) / 1e6;
 }

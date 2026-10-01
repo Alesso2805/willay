@@ -17,8 +17,8 @@ import { Station } from './stations.api';
 export type LonLat = [number, number];
 
 /**
- * Mapa de estaciones. Componente "tonto": recibe estaciones, zonas de contexto y si se
- * está eligiendo una ubicación; emite el punto clicado. Guardar es tarea de la página.
+ * Station map. A "dumb" component: it receives stations, context zones and whether a location
+ * is being picked, and emits the clicked point. Saving is the page's job.
  */
 @Component({
   selector: 'app-station-map',
@@ -70,7 +70,7 @@ export class StationMap {
     if (!this.map) return;
     this.zoneLayer.clearLayers();
     for (const zone of zones) {
-      // interactive: false → el clic atraviesa la zona y llega al mapa (elegir ubicación).
+      // interactive: false → the click goes through the zone to the map (location picking).
       L.geoJSON(zone.geometry, {
         interactive: false,
         style: { color: '#64748b', weight: 1, dashArray: '3 4', fillOpacity: 0.05 },
@@ -88,7 +88,7 @@ export class StationMap {
         radius: station.id === selectedId ? 11 : 8,
         color: !active ? '#64748b' : station.has_zone ? '#1d4ed8' : '#a16207',
         weight: station.id === selectedId ? 4 : 2,
-        // Sin zona: borde discontinuo además del color (el estado nunca solo por color).
+        // No zone: dashed border as well as color (state is never conveyed by color alone).
         dashArray: station.has_zone ? undefined : '3 3',
         fillOpacity: active ? 0.6 : 0.2,
       });

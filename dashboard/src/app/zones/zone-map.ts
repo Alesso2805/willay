@@ -17,13 +17,13 @@ import { MultiPolygonGeometry, PolygonGeometry, Position, Zone } from './zones.a
 export type MapMode = { kind: 'view' } | { kind: 'draw' } | { kind: 'edit'; zoneId: string };
 export type DrawnGeometry = PolygonGeometry | MultiPolygonGeometry;
 
-// Geoman no deja cerrar ni editar un polígono que se cruza consigo mismo. El servidor
-// igual lo valida con PostGIS: el mapa ayuda, la API decide.
+// Geoman does not let a self-intersecting polygon be closed or edited. The server validates
+// it with PostGIS anyway: the map helps, the API decides.
 const NO_SELF_INTERSECTION = { allowSelfIntersection: false } as const;
 
 /**
- * Mapa de zonas con Leaflet + Leaflet-Geoman. Componente "tonto": recibe zonas y modo,
- * emite la geometría dibujada o editada. Guardar y mostrar errores es tarea de la página.
+ * Zone map with Leaflet + Leaflet-Geoman. A "dumb" component: it receives zones and the mode,
+ * and emits the drawn or edited geometry. Saving and showing errors is the page's job.
  */
 @Component({
   selector: 'app-zone-map',
@@ -38,7 +38,7 @@ export class ZoneMap {
   readonly zones = input<Zone[]>([]);
   readonly mode = input<MapMode>({ kind: 'view' });
   readonly problem = input<Position | null>(null);
-  /** Geometría del polígono nuevo o editado, cada vez que el operador la cambia. */
+  /** Geometry of the new or edited polygon, every time the operator changes it. */
   readonly geometryChange = output<DrawnGeometry>();
 
   private readonly container = viewChild.required<ElementRef<HTMLDivElement>>('container');
@@ -51,8 +51,8 @@ export class ZoneMap {
 
   constructor() {
     afterNextRender(() => this.init());
-    // Cada efecto lee su señal antes de mirar si el mapa existe: así queda suscrito y
-    // vuelve a correr cuando cambian las zonas o el modo.
+    // Each effect reads its signal before checking whether the map exists, so it stays
+    // subscribed and runs again when the zones or the mode change.
     effect(() => this.renderZones(this.zones()));
     effect(() => this.applyMode(this.mode()));
     effect(() => this.showProblem(this.problem()));
@@ -65,7 +65,7 @@ export class ZoneMap {
     map.on('pm:create', (event) => {
       this.draft = event.layer as L.Polygon;
       map.pm.disableDraw();
-      this.draft.pm.enable(NO_SELF_INTERSECTION); // el borrador sigue editable
+      this.draft.pm.enable(NO_SELF_INTERSECTION); // the draft stays editable
       this.draft.on('pm:edit', () => this.emit(this.draft));
       this.emit(this.draft);
     });
@@ -123,7 +123,7 @@ export class ZoneMap {
     this.problemMarker?.remove();
     this.problemMarker = undefined;
     if (point) {
-      const [lon, lat] = point; // GeoJSON es [lon, lat]; Leaflet usa [lat, lon]
+      const [lon, lat] = point; // GeoJSON is [lon, lat]; Leaflet uses [lat, lon]
       this.problemMarker = L.circleMarker([lat, lon], {
         radius: 9,
         color: '#b91c1c',

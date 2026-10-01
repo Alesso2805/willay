@@ -28,7 +28,7 @@ describe('station presentation', () => {
   const now = Date.parse('2026-10-27T09:00:00Z');
 
   it('a station is silent after K × its expected interval without reporting', () => {
-    expect(stationState(STATION, now)).toBe('reporting'); // 30 s: justo en el límite
+    expect(stationState(STATION, now)).toBe('reporting'); // 30 s: exactly at the limit
     expect(stationState(STATION, now + 1000)).toBe('silent');
   });
 

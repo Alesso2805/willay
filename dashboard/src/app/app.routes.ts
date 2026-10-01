@@ -6,7 +6,7 @@ export const routes: Routes = [
   {
     path: 'zonas',
     title: 'Zonas de riesgo · Vigía',
-    // Carga diferida: Leaflet y Geoman solo se descargan al abrir el mapa.
+    // Lazy loaded: Leaflet and Geoman are only downloaded when the map is opened.
     loadComponent: () => import('./zones/zones-page').then((m) => m.ZonesPage),
   },
   {

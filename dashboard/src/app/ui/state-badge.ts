@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { Icon } from './icon';
 import { VisualState } from './visual-states';
 
-/** Etiqueta de un estado del catálogo: ícono + texto sobre su color (VIG-33). */
+/** Badge for a catalog state: icon + text on its color (VIG-33). */
 @Component({
   selector: 'app-state-badge',
   changeDetection: ChangeDetectionStrategy.OnPush,

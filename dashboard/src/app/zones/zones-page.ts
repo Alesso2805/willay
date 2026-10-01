@@ -34,7 +34,7 @@ export class ZonesPage {
   protected readonly listStatus = computed(() =>
     loadStatus(this.loaded(), this.loadFailed(), this.zones().length),
   );
-  /** "3 zonas activas · 1 de riesgo crítico · 80,500 personas" para leer de un vistazo. */
+  /** "3 zonas activas · 1 de riesgo crítico · 80,500 personas", readable at a glance. */
   protected readonly subtitle = computed(() => {
     if (!this.loaded()) return '';
     const active = this.zones().filter((zone) => zone.is_active);
@@ -52,7 +52,7 @@ export class ZonesPage {
   protected readonly saving = signal(false);
   protected readonly status = signal('');
 
-  /** Solo oculta acciones: la API valida el permiso en cada petición. */
+  /** Only hides actions: the API checks the permission on every request. */
   protected readonly canManage = computed(
     () => this.session.me()?.permissions.includes('territory:manage') ?? false,
   );
@@ -66,7 +66,7 @@ export class ZonesPage {
     const geometry = this.geometry();
     if (!geometry) return 0;
     const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates;
-    // Cada anillo repite el primer punto al final para cerrarse.
+    // Each ring repeats its first point at the end to close itself.
     return polygons.flat().reduce((total, ring) => total + ring.length - 1, 0);
   });
 

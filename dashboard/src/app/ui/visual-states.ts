@@ -1,13 +1,13 @@
 import { IconName } from './icon';
 
 /**
- * Catálogo único de estados visuales del panel (VIG-33). Ninguna página define colores de
- * estado por su cuenta: los toma de aquí.
+ * Single catalog of the dashboard's visual states (VIG-33). No page defines state colors on
+ * its own: they come from here.
  *
- * Cada estado se comunica con texto e ícono, nunca solo con color (WCAG 1.4.1). Los colores
- * van en hex y no como clases de Tailwind para que un test pueda medir su contraste:
- * - `foreground` sobre `background`: ≥ 4.5:1 (texto de la etiqueta e ícono);
- * - `map` sobre blanco: ≥ 3:1 (trazos y marcadores sobre el mapa).
+ * Every state is conveyed with text and an icon, never by color alone (WCAG 1.4.1). Colors
+ * are hex rather than Tailwind classes so a test can measure their contrast:
+ * - `foreground` on `background`: ≥ 4.5:1 (label text and icon);
+ * - `map` on white: ≥ 3:1 (strokes and markers on the map).
  */
 export interface VisualState {
   label: string;
@@ -23,7 +23,7 @@ const AMBER = { foreground: '#92400e', background: '#fef3c7', map: '#a16207' };
 const GREEN = { foreground: '#166534', background: '#dcfce7', map: '#15803d' };
 const BLUE = { foreground: '#1e40af', background: '#dbeafe', map: '#1d4ed8' };
 const SLATE = { foreground: '#334155', background: '#f1f5f9', map: '#475569' };
-/** Invertido: lo único que debe saltar a la vista aunque haya rojo alrededor. */
+/** Inverted: the one thing that must stand out even with red all around. */
 const ALARM = { foreground: '#ffffff', background: '#991b1b', map: '#7f1d1d' };
 
 export type IncidentState = 'open' | 'acknowledged' | 'resolved' | 'exhausted';
@@ -31,7 +31,7 @@ export type Severity = 'info' | 'warning' | 'critical';
 export type RiskLevelKey = 'low' | 'medium' | 'high' | 'critical';
 export type StationState = 'reporting' | 'silent' | 'unzoned' | 'inactive';
 
-/** `exhausted`: abierto y sin nadie que confirme en ningún nivel (SPEC: "en rojo"). */
+/** `exhausted`: open with nobody acknowledging at any level (SPEC: shown in red). */
 export const INCIDENT_STATES: Readonly<Record<IncidentState, VisualState>> = {
   open: { label: 'Abierto', icon: 'bell', ...ORANGE },
   acknowledged: { label: 'Confirmado', icon: 'check', ...BLUE },
@@ -45,7 +45,7 @@ export const SEVERITIES: Readonly<Record<Severity, VisualState>> = {
   critical: { label: 'Crítico', icon: 'octagon-alert', ...RED },
 };
 
-/** Las barras del ícono suben con el nivel: el orden se lee también sin color. */
+/** The icon's bars grow with the level: the order also reads without color. */
 export const RISK_LEVEL_STATES: Readonly<Record<RiskLevelKey, VisualState>> = {
   low: { label: 'Bajo', icon: 'level-1', ...GREEN },
   medium: { label: 'Medio', icon: 'level-2', ...AMBER },
@@ -60,7 +60,7 @@ export const STATION_STATES: Readonly<Record<StationState, VisualState>> = {
   inactive: { label: 'Inactiva', icon: 'pause', ...SLATE },
 };
 
-/** Avisos de la interfaz (errores, advertencias): no son estados, pero tampoco eligen color por página. */
+/** UI notices (errors, warnings): not states, but pages do not pick their colors either. */
 export type NoticeTone = 'error' | 'warning' | 'info';
 
 export const NOTICE_TONES: Readonly<

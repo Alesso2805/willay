@@ -5,7 +5,7 @@ import { settings } from '../settings';
 
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
-/** Coordenadas GeoJSON: [longitud, latitud]. */
+/** GeoJSON coordinates: [longitude, latitude]. */
 export type Position = [number, number];
 
 export interface PolygonGeometry {
@@ -18,7 +18,7 @@ export interface MultiPolygonGeometry {
   coordinates: Position[][][];
 }
 
-/** Respuesta de /v1/zones (docs/openapi.json › ZoneOut). */
+/** /v1/zones response (docs/openapi.json › ZoneOut). */
 export interface Zone {
   id: string;
   name: string;
@@ -31,7 +31,7 @@ export interface Zone {
   updated_at: string;
 }
 
-/** Cuerpo de POST y PUT (docs/openapi.json › ZoneIn). */
+/** POST and PUT body (docs/openapi.json › ZoneIn). */
 export interface ZoneInput {
   name: string;
   description: string | null;
@@ -58,7 +58,7 @@ export class ZonesApi {
     return this.http.put<Zone>(`${this.url}/${id}`, zone);
   }
 
-  /** La API desactiva (no borra): las reglas e incidentes conservan su zona. */
+  /** The API deactivates (does not delete): rules and incidents keep their zone. */
   deactivate(id: string): Observable<void> {
     return this.http.delete<void>(`${this.url}/${id}`);
   }

@@ -1,14 +1,14 @@
 import { IconName } from './ui/icon';
 
 /**
- * Secciones del panel y el permiso que pide cada una (SPEC, "Permisos por rol"). Ocultar
- * una sección es solo comodidad: la API valida el permiso en cada endpoint igual.
+ * Dashboard sections and the permission each one requires (SPEC, "Permissions by role"). Hiding
+ * a section is only a convenience: the API checks the permission on every endpoint anyway.
  */
 export interface NavItem {
   path: string;
   label: string;
   icon: IconName;
-  /** null: cualquiera con sesión. Inicio explica qué hacer a quien no tiene roles. */
+  /** null: anyone signed in. Home explains what to do to users without roles. */
   permission: string | null;
   exact: boolean;
 }

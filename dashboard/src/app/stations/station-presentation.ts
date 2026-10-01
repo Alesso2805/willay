@@ -10,7 +10,7 @@ export const VARIABLE_LABELS: Record<Variable, string> = {
   rainfall: 'Lluvia',
 };
 
-/** Espejo de la regla del backend: la unidad sale de la variable (no se elige). */
+/** Mirrors the backend rule: the unit follows from the variable (it is not chosen). */
 export const UNITS: Record<Variable, string> = {
   discharge: 'm3/s',
   water_level: 'm',
@@ -24,10 +24,10 @@ export const POSITION_LABELS: Record<ZonePosition, string> = {
 };
 
 /**
- * Si la estación está reportando o callada, con la misma regla que el worker `silence`:
- * sin lotes durante K × intervalo esperado. Es una vista aproximada con el reloj del
- * navegador; el incidente lo abre el worker. Una estación que nunca reportó no está callada
- * (SPEC: aún no empezó a transmitir), así que no tiene estado: devuelve null.
+ * Whether the station is reporting or silent, with the same rule as the `silence` worker: no
+ * batches for K × expected interval. It is an approximate view using the browser clock; the
+ * worker opens the incident. A station that never reported is not silent (SPEC: it has not
+ * started transmitting yet), so it has no state: returns null.
  */
 export function stationState(station: Station, now: number): StationState | null {
   if (station.status === 'inactive') return 'inactive';
@@ -36,7 +36,7 @@ export function stationState(station: Station, now: number): StationState | null
   return now - Date.parse(station.heartbeat.last_seen_at) > silentAfterMs ? 'silent' : 'reporting';
 }
 
-/** Traduce un error al guardar una estación a un mensaje para el operador. */
+/** Turns an error from saving a station into a message for the operator. */
 export function stationProblem(error: unknown): string {
   if (!(error instanceof HttpErrorResponse)) return 'No se pudo guardar la estación.';
   if (error.status === 409) return 'Ya existe una estación con ese código en tu organización.';
