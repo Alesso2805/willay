@@ -1,61 +1,61 @@
-# ADR-0004: Keycloak 26 Organizations como fuente de tenant y roles
+# ADR-0004: Keycloak 26 Organizations as the source of tenant and roles
 
-- **Estado:** Propuesto (borrador de Sprint 0). Formato del claim verificado con Keycloak 26.7.4.
-- **Fecha:** 2026-09-26
-- **Relacionado:** SPEC.md › Arquitectura (Tenant y roles); VIG-02, VIG-06, VIG-07; `infra/keycloak/realm-vigia.json`
+- **Status:** Proposed (Sprint 0 draft). Claim format verified with Keycloak 26.7.4.
+- **Date:** 2026-09-26
+- **Related:** SPEC.md › Architecture (Tenant and roles); VIG-02, VIG-06, VIG-07; `infra/keycloak/realm-vigia.json`
 
-## Contexto
+## Context
 
-Vigía es multi-tenant: una municipalidad no debe ver jamás datos de otra, ni por REST ni por SSE. Keycloak 26 trae Organizations, pero sus **realm roles son globales**: un usuario con el rol `admin` lo tiene en todas sus organizaciones. Keycloak no tiene roles por organización sin extensiones.
+Vigía is multi-tenant: one municipality must never see another's data, neither through REST nor through SSE. Keycloak 26 ships Organizations, but its **realm roles are global**: a user with the `admin` role has it in all of their organizations. Keycloak has no per-organization roles without extensions.
 
-## Opciones
+## Options
 
-1. **Roles y membresías en la base de Vigía**, con Keycloak solo para autenticar. Duplica la fuente de verdad.
-2. **Grupos de Keycloak por organización** con roles en cada grupo. Funciona, pero no aprovecha Organizations.
-3. **Keycloak Organizations y realm roles**, con la regla "un usuario pertenece a una sola organización".
+1. **Roles and memberships in Vigía's database**, with Keycloak only for authentication. It duplicates the source of truth.
+2. **Keycloak groups per organization** with roles on each group. It works, but does not take advantage of Organizations.
+3. **Keycloak Organizations and realm roles**, with the rule "a user belongs to a single organization".
 
-## Decisión
+## Decision
 
-Opción 3.
+Option 3.
 
-- **Una organización por usuario.** La API exige exactamente una organización en el token. Con cero o con varias responde **403**. Así los realm roles globales aplican sin ambigüedad a esa única organización.
-- **Keycloak es la única fuente de roles:** `admin`, `operator`, `responder` y `viewer`, leídos de `realm_access.roles`. `core.users` no tiene columna de rol.
-- **El tenant se resuelve solo por el id de la organización**, nunca por el alias (renombrable) ni por el nombre. `core.organizations.keycloak_org_id` es único.
+- **One organization per user.** The API requires exactly one organization in the token. With zero or with several it answers **403**. That way the global realm roles apply unambiguously to that single organization.
+- **Keycloak is the only source of roles:** `admin`, `operator`, `responder` and `viewer`, read from `realm_access.roles`. `core.users` has no role column.
+- **The tenant is resolved only by the organization id**, never by the alias (which can be renamed) or by the name. `core.organizations.keycloak_org_id` is unique.
 
-### Formato del claim (verificado con tokens reales)
+### Claim format (verified with real tokens)
 
-El mapper `oidc-organization-membership-mapper` del client scope `organization` se configura con **`addOrganizationId: true`**. Con esa opción, Keycloak 26.7.4 emite el claim como un **objeto indexado por alias**, no como una lista:
+The `oidc-organization-membership-mapper` mapper of the `organization` client scope is configured with **`addOrganizationId: true`**. With that option, Keycloak 26.7.4 emits the claim as an **object keyed by alias**, not as a list:
 
 ```json
 "organization": { "rimac": { "id": "1d44f4b3-b1df-457f-b717-20926a20166e" } }
 ```
 
-| Usuario de prueba | Claim `organization` | Respuesta de la API |
+| Test user | `organization` claim | API response |
 | --- | --- | --- |
-| `rimac-operator` | `{"rimac": {"id": "1d44…"}}` | se resuelve el tenant por `id` |
-| `dos-orgs` | `{"aislamiento": {...}, "rimac": {...}}` | 403 (varias) |
-| `sin-org` | ausente | 403 (ninguna) |
+| `rimac-operator` | `{"rimac": {"id": "1d44…"}}` | the tenant is resolved by `id` |
+| `dos-orgs` | `{"aislamiento": {...}, "rimac": {...}}` | 403 (several) |
+| `sin-org` | absent | 403 (none) |
 
-La API valida que el claim sea un objeto con **exactamente una clave** y toma su `id`.
+The API checks that the claim is an object with **exactly one key** and takes its `id`.
 
-### Scope `organization:*`
+### `organization:*` scope
 
-Los clientes piden el scope **`organization:*`**, no `organization`. Con `organization` a secas, Keycloak pide al usuario elegir una organización si tiene varias (en el navegador) o no emite ninguna (password grant). Un usuario con varias organizaciones podría entonces elegir una y pasar la validación, llevando sus roles globales a esa organización. Con `organization:*` el token contiene todas las membresías y la regla de "exactamente una" se cumple de verdad.
+Clients request the **`organization:*`** scope, not `organization`. With plain `organization`, Keycloak asks the user to pick an organization if they have several (in the browser) or emits none (password grant). A user with several organizations could then pick one and pass validation, carrying their global roles into that organization. With `organization:*` the token contains every membership, and the "exactly one" rule is genuinely enforced.
 
-### Configuración del realm
+### Realm configuration
 
-- `organizationsEnabled: true`. Organizaciones y usuarios con **ids fijos**: Keycloak los respeta al importar, y el seed usa los mismos ids.
-- Declarar cualquier `clientScopes` en el JSON desactiva la creación de los scopes por defecto. Por eso el realm incluye los 15 scopes exportados de Keycloak 26.7.4, con el único cambio de `addOrganizationId` en el mapper de `organization`. Sin `basic` y `roles` los tokens no traían `sub` ni `realm_access`.
-- **Clientes:**
-  - `vigia-dashboard`: público, Authorization Code con PKCE S256;
-  - `vigia-api`: solo audiencia (`bearerOnly`);
-  - `vigia-dev-cli`: público con password grant, **solo desarrollo**, para curl y tests.
-  - Los dos primeros incluyen la audiencia `vigia-api`.
-- Las contraseñas de los usuarios de prueba son el placeholder `${VIGIA_DEV_USER_PASSWORD}`, sustituido desde el entorno al importar.
+- `organizationsEnabled: true`. Organizations and users with **fixed ids**: Keycloak keeps them on import, and the seed uses the same ids.
+- Declaring any `clientScopes` in the JSON disables the creation of the default scopes. That is why the realm includes the 15 scopes exported from Keycloak 26.7.4, with `addOrganizationId` in the `organization` mapper as the only change. Without `basic` and `roles`, tokens came without `sub` or `realm_access`.
+- **Clients:**
+  - `vigia-dashboard`: public, Authorization Code with PKCE S256;
+  - `vigia-api`: audience only (`bearerOnly`);
+  - `vigia-dev-cli`: public with password grant, **development only**, for curl and tests.
+  - The first two include the `vigia-api` audience.
+- The passwords of the test users are the `${VIGIA_DEV_USER_PASSWORD}` placeholder, substituted from the environment on import.
 
-## Consecuencias
+## Consequences
 
-- **A favor:** una sola fuente de identidad, organización y roles. El aislamiento se aplica en una dependencia obligatoria de FastAPI que toda consulta y el canal SSE usan.
-- **En contra:** soportar varias organizaciones por usuario (por ejemplo, un consultor que atiende a dos municipalidades) exigirá roles por organización: atributos de membresía o grupos. Queda fuera del MVP.
-- **En contra:** el formato del claim depende de una opción del mapper. Si Keycloak lo cambia en otra versión, los tests de VIG-06 con los usuarios `rimac-operator`, `sin-org` y `dos-orgs` lo detectarán.
-- **Seguridad:** `vigia-dev-cli` con password grant no debe existir fuera de desarrollo. El realm de producción se generará sin ese cliente.
+- **Pro:** a single source of identity, organization and roles. Isolation is enforced in a mandatory FastAPI dependency that every query and the SSE channel use.
+- **Con:** supporting several organizations per user (for example, a consultant who serves two municipalities) will require per-organization roles: membership attributes or groups. Out of scope for the MVP.
+- **Con:** the claim format depends on a mapper option. If Keycloak changes it in another version, the VIG-06 tests with the users `rimac-operator`, `sin-org` and `dos-orgs` will catch it.
+- **Security:** `vigia-dev-cli` with password grant must not exist outside development. The production realm will be generated without that client.
