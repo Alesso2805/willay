@@ -1,6 +1,60 @@
 @import 'tailwindcss';
 
 /*
+ * Identidad "centro de monitoreo" (VIG-33): azul noche para la navegación y azul agua como
+ * color de marca. Es provisional: la identidad final espera el nombre comercial (SPEC).
+ * Contraste comprobado: blanco sobre brand-700 5.4:1; night-300 sobre night-900 7.9:1.
+ */
+@theme {
+  --color-night-950: #07121d;
+  --color-night-900: #0b1d2e;
+  --color-night-800: #12283d;
+  --color-night-700: #1b3a56;
+  --color-night-300: #9fb3c8;
+  --color-brand-50: #ecfeff;
+  --color-brand-100: #cffafe;
+  --color-brand-600: #0891b2;
+  --color-brand-700: #0e7490;
+  --color-brand-800: #155e75;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-100 text-slate-900 antialiased;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl bg-white shadow-sm ring-1 ring-slate-200;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-700 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-300 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:opacity-50;
+  }
+  /* Acciones dentro de una tarjeta: texto con color, sin subrayado hasta el hover. */
+  .link-action {
+    @apply font-medium text-brand-700 hover:text-brand-800 hover:underline;
+  }
+  .link-danger {
+    @apply font-medium text-red-700 hover:text-red-800 hover:underline;
+  }
+  .field {
+    @apply rounded-lg border-0 px-3 py-1.5 text-sm text-slate-900 shadow-sm ring-1 ring-slate-300 focus:ring-2 focus:ring-brand-600 focus:outline-none;
+  }
+}
+
+/*
+ * El mapa base de OpenStreetMap trae muchos colores que compiten con zonas y estaciones:
+ * se atenúa para que lo que importa (los estados) destaque.
+ */
+.leaflet-tile-pane {
+  filter: saturate(0.35) brightness(1.04);
+}
+
+/*
  * Leaflet: al hacer clic en una zona, el navegador dibuja un rectángulo de foco negro sobre
  * el polígono SVG. Se oculta solo cuando el foco viene del ratón; con teclado
  * (:focus-visible) el contorno se mantiene, porque indica dónde está el foco (WCAG 2.4.7).
