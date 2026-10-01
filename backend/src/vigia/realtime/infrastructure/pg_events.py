@@ -1,12 +1,9 @@
-"""La conexión LISTEN vigia_events de la API (VIG-25, ADR-0007).
+"""The API's LISTEN vigia_events connection (VIG-25, ADR-0007).
 
-Una por proceso de la API, sin importar cuántos paneles estén conectados: los eventos se
-reparten en memoria. Si la conexión se cae, se reintenta con espera creciente y, al
-volver, todas las conexiones reciben un `resync` (los avisos de mientras se perdieron:
-NOTIFY no es duradero).
-
-No es un worker: no hace trabajo de dominio, solo alimenta las respuestas SSE de este
-proceso. Por eso vive en el lifespan de la API, igual que el motor de la base.
+One per API process, however many dashboards are connected; events are fanned out in memory.
+On connection loss it retries with backoff and, once back, every connection gets a `resync`
+(NOTIFY is not durable). It is not a worker (no domain work, it only feeds this process's SSE
+responses), so it lives in the API lifespan, like the database engine.
 """
 
 import asyncio

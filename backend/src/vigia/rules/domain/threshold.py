@@ -1,9 +1,9 @@
-"""Regla de umbral (VIG-15): valor fuera de límite durante N lecturas consecutivas `ok`.
+"""Threshold rule (VIG-15): value out of bounds for N consecutive `ok` readings.
 
-`params` en core.rules: {"operator": "gt", "value": 3.5, "consecutive": 2}.
+`params` in core.rules: {"operator": "gt", "value": 3.5, "consecutive": 2}.
 
-"Fuera de límite" depende del operador: gt (>), ge (>=), lt (<), le (<=). La frontera es
-exacta: con gt 3.5, una lectura de 3.5 NO está fuera de límite; con ge, sí.
+The boundary is exact per operator: with gt 3.5 a reading of 3.5 is NOT out of bounds;
+with ge it is.
 """
 
 from collections.abc import Mapping, Sequence
@@ -13,8 +13,8 @@ from typing import Any
 
 from vigia.rules.domain.errors import InvalidRuleParamsError
 
-# Más de 60 lecturas seguidas (10 min a 10 s por lectura) ya no es "consecutivas": es
-# una regla de promedio, que no es este tipo.
+# More than 60 readings in a row (10 min at 10 s per reading) is no longer "consecutive":
+# it would be an average rule, which is a different type.
 MAX_CONSECUTIVE = 60
 
 
@@ -49,22 +49,24 @@ def parse_threshold(raw: Mapping[str, Any]) -> ThresholdParams:
         value = raw["value"]
         consecutive = raw["consecutive"]
     except (KeyError, ValueError) as exc:
-        raise InvalidRuleParamsError(f"parámetros de umbral inválidos: {raw}") from exc
+        raise InvalidRuleParamsError(f"invalid threshold params: {raw}") from exc
     if not isinstance(value, int | float) or isinstance(value, bool):
-        raise InvalidRuleParamsError("value debe ser un número")
+        raise InvalidRuleParamsError("value must be a number")
     if (
         not isinstance(consecutive, int)
-        or isinstance(consecutive, bool)  # bool es subclase de int: true pasaría como 1
+        or isinstance(consecutive, bool)  # bool is a subclass of int: True would pass as 1
         or not 1 <= consecutive <= MAX_CONSECUTIVE
     ):
-        raise InvalidRuleParamsError(f"consecutive debe ser un entero entre 1 y {MAX_CONSECUTIVE}")
+        raise InvalidRuleParamsError(
+            f"consecutive must be an integer between 1 and {MAX_CONSECUTIVE}"
+        )
     return ThresholdParams(operator, float(value), consecutive)
 
 
 def fires(params: ThresholdParams, latest_first: Sequence[float]) -> bool:
-    """`latest_first`: los valores `ok` más recientes de la estación, el último primero.
+    """`latest_first`: the station's most recent `ok` values, latest first.
 
-    Dispara solo si hay al menos N lecturas y las N más recientes están fuera de límite.
+    Fires only if there are at least N readings and the N most recent are out of bounds.
     """
     window = latest_first[: params.consecutive]
     return len(window) == params.consecutive and all(params.breached_by(v) for v in window)

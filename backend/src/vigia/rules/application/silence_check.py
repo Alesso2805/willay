@@ -1,14 +1,10 @@
-"""Un ciclo del worker silence (VIG-17): estaciones vigiladas → incidentes de silencio.
+"""One cycle of the silence worker (VIG-17): watched stations → silence incidents.
 
-Una estación está vigilada por una regla de silencio si la regla y su zona están
-activas, la estación está activa y asignada a esa zona (una estación sin zona nunca
-alerta) y la regla es de esa estación o de toda la zona. Se abre un incidente por
-estación silenciada, con causa `rule_id:zone_id:station_id`: dos estaciones calladas en
-la misma zona son dos incidentes.
-
-En el mismo ciclo se registra station_recovered en los incidentes de silencio activos
-cuya estación volvió a reportar, es decir, que tiene un latido posterior al que se
-conocía al abrirlos. El incidente sigue abierto hasta que el operador lo resuelve.
+A silence rule watches a station if the rule, its zone and the station are active, the station
+is assigned to that zone (a station without a zone never alerts) and the rule targets that
+station or the whole zone. One incident per silent station (cause `rule_id:zone_id:station_id`).
+The same cycle records station_recovered on active silence incidents whose station has a
+heartbeat newer than the one known at opening; the operator still resolves them.
 """
 
 from collections.abc import Mapping
@@ -38,7 +34,7 @@ log = structlog.get_logger()
 
 @dataclass(frozen=True)
 class WatchedStation:
-    """Una estación vigilada por una regla de silencio, con su último latido."""
+    """A station watched by a silence rule, with its last heartbeat."""
 
     rule_id: UUID
     organization_id: UUID
@@ -49,7 +45,7 @@ class WatchedStation:
     station_id: UUID
     expected_interval_s: int
     silence_multiplier: int
-    last_seen_at: datetime | None  # None: la estación nunca reportó
+    last_seen_at: datetime | None  # None: the station never reported
     last_measured_at: datetime | None
     last_value: float | None
 
@@ -60,17 +56,17 @@ class WatchedStation:
 
 class SilenceRepository(Protocol):
     async def watched(self, tx: AsyncConnection) -> list[WatchedStation]:
-        """Todas las estaciones vigiladas por reglas de silencio (ver módulo)."""
+        """All stations watched by silence rules (see module)."""
         ...
 
     async def recoveries(self, tx: AsyncConnection) -> list[Recovery]:
-        """Incidentes de silencio activos, sin station_recovered, cuya estación volvió a
-        reportar después de abrirse."""
+        """Active silence incidents without station_recovered whose station reported again
+        after they opened."""
         ...
 
 
 class SilenceIncidents(IncidentStore, RecoveryLog, Protocol):
-    """Lo que el worker silence hace con los incidentes: abrirlos y anotar recuperaciones."""
+    """What the silence worker does with incidents: open them and record recoveries."""
 
 
 @dataclass(frozen=True)
@@ -106,8 +102,7 @@ class SilenceChecker:
 
         opened = 0
         for station in silent:
-            # Una transacción por estación: si una falla, las demás abren igual su
-            # incidente. Si ya hay uno activo o la causa está en enfriamiento, no se abre.
+            # One transaction per station: if one fails, the others still open their incident.
             async with self._transaction() as tx:
                 recorded = await record_trigger(self._incidents, tx, _trigger(station), now)
                 if recorded.outcome is TriggerOutcome.OPENED and recorded.incident_id is not None:
@@ -126,7 +121,7 @@ class SilenceChecker:
         for recovery in recoveries:
             async with self._transaction() as tx:
                 first = await self._incidents.record_recovery(tx, recovery, now)
-            if first:  # False: otro worker lo registró primero
+            if first:  # False: another worker recorded it first
                 recovered += 1
                 log.info(
                     "station_recovered",
@@ -140,7 +135,7 @@ def _trigger(station: WatchedStation) -> Trigger:
     last_seen = station.last_seen_at
     last_reading = None
     if station.last_measured_at is not None and station.last_value is not None:
-        # La última lectura conocida antes del silencio.
+        # The last known reading before the silence.
         last_reading = EvidenceReading(station.last_measured_at, station.last_value)
     return Trigger(
         organization_id=station.organization_id,

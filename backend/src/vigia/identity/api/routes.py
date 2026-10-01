@@ -18,15 +18,15 @@ class MeResponse(BaseModel):
     keycloak_org_id: UUID
     organization_name: str
     organization_timezone: str = Field(
-        description="Zona horaria IANA de la organización: el panel muestra las horas en ella."
+        description="The organization's IANA time zone: the dashboard shows times in it."
     )
     roles: list[Role]
     permissions: list[Permission] = Field(
-        description="Para que el panel oculte acciones; la API las valida igual en cada endpoint."
+        description="So the dashboard can hide actions; the API checks them on every endpoint."
     )
 
 
-@router.get("/me", summary="Usuario autenticado, su organización, roles y permisos")
+@router.get("/me", summary="The authenticated user, their organization, roles and permissions")
 async def me(principal: CurrentPrincipal) -> MeResponse:
     return MeResponse(
         user_id=principal.user_id,

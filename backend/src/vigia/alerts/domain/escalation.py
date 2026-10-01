@@ -1,13 +1,8 @@
-"""Escalamiento por niveles (VIG-24): cuándo un incidente sube de nivel o agota la política.
+"""Level-based escalation (VIG-24): when an incident moves up a level or exhausts its policy.
 
-El nivel actual vence si:
-- pasaron `wait_s` desde que se le avisó (`level_started_at`) sin que nadie confirmara;
-- no pudo avisar a nadie: todas sus alertas quedaron omitidas por canal faltante (SPEC:
-  "un nivel sin ningún envío escala de inmediato"), también el nivel 1 al abrirse;
-- ya no existe en la política: un admin lo quitó mientras el incidente escalaba (los
-  cambios aplican a los incidentes en curso).
-
-Al vencer, sube al siguiente nivel de la política; si no hay otro, la política se agotó.
+The current level expires when `wait_s` has passed since it was notified with no
+acknowledgement; when it reached nobody (all alerts skipped, SPEC: escalate immediately),
+including level 1 on opening; or when an admin removed it from the policy meanwhile.
 """
 
 from dataclasses import dataclass
@@ -24,18 +19,18 @@ class Step(StrEnum):
 @dataclass(frozen=True)
 class Decision:
     step: Step
-    reason: str | None = None  # por qué venció el nivel; va en el evento
+    reason: str | None = None  # why the level expired; stored in the timeline event
 
 
 @dataclass(frozen=True)
 class LevelState:
-    """El nivel actual de un incidente abierto, visto contra la política vigente."""
+    """The current level of an open incident, checked against the current policy."""
 
     current_level: int
     level_started_at: datetime
-    wait_s: int | None  # None: el nivel ya no existe en la política
-    next_level: int | None  # el siguiente nivel de la política, si hay
-    nobody_alerted: bool  # todas las alertas del nivel quedaron omitidas
+    wait_s: int | None  # None: the level no longer exists in the policy
+    next_level: int | None
+    nobody_alerted: bool  # every alert of the level was skipped
 
 
 def decide(state: LevelState, now: datetime) -> Decision:

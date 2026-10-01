@@ -1,4 +1,4 @@
-"""Logs JSON con structlog, un evento por línea."""
+"""JSON logs with structlog, one event per line."""
 
 import logging
 
@@ -8,7 +8,7 @@ import structlog
 def configure_logging(level: str = "INFO") -> None:
     structlog.configure(
         processors=[
-            # Permite `bind_contextvars(correlation_id=...)` una vez y verlo en todos los logs.
+            # Lets `bind_contextvars(correlation_id=...)` be bound once and show in every log.
             structlog.contextvars.merge_contextvars,
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso", utc=True),

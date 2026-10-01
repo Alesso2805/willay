@@ -1,9 +1,8 @@
-"""Formato de las API keys de estación: `<station_id>.<secreto>`.
+"""Station API key format: `<station_id>.<secret>`.
 
-El secreto son 32 bytes aleatorios en base64url (43 caracteres). El id de la estación
-viaja en claro para encontrarla sin probar todos los hashes (Argon2id no se puede
-buscar); lo secreto es solo la segunda parte. La clave en claro se muestra una vez y
-nunca se guarda: solo su hash (ver infrastructure/api_keys.py).
+The secret is 32 random bytes in base64url (43 chars). The station id travels in clear so the
+station is found without trying every hash (Argon2id is not searchable). The plaintext key is
+shown once and never stored: only its hash (see infrastructure/api_keys.py).
 """
 
 import secrets

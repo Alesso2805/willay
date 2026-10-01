@@ -1,4 +1,4 @@
-"""Casos de uso de zonas de riesgo. Todo filtra por la organización del actor."""
+"""Risk zone use cases. Everything filters by the actor's organization."""
 
 from dataclasses import dataclass, replace
 from datetime import datetime
@@ -21,7 +21,7 @@ ENTITY_TYPE = "risk_zone"
 
 @dataclass(frozen=True)
 class Actor:
-    organization_id: UUID  # el tenant: nunca sale del cuerpo de la petición
+    organization_id: UUID  # the tenant: never taken from the request body
     user_id: UUID
 
 
@@ -33,7 +33,7 @@ class Zone:
     updated_at: datetime
 
     def snapshot(self) -> dict[str, Any]:
-        """Lo que se guarda en la auditoría: estado completo, geometría incluida."""
+        """What goes into the audit log: full state, geometry included."""
         return {
             "name": self.data.name,
             "description": self.data.description,
@@ -46,7 +46,7 @@ class Zone:
 
 class ZoneRepository(Protocol):
     async def invalid_reason(self, geometry: MultiPolygonCoords) -> str | None:
-        """Motivo de PostGIS si la geometría no es válida (autointersección, sin área...)."""
+        """PostGIS reason if the geometry is invalid (self-intersection, no area...)."""
         ...
 
     async def add(
@@ -65,7 +65,7 @@ class ZoneRepository(Protocol):
 
 
 class ZoneNotFoundError(Exception):
-    """No existe en la organización del actor (404; también si existe en otra)."""
+    """Not found in the actor's organization (404, even if it exists in another one)."""
 
 
 async def create_zone(
@@ -87,12 +87,12 @@ async def update_zone(
     audit: AuditLog,
     clock: Clock,
 ) -> Zone:
-    # FOR UPDATE: dos operadores editando la misma zona no se pisan el "antes" auditado.
+    # FOR UPDATE: two operators editing the same zone cannot clobber the audited "before".
     current = await zones.get(actor.organization_id, zone_id, for_update=True)
     if current is None:
         raise ZoneNotFoundError(zone_id)
     if current.data == data:
-        return current  # sin cambios: ni escritura ni entrada de auditoría vacía
+        return current  # unchanged: no write and no empty audit entry
     await _check_topology(zones, data.geometry)
     now = clock.now()
     updated = await zones.replace(actor.organization_id, zone_id, data, now)
@@ -103,13 +103,13 @@ async def update_zone(
 async def deactivate_zone(
     actor: Actor, zone_id: UUID, *, zones: ZoneRepository, audit: AuditLog, clock: Clock
 ) -> None:
-    """Desactiva en lugar de borrar: reglas e incidentes guardan referencias a la zona, y
-    la historia de un incidente no debe perderse porque alguien quitó su zona."""
+    """Deactivate instead of delete: rules and incidents reference the zone, and an
+    incident's history must not be lost because someone removed its zone."""
     current = await zones.get(actor.organization_id, zone_id, for_update=True)
     if current is None:
         raise ZoneNotFoundError(zone_id)
     if not current.data.is_active:
-        return  # idempotente: DELETE dos veces no audita dos veces
+        return  # idempotent: a second DELETE is not audited again
     now = clock.now()
     updated = await zones.replace(
         actor.organization_id, zone_id, replace(current.data, is_active=False), now

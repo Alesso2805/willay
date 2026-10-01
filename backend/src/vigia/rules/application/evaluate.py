@@ -1,9 +1,9 @@
-"""Caso de uso del worker evaluador: procesar un lote de la cola.
+"""Evaluator worker use case: process one batch from the queue.
 
-Cada lectura se evalúa en su propia transacción: el fallo de una no revierte las demás.
-Una excepción cualquiera cuenta como intento fallido (la fila vuelve tras el visibility
-timeout, o queda como fallida al quinto intento); CancelledError (parada del proceso) no
-se captura: la fila queda tomada y reaparece cuando vence su timeout.
+Each reading is evaluated in its own transaction so one failure does not roll back the rest.
+Any exception counts as a failed attempt (the row returns after the visibility timeout, or is
+marked failed on the fifth attempt). CancelledError (process shutdown) is not caught: the row
+stays claimed and reappears when its timeout expires.
 """
 
 from collections.abc import Callable
@@ -23,7 +23,7 @@ Transaction = Callable[[], AbstractAsyncContextManager[AsyncConnection]]
 
 class ReadingEvaluator(Protocol):
     async def evaluate(self, tx: AsyncConnection, item: QueuedReading) -> None:
-        """Evalúa las reglas para la lectura y escribe incidentes y alertas en `tx`."""
+        """Evaluates the rules for the reading and writes incidents and alerts in `tx`."""
         ...
 
 

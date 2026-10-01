@@ -1,12 +1,9 @@
-"""Incidentes: causa (dedup_key), evidencia de apertura y lecturas que lo agravan.
+"""Incidents: cause (dedup_key), opening evidence and readings that worsen them.
 
-Un solo incidente activo por causa (SPEC): `rule_id:zone_id` para umbral y tasa de
-cambio; `rule_id:zone_id:station_id` para silencio (un incidente por estación callada).
-
-Mientras el incidente está activo, una lectura que sigue disparando la regla se agrega a
-su línea de tiempo (`reading_added`) solo si empeora el valor disparador: un nuevo máximo
-en un umbral superior, un nuevo mínimo en una caída. Así la línea de tiempo cuenta cómo
-se agravó el evento sin repetir cada lectura; la serie completa sigue en las lecturas.
+One active incident per cause (SPEC): `rule_id:zone_id` for threshold and rate of change,
+`rule_id:zone_id:station_id` for silence (one incident per silent station). While active, a
+reading that still fires the rule is added (`reading_added`) only if it worsens the trigger
+value, so the timeline shows how the event escalated without repeating every reading.
 """
 
 from dataclasses import dataclass
@@ -27,14 +24,14 @@ class EvidenceReading:
 
 
 class Worsening(StrEnum):
-    """Hacia dónde empeora el valor disparador de una regla."""
+    """Direction in which a rule's trigger value gets worse."""
 
     HIGHER = "higher"
     LOWER = "lower"
 
     def is_worse(self, candidate: float, worst_so_far: float) -> bool:
-        """Estricto: igualar el peor valor no lo empeora (reprocesar una lectura no
-        duplica eventos)."""
+        """Strict: matching the worst value does not worsen it (reprocessing a reading does
+        not duplicate events)."""
         if self is Worsening.HIGHER:
             return candidate > worst_so_far
         return candidate < worst_so_far

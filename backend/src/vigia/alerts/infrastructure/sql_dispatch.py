@@ -1,4 +1,4 @@
-"""DispatchQueue sobre core.alerts: cada operación en su propia transacción corta."""
+"""DispatchQueue over core.alerts: each operation in its own short transaction."""
 
 import json
 from datetime import datetime
@@ -16,8 +16,8 @@ from vigia.alerts.infrastructure.alert_messages import (
     message_from_row,
 )
 
-# Pendientes de un incidente que ya no está abierto: se omiten con su evento, también
-# las que otro dispatcher tiene reclamadas (su resultado ya no cuenta: exige `pending`).
+# Pending alerts of an incident no longer open are skipped with their event, including
+# those claimed by another dispatcher (its result no longer counts: it requires `pending`).
 _CANCEL = text("""
     WITH cancelled AS (
         UPDATE core.alerts a
@@ -41,9 +41,8 @@ _CANCEL = text("""
     FROM cancelled c
 """)
 
-# Pendientes, vencidas y con todos sus intentos gastados: el worker murió en el último
-# envío sin dejar resultado. Se dan por fallidas, con su evento, en lugar de quedar
-# pendientes para siempre.
+# Pending, due and out of attempts: the worker died during the last send without a
+# result. Marked failed, with their event, instead of staying pending forever.
 _ABANDON = text("""
     WITH abandoned AS (
         UPDATE core.alerts
@@ -63,7 +62,6 @@ _ABANDON = text("""
     FROM abandoned a JOIN core.incidents i ON i.id = a.incident_id
 """)
 
-# El reclamo y los datos del mensaje en una sola sentencia.
 _CLAIM = text(f"""
     WITH due AS (
         SELECT id FROM core.alerts
@@ -85,8 +83,8 @@ _CLAIM = text(f"""
     ORDER BY a.id
 """)
 
-# `attempts = :attempt` en cada paso: si el reclamo venció y otro dispatcher la tomó, el
-# resultado de este ya no cuenta.
+# `attempts = :attempt` at every step: if the claim expired and another dispatcher took
+# the alert, this one's result no longer counts.
 _ATTACH_TOKEN = text("""
     UPDATE core.alerts SET ack_token_hash = :token_hash, ack_token_expires_at = :expires_at
     WHERE id = :id AND attempts = :attempt AND status = 'pending'
@@ -184,7 +182,7 @@ class SqlDispatchQueue:
 
     @staticmethod
     def _params(alert: ClaimedAlert, now: datetime, extra: dict[str, Any]) -> dict[str, Any]:
-        # Sin el destino: la línea de tiempo no guarda datos personales.
+        # No destination: the timeline never stores personal data.
         payload = {
             "alert_id": str(alert.alert_id),
             "contact_id": str(alert.contact_id),

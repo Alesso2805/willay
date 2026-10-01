@@ -1,8 +1,8 @@
-"""`python -m vigia.seed [--rotate-keys] [--keys-file RUTA]`
+"""`python -m vigia.seed [--rotate-keys] [--keys-file PATH]`
 
-Carga los datos demo en una transacción e imprime las API keys emitidas. Con
---keys-file las fusiona en un JSON (por código de estación) que usa el simulador;
-las claves ya guardadas se conservan si no se rotaron.
+Loads the demo data in one transaction and prints the issued API keys. With --keys-file they
+are merged into a JSON file (keyed by station code) used by the simulator; keys already stored
+there are kept unless rotated.
 """
 
 import argparse
@@ -21,7 +21,7 @@ from vigia.shared.db import create_engine
 async def _run(rotate_keys: bool) -> list[IssuedKey]:
     engine = create_engine(get_settings().database_url)
     try:
-        async with engine.begin() as conn:  # todo o nada
+        async with engine.begin() as conn:  # all or nothing
             return await load_seed(conn, SystemClock(), ApiKeyHasher(), rotate_keys=rotate_keys)
     finally:
         await engine.dispose()
@@ -42,27 +42,27 @@ def _merge_keys_file(path: Path, issued: list[IssuedKey]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m vigia.seed", description=__doc__)
     parser.add_argument(
-        "--rotate-keys", action="store_true", help="emite claves nuevas para todas las estaciones"
+        "--rotate-keys", action="store_true", help="issue new keys for every station"
     )
-    parser.add_argument("--keys-file", type=Path, help="JSON donde fusionar las claves emitidas")
+    parser.add_argument("--keys-file", type=Path, help="JSON file to merge the issued keys into")
     args = parser.parse_args()
-    # Validar antes de tocar la base: si el archivo no se puede escribir después del commit,
-    # las claves emitidas solo quedarían en la terminal.
+    # Validate before touching the database: if the file cannot be written after the commit,
+    # the issued keys would only exist in the terminal.
     if args.keys_file and not args.keys_file.parent.is_dir():
-        parser.error(f"no existe el directorio de --keys-file: {args.keys_file.parent}")
+        parser.error(f"--keys-file directory does not exist: {args.keys_file.parent}")
 
     issued = asyncio.run(_run(args.rotate_keys))
 
     if not issued:
-        print("Seed aplicado. Sin claves nuevas (las estaciones ya existían).")
-        print("Usa --rotate-keys para emitir claves nuevas.")
+        print("Seed applied. No new keys (the stations already existed).")
+        print("Use --rotate-keys to issue new keys.")
     else:
-        print(f"Seed aplicado. {len(issued)} API keys emitidas (se muestran solo esta vez):\n")
+        print(f"Seed applied. {len(issued)} API keys issued (shown only this once):\n")
         for key in issued:
             print(f"  {key.organization_alias:<12} {key.station_code:<11} {key.api_key}")
     if args.keys_file and issued:
         _merge_keys_file(args.keys_file, issued)
-        print(f"\nClaves guardadas en {args.keys_file}", file=sys.stderr)
+        print(f"\nKeys saved to {args.keys_file}", file=sys.stderr)
 
 
 if __name__ == "__main__":

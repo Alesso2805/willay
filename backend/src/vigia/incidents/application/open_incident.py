@@ -1,10 +1,8 @@
-"""Qué le pasa a un incidente cuando una regla dispara (evaluador y worker silence).
+"""What happens to an incident when a rule fires (evaluator and silence worker).
 
-- Sin incidente activo con esa causa, se abre uno con su evento `opened`.
-- Si la causa se resolvió hace menos de `cooldown_s`, no se abre otro (enfriamiento). La
-  lectura ya quedó guardada en la ingesta: el enfriamiento solo evita el incidente.
-- Si ya hay uno activo, se agrega `reading_added` cuando la lectura empeora el valor
-  disparador (ver incidents.domain.incidents).
+- No active incident for the cause: open one with its `opened` event.
+- Cause resolved less than `cooldown_s` ago: open nothing (the reading is already stored).
+- Already active: add `reading_added` only if the reading worsens the trigger value.
 """
 
 from collections.abc import Mapping
@@ -21,7 +19,7 @@ from vigia.incidents.domain.incidents import EvidenceReading, Worsening
 
 @dataclass(frozen=True)
 class Trigger:
-    """Lo que una regla encontró: basta para abrir el incidente y documentar por qué."""
+    """What a rule found: enough to open the incident and document why."""
 
     organization_id: UUID
     zone_id: UUID
@@ -30,15 +28,15 @@ class Trigger:
     rule_params: Mapping[str, Any]
     severity: str
     station_id: UUID
-    # La lectura con el valor disparador; None en una estación en silencio sin último valor.
+    # The reading with the trigger value; None for a silent station with no last value.
     trigger_reading: EvidenceReading | None
     dedup_key: str
     cooldown_s: int
-    # Copia de las lecturas que dispararon la regla: sobrevive a la retención de 180 días.
+    # Copy of the readings that fired the rule: survives the 180-day retention.
     evidence: tuple[EvidenceReading, ...]
-    # Contexto propio del tipo de regla, p. ej. el último latido de una estación en silencio.
+    # Rule-type-specific context, e.g. the last heartbeat of a silent station.
     details: Mapping[str, Any] = field(default_factory=dict)
-    # Hacia dónde se agrava; None si la regla no se agrava con lecturas (silencio).
+    # None if readings cannot worsen the rule (silence).
     worsening: Worsening | None = None
 
     @property
@@ -48,25 +46,25 @@ class Trigger:
 
 class OpenStatus(StrEnum):
     OPENED = "opened"
-    ACTIVE = "active"  # ya había uno activo con la misma causa
-    COOLING_DOWN = "cooling_down"  # la causa se resolvió hace menos de cooldown_s
+    ACTIVE = "active"  # one with the same cause was already active
+    COOLING_DOWN = "cooling_down"  # the cause was resolved less than cooldown_s ago
 
 
 @dataclass(frozen=True)
 class OpenResult:
     status: OpenStatus
-    incident_id: UUID | None  # el abierto o el activo; None en enfriamiento
+    incident_id: UUID | None  # the opened or active one; None while cooling down
 
 
 class IncidentStore(Protocol):
     async def open(self, tx: AsyncConnection, trigger: Trigger, now: datetime) -> OpenResult:
-        """Abre el incidente y su evento `opened` en `tx`, salvo que haya uno activo con la
-        misma causa o que la causa esté en enfriamiento."""
+        """Opens the incident and its `opened` event in `tx`, unless one with the same cause
+        is active or the cause is cooling down."""
         ...
 
     async def worst_value(self, tx: AsyncConnection, incident_id: UUID) -> float | None:
-        """El peor valor registrado (el disparador o el último `reading_added`). Bloquea el
-        incidente hasta el final de `tx`: dos evaluadores no lo agravan a la vez."""
+        """The worst recorded value (the trigger or the last `reading_added`). Locks the
+        incident until the end of `tx` so two evaluators cannot worsen it at once."""
         ...
 
     async def add_reading(
@@ -77,14 +75,14 @@ class IncidentStore(Protocol):
         reading: EvidenceReading,
         now: datetime,
     ) -> None:
-        """Agrega el evento `reading_added` con la lectura."""
+        """Records a `reading_added` event with the reading."""
         ...
 
 
 class TriggerOutcome(StrEnum):
     OPENED = "opened"
     READING_ADDED = "reading_added"
-    UNCHANGED = "unchanged"  # activo y la lectura no lo agrava
+    UNCHANGED = "unchanged"  # active, and the reading does not worsen it
     COOLING_DOWN = "cooling_down"
 
 

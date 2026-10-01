@@ -1,7 +1,7 @@
-"""Evento station_recovered: la estación de un incidente de silencio volvió a reportar.
+"""station_recovered event: the station of a silence incident is reporting again.
 
-No cierra el incidente (SPEC): lo resuelve el operador, que ve en la línea de tiempo
-cuándo volvió la señal. Se registra una sola vez por incidente.
+It does not close the incident (SPEC): the operator resolves it, seeing in the timeline when
+the signal came back. Recorded once per incident.
 """
 
 from dataclasses import dataclass
@@ -24,5 +24,5 @@ class Recovery:
 
 class RecoveryLog(Protocol):
     async def record_recovery(self, tx: AsyncConnection, recovery: Recovery, now: datetime) -> bool:
-        """Registra station_recovered en `tx`. False si el incidente ya lo tenía."""
+        """Records station_recovered in `tx`. False if the incident already had it."""
         ...

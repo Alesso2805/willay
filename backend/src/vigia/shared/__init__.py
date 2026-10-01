@@ -1,1 +1,1 @@
-"""Utilidades transversales: reloj, configuración, base de datos y logging."""
+"""Cross-cutting utilities: clock, configuration, database and logging."""

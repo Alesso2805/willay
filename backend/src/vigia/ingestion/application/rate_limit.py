@@ -1,4 +1,4 @@
-"""Caso de uso: contar el lote en la ventana del minuto y rechazarlo si supera el límite."""
+"""Use case: count the batch in its one-minute window and reject it over the limit."""
 
 from datetime import datetime
 from typing import Protocol
@@ -10,7 +10,7 @@ from vigia.shared.clock import Clock
 
 class BatchCounter(Protocol):
     async def hit(self, station_id: UUID, window: datetime) -> int:
-        """Suma 1 al contador de la ventana y devuelve el total, de forma atómica."""
+        """Atomically add 1 to the window counter and return the total."""
         ...
 
 

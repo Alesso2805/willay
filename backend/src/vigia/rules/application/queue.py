@@ -1,15 +1,9 @@
-"""Interfaz de la cola de evaluación (ADR-0002).
-
-El evaluador no sabe que la cola vive en Postgres: si algún día hace falta Redis Streams
-o Kafka, se cambia la implementación, no el dominio ni el bucle del worker.
-
-Garantías que toda implementación debe dar:
-- `claim` confirma en su propia transacción el intento (attempts + 1) y el visibility
-  timeout ANTES de evaluar: si el worker muere, el contador sobrevive y la fila vuelve
-  a estar disponible al vencer el timeout.
-- `complete` va dentro de la transacción de la evaluación: sus escrituras (incidentes,
-  alertas, evaluated_at) y la salida de la fila de la cola se confirman juntas.
-- A los MAX_ATTEMPTS intentos la fila se marca como fallida y deja de bloquear la cola.
+"""Evaluation queue interface (ADR-0002): moving off Postgres (Redis Streams, Kafka) only
+changes the implementation, not the domain or the worker loop. Every implementation guarantees:
+- `claim` commits attempts + 1 and the visibility timeout in its own transaction BEFORE
+  evaluating, so the counter survives a worker crash and the row returns after the timeout.
+- `complete` runs in the evaluation transaction: its writes and the row removal commit together.
+- After MAX_ATTEMPTS attempts the row is marked failed and stops blocking the queue.
 """
 
 from dataclasses import dataclass
@@ -29,25 +23,25 @@ class QueuedReading:
     station_id: UUID
     organization_id: UUID
     measured_at: datetime
-    attempt: int  # número de este intento, 1..MAX_ATTEMPTS
+    attempt: int  # this attempt's number, 1..MAX_ATTEMPTS
 
 
 class LostClaimError(Exception):
-    """El visibility timeout venció y otro worker retomó la fila: esta evaluación se
-    descarta (rollback) para no escribir dos veces."""
+    """The visibility timeout expired and another worker reclaimed the row: this evaluation
+    is discarded (rollback) so nothing is written twice."""
 
 
 class EvaluationQueue(Protocol):
     async def claim(self, limit: int) -> list[QueuedReading]:
-        """Toma hasta `limit` filas disponibles, en su propia transacción corta."""
+        """Claims up to `limit` available rows in its own short transaction."""
         ...
 
     async def complete(self, tx: AsyncConnection, item: QueuedReading) -> None:
-        """Marca la lectura como evaluada y la saca de la cola, dentro de `tx` (la
-        transacción de la evaluación). Lanza LostClaimError si la fila ya no es nuestra."""
+        """Marks the reading as evaluated and removes it from the queue inside `tx` (the
+        evaluation transaction). Raises LostClaimError if the row is no longer ours."""
         ...
 
     async def fail(self, item: QueuedReading, error: str) -> bool:
-        """Registra el error en su propia transacción. Devuelve True si la fila quedó
-        marcada como fallida definitiva (último intento)."""
+        """Records the error in its own transaction. Returns True if the row is now
+        permanently failed (last attempt)."""
         ...

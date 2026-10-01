@@ -1,8 +1,8 @@
-"""Reparte los eventos de la base entre las conexiones SSE abiertas (VIG-25).
+"""Fans out database events to the open SSE connections (VIG-25).
 
-Cada conexión tiene su propia cola, acotada: un cliente lento nunca frena a los demás ni
-hace crecer la memoria. Si su cola se llena, se vacía y recibe un `resync`: es mejor que
-el panel vuelva a pedir todo que mostrar un estado al que le faltan cambios.
+Each connection has its own bounded queue, so a slow client never slows the others or grows
+memory. If its queue fills up it is drained and gets a `resync`: better for the dashboard to
+reload everything than to show a state with missing changes.
 """
 
 import asyncio
@@ -54,14 +54,15 @@ class Broadcaster:
                 del self._subscriptions[organization_id]
 
     def publish(self, event: RealtimeEvent) -> None:
-        """Solo a las conexiones de la organización del evento."""
+        """Only to the connections of the event's organization."""
         if event.organization_id is None:
             return
         for subscription in self._subscriptions.get(event.organization_id, ()):
             subscription.offer(event)
 
     def resync_all(self) -> None:
-        """A todas: se perdió la conexión con la base y pudo faltar cualquier aviso."""
+        """To every connection: the database link was lost and any notification may be
+        missing."""
         for subscriptions in self._subscriptions.values():
             for subscription in subscriptions:
                 subscription.offer(resync())

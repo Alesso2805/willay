@@ -1,9 +1,8 @@
-"""alerts.destination solo puede faltar en una alerta omitida.
+"""alerts.destination may be missing only on a skipped alert.
 
-Si el contacto no tiene el canal del nivel (sin correo, o Telegram sin vincular), la
-alerta se registra como `skipped` (SPEC: canal faltante) y no tiene destino. Guardar una
-cadena vacía escondería el caso; con NULL y un CHECK, Postgres garantiza que toda alerta
-que se va a enviar tiene a dónde.
+If the contact lacks the level's channel (no email, or Telegram not linked), the alert is
+recorded as `skipped` (SPEC: missing channel) with no destination. An empty string would hide
+that case; with NULL plus a CHECK, Postgres guarantees every alert to be sent has a destination.
 
 Revision ID: 0006
 Revises: 0005

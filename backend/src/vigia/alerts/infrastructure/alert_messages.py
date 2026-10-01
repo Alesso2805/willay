@@ -1,8 +1,7 @@
-"""El resumen de un incidente para el destinatario de una alerta.
+"""The incident summary for an alert's recipient.
 
-Lo usan el correo (dispatcher) y la página de confirmación: con una sola consulta, la
-página nunca muestra datos distintos de los que llegaron en el correo. Parte de una
-alerta con alias `a`.
+Shared by the dispatcher and the confirmation page so the page never shows different data
+from what the message carried. The SQL fragments expect the alert aliased as `a`.
 """
 
 from typing import Any

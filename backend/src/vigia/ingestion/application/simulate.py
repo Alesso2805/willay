@@ -1,8 +1,7 @@
-"""Caso de uso: correr una simulación enviando un lote por estación en cada paso.
+"""Use case: run a simulation, sending one batch per station on every step.
 
-Corre en tiempo real a propósito: el detector de silencio y el escalamiento miden con
-el reloj de verdad, así que acelerar el tiempo del simulador no acelera la demo.
-El reloj, la espera y el envío se inyectan para probarlo sin esperas ni red.
+Runs in real time on purpose: silence detection and escalation use the real clock, so speeding
+up the simulator would not speed up the demo. Clock, sleep and sender are injected for tests.
 """
 
 import asyncio
@@ -25,7 +24,7 @@ class SimulatedStation:
 
 class ReadingSender(Protocol):
     async def send(self, api_key: str, measured_at: datetime, value: float) -> int:
-        """Envía un lote de una lectura. Devuelve el código HTTP (0 si no hubo respuesta)."""
+        """Send a one-reading batch. Returns the HTTP status (0 if there was no response)."""
         ...
 
 
@@ -33,8 +32,8 @@ class ReadingSender(Protocol):
 class TickReport:
     step: int
     at: datetime
-    values: dict[str, float | None]  # None = la estación calla en este paso
-    statuses: dict[str, int]  # código HTTP por estación que envió
+    values: dict[str, float | None]  # None = the station is silent this step
+    statuses: dict[str, int]  # HTTP status per station that sent
 
 
 async def run_simulation(
@@ -51,8 +50,8 @@ async def run_simulation(
     start = clock.now()
     step = 0
     while steps is None or step < steps:
-        # Se agenda contra el inicio, no contra el paso anterior: el tiempo que tarda el
-        # envío no se acumula y la estación mantiene su intervalo esperado.
+        # Scheduled from the start, not from the previous step, so send time does not
+        # accumulate and the station keeps its expected interval.
         wait = (start + timedelta(seconds=interval_s * step) - clock.now()).total_seconds()
         if wait > 0:
             await sleep(wait)

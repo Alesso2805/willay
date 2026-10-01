@@ -1,11 +1,11 @@
-# Una sola imagen para api, migrate y los 5 workers: cambia solo el comando.
+# A single image for api, migrate and the 5 workers: only the command changes.
 
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS build
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=0
 WORKDIR /app
-# Primero solo las dependencias: esta capa se cachea mientras uv.lock no cambie.
+# Dependencies first: this layer stays cached as long as uv.lock does not change.
 COPY pyproject.toml uv.lock README.md ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --no-install-project

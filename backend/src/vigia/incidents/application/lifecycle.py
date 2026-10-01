@@ -1,13 +1,9 @@
-"""Consultar, confirmar y resolver incidentes (VIG-19). Todo filtra por la organización
-del actor: un incidente de otra organización no existe para él (404, no 403).
+"""List, acknowledge and resolve incidents (VIG-19), always scoped to the actor's organization
+(another tenant's incident is a 404, not a 403).
 
-Cada transición bloquea el incidente (FOR UPDATE) en la transacción de la petición, el
-dominio decide si es válida y el cambio y su evento se escriben juntos. Si dos
-operadores actúan a la vez, el segundo espera al primero, ve el estado nuevo y recibe
-una transición inválida (409) en lugar de pisarlo.
-
-Confirman usuarios de la plataforma (API) y contactos sin cuenta (enlace de su alerta,
-VIG-23); el evento y `acknowledged_by_*` registran cuál de los dos fue.
+Each transition locks the incident FOR UPDATE in the request transaction, so a concurrent
+operator waits, sees the new status and gets a 409 instead of overwriting it. Both platform
+users and account-less contacts (alert link, VIG-23) can acknowledge.
 """
 
 from collections.abc import Mapping, Sequence
@@ -27,9 +23,9 @@ from vigia.shared.clock import Clock
 
 @dataclass(frozen=True)
 class Actor:
-    """Un usuario de la plataforma, autenticado con su JWT."""
+    """A platform user, authenticated with their JWT."""
 
-    organization_id: UUID  # el tenant: nunca sale del cuerpo de la petición
+    organization_id: UUID  # the tenant: never taken from the request body
     user_id: UUID
 
     @property
@@ -43,9 +39,9 @@ class Actor:
 
 @dataclass(frozen=True)
 class ContactActor:
-    """Un contacto que confirma desde el enlace de su alerta (no tiene cuenta)."""
+    """A contact acknowledging from their alert link (they have no account)."""
 
-    organization_id: UUID  # la de la alerta, no la de una sesión: no la hay
+    organization_id: UUID  # taken from the alert, since there is no session
     contact_id: UUID
 
     @property
@@ -100,17 +96,17 @@ class IncidentRepository(Protocol):
     async def recent(
         self, organization_id: UUID, statuses: Sequence[IncidentStatus], limit: int
     ) -> list[Incident]:
-        """Los más recientes primero; `statuses` vacío significa todos."""
+        """Most recent first; an empty `statuses` means all."""
         ...
 
     async def get(self, organization_id: UUID, incident_id: UUID) -> Incident | None: ...
 
     async def timeline(self, incident_id: UUID) -> list[IncidentEvent]:
-        """Eventos en orden cronológico."""
+        """Events in chronological order."""
         ...
 
     async def lock_status(self, organization_id: UUID, incident_id: UUID) -> IncidentStatus | None:
-        """Estado actual, bloqueando el incidente hasta el final de la transacción."""
+        """Current status, locking the incident until the end of the transaction."""
         ...
 
     async def acknowledge(self, incident_id: UUID, actor: EventActor, now: datetime) -> None: ...
@@ -141,11 +137,10 @@ async def acknowledge_incident(
 async def acknowledge_as_contact(
     actor: ContactActor, incident_id: UUID, *, incidents: IncidentRepository, clock: Clock
 ) -> IncidentStatus:
-    """Confirma el incidente si sigue abierto y devuelve el estado que tenía.
+    """Acknowledges the incident if it is still open and returns the status it had.
 
-    A diferencia de la API, no lanza si otro se adelantó o si ya se resolvió: quien
-    confirma desde un enlace no cometió ningún error, solo llegó tarde, y la página se lo
-    explica.
+    Unlike the API, it does not raise if someone got there first or it was already
+    resolved: the contact made no mistake, they were just late, and the page explains it.
     """
     current = await _lock(actor, incident_id, incidents)
     if current is IncidentStatus.OPEN:
@@ -183,6 +178,6 @@ async def _lock(
 
 async def _reload(actor: Actor, incident_id: UUID, incidents: IncidentRepository) -> Incident:
     incident = await incidents.get(actor.organization_id, incident_id)
-    if incident is None:  # imposible dentro de la misma transacción; no se borran incidentes
+    if incident is None:  # impossible in the same transaction; incidents are never deleted
         raise IncidentNotFoundError(incident_id)
     return incident

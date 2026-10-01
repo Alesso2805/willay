@@ -1,4 +1,4 @@
-"""API REST de incidentes (VIG-19): consultar, confirmar y resolver."""
+"""Incidents REST API (VIG-19): list, view, acknowledge and resolve."""
 
 from datetime import datetime
 from typing import Annotated, Any
@@ -34,7 +34,7 @@ CanAcknowledge = Annotated[Principal, Depends(require(Permission.ACKNOWLEDGE_INC
 CanResolve = Annotated[Principal, Depends(require(Permission.RESOLVE_INCIDENTS))]
 
 _NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, detail="Incidente no encontrado")
-# El panel muestra el detalle del 409 tal cual: en español, no los valores internos.
+# The dashboard shows the 409 detail verbatim: Spanish labels, not the internal values.
 _STATUS_LABEL = {
     IncidentStatus.OPEN: "abierto",
     IncidentStatus.ACKNOWLEDGED: "confirmado",
@@ -42,8 +42,8 @@ _STATUS_LABEL = {
 }
 _TRANSITION_LABEL = {Transition.ACKNOWLEDGE: "confirmar", Transition.RESOLVE: "resolver"}
 _TRANSITION_RESPONSES: dict[int | str, dict[str, Any]] = {
-    404: {"description": "No existe"},
-    409: {"description": "Transición inválida para el estado actual"},
+    404: {"description": "Not found"},
+    409: {"description": "Invalid transition for the current status"},
 }
 
 
@@ -87,13 +87,13 @@ class ResolveIn(BaseModel):
     resolution: Resolution
 
 
-@router.get("", summary="Incidentes de la organización, los más recientes primero")
+@router.get("", summary="The organization's incidents, most recent first")
 async def list_incidents(
     principal: CanView,
     conn: DbConnection,
     status_: Annotated[
         list[IncidentStatus] | None,
-        Query(alias="status", description="filtrar por estado (se puede repetir)"),
+        Query(alias="status", description="filter by status (repeatable)"),
     ] = None,
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ) -> list[IncidentOut]:
@@ -105,8 +105,8 @@ async def list_incidents(
 
 @router.get(
     "/{incident_id}",
-    summary="Un incidente con su línea de tiempo",
-    responses={404: {"description": "No existe"}},
+    summary="An incident with its timeline",
+    responses={404: {"description": "Not found"}},
 )
 async def get_incident(
     incident_id: UUID, principal: CanView, conn: DbConnection
@@ -120,7 +120,7 @@ async def get_incident(
 
 @router.post(
     "/{incident_id}/acknowledge",
-    summary="Confirmar un incidente abierto",
+    summary="Acknowledge an open incident",
     responses=_TRANSITION_RESPONSES,
 )
 async def post_acknowledge(
@@ -139,7 +139,7 @@ async def post_acknowledge(
 
 @router.post(
     "/{incident_id}/resolve",
-    summary="Resolver un incidente (resuelto o falsa alarma), confirmado o no",
+    summary="Resolve an incident (resolved or false alarm), acknowledged or not",
     responses=_TRANSITION_RESPONSES,
 )
 async def post_resolve(

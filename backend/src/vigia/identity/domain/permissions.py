@@ -1,7 +1,7 @@
-"""Matriz de permisos por rol (SPEC.md, sección "Permisos por rol").
+"""Role-to-permission matrix (SPEC.md, "Permissions by role").
 
-Los endpoints declaran un Permission, nunca una lista de roles: si cambia quién puede
-hacer algo, cambia esta tabla (y su test), no cada endpoint.
+Endpoints declare a Permission, never a list of roles: changing who can do something changes
+this table (and its test), not every endpoint.
 """
 
 from collections.abc import Iterable, Mapping
@@ -13,12 +13,12 @@ from vigia.identity.domain.principal import Principal, Role
 
 class Permission(StrEnum):
     VIEW = "view"
-    ACKNOWLEDGE_INCIDENTS = "incidents:acknowledge"  # confirmar y comentar
-    RESOLVE_INCIDENTS = "incidents:resolve"  # resuelto o falsa alarma
-    MANAGE_TERRITORY = "territory:manage"  # zonas, estaciones, rotación de API keys
+    ACKNOWLEDGE_INCIDENTS = "incidents:acknowledge"  # acknowledge and comment
+    RESOLVE_INCIDENTS = "incidents:resolve"  # resolved or false alarm
+    MANAGE_TERRITORY = "territory:manage"  # zones, stations, API key rotation
     MANAGE_RULES = "rules:manage"
-    VIEW_CONTACT_DETAILS = "contacts:view_details"  # email y chat_id (datos personales)
-    MANAGE_CONTACTS = "contacts:manage"  # contactos y grupos
+    VIEW_CONTACT_DETAILS = "contacts:view_details"  # email and chat_id (personal data)
+    MANAGE_CONTACTS = "contacts:manage"  # contacts and groups
     MANAGE_POLICIES = "policies:manage"
     VIEW_AUDIT_LOG = "audit:view"
 
@@ -44,7 +44,7 @@ GRANTS: Mapping[Permission, frozenset[Role]] = MappingProxyType(
 
 
 def permissions_of(roles: Iterable[Role]) -> frozenset[Permission]:
-    """Varios roles suman permisos; sin roles conocidos, ningún permiso."""
+    """Several roles add up; no known role means no permission."""
     held = frozenset(roles)
     return frozenset(p for p, allowed in GRANTS.items() if not allowed.isdisjoint(held))
 

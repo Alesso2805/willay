@@ -1,4 +1,4 @@
-"""Hash Argon2id de las API keys de estación (el formato vive en domain/api_keys.py)."""
+"""Argon2id hashing of station API keys (the format lives in domain/api_keys.py)."""
 
 from functools import cached_property
 from uuid import UUID
@@ -10,7 +10,7 @@ from vigia.ingestion.domain.api_keys import generate_api_key
 
 
 class ApiKeyHasher:
-    """Argon2id con los parámetros por defecto de argon2-cffi (RFC 9106, perfil bajo en memoria)."""
+    """Argon2id with argon2-cffi defaults (RFC 9106 low-memory profile)."""
 
     def __init__(self, hasher: PasswordHasher | None = None) -> None:
         self._hasher = hasher or PasswordHasher()
@@ -26,15 +26,15 @@ class ApiKeyHasher:
 
     @cached_property
     def dummy_hash(self) -> str:
-        """Hash de una clave que nadie tiene, con los mismos parámetros que los reales.
+        """Hash of a key nobody has, with the same parameters as the real ones.
 
-        Verificar contra él cuando la estación no existe iguala el tiempo de respuesta.
+        Verifying against it when the station does not exist equalizes response time.
         """
-        return self._hasher.hash("vigia-dummy-key-que-nunca-coincide")
+        return self._hasher.hash("vigia-dummy-key-that-never-matches")
 
 
 class Argon2ApiKeyIssuer:
-    """Emite claves para el módulo de territorio (crear estación, rotar clave)."""
+    """Issues keys for the territory module (create station, rotate key)."""
 
     def __init__(self, hasher: ApiKeyHasher) -> None:
         self._hasher = hasher

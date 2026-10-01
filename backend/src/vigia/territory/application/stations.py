@@ -1,7 +1,7 @@
-"""Casos de uso de estaciones. Todo filtra por la organización del actor.
+"""Station use cases. Everything filters by the actor's organization.
 
-La API key en claro solo existe en la respuesta de crear o rotar: se guarda su hash y
-nunca entra en la auditoría ni en los logs.
+The plaintext API key exists only in the create/rotate response: its hash is stored, and it
+never enters the audit log or the logs.
 """
 
 import asyncio
@@ -40,10 +40,10 @@ class Station:
     data: StationData
     api_key_rotated_at: datetime
     created_at: datetime
-    heartbeat: Heartbeat | None = None  # solo lectura: viene de ingest.station_heartbeats
+    heartbeat: Heartbeat | None = None  # read-only: comes from ingest.station_heartbeats
 
     def snapshot(self) -> dict[str, Any]:
-        """Estado auditado. Sin api_key_hash: ni el hash de la clave va a la auditoría."""
+        """Audited state. No api_key_hash: not even the key hash goes to the audit log."""
         return {
             "code": self.code,
             "name": self.data.name,
@@ -62,13 +62,13 @@ class Station:
 
 class ApiKeyIssuer(Protocol):
     def issue(self, station_id: UUID) -> tuple[str, str]:
-        """Genera una clave para la estación. Devuelve (clave en claro, hash)."""
+        """Generate a key for the station. Returns (plaintext key, hash)."""
         ...
 
 
 class StationRepository(Protocol):
     async def zones_of(self, organization_id: UUID, zone_ids: Collection[UUID]) -> set[UUID]:
-        """De esas zonas, las que pertenecen a la organización."""
+        """Of those zones, the ones belonging to the organization."""
         ...
 
     async def add(
@@ -80,7 +80,7 @@ class StationRepository(Protocol):
         api_key_hash: str,
         now: datetime,
     ) -> Station:
-        """Lanza DuplicateStationCodeError si el código ya existe en la organización."""
+        """Raises DuplicateStationCodeError if the code already exists in the organization."""
         ...
 
     async def get(
@@ -99,17 +99,17 @@ class StationRepository(Protocol):
 
 
 class StationNotFoundError(Exception):
-    """No existe en la organización del actor (404; también si existe en otra)."""
+    """Not found in the actor's organization (404, even if it exists in another one)."""
 
 
 class DuplicateStationCodeError(Exception):
-    """El código ya lo usa otra estación de la organización (409)."""
+    """Another station of the organization already uses the code (409)."""
 
 
 @dataclass(frozen=True)
 class IssuedStation:
     station: Station
-    api_key: str  # en claro: mostrar una sola vez
+    api_key: str  # plaintext: show only once
 
 
 async def create_station(
@@ -125,7 +125,7 @@ async def create_station(
     await _check_zones(actor, data, stations)
     now = clock.now()
     station_id = uuid7()
-    # Argon2id tarda decenas de ms: en un hilo, para no bloquear el event loop.
+    # Argon2id takes tens of ms: run it in a thread to keep the event loop free.
     api_key, api_key_hash = await asyncio.to_thread(issuer.issue, station_id)
     station = await stations.add(station_id, actor.organization_id, code, data, api_key_hash, now)
     await audit.record(_entry(actor, station.id, "create", None, station.snapshot(), now))
@@ -163,7 +163,7 @@ async def deactivate_station(
     audit: AuditLog,
     clock: Clock,
 ) -> None:
-    """Desactiva: la ingesta rechaza sus lotes con 403 y su historia se conserva."""
+    """Deactivate: ingestion rejects its batches with 403 and its history is kept."""
     current = await stations.get(actor.organization_id, station_id, for_update=True)
     if current is None:
         raise StationNotFoundError(station_id)
@@ -186,12 +186,12 @@ async def rotate_api_key(
     audit: AuditLog,
     clock: Clock,
 ) -> IssuedStation:
-    """La clave anterior deja de valer al instante: solo queda el hash de la nueva."""
+    """The previous key stops working immediately: only the new key's hash remains."""
     current = await stations.get(actor.organization_id, station_id, for_update=True)
     if current is None:
         raise StationNotFoundError(station_id)
     now = clock.now()
-    # Argon2id tarda decenas de ms: en un hilo, para no bloquear el event loop.
+    # Argon2id takes tens of ms: run it in a thread to keep the event loop free.
     api_key, api_key_hash = await asyncio.to_thread(issuer.issue, station_id)
     station = await stations.set_api_key_hash(actor.organization_id, station_id, api_key_hash, now)
     await audit.record(
@@ -210,7 +210,7 @@ async def rotate_api_key(
 async def _check_zones(actor: Actor, data: StationData, stations: StationRepository) -> None:
     check_zones(data.zones)
     wanted = {z.zone_id for z in data.zones}
-    # Una zona de otra organización cuenta como inexistente: el mensaje no la delata.
+    # A zone from another organization counts as unknown: the message does not reveal it.
     unknown = wanted - await stations.zones_of(actor.organization_id, wanted)
     if unknown:
         raise InvalidStationError("zones", f"zonas desconocidas: {sorted(str(z) for z in unknown)}")

@@ -1,4 +1,4 @@
-"""Consultas del worker silence: estaciones vigiladas y estaciones que volvieron."""
+"""Silence worker queries: watched stations and stations that came back."""
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from vigia.incidents.application.station_recovery import Recovery
 from vigia.rules.application.silence_check import WatchedStation
 
-# Parte de las reglas de silencio activas (SPEC), no de las estaciones. El JOIN con
-# zone_stations deja fuera a las estaciones sin zona y el LEFT JOIN con los latidos
-# conserva a las que nunca reportaron: decidir qué hacer con ellas es del dominio.
+# Starts from the active silence rules (SPEC), not from the stations. The JOIN with
+# zone_stations excludes stations without a zone, and the LEFT JOIN with heartbeats keeps
+# those that never reported: deciding what to do with them is the domain's call.
 _WATCHED = text("""
     SELECT r.id AS rule_id, r.organization_id, r.zone_id, r.params, r.severity, r.cooldown_s,
            s.id AS station_id, s.expected_interval_s, s.silence_multiplier,
@@ -26,10 +26,10 @@ _WATCHED = text("""
     ORDER BY r.id, s.id
 """)
 
-# "Volvió a reportar": su latido es posterior al que se conocía al abrir el incidente
-# (details.last_seen_at del evento opened). Compararlo con opened_at no basta: un lote
-# recibido justo antes de abrir, pero confirmado después de leer los latidos, quedaría
-# fuera para siempre. El NOT EXISTS solo evita trabajo; la unicidad la da el índice 0005.
+# "Reported again": its heartbeat is newer than the one known when the incident opened
+# (details.last_seen_at of the opened event). Comparing with opened_at is not enough: a batch
+# received just before opening but committed after the heartbeats were read would be missed
+# forever. The NOT EXISTS only saves work; uniqueness comes from index 0005.
 _RECOVERIES = text("""
     SELECT i.id AS incident_id, i.organization_id, i.station_id,
            h.last_seen_at, h.last_measured_at, h.last_value

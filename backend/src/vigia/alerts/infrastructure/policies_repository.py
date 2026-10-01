@@ -1,4 +1,4 @@
-"""PolicyRepository sobre core.escalation_policies, sus niveles y sus destinos."""
+"""PolicyRepository over core.escalation_policies, their levels and targets."""
 
 from collections.abc import Sequence
 from datetime import datetime
@@ -23,8 +23,8 @@ from vigia.alerts.domain.policies import PolicyData
 _UNIQUE_NAME = "escalation_policies_organization_id_name_key"
 _USED_BY_RULES = "rules_escalation_policy_id_fkey"
 
-# Una fila por destino; LEFT JOIN para no perder una política sin niveles (no se pueden
-# crear por la API, pero un seed o una migración podrían dejarla).
+# One row per target; LEFT JOIN keeps a policy without levels (the API cannot create one,
+# but a seed or a migration could).
 _SELECT = """
     SELECT p.id, p.name, p.created_at, l.level_order, l.wait_s,
            t.contact_group_id, g.name AS group_name, t.channel
@@ -52,7 +52,7 @@ _INSERT_POLICY = text("""
     VALUES (:id, :organization_id, :name, :now)
 """)
 _RENAME = text("UPDATE core.escalation_policies SET name = :name WHERE id = :id")
-# Los destinos se borran en cascada con sus niveles.
+# Targets are deleted by cascade along with their levels.
 _DROP_LEVELS = text("DELETE FROM core.escalation_levels WHERE policy_id = :id")
 _INSERT_LEVEL = text("""
     INSERT INTO core.escalation_levels (id, policy_id, level_order, wait_s)
@@ -107,8 +107,8 @@ class SqlPolicyRepository:
 
     async def delete(self, policy_id: UUID) -> None:
         try:
-            # SAVEPOINT: si una regla la usa, la FK lo impide sin abortar la petición. Es la
-            # única garantía también si alguien crea una regla con ella en este momento.
+            # SAVEPOINT: if a rule uses it, the FK blocks it without aborting the request.
+            # It is the only guarantee if someone creates a rule with it concurrently.
             async with self._conn.begin_nested():
                 await self._conn.execute(_DELETE, {"id": policy_id})
         except IntegrityError as exc:
@@ -121,7 +121,7 @@ class SqlPolicyRepository:
             async with self._conn.begin_nested():
                 await self._conn.execute(statement, params)
         except IntegrityError as exc:
-            # Solo esta restricción significa "nombre repetido"; cualquier otra se propaga.
+            # Only this constraint means "duplicate name"; any other is propagated.
             if _UNIQUE_NAME in str(exc.orig):
                 raise DuplicatePolicyNameError(name) from exc
             raise
@@ -151,13 +151,13 @@ class SqlPolicyRepository:
 
     async def _reload(self, organization_id: UUID, policy_id: UUID) -> Policy:
         policy = await self.get(organization_id, policy_id)
-        if policy is None:  # imposible dentro de la misma transacción
+        if policy is None:  # impossible within the same transaction
             raise LookupError(policy_id)
         return policy
 
 
 def _policies(rows: Sequence[Row[Any]]) -> list[Policy]:
-    """Agrupa las filas (una por destino) en políticas con sus niveles, en orden."""
+    """Groups the rows (one per target) into policies with their levels, in order."""
     policies: dict[UUID, tuple[str, datetime, dict[int, tuple[int, list[PolicyTarget]]]]] = {}
     for r in rows:
         _, _, levels = policies.setdefault(r.id, (r.name, r.created_at, {}))

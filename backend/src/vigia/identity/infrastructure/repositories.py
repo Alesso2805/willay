@@ -1,4 +1,4 @@
-"""Repositorios SQL de identidad (rol vigia_app)."""
+"""Identity SQL repositories (vigia_app role)."""
 
 from uuid import UUID
 
@@ -30,8 +30,8 @@ class SqlUserRepository:
         self._conn = conn
 
     async def upsert(self, profile: UserProfile) -> None:
-        # El WHERE convierte el upsert en no-op cuando nada cambió: sin escritura ni WAL
-        # en cada petición autenticada, solo cuando Keycloak cambia nombre, email u org.
+        # The WHERE makes the upsert a no-op when nothing changed: no write or WAL on every
+        # authenticated request, only when Keycloak changes the name, email or org.
         await self._conn.execute(
             text("""
                 INSERT INTO core.users (id, organization_id, email, full_name)

@@ -1,4 +1,4 @@
-"""IncidentStore sobre core.incidents y core.incident_events."""
+"""IncidentStore over core.incidents and core.incident_events."""
 
 import json
 from datetime import datetime, timedelta
@@ -12,12 +12,12 @@ from vigia.incidents.application.open_incident import OpenResult, OpenStatus, Tr
 from vigia.incidents.application.station_recovery import Recovery
 from vigia.incidents.domain.incidents import EvidenceReading
 
-# Una sola sentencia para las dos reglas de apertura:
-# - enfriamiento: no se inserta si la misma causa se resolvió después de :cooling_since;
-# - deduplicación: ON CONFLICT con el predicado del índice único parcial (migración
-#   0002). Si ya hay un incidente activo con esa causa, no se inserta nada y RETURNING no
-#   devuelve filas. La garantiza Postgres, también con dos evaluadores a la vez.
-# Con INSERT ... SELECT los parámetros no toman el tipo de la columna: van con CAST.
+# One statement for both opening rules:
+# - cooldown: nothing is inserted if the same cause was resolved after :cooling_since;
+# - dedup: ON CONFLICT with the partial unique index predicate (migration 0002). If an
+#   incident with that cause is active, nothing is inserted and RETURNING yields no rows.
+#   Postgres guarantees it, even with two concurrent evaluators.
+# With INSERT ... SELECT the parameters do not take the column type: hence the CASTs.
 _OPEN = text("""
     INSERT INTO core.incidents (id, organization_id, zone_id, rule_id, station_id, severity,
                                 trigger_value, dedup_key, opened_at, level_started_at)
@@ -45,9 +45,9 @@ _OPENED_EVENT = text("""
     VALUES (:incident_id, :organization_id, :now, 'opened', 'system', CAST(:payload AS jsonb))
 """)
 
-# Índice único parcial de la migración 0005: un solo station_recovered por incidente,
-# aunque dos workers silence lo detecten a la vez. Solo necesita INSERT: vigia_app no
-# puede modificar eventos (append-only).
+# Partial unique index from migration 0005: one station_recovered per incident, even if
+# two silence workers detect it at once. Needs INSERT only: vigia_app cannot modify events
+# (append-only).
 _RECOVERED_EVENT = text("""
     INSERT INTO core.incident_events (incident_id, organization_id, occurred_at, event_type,
                                       actor_type, payload)
@@ -57,8 +57,8 @@ _RECOVERED_EVENT = text("""
     RETURNING id
 """)
 
-# FOR UPDATE sobre el incidente: serializa a dos evaluadores que lo agraven a la vez. Como
-# solo se agrega un reading_added cuando empeora, el último registrado es el peor.
+# FOR UPDATE on the incident serializes two evaluators worsening it at once. Since a
+# reading_added is only recorded when it worsens, the last one recorded is the worst.
 _LOCK_INCIDENT = text("SELECT trigger_value FROM core.incidents WHERE id = :id FOR UPDATE")
 _LAST_ADDED = text("""
     SELECT CAST(payload->>'value' AS double precision) FROM core.incident_events
@@ -93,8 +93,8 @@ class SqlIncidentStore:
             },
         )
         if not isinstance(incident_id, UUID):
-            # O hay uno activo, o la causa está en enfriamiento. Si se resolvió justo entre
-            # las dos consultas, no hay activo y cuenta como enfriamiento: acaba de cerrarse.
+            # Either one is active or the cause is cooling down. If it was resolved right
+            # between the two queries, none is active and it counts as cooldown: it just closed.
             active = await tx.scalar(_ACTIVE, {"dedup_key": trigger.dedup_key})
             if isinstance(active, UUID):
                 return OpenResult(OpenStatus.ACTIVE, active)

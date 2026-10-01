@@ -1,1 +1,1 @@
-"""Identidad: organizaciones, usuarios y roles desde Keycloak."""
+"""Identity: organizations, users and roles from Keycloak."""

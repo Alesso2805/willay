@@ -1,13 +1,13 @@
-"""Zonas de riesgo: datos y validación estructural de su geometría.
+"""Risk zones: data and structural validation of their geometry.
 
-La validación va en dos niveles:
-- Estructura (aquí, Python puro): tipo, anillos cerrados, mínimo de puntos, rango de
-  coordenadas y tope de vértices. Rechaza lo que ni siquiera es un polígono.
-- Topología (PostGIS, ST_IsValid): autointersecciones, anillos que se tocan, etc. Es
-  difícil de hacer bien a mano y PostGIS es la autoridad sobre lo que guarda.
+Two validation levels:
+- Structure (here, pure Python): type, closed rings, minimum points, coordinate range and a
+  vertex cap. Rejects what is not even a polygon.
+- Topology (PostGIS, ST_IsValid): self-intersections, touching rings, etc. Hard to get right by
+  hand, and PostGIS is the authority on what it stores.
 
-Un polígono inválido se rechaza con su motivo; nunca se "arregla" en silencio: una zona
-corregida automáticamente podría no cubrir lo que el operador dibujó.
+An invalid polygon is rejected with its reason, never silently "fixed": an auto-corrected zone
+might not cover what the operator drew.
 """
 
 from collections.abc import Mapping, Sequence
@@ -16,13 +16,13 @@ from enum import StrEnum
 from typing import Any
 
 MAX_NAME_LENGTH = 120
-# Un polígono dibujado a mano tiene decenas de vértices; importado de un SIG, algunos
-# miles. El tope evita que un cliente mande megabytes de geometría en una petición.
+# A hand-drawn polygon has tens of vertices; one imported from a GIS, a few thousand. The cap
+# stops a client from sending megabytes of geometry in one request.
 MAX_VERTICES = 5000
 
-Position = tuple[float, float]  # (longitud, latitud), en el orden de GeoJSON
+Position = tuple[float, float]  # (longitude, latitude), GeoJSON order
 Ring = list[Position]
-PolygonCoords = list[Ring]  # anillo exterior y, opcionalmente, huecos
+PolygonCoords = list[Ring]  # exterior ring and, optionally, holes
 MultiPolygonCoords = list[PolygonCoords]
 
 
@@ -41,7 +41,7 @@ class InvalidGeometryError(Exception):
 
 @dataclass(frozen=True)
 class ZoneData:
-    """Lo que el operador define de una zona (sin id ni fechas)."""
+    """What the operator defines for a zone (no id or timestamps)."""
 
     name: str
     description: str | None
@@ -52,8 +52,8 @@ class ZoneData:
 
 
 def to_multipolygon(geojson: Mapping[str, Any]) -> MultiPolygonCoords:
-    """Acepta un Polygon (lo que dibuja Leaflet-Geoman) o un MultiPolygon GeoJSON y
-    devuelve siempre coordenadas de MultiPolygon, el tipo de la columna."""
+    """Accept a GeoJSON Polygon (what Leaflet-Geoman draws) or MultiPolygon and always
+    return MultiPolygon coordinates, the column type."""
     kind = geojson.get("type")
     coordinates = geojson.get("coordinates")
     polygons: list[Any]
@@ -92,7 +92,7 @@ def _ring(raw: object) -> Ring:
     if not isinstance(raw, list):
         raise InvalidGeometryError("un anillo debe ser una lista de posiciones")
     ring = [_position(position) for position in raw]
-    # GeoJSON exige anillos cerrados de al menos 4 posiciones: un triángulo es A-B-C-A.
+    # GeoJSON requires closed rings of at least 4 positions: a triangle is A-B-C-A.
     if len(ring) < 4:
         raise InvalidGeometryError(
             "un anillo necesita al menos 3 vértices distintos (4 posiciones)"
@@ -110,9 +110,8 @@ def _position(raw: object) -> Position:
     lon, lat = raw[0], raw[1]
     if not all(isinstance(v, int | float) and not isinstance(v, bool) for v in (lon, lat)):
         raise InvalidGeometryError("las coordenadas deben ser números")
-    # Detecta latitud y longitud invertidas solo cuando la latitud queda fuera de ±90 (p. ej.
-    # en Asia). En Lima, [-11.9, -76.7] invertido sigue siendo válido (cae en la Antártida):
-    # eso lo delata el mapa, no el rango.
+    # Catches swapped lat/lon only when latitude falls outside ±90 (e.g. in Asia). In Lima,
+    # swapped [-11.9, -76.7] is still valid (lands in Antarctica): the map reveals that.
     if not (-180 <= lon <= 180 and -90 <= lat <= 90):
         raise InvalidGeometryError(
             f"coordenada fuera de rango: [{lon}, {lat}] (¿longitud y latitud invertidas?)"

@@ -1,4 +1,4 @@
-"""IncidentRepository sobre core.incidents y core.incident_events (rol vigia_app)."""
+"""IncidentRepository over core.incidents and core.incident_events (vigia_app role)."""
 
 import json
 from collections.abc import Mapping, Sequence
@@ -12,8 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from vigia.incidents.application.lifecycle import EventActor, Incident, IncidentEvent
 from vigia.incidents.domain.lifecycle import IncidentStatus, Resolution
 
-# La zona y la regla siempre existen (no se borran: se desactivan); la estación puede
-# faltar si algún tipo de regla futuro no la tiene.
+# Zone and rule always exist (they are deactivated, never deleted); the station may be
+# missing if a future rule type has none.
 _SELECT = """
     SELECT i.id, i.zone_id, z.name AS zone_name, i.station_id, s.code AS station_code,
            i.rule_id, r.type AS rule_type, i.severity, i.status, i.current_level,
@@ -52,7 +52,7 @@ _LOCK = text("""
     FOR UPDATE
 """)
 
-# Solo uno de los dos acknowledged_by_* queda con valor (CHECK de la migración 0002).
+# Only one of the acknowledged_by_* columns gets a value (CHECK in migration 0002).
 _ACKNOWLEDGE = text("""
     UPDATE core.incidents
     SET status = 'acknowledged', acknowledged_at = :now,

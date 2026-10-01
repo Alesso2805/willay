@@ -1,13 +1,12 @@
-"""Vincular el Telegram de un contacto (VIG-21).
+"""Linking a contact's Telegram (VIG-21).
 
-- `create_telegram_link` (admin): genera el enlace de un solo uso y guarda solo el hash de
-  su token; el enlace se muestra una vez. Uno nuevo invalida el anterior.
-- `handle_start` (worker telegram): con `/start <token>` válido guarda el `chat_id` del
-  contacto y anula el token. Responde siempre algo útil: quien escribe al bot es una
-  persona, no una API.
+- `create_telegram_link` (admin): single-use link; only its token hash is stored, so it is
+  shown once. A new link invalidates the previous one.
+- `handle_start` (telegram worker): a valid `/start <token>` stores the contact's `chat_id`
+  and voids the token. It always replies something useful: a person, not an API, is typing.
 
-Todo cambio en el contacto se audita (SPEC). El `chat_id` es un dato personal: no va a la
-auditoría ni a los logs, solo si el contacto quedó vinculado.
+Every contact change is audited (SPEC). The `chat_id` is personal data: audit and logs only
+record whether the contact is linked.
 """
 
 from dataclasses import dataclass
@@ -47,13 +46,13 @@ class ContactLinkRepository(Protocol):
     ) -> ContactLinkState | None: ...
 
     async def by_link_hash(self, token_hash: str) -> ContactLinkState | None:
-        """El contacto cuyo enlace tiene ese hash, bloqueado hasta el final de la transacción."""
+        """The contact whose link has this hash, locked until the transaction ends."""
         ...
 
     async def store_link(self, contact_id: UUID, token_hash: str, expires_at: datetime) -> None: ...
 
     async def link_chat(self, contact_id: UUID, chat_id: int) -> None:
-        """Guarda el chat_id y anula el enlace: es de un solo uso."""
+        """Stores the chat_id and voids the link: it is single use."""
         ...
 
 
@@ -62,7 +61,7 @@ class ContactNotFoundError(Exception):
 
 
 class TelegramNotConfiguredError(Exception):
-    """Sin el usuario del bot no se puede armar el enlace."""
+    """Without the bot username the link cannot be built."""
 
 
 @dataclass(frozen=True)
@@ -109,7 +108,7 @@ async def create_telegram_link(
 async def handle_start(
     chat_id: int, text: str, *, contacts: ContactLinkRepository, audit: AuditLog, clock: Clock
 ) -> str:
-    """La respuesta del bot a un mensaje privado."""
+    """The bot's reply to a private message."""
     token = start_parameter(text)
     if token is None:
         return HOW_TO_LINK
@@ -121,7 +120,7 @@ async def handle_start(
     await audit.record(
         AuditEntry(
             organization_id=contact.organization_id,
-            actor_id=None,  # lo pidió el propio contacto desde Telegram
+            actor_id=None,  # requested by the contact themselves from Telegram
             entity_type=ENTITY_TYPE,
             entity_id=contact.contact_id,
             action="telegram_linked",

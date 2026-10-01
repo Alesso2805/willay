@@ -1,11 +1,8 @@
-"""App FastAPI. Se ejecuta con `uvicorn --factory vigia.api.main:create_app`.
+"""FastAPI app, run with `uvicorn --factory vigia.api.main:create_app`.
 
-Con --factory no hay un `app` global: importar este módulo no lee el entorno, y los
-tests construyen la app con su propia configuración.
-
-Los workers nunca arrancan en el lifespan de esta app: son procesos separados. El
-lifespan solo crea recursos compartidos por las peticiones (motor de BD, verificador JWT
-y la conexión LISTEN que alimenta el canal SSE, que no hace trabajo de dominio).
+No global `app`: importing this module does not read the environment, and tests build the app
+with their own settings. Workers never start in the lifespan (they are separate processes); it
+only creates request-shared resources (DB engine, JWT verifier, the LISTEN feeding SSE).
 """
 
 import asyncio
@@ -66,12 +63,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="Vigía API", version="0.1.0", lifespan=lifespan)
     app.add_exception_handler(RequestValidationError, validation_error_handler)
-    # El JWT va en el header Authorization (nunca cookies): no hace falta allow_credentials.
+    # The JWT goes in the Authorization header (never cookies): no allow_credentials needed.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=config.cors_origins,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-        # X-Api-Key no se lista: lo usan estaciones (servidor a servidor), no el navegador.
+        # X-Api-Key is not listed: stations use it server to server, never the browser.
         allow_headers=["Authorization", "Content-Type"],
     )
 

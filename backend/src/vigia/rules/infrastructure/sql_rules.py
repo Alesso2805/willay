@@ -1,4 +1,4 @@
-"""Consultas SQL del evaluador: reglas aplicables e historial de lecturas."""
+"""Evaluator SQL queries: applicable rules and reading history."""
 
 from datetime import datetime
 from uuid import UUID
@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from vigia.incidents.domain.incidents import EvidenceReading
 from vigia.rules.application.rule_evaluator import ApplicableRule
 
-# El JOIN con zone_stations es lo que hace que una estación sin zona nunca alerte, y el
-# filtro por organización es una defensa más: nunca se evalúa con reglas de otro tenant.
+# The JOIN with zone_stations is what keeps a station without a zone from ever alerting;
+# the organization filter is defense in depth: never evaluate with another tenant's rules.
 _APPLICABLE = text("""
     SELECT r.id, r.organization_id, r.zone_id, r.type, r.params, r.severity, r.cooldown_s
     FROM core.rules r
@@ -23,7 +23,7 @@ _APPLICABLE = text("""
     ORDER BY r.id
 """)
 
-# Solo lecturas `ok`: las tardías nunca entran en las ventanas de las reglas (SPEC).
+# Only `ok` readings: late ones never enter rule windows (SPEC).
 _LATEST_OK = text("""
     SELECT measured_at, value FROM ingest.readings
     WHERE station_id = :station_id AND quality = 'ok' AND measured_at <= :until
@@ -31,8 +31,8 @@ _LATEST_OK = text("""
     LIMIT :limit
 """)
 
-# La PK (station_id, measured_at) sirve de índice y el rango de measured_at deja a
-# Timescale leer solo los chunks de la ventana.
+# The PK (station_id, measured_at) serves as the index, and the measured_at range lets
+# Timescale read only the window's chunks.
 _OK_BETWEEN = text("""
     SELECT measured_at, value FROM ingest.readings
     WHERE station_id = :station_id AND quality = 'ok'

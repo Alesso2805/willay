@@ -1,9 +1,8 @@
-"""Worker evaluador (VIG-14): `python -m vigia.workers.evaluator`.
+"""Evaluator worker (VIG-14): `python -m vigia.workers.evaluator`.
 
-Toma lecturas de ingest.evaluation_queue y aplica las reglas de su estación. Despierta
-con LISTEN vigia_evaluation_queue en cuanto la ingesta confirma un lote, y consulta cada
-5 s por si un aviso se perdió. Varios procesos pueden correr a la vez: SKIP LOCKED
-reparte las filas sin que dos tomen la misma.
+Takes readings from ingest.evaluation_queue and applies their station's rules. Wakes on
+LISTEN vigia_evaluation_queue when ingestion commits a batch and polls every 5 s for lost
+notifications. Several processes can run at once: SKIP LOCKED never hands out a row twice.
 """
 
 import asyncio
@@ -49,7 +48,7 @@ async def run_evaluator(
 
     async def tick() -> bool:
         result = await process_batch(queue, rules, engine.begin, limit=batch_size)
-        return result.claimed == batch_size  # lote lleno: probablemente quedan más
+        return result.claimed == batch_size  # full batch: more likely remain
 
     try:
         dsn = asyncpg_dsn(settings.database_url)

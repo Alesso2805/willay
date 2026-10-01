@@ -1,2 +1,2 @@
 class InvalidRuleParamsError(Exception):
-    """Los `params` de una regla no son válidos para su tipo."""
+    """A rule's `params` are not valid for its type."""

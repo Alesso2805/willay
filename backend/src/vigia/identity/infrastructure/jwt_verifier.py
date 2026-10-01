@@ -1,10 +1,10 @@
-"""Verificación de access tokens de Keycloak (RS256 + JWKS).
+"""Keycloak access token verification (RS256 + JWKS).
 
-- Solo se acepta RS256: evita `alg: none` y la confusión RS256/HS256 (firmar con la
-  clave pública como si fuera un secreto HMAC).
-- `iss` y `aud` (vigia-api) se exigen siempre.
-- `exp` y `nbf` se comprueban con el Clock inyectado, no con el reloj de PyJWT, para
-  cumplir la regla de tiempo del proyecto y probar la expiración sin esperas reales.
+- Only RS256: prevents `alg: none` and RS256/HS256 confusion (signing with the public key as
+  if it were an HMAC secret).
+- `iss` and `aud` (vigia-api) are always required.
+- `exp` and `nbf` are checked with the injected Clock, not PyJWT's clock, to follow the
+  project's time rule and test expiry without real waits.
 """
 
 import asyncio
@@ -16,22 +16,22 @@ import jwt
 from vigia.shared.clock import Clock
 
 KeyResolver = Callable[[str], Awaitable[Any]]
-"""Dado el token (sin verificar), devuelve la clave pública que lo firmó."""
+"""Given the (unverified) token, return the public key that signed it."""
 
 ALGORITHMS = ["RS256"]
 
 
 class TokenInvalidError(Exception):
-    """Token ausente, mal formado, mal firmado, expirado o para otro emisor/audiencia (401)."""
+    """Token missing, malformed, badly signed, expired or for another issuer/audience (401)."""
 
 
 class IdentityProviderUnavailableError(Exception):
-    """No se pudo descargar el JWKS de Keycloak (503): no es culpa del cliente."""
+    """Could not fetch the Keycloak JWKS (503): not the client's fault."""
 
 
 def jwks_key_resolver(jwks_url: str) -> KeyResolver:
-    # PyJWKClient cachea el JWKS y lo vuelve a pedir si llega un `kid` desconocido
-    # (rotación de claves en Keycloak). Es síncrono: se ejecuta en un hilo.
+    # PyJWKClient caches the JWKS and refetches on an unknown `kid` (Keycloak key rotation).
+    # It is synchronous, so it runs in a thread.
     client = jwt.PyJWKClient(jwks_url, cache_jwk_set=True, lifespan=300, timeout=5)
 
     async def resolve(token: str) -> Any:
@@ -71,7 +71,7 @@ class JwtVerifier:
                 issuer=self._issuer,
                 options={
                     "require": ["exp", "iat", "iss", "aud", "sub"],
-                    # El tiempo lo comprueba _check_times con el Clock inyectado.
+                    # Times are checked by _check_times with the injected Clock.
                     "verify_exp": False,
                     "verify_nbf": False,
                     "verify_iat": False,
@@ -86,9 +86,9 @@ class JwtVerifier:
         now = self._clock.now().timestamp()
         exp = claims.get("exp")
         if not isinstance(exp, int | float):
-            raise TokenInvalidError("exp no es numérico")
+            raise TokenInvalidError("exp is not numeric")
         if now > exp + self._leeway_s:
-            raise TokenInvalidError("el token expiró")
+            raise TokenInvalidError("the token has expired")
         nbf = claims.get("nbf")
         if isinstance(nbf, int | float) and now + self._leeway_s < nbf:
-            raise TokenInvalidError("el token aún no es válido")
+            raise TokenInvalidError("the token is not valid yet")

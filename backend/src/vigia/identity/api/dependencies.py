@@ -1,13 +1,12 @@
-"""`CurrentPrincipal`: la dependencia obligatoria de todo endpoint de negocio.
+"""`CurrentPrincipal`: the mandatory dependency of every business endpoint.
 
-Todo endpoint (y el canal SSE) recibe el Principal y filtra por
-`principal.organization_id`. No hay otra forma de conocer el tenant.
+Every endpoint (and the SSE channel) receives the Principal and filters by
+`principal.organization_id`; there is no other way to learn the tenant.
 
-Códigos:
-- 401: sin token o token inválido (firma, emisor, audiencia, expiración, claims básicos).
-- 403: token válido pero sin exactamente una organización registrada en Vigía, o
-  (con `require`) un rol sin el permiso que pide el endpoint.
-- 503: Keycloak no responde al pedir el JWKS.
+- 401: missing or invalid token (signature, issuer, audience, expiry, basic claims).
+- 403: valid token without exactly one organization registered in Vigía, or (with `require`)
+  roles lacking the endpoint's permission.
+- 503: Keycloak does not answer the JWKS request.
 """
 
 from collections.abc import Awaitable, Callable
@@ -32,7 +31,7 @@ from vigia.identity.infrastructure.repositories import (
 )
 from vigia.shared.web import DbConnection, EngineDep
 
-# auto_error=False: respondemos nosotros el 401 con WWW-Authenticate (FastAPI daría 403).
+# auto_error=False: we answer 401 with WWW-Authenticate ourselves (FastAPI would send 403).
 _bearer = HTTPBearer(auto_error=False)
 
 _UNAUTHORIZED = HTTPException(
@@ -55,8 +54,8 @@ async def verified_claims(
     verifier: Annotated[JwtVerifier, Depends(get_verifier)],
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
 ) -> dict[str, Any]:
-    # Separada de current_principal para rechazar tokens inválidos sin tomar una
-    # conexión del pool: FastAPI resuelve las dependencias en orden de declaración.
+    # Separate from current_principal so invalid tokens are rejected without taking a pool
+    # connection: FastAPI resolves dependencies in declaration order.
     if credentials is None:
         raise _UNAUTHORIZED
     try:
@@ -85,11 +84,11 @@ CurrentPrincipal = Annotated[Principal, Depends(current_principal)]
 
 
 def require(permission: Permission) -> Callable[[Principal], Awaitable[Principal]]:
-    """Dependencia que exige un permiso de la matriz. Uso en un endpoint:
+    """Dependency requiring a permission from the matrix. Usage in an endpoint:
 
         principal: Annotated[Principal, Depends(require(Permission.MANAGE_RULES))]
 
-    Devuelve el mismo Principal, así el endpoint sigue teniendo el tenant.
+    Returns the same Principal, so the endpoint still has the tenant.
     """
 
     async def dependency(principal: CurrentPrincipal) -> Principal:
@@ -101,7 +100,7 @@ def require(permission: Permission) -> Callable[[Principal], Awaitable[Principal
 
 def _ensure(principal: Principal, permission: Permission) -> None:
     if not can(principal, permission):
-        # Mensaje distinto del 403 de tenant: el panel puede explicar cuál de los dos es.
+        # Different message from the tenant 403, so the dashboard can tell them apart.
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, detail=f"Tu rol no tiene el permiso {permission}"
         )
@@ -110,18 +109,18 @@ def _ensure(principal: Principal, permission: Permission) -> None:
 @dataclass(frozen=True)
 class StreamGrant:
     principal: Principal
-    expires_at: datetime  # el `exp` del token: el stream no sobrevive a su token
+    expires_at: datetime  # the token's `exp`: the stream does not outlive its token
 
 
 async def stream_grant(
     claims: Annotated[dict[str, Any], Depends(verified_claims)],
     engine: EngineDep,
 ) -> StreamGrant:
-    """Autenticación para respuestas largas (SSE, VIG-25).
+    """Authentication for long-lived responses (SSE, VIG-25).
 
-    `current_principal` usa la transacción de la petición, y en un stream esa transacción
-    viviría lo que dure la conexión: una conexión del pool ocupada por cada panel abierto.
-    Aquí se autentica en una transacción corta que termina antes de transmitir.
+    `current_principal` uses the request transaction, which in a stream would live as long as
+    the connection: one pool connection held per open dashboard. This authenticates in a short
+    transaction that ends before streaming starts.
     """
     async with engine.begin() as conn:
         try:

@@ -1,11 +1,8 @@
-"""Ciclo de vida de un incidente (VIG-19): open → acknowledged → resolved.
+"""Incident lifecycle (VIG-19): open → acknowledged → resolved.
 
-- Confirmar (acknowledge) solo desde `open`: registra quién lo vio y, con las alertas
-  (VIG-23/24), detiene el escalamiento.
-- Resolver desde `open` o `acknowledged`, como resuelto o falsa alarma. Resolver sin
-  confirmar antes es válido (decisión de producto): una falsa alarma evidente se cierra
-  en un paso, y el evento `resolved` registra quién lo hizo.
-- `resolved` es final: cualquier otra transición es inválida (la API responde 409).
+Acknowledge only from `open` (it stops escalation). Resolve from `open` or `acknowledged`, as
+resolved or false alarm; resolving without acknowledging first is a product decision so an
+obvious false alarm closes in one step. `resolved` is final (the API answers 409).
 """
 
 from enum import StrEnum
@@ -35,7 +32,7 @@ ALLOWED_FROM: dict[Transition, frozenset[IncidentStatus]] = {
 
 class InvalidTransitionError(Exception):
     def __init__(self, transition: Transition, current: IncidentStatus) -> None:
-        super().__init__(f"no se puede {transition} un incidente en estado {current}")
+        super().__init__(f"cannot {transition} an incident in status {current}")
         self.transition = transition
         self.current = current
 

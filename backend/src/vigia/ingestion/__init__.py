@@ -1,1 +1,1 @@
-"""Ingesta: lecturas, rate limit, latido de estaciones y simulador."""
+"""Ingestion: readings, rate limit, station heartbeats and the simulator."""

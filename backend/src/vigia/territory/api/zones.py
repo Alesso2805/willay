@@ -1,4 +1,4 @@
-"""API REST de zonas de riesgo (VIG-12). La geometría viaja como GeoJSON (lon, lat)."""
+"""Risk zone REST API (VIG-12). Geometry travels as GeoJSON (lon, lat)."""
 
 from datetime import datetime
 from typing import Annotated, Any, Literal
@@ -39,7 +39,7 @@ _NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, detail="Zona no encontrada
 
 
 class GeoJsonGeometry(BaseModel):
-    """Polygon (lo que dibuja el mapa) o MultiPolygon. Coordenadas [longitud, latitud]."""
+    """Polygon (what the map draws) or MultiPolygon. Coordinates [longitude, latitude]."""
 
     type: Literal["Polygon", "MultiPolygon"]
     coordinates: list[Any]
@@ -68,11 +68,11 @@ class ZoneOut(BaseModel):
     updated_at: datetime
 
 
-@router.get("", summary="Zonas de la organización")
+@router.get("", summary="The organization's zones")
 async def list_zones(
     principal: CanView,
     conn: DbConnection,
-    include_inactive: Annotated[bool, Query(description="incluir las desactivadas")] = False,
+    include_inactive: Annotated[bool, Query(description="include deactivated ones")] = False,
 ) -> list[ZoneOut]:
     zones = await SqlZoneRepository(conn).list(
         principal.organization_id, include_inactive=include_inactive
@@ -80,7 +80,7 @@ async def list_zones(
     return [_out(zone) for zone in zones]
 
 
-@router.get("/{zone_id}", summary="Una zona", responses={404: {"description": "No existe"}})
+@router.get("/{zone_id}", summary="A zone", responses={404: {"description": "Not found"}})
 async def get_zone(zone_id: UUID, principal: CanView, conn: DbConnection) -> ZoneOut:
     zone = await SqlZoneRepository(conn).get(principal.organization_id, zone_id)
     if zone is None:
@@ -91,8 +91,8 @@ async def get_zone(zone_id: UUID, principal: CanView, conn: DbConnection) -> Zon
 @router.post(
     "",
     status_code=status.HTTP_201_CREATED,
-    summary="Crear una zona",
-    responses={422: {"description": "Datos o geometría inválidos (el motivo va en el detalle)"}},
+    summary="Create a zone",
+    responses={422: {"description": "Invalid data or geometry (the reason is in the detail)"}},
 )
 async def post_zone(
     body: ZoneIn, principal: CanManage, conn: DbConnection, clock: ClockDep, response: Response
@@ -114,10 +114,10 @@ async def post_zone(
 
 @router.put(
     "/{zone_id}",
-    summary="Reemplazar una zona (atributos y geometría; también reactiva)",
+    summary="Replace a zone (attributes and geometry; also reactivates it)",
     responses={
-        404: {"description": "No existe"},
-        422: {"description": "Datos o geometría inválidos"},
+        404: {"description": "Not found"},
+        422: {"description": "Invalid data or geometry"},
     },
 )
 async def put_zone(
@@ -143,8 +143,8 @@ async def put_zone(
 @router.delete(
     "/{zone_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Desactivar una zona (no se borra: la historia de sus incidentes se conserva)",
-    responses={404: {"description": "No existe"}},
+    summary="Deactivate a zone (not deleted: the history of its incidents is kept)",
+    responses={404: {"description": "Not found"}},
 )
 async def delete_zone(
     zone_id: UUID, principal: CanManage, conn: DbConnection, clock: ClockDep
@@ -181,7 +181,7 @@ def _data(body: ZoneIn) -> ZoneData:
 
 
 def _invalid_geometry(exc: InvalidGeometryError) -> HTTPException:
-    # Mismo formato que los 422 de validación de FastAPI, para que el panel los trate igual.
+    # Same shape as FastAPI's validation 422s, so the dashboard handles both alike.
     return HTTPException(
         status.HTTP_422_UNPROCESSABLE_CONTENT,
         detail=[{"loc": ["body", "geometry"], "msg": exc.reason, "type": "invalid_geometry"}],

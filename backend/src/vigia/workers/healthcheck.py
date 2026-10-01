@@ -1,7 +1,7 @@
-"""Healthcheck de un worker: `python -m vigia.workers.healthcheck <nombre>`.
+"""Worker healthcheck: `python -m vigia.workers.healthcheck <name>`.
 
-Sale con 0 si el archivo de latido del worker se tocó hace menos de `MAX_AGE`.
-Lo usa el healthcheck de Docker Compose; los workers no exponen HTTP.
+Exits 0 if the worker's heartbeat file was touched less than `MAX_AGE` ago. Used by the
+Docker Compose healthcheck, since workers expose no HTTP.
 """
 
 import sys
@@ -24,7 +24,7 @@ def is_alive(heartbeat: Path, clock: Clock, max_age: timedelta = MAX_AGE) -> boo
 
 def main() -> None:
     if len(sys.argv) != 2:
-        sys.exit("uso: python -m vigia.workers.healthcheck <nombre-del-worker>")
+        sys.exit("usage: python -m vigia.workers.healthcheck <worker-name>")
     heartbeat = get_settings().heartbeat_dir / f"{sys.argv[1]}.alive"
     sys.exit(0 if is_alive(heartbeat, SystemClock()) else 1)
 

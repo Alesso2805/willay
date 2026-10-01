@@ -1,15 +1,9 @@
-"""Eventos en vivo hacia el panel (VIG-25).
+"""Live events for the dashboard (VIG-25).
 
-La base avisa por NOTIFY con un JSON (migración 0008). Cada aviso es de una sola
-organización y solo se entrega a las conexiones de esa organización (SPEC: el canal SSE
-también filtra por organización).
-
-Tipos que recibe el panel:
-- `incident`: un incidente cambió (se abrió, escaló, se confirmó...). El panel lo pide
-  por REST: así respeta los permisos de quien mira.
-- `station`: llegó el latido de una estación, con su último valor.
-- `resync`: pudo perderse algún aviso (conexión con la base caída, cliente lento); el
-  panel vuelve a pedir todo.
+The database sends a JSON payload via NOTIFY (migration 0008); each one belongs to a single
+organization and only reaches that organization's connections (SPEC). Types: `incident` (the
+dashboard refetches it over REST, so the viewer's permissions apply), `station` (a heartbeat
+with its last value) and `resync` (a notification may have been lost: reload everything).
 """
 
 import json
@@ -26,7 +20,7 @@ KINDS = frozenset({INCIDENT, STATION})
 
 @dataclass(frozen=True)
 class RealtimeEvent:
-    organization_id: UUID | None  # None solo en `resync`, que va a todas las conexiones
+    organization_id: UUID | None  # None only for `resync`, which goes to every connection
     type: str
     data: Mapping[str, Any] = field(default_factory=dict)
 
@@ -36,8 +30,8 @@ def resync() -> RealtimeEvent:
 
 
 def parse_notification(payload: str) -> RealtimeEvent | None:
-    """El evento de un aviso de la base, o None si no se puede leer o no es de un tipo
-    conocido: un aviso raro se descarta, nunca tumba la conexión de los demás."""
+    """The event for a database notification, or None if unreadable or of an unknown type:
+    an odd notification is dropped and never brings down the other connections."""
     try:
         raw = json.loads(payload)
         organization_id = UUID(str(raw.pop("organization_id")))

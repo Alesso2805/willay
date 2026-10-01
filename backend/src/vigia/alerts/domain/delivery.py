@@ -1,14 +1,11 @@
-"""Entrega de alertas: reintentos y token de confirmación (SPEC: Alertas, NFR Fiabilidad).
+"""Alert delivery: retries and the confirmation token (SPEC: Alerts, Reliability NFR).
 
-Reintentos: un envío fallido se reintenta 3 veces con espera exponencial (5, 10 y 20 s).
-Al cuarto intento fallido la alerta queda `failed`. En un sistema de alertas es preferible
-un correo duplicado a uno perdido, así que un envío cuyo resultado no llegó a guardarse
-(el worker murió) se vuelve a intentar.
+A failed send is retried 3 times with exponential backoff (5, 10, 20 s). A duplicate email
+beats a lost one, so a send whose result was never stored (worker died) is retried.
 
-Token de confirmación: 256 bits aleatorios en base64url (43 caracteres, cabe en los 64
-de `callback_data` de Telegram). Se guarda solo su SHA-256: con 256 bits de azar no hace
-falta un hash lento como Argon2 (no hay diccionario que probar), y quien lea la base no
-puede confirmar alertas. Vale 24 h y es de un solo uso (lo aplica VIG-23).
+The token is 256 random bits in base64url (43 chars, fits Telegram's 64-char
+`callback_data`). Only its SHA-256 is stored: with 256 bits of entropy a slow hash like
+Argon2 is unnecessary, and reading the database does not allow confirming alerts.
 """
 
 import hashlib
@@ -16,15 +13,15 @@ import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-MAX_ATTEMPTS = 4  # el envío original y 3 reintentos
+MAX_ATTEMPTS = 4  # the original send plus 3 retries
 FIRST_RETRY = timedelta(seconds=5)
 TOKEN_BYTES = 32
 TOKEN_TTL = timedelta(hours=24)
 
 
 def retry_at(failed_attempt: int, now: datetime) -> datetime | None:
-    """Cuándo reintentar tras fallar el intento `failed_attempt` (1, 2, ...); None si era el
-    último."""
+    """When to retry after attempt `failed_attempt` (1, 2, ...) failed; None if it was the
+    last one."""
     if failed_attempt >= MAX_ATTEMPTS:
         return None
     return now + FIRST_RETRY * int(2 ** (failed_attempt - 1))  # 5, 10, 20 s
@@ -32,7 +29,7 @@ def retry_at(failed_attempt: int, now: datetime) -> datetime | None:
 
 @dataclass(frozen=True)
 class AckToken:
-    token: str  # solo viaja en el mensaje; nunca se guarda
+    token: str  # only travels in the message; never stored
     token_hash: str
     expires_at: datetime
 
@@ -42,7 +39,7 @@ def new_ack_token(now: datetime) -> AckToken:
 
 
 def new_token(now: datetime, ttl: timedelta) -> AckToken:
-    """Un token de 256 bits de un solo uso: también el de vincular Telegram (VIG-21)."""
+    """A single-use 256-bit token; also used for Telegram linking (VIG-21)."""
     token = secrets.token_urlsafe(TOKEN_BYTES)
     return AckToken(token, hash_ack_token(token), now + ttl)
 

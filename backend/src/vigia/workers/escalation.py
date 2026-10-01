@@ -1,8 +1,8 @@
-"""Worker escalation (VIG-24): `python -m vigia.workers.escalation`.
+"""Escalation worker (VIG-24): `python -m vigia.workers.escalation`.
 
-Cada 15 s sube de nivel los incidentes abiertos cuyo nivel venció sin confirmación, y
-registra cuándo se agota la política. Las alertas del nivel nuevo las envía el dispatcher,
-que despierta con el NOTIFY que emite el planificador de alertas.
+Every 15 s it moves open incidents whose level expired unacknowledged to the next level and
+records when the policy is exhausted. The dispatcher sends the new level's alerts, woken by
+the NOTIFY the alert planner emits.
 """
 
 import asyncio

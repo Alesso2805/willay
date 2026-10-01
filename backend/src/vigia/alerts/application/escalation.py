@@ -1,13 +1,9 @@
-"""Un ciclo del worker escalation (VIG-24).
+"""One cycle of the escalation worker (VIG-24).
 
-Cada incidente se procesa en su propia transacción y bloqueado con SKIP LOCKED: dos
-workers nunca escalan el mismo incidente, y si otro proceso lo tiene (por ejemplo, alguien
-confirmándolo en ese momento) se revisa en el ciclo siguiente. Dentro de la transacción
-se vuelve a comprobar que siga abierto: una confirmación que llegó antes detiene el
-escalamiento.
-
-Si el nivel al que sube no puede avisar a nadie, se sigue subiendo en la misma
-transacción hasta encontrar un nivel que sí avise o agotar la política.
+Each incident is handled in its own transaction, locked with SKIP LOCKED: two workers never
+escalate the same incident, and one held elsewhere (e.g. being acknowledged) is retried next
+cycle. The lock re-checks it is still open, so an earlier acknowledgement stops escalation.
+If the new level reaches nobody, it keeps climbing in the same transaction.
 """
 
 from dataclasses import dataclass
@@ -28,12 +24,12 @@ log = structlog.get_logger()
 
 class EscalationRepository(Protocol):
     async def due(self, tx: AsyncConnection, now: datetime, limit: int) -> list[UUID]:
-        """Incidentes abiertos, sin agotar, cuyo nivel actual ya venció."""
+        """Open, non-exhausted incidents whose current level has expired."""
         ...
 
     async def lock(self, tx: AsyncConnection, incident_id: UUID) -> LevelState | None:
-        """Su nivel contra la política vigente, bloqueado. None si otro proceso lo tiene o
-        ya no está abierto (lo confirmaron o resolvieron)."""
+        """Its level against the current policy, locked. None if another process holds it
+        or it is no longer open (acknowledged or resolved)."""
         ...
 
     async def move_to_level(
@@ -54,7 +50,7 @@ class EscalationRepository(Protocol):
 
 @dataclass(frozen=True)
 class EscalationCycle:
-    escalated: int  # subidas de nivel (un incidente puede subir más de una vez)
+    escalated: int  # level moves (one incident may move more than once)
     exhausted: int
 
 
@@ -111,6 +107,6 @@ class Escalator:
             alerted = await self._alerts.alert_level(tx, incident_id, to_level, now)
             bound.info("incident_escalated", to_level=to_level, alerts_pending=alerted.pending)
             moves += 1
-            # Releer con el nivel nuevo: si no pudo avisar a nadie, vence en el acto.
+            # Re-read with the new level: if it reached nobody, it expires immediately.
             state = await self._repository.lock(tx, incident_id)
         return moves, 0

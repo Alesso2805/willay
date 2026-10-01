@@ -1,8 +1,8 @@
-"""Carga idempotente de los datos semilla.
+"""Idempotent seed data loading.
 
-Cada fila tiene un id fijo y se inserta con ON CONFLICT (id) DO NOTHING: reejecutar
-el seed no duplica ni modifica nada. Las API keys solo se generan para estaciones
-recién creadas o, con rotate_keys, para todas las del seed.
+Every row has a fixed id and is inserted with ON CONFLICT (id) DO NOTHING, so re-running the
+seed neither duplicates nor modifies anything. API keys are issued only for newly created
+stations or, with rotate_keys, for every seed station.
 """
 
 from dataclasses import dataclass

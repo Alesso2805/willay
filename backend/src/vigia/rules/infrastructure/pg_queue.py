@@ -1,4 +1,4 @@
-"""EvaluationQueue sobre ingest.evaluation_queue (Postgres, FOR UPDATE SKIP LOCKED)."""
+"""EvaluationQueue over ingest.evaluation_queue (Postgres, FOR UPDATE SKIP LOCKED)."""
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
@@ -11,8 +11,8 @@ from vigia.rules.application.queue import (
 )
 from vigia.shared.clock import Clock
 
-# Filas que ya agotaron sus intentos sin completar ni fallar: el worker murió durante el
-# último. Se marcan como fallidas en lugar de evaluarse una sexta vez.
+# Rows that used up their attempts without completing or failing: the worker died during
+# the last one. They are marked failed instead of being evaluated a sixth time.
 _ABANDON = text("""
     UPDATE ingest.evaluation_queue
     SET failed_at = :now,
@@ -25,8 +25,8 @@ _ABANDON = text("""
     )
 """)
 
-# SKIP LOCKED: si otro worker ya bloqueó una fila, se salta en lugar de esperarla. Así
-# varios evaluadores se reparten la cola sin tomar nunca la misma fila a la vez.
+# SKIP LOCKED: a row already locked by another worker is skipped instead of awaited, so
+# several evaluators share the queue without ever claiming the same row at once.
 _CLAIM = text("""
     WITH picked AS (
         SELECT id FROM ingest.evaluation_queue
@@ -50,7 +50,7 @@ class PostgresEvaluationQueue:
 
     async def claim(self, limit: int) -> list[QueuedReading]:
         now = self._clock.now()
-        async with self._engine.begin() as conn:  # transacción corta propia
+        async with self._engine.begin() as conn:  # its own short transaction
             await conn.execute(_ABANDON, {"now": now, "max_attempts": MAX_ATTEMPTS})
             rows = await conn.execute(
                 _CLAIM,
@@ -68,8 +68,8 @@ class PostgresEvaluationQueue:
         return sorted(items, key=lambda item: (item.measured_at, item.queue_id))
 
     async def complete(self, tx: AsyncConnection, item: QueuedReading) -> None:
-        # Guardia de propiedad: si otro worker retomó la fila tras el timeout, attempts ya
-        # no coincide y no se borra nada. La evaluación se revierte en lugar de duplicarse.
+        # Ownership guard: if another worker reclaimed the row after the timeout, attempts no
+        # longer matches and nothing is deleted. The evaluation rolls back instead of doubling.
         deleted = await tx.scalar(
             text("""
                 DELETE FROM ingest.evaluation_queue
@@ -79,7 +79,7 @@ class PostgresEvaluationQueue:
             {"id": item.queue_id, "attempt": item.attempt},
         )
         if deleted is None:
-            raise LostClaimError(f"la fila {item.queue_id} ya no pertenece a este intento")
+            raise LostClaimError(f"row {item.queue_id} no longer belongs to this attempt")
         await tx.execute(
             text("""
                 UPDATE ingest.readings SET evaluated_at = :now

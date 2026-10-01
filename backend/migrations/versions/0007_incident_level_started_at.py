@@ -1,11 +1,11 @@
-"""incidents.level_started_at: cuándo se avisó al nivel de escalamiento actual.
+"""incidents.level_started_at: when the current escalation level was notified.
 
-El `wait_s` de cada nivel cuenta desde que se le avisó (SPEC). Sin esta columna habría
-que deducirlo sumando los `wait_s` desde la apertura, y un nivel que escala al instante
-por no tener envíos le quitaría tiempo al siguiente.
+Each level's `wait_s` counts from when it was notified (SPEC). Without this column it would be
+derived by summing `wait_s` from opening, and a level that escalates instantly (nothing sent)
+would steal time from the next one.
 
-Mismo patrón que la 0004: se agrega nullable, se rellena (para los incidentes que ya
-existen, el nivel 1 empezó al abrirse) y después se exige NOT NULL.
+Same pattern as 0004: add nullable, backfill (for existing incidents level 1 started at
+opening), then set NOT NULL.
 
 Revision ID: 0007
 Revises: 0006
@@ -26,7 +26,7 @@ def upgrade() -> None:
     op.execute("ALTER TABLE core.incidents ADD COLUMN level_started_at timestamptz")
     op.execute("UPDATE core.incidents SET level_started_at = opened_at")
     op.execute("ALTER TABLE core.incidents ALTER COLUMN level_started_at SET NOT NULL")
-    # El worker escalation solo mira incidentes abiertos que aún pueden escalar.
+    # The escalation worker only looks at open incidents that can still escalate.
     op.execute("""
         CREATE INDEX incidents_escalation_idx ON core.incidents (level_started_at)
         WHERE status = 'open' AND escalation_exhausted_at IS NULL

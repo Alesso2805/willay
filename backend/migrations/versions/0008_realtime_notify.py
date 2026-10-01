@@ -1,12 +1,11 @@
-"""Avisos en tiempo real: NOTIFY vigia_events desde la base (VIG-25, ADR-0007).
+"""Real-time notifications: NOTIFY vigia_events from the database (VIG-25, ADR-0007).
 
-Un trigger avisa cada vez que se registra un evento de incidente o cambia el latido de
-una estación. Así ningún camino de código (los de hoy y los que vengan) puede olvidarse
-de avisar al panel, y el aviso sale en la misma transacción: Postgres solo lo entrega si
-la transacción confirma.
+A trigger fires whenever an incident event is recorded or a station heartbeat changes, so no
+code path (current or future) can forget to notify the dashboard, and the notification shares
+the transaction: Postgres delivers it only on commit.
 
-El aviso lleva lo justo para enrutarlo (la organización) y para que el panel sepa qué
-refrescar. Nunca datos personales: el detalle lo pide el panel por REST, con sus permisos.
+The payload carries just enough to route it (the organization) and tell the dashboard what to
+refresh. Never personal data: the dashboard fetches details over REST, with its permissions.
 
 Revision ID: 0008
 Revises: 0007
@@ -43,7 +42,7 @@ def upgrade() -> None:
         AFTER INSERT ON core.incident_events
         FOR EACH ROW EXECUTE FUNCTION core.notify_incident_event()
     """)
-    # station_heartbeats no guarda la organización: se busca en stations (por su PK).
+    # station_heartbeats has no organization column: look it up in stations (by PK).
     op.execute("""
         CREATE FUNCTION ingest.notify_heartbeat() RETURNS trigger
         LANGUAGE plpgsql AS $$
