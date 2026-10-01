@@ -55,7 +55,7 @@ Una plataforma web que (1) ingiere lecturas de sensores, (2) evalúa reglas por 
 
 # Stack obligatorio
 - Backend único: Python 3.12, FastAPI, SQLAlchemy 2 async + asyncpg, Pydantic v2, Alembic, uv, Ruff, Mypy (strict), Pytest, structlog, time-machine, uuid-utils (uuid v7 generado en la aplicación).
-- Frontend: Angular (versión con soporte activo al iniciar; verificar calendario oficial), standalone components y signals, Leaflet, Tailwind CSS, @microsoft/fetch-event-source para SSE con JWT.
+- Frontend: Angular (versión con soporte activo al iniciar; verificar calendario oficial), standalone components y signals, Leaflet, Tailwind CSS, `eventsource` (con su opción `fetch` para enviar el JWT en el header) para SSE.
 - Infra: PostgreSQL 16 + PostGIS + TimescaleDB (imagen timescale/timescaledb-ha), Keycloak 26 con Organizations, Mailpit para correo local, Docker Compose.
 - Sin Redis ni broker externo en el MVP: cola, notificaciones y rate limit viven en Postgres (ver ADR-0002).
 
@@ -173,7 +173,7 @@ flowchart LR
 
 **Garantía de no pérdida.** La lectura y su fila en `evaluation_queue` se insertan en la misma transacción. El evaluador procesa cada fila en dos transacciones: 1. Toma una fila con `available_at <= now` usando `SKIP LOCKED`, incrementa `attempts`, fija `available_at = now + 60 s` y confirma. Ese visibility timeout impide que otro evaluador tome la misma fila mientras se procesa, y el contador sobrevive aunque el worker caiga. 2. Evalúa, escribe incidentes y alertas, marca `readings.evaluated_at` y borra la fila. Si el worker muere en el paso 2, todo se revierte y la fila vuelve a estar disponible cuando vence su `available_at`. A los 5 intentos se marca `failed_at`, sale de la cola y el operador ve el fallo en el panel. `evaluated_at` permite verificar que ninguna lectura quedó sin evaluar.
 
-**Tiempo real hacia el panel.** Los workers emiten `NOTIFY vigia_events` con `organization_id` y el id del evento. La API mantiene una conexión `LISTEN` y reenvía por SSE solo a las conexiones de esa organización. El `EventSource` nativo no permite enviar el header `Authorization`, así que el panel usa `@microsoft/fetch-event-source` con el JWT en el header; nunca el token en la URL.
+**Tiempo real hacia el panel.** Los workers emiten `NOTIFY vigia_events` con `organization_id` y el id del evento. La API mantiene una conexión `LISTEN` y reenvía por SSE solo a las conexiones de esa organización. El `EventSource` nativo no permite enviar el header `Authorization`, así que el panel usa la librería `eventsource`, cuya opción `fetch` agrega el JWT en el header; nunca el token en la URL. Se eligió el 30 de septiembre de 2026 en lugar de `@microsoft/fetch-event-source`, que no publica versiones desde abril de 2021.
 
 **Rate limit.** Tabla `ingest.rate_limit_windows` con un contador por estación y minuto, actualizada con un upsert atómico. Funciona con varias réplicas de la API sin infraestructura extra.
 
@@ -306,7 +306,7 @@ erDiagram
 | VIG-22 | E6 Alertas | Como contacto quiero recibir la alerta por Telegram | Mensaje con botón de confirmación (`callback_data` ≤ 64 caracteres); fallo registra `alert_failed` y reintenta 3 veces | M | 5 | 4 |
 | VIG-23 | E6 Alertas | Como contacto quiero confirmar la alerta con un clic | Token aleatorio de 256 bits guardado como hash, un solo uso, 24 h; funciona desde el correo y desde el botón de Telegram; confirmar detiene el escalamiento | M | 3 | 4 |
 | VIG-24 | E6 Alertas | Como admin quiero políticas de escalamiento por niveles | CRUD de políticas; worker `escalation` sube de nivel al vencer `wait_s`; canal faltante se omite y registra; al agotar el último nivel se registra `escalation_exhausted` | M | 5 | 4 |
-| VIG-25 | E7 Panel | Como operador quiero un mapa en vivo | Zonas por estado, estaciones con último valor y antigüedad; SSE con JWT en header vía `@microsoft/fetch-event-source`, aislado por organización con test; actualización < 2 s; usa el catálogo visual de VIG-33 (estaciones silenciosas y sin zona distinguibles sin color); un incidente nuevo se anuncia de forma visible y por `aria-live` | M | 8 | 5 |
+| VIG-25 | E7 Panel | Como operador quiero un mapa en vivo | Zonas por estado, estaciones con último valor y antigüedad; SSE con JWT en header vía `eventsource`, aislado por organización con test; actualización < 2 s; usa el catálogo visual de VIG-33 (estaciones silenciosas y sin zona distinguibles sin color); un incidente nuevo se anuncia de forma visible y por `aria-live` | M | 8 | 5 |
 | VIG-26 | E7 Panel | Como operador quiero ver el detalle de un incidente | Gráfico de lecturas (con la copia del evento `opened` si las lecturas ya expiraron), línea de tiempo completa, alertas por destinatario; el correo del destinatario solo lo ven admin y operator y el `chat_id` nunca se muestra (test de serialización por rol) | M | 5 | 5 |
 | VIG-27 | E7 Panel | Como operador quiero gestionar reglas desde el panel | CRUD REST de reglas con `params` validados por tipo y auditoría (hoy no existe); formularios por tipo de regla; vista previa con las últimas 24 h de lecturas | S | 8 | 6 |
 | VIG-28 | E8 Observabilidad | Como desarrollador quiero medir la latencia de extremo a extremo | Métrica `received_to_alert_seconds`; logs JSON con `correlation_id` desde la lectura hasta la alerta | M | 3 | 7 |
