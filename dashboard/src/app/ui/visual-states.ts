@@ -60,6 +60,17 @@ export const STATION_STATES: Readonly<Record<StationState, VisualState>> = {
   inactive: { label: 'Inactiva', icon: 'pause', ...SLATE },
 };
 
+/** Avisos de la interfaz (errores, advertencias): no son estados, pero tampoco eligen color por página. */
+export type NoticeTone = 'error' | 'warning' | 'info';
+
+export const NOTICE_TONES: Readonly<
+  Record<NoticeTone, { foreground: string; background: string; border: string }>
+> = {
+  error: { foreground: '#7f1d1d', background: '#fef2f2', border: '#fca5a5' },
+  warning: { foreground: '#78350f', background: '#fffbeb', border: '#fbbf24' },
+  info: { foreground: '#1e293b', background: '#f8fafc', border: '#cbd5e1' },
+};
+
 export const ALL_CATALOGS = {
   incident: INCIDENT_STATES,
   severity: SEVERITIES,
