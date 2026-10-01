@@ -1,18 +1,18 @@
-# Vigía (code name) — MVP specification and development prompt
+# Willay — MVP specification and development prompt
 
 Sep 25, 2026 · @Alessandro David
 
 ## Vision and problem
 
-Vigía (provisional code name; the product does not have a commercial name yet) cuts from minutes to seconds the time between an anomalous data point appearing and operators and community leaders receiving the alert, without depending on a human phone call.
+Willay cuts from minutes to seconds the time between an anomalous data point appearing and operators and community leaders receiving the alert, without depending on a human phone call.
 
-**About the name.** "Yaku" was discarded because it was the name of the cyclone that caused severe flooding in northern Peru in 2023. "SAT" was also discarded as a code name because in Lima it is the Servicio de Administración Tributaria (the tax administration service). The code package is called \`vigia\` and does not depend on the final commercial name, which will be tested in the validation interviews.
+**About the name.** The product is called **Willay**, Quechua for "to warn, to inform" (chosen on October 1, 2026): short, easy to say in Spanish and English, and rooted in the first market. Known risks: a public ICT program in Peru already used the word, and it may be confused with Willax, a Peruvian television channel; the trademark must be checked with INDECOPI before any commercial use. Earlier options were discarded: "Yaku", the name of the cyclone that caused severe flooding in northern Peru in 2023, and "SAT", which in Lima is the Servicio de Administración Tributaria (the tax administration service). "Vigía" was the code name during the first sprints: the repository, the code package `vigia`, the database and the environment variables (`VIGIA_*`) keep it, so the product name can change without touching code.
 
 **The problem.** In the Rasuwa flood (Nepal, August 26, 2026) the river overflowed around 8:40 according to the government ([Rising Nepal](https://risingnepaldaily.com/news/85570)). The Bhote Koshi–Syafrubesi hydrological station stopped transmitting around 8:50, and the DHM confirmed the flood wave and issued downstream warnings at 9:15 ([NDRRMA, SitRep](https://ndrrma.gov.np/mediafiles/rasuwa/Rasuwa_Flood_SitRep_Temp_ENG_01_01092026.pdf)). About 35 minutes went by, and the station's silence was the first available signal. Having sensors is not having a system: what is missing is the layer that connects data, rules and people.
 
 **The proposal.** A web platform that ingests sensor data, evaluates configurable rules and dispatches multichannel alerts with automatic escalation. It treats the silence of a sensor in a risk zone as a possible event, not as a maintenance failure.
 
-**Positioning.** Vigía is a support tool for operators and community leaders: detect, decide and warn. It does not replace official dissemination to the public (INDECI, regional COERs, the MTC's SISMATE) and is designed to integrate with it later through the CAP standard.
+**Positioning.** Willay is a support tool for operators and community leaders: detect, decide and warn. It does not replace official dissemination to the public (INDECI, regional COERs, the MTC's SISMATE) and is designed to integrate with it later through the CAP standard.
 
 **Target users.** Risk management offices of small and medium-sized municipalities (first market: Peru, because of huaicos and the Niño costero, i.e. debris flows and coastal El Niño), prevention NGOs and critical infrastructure operators (hydroelectric plants, mines).
 
@@ -45,12 +45,12 @@ Save this prompt as `CLAUDE.md` at the root of the repository (single copy) and 
 
 ```markdown
 # Role
-You are a senior software engineer who works alongside me to build "Vigía" (code name; package `vigia`), a multi-tenant early warning system. I (a fullstack developer) make the product decisions; you propose, implement and explain.
+You are a senior software engineer who works alongside me to build "Willay" (product name; code name Vigía, package `vigia`), a multi-tenant early warning system. I (a fullstack developer) make the product decisions; you propose, implement and explain.
 
 # Source of truth
 Read docs/SPEC.md before writing code. If something I ask you contradicts SPEC.md, warn me before continuing. Every technical decision not covered is recorded as an ADR in docs/adr/NNNN-title.md.
 
-# What Vigía is
+# What Willay is
 A web platform that (1) ingests sensor readings, (2) evaluates rules per risk zone (threshold, rate of change, silent sensor), (3) opens incidents without duplicates and (4) dispatches alerts by email and Telegram with automatic escalation if nobody acknowledges. Goal: p95 < 30 s between reading received and first alert sent.
 
 # Mandatory stack
@@ -134,7 +134,7 @@ The MVP covers the full data → rule → incident → alert → acknowledgement
 
 **Out of the MVP:** mass SMS and WhatsApp, mobile app, public citizen subscription page, users in several organizations, CAP export (the alert entity is designed to make it easier), predictive models, billing. Open-Meteo remains an optional context layer ("Could" story): it provides daily discharge, does not see small ravines and its free API is for non-commercial use.
 
-**Mandatory demo scenario.** Simulated damming on the Rímac: the downstream station records a sudden drop in discharge and 4 minutes later the upstream station stops reporting. Vigía opens two incidents (rate of change and silence), alerts level 1, escalates to level 2 for lack of acknowledgement, level 2 acknowledges both incidents via Telegram and the dashboard shows the full timeline.
+**Mandatory demo scenario.** Simulated damming on the Rímac: the downstream station records a sudden drop in discharge and 4 minutes later the upstream station stops reporting. Willay opens two incidents (rate of change and silence), alerts level 1, escalates to level 2 for lack of acknowledgement, level 2 acknowledges both incidents via Telegram and the dashboard shows the full timeline.
 
 ## Architecture
 
@@ -322,7 +322,7 @@ erDiagram
 | VIG-37 | E10 Administration | As an admin I want to edit escalation policies from the dashboard | Screen on top of the VIG-24 API with ordered levels, wait in minutes and groups per channel; validation errors next to each field; a notice that changes also apply to ongoing incidents; the 409 for a policy used by rules is explained | C | 3 | 7 |
 | VIG-38 | E10 Administration | As an admin I want to see the audit log | `GET /v1/audit` for admin only, with filters by entity type, entity, author and dates, cursor-paginated, most recent first; table with local time, author (or "el propio contacto", i.e. "the contact themselves", when the contact requested it from Telegram), action, and before and after per field; permission, isolation and stable pagination tests | S | 3 | 6 |
 | VIG-39 | E8 Observability | As an operator I want to see and reprocess the readings that could not be evaluated | List for operator and admin with station, measurement, attempts, failure date and last error; a notice with the count in the header while there is any; reprocessing returns the selected rows to the queue with `NOTIFY` and is audited; the runbook switches to using the dashboard; test: the reprocessed reading ends up evaluated | M | 3 | 6 |
-| VIG-40 | E7 Dashboard | As an operator I want to use Vigía in Spanish or English | Every user-facing string (dashboard, alert emails, Telegram messages, confirmation page, API error messages) lives in translation files for `es` and `en`, none hard-coded; the dashboard uses the language each user chooses (saved per user) or, failing that, the browser's, with Spanish as the default; emails, Telegram and the confirmation page use the contact's language (new `contacts.language`, defaulting to the organization's); API errors carry a stable `code` plus a message in the request's `Accept-Language`; a test fails if a key is missing in either language | S | 8 | 7 |
+| VIG-40 | E7 Dashboard | As an operator I want to use Willay in Spanish or English | Every user-facing string (dashboard, alert emails, Telegram messages, confirmation page, API error messages) lives in translation files for `es` and `en`, none hard-coded; the dashboard uses the language each user chooses (saved per user) or, failing that, the browser's, with Spanish as the default; emails, Telegram and the confirmation page use the contact's language (new `contacts.language`, defaulting to the organization's); API errors carry a stable `code` plus a message in the request's `Accept-Language`; a test fails if a key is missing in either language | S | 8 | 7 |
 
 ## Sprint plan
 
@@ -386,7 +386,7 @@ In an alerting system, a lost alert is worse than a duplicate one: every design 
 | Manage escalation policies | | | | ✔ |
 | See the audit log | | | | ✔ |
 
-**Explicit ethical risk.** A false alarm erodes trust and a lost alert can cost lives. Vigía is a support tool for operators and does not replace the official warning systems; the product, the documentation and the demo must say so.
+**Explicit ethical risk.** A false alarm erodes trust and a lost alert can cost lives. Willay is a support tool for operators and does not replace the official warning systems; the product, the documentation and the demo must say so.
 
 ## Repository, conventions and living documentation
 
