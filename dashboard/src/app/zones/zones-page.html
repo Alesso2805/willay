@@ -23,13 +23,6 @@
 
 <p class="mt-2 min-h-5 text-sm text-slate-700" aria-live="polite">{{ status() }}</p>
 
-@if (loadFailed()) {
-  <div role="alert" class="mt-2 rounded-md border border-red-300 bg-red-50 p-3 text-red-900">
-    No se pudieron cargar las zonas.
-    <button type="button" class="underline" (click)="load()">Reintentar</button>
-  </div>
-}
-
 <div class="mt-4 grid gap-6 lg:grid-cols-[2fr_1fr]">
   <app-zone-map
     [zones]="zones()"
@@ -79,7 +72,7 @@
         </p>
 
         @if (problem(); as p) {
-          <div role="alert" class="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">{{ p.message }}</div>
+          <app-notice>{{ p.message }}</app-notice>
         }
 
         <div class="flex gap-2">
@@ -99,6 +92,14 @@
 
     <section aria-labelledby="zone-list-title">
       <h3 id="zone-list-title" class="font-semibold">Listado ({{ zones().length }})</h3>
+      <app-load-state
+        class="mt-2 block"
+        [status]="listStatus()"
+        loading="Cargando zonas…"
+        empty="Todavía no hay zonas."
+        error="No se pudieron cargar las zonas."
+        (retry)="load()"
+      />
       <ul class="mt-2 flex flex-col gap-2">
         @for (zone of zones(); track zone.id) {
           <li class="rounded-md border border-slate-200 p-3" [class.opacity-60]="!zone.is_active">
@@ -108,10 +109,11 @@
                 <span class="text-sm font-normal text-slate-600">(desactivada)</span>
               }
             </p>
-            <p class="text-sm text-slate-700">
-              Riesgo: {{ riskLabels[zone.risk_level] }}
+            <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-700">
+              <span>Riesgo:</span>
+              <app-state-badge [state]="riskStates[zone.risk_level]" />
               @if (zone.population_estimate !== null) {
-                · Población: {{ zone.population_estimate }}
+                <span>· Población: {{ zone.population_estimate }}</span>
               }
             </p>
             @if (canManage() && !editing()) {
@@ -125,8 +127,6 @@
               </div>
             }
           </li>
-        } @empty {
-          <li class="text-sm text-slate-600">Todavía no hay zonas.</li>
         }
       </ul>
     </section>

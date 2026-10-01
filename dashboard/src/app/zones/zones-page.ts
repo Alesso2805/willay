@@ -1,6 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Session } from '../session';
+import { LoadState, loadStatus } from '../ui/load-state';
+import { Notice } from '../ui/notice';
+import { StateBadge } from '../ui/state-badge';
+import { RISK_LEVEL_STATES } from '../ui/visual-states';
 import { DrawnGeometry, MapMode, ZoneMap } from './zone-map';
 import { RISK_LABELS, RISK_LEVELS, SaveProblem, saveProblem } from './zone-presentation';
 import { RiskLevel, Zone, ZoneInput, ZonesApi } from './zones.api';
@@ -9,7 +13,7 @@ type Editing = { kind: 'new' } | { kind: 'edit'; zone: Zone };
 
 @Component({
   selector: 'app-zones-page',
-  imports: [ZoneMap, ReactiveFormsModule],
+  imports: [ZoneMap, ReactiveFormsModule, LoadState, Notice, StateBadge],
   templateUrl: './zones-page.html',
 })
 export class ZonesPage {
@@ -18,9 +22,14 @@ export class ZonesPage {
 
   protected readonly riskLevels = RISK_LEVELS;
   protected readonly riskLabels = RISK_LABELS;
+  protected readonly riskStates = RISK_LEVEL_STATES;
 
   protected readonly zones = signal<Zone[]>([]);
+  protected readonly loaded = signal(false);
   protected readonly loadFailed = signal(false);
+  protected readonly listStatus = computed(() =>
+    loadStatus(this.loaded(), this.loadFailed(), this.zones().length),
+  );
   protected readonly includeInactive = signal(false);
   protected readonly editing = signal<Editing | null>(null);
   protected readonly geometry = signal<DrawnGeometry | null>(null);
@@ -64,6 +73,7 @@ export class ZonesPage {
     this.api.list(this.includeInactive()).subscribe({
       next: (zones) => {
         this.zones.set(zones);
+        this.loaded.set(true);
         this.loadFailed.set(false);
       },
       error: () => this.loadFailed.set(true),

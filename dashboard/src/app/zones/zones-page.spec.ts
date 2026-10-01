@@ -69,7 +69,7 @@ describe('ZonesPage', () => {
     http.expectOne(`${URL}?include_inactive=false`).flush([ZONE]);
     await fixture.whenStable();
     expect(element.textContent).toContain('Chosica');
-    expect(element.textContent).toContain('Riesgo: Crítico');
+    expect(element.textContent?.replace(/\s+/g, ' ')).toContain('Riesgo: Crítico');
     expect(FakeZoneMap.last?.zones()).toEqual([ZONE]);
   });
 

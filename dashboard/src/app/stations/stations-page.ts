@@ -1,6 +1,11 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Session } from '../session';
+import { ageText, localTime, valueWithUnit } from '../ui/formats';
+import { LoadState, loadStatus } from '../ui/load-state';
+import { Notice } from '../ui/notice';
+import { StateBadge } from '../ui/state-badge';
+import { STATION_STATES } from '../ui/visual-states';
 import { Zone, ZonesApi } from '../zones/zones.api';
 import { LonLat, StationMap } from './station-map';
 import {
@@ -8,8 +13,8 @@ import {
   UNITS,
   VARIABLE_LABELS,
   VARIABLES,
-  ageText,
   stationProblem,
+  stationState,
 } from './station-presentation';
 import {
   IssuedKey,
@@ -25,7 +30,7 @@ type Editing = { kind: 'new' } | { kind: 'edit'; station: Station };
 
 @Component({
   selector: 'app-stations-page',
-  imports: [StationMap, ReactiveFormsModule],
+  imports: [StationMap, ReactiveFormsModule, LoadState, Notice, StateBadge],
   templateUrl: './stations-page.html',
 })
 export class StationsPage {
@@ -33,6 +38,7 @@ export class StationsPage {
   private readonly zonesApi = inject(ZonesApi);
   private readonly session = inject(Session);
 
+  protected readonly stationStates = STATION_STATES;
   protected readonly variables = VARIABLES;
   protected readonly variableLabels = VARIABLE_LABELS;
   protected readonly units = UNITS;
@@ -41,7 +47,11 @@ export class StationsPage {
 
   protected readonly stations = signal<Station[]>([]);
   protected readonly zones = signal<Zone[]>([]);
+  protected readonly loaded = signal(false);
   protected readonly loadFailed = signal(false);
+  protected readonly listStatus = computed(() =>
+    loadStatus(this.loaded(), this.loadFailed(), this.stations().length),
+  );
   protected readonly includeInactive = signal(false);
   protected readonly editing = signal<Editing | null>(null);
   protected readonly assignments = signal<Record<string, ZonePosition | ''>>({});
@@ -91,6 +101,7 @@ export class StationsPage {
     this.api.list(this.includeInactive()).subscribe({
       next: (stations) => {
         this.stations.set(stations);
+        this.loaded.set(true);
         this.loadFailed.set(false);
       },
       error: () => this.loadFailed.set(true),
@@ -103,8 +114,22 @@ export class StationsPage {
     this.load();
   }
 
-  protected age(station: Station): string {
-    return station.heartbeat ? ageText(station.heartbeat.last_measured_at, this.now()) : '';
+  protected stateOf(station: Station) {
+    return stationState(station, this.now());
+  }
+
+  protected age(iso: string): string {
+    return ageText(iso, this.now());
+  }
+
+  /** Hora exacta en la zona de la organización, para el `title` de la antigüedad. */
+  protected time(iso: string): string {
+    const timezone = this.session.me()?.organization_timezone ?? 'UTC';
+    return localTime(iso, timezone);
+  }
+
+  protected value(value: number, unit: string): string {
+    return valueWithUnit(value, unit);
   }
 
   protected zoneSummary(station: Station): string {
