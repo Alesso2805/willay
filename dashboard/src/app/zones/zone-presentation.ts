@@ -1,13 +1,15 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { RISK_LEVEL_STATES } from '../ui/visual-states';
 import { Position, RiskLevel } from './zones.api';
 
 export const RISK_LEVELS: readonly RiskLevel[] = ['low', 'medium', 'high', 'critical'];
 
+/** Etiqueta y color salen del catálogo visual (VIG-33); aquí solo vive el trazo del mapa. */
 export const RISK_LABELS: Record<RiskLevel, string> = {
-  low: 'Bajo',
-  medium: 'Medio',
-  high: 'Alto',
-  critical: 'Crítico',
+  low: RISK_LEVEL_STATES.low.label,
+  medium: RISK_LEVEL_STATES.medium.label,
+  high: RISK_LEVEL_STATES.high.label,
+  critical: RISK_LEVEL_STATES.critical.label,
 };
 
 /**
@@ -15,10 +17,10 @@ export const RISK_LABELS: Record<RiskLevel, string> = {
  * en la lista y en el tooltip del mapa, y el trazo cambia de estilo por nivel.
  */
 export const RISK_STYLES: Record<RiskLevel, { color: string; dashArray?: string; weight: number }> = {
-  low: { color: '#15803d', dashArray: '2 6', weight: 2 },
-  medium: { color: '#a16207', dashArray: '8 6', weight: 2 },
-  high: { color: '#c2410c', weight: 3 },
-  critical: { color: '#b91c1c', weight: 4 },
+  low: { color: RISK_LEVEL_STATES.low.map, dashArray: '2 6', weight: 2 },
+  medium: { color: RISK_LEVEL_STATES.medium.map, dashArray: '8 6', weight: 2 },
+  high: { color: RISK_LEVEL_STATES.high.map, weight: 3 },
+  critical: { color: RISK_LEVEL_STATES.critical.map, weight: 4 },
 };
 
 export interface SaveProblem {
