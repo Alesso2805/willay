@@ -20,13 +20,9 @@
 <p class="mt-2 min-h-5 text-sm text-slate-700" aria-live="polite">{{ status() }}</p>
 
 @if (issued(); as key) {
-  <section
-    role="alert"
-    aria-labelledby="issued-key-title"
-    class="mt-2 rounded-md border border-amber-400 bg-amber-50 p-4 text-amber-950"
-  >
+  <app-notice tone="warning" aria-labelledby="issued-key-title" class="mt-2">
     <h3 id="issued-key-title" class="font-semibold">API key de {{ key.code }}</h3>
-    <p class="mt-1 text-sm">
+    <p class="mt-1">
       Cópiala ahora y configúrala en la estación: <strong>no se volverá a mostrar</strong>.
       Vigía solo guarda su hash. Si la pierdes, rota la clave.
     </p>
@@ -35,24 +31,17 @@
         readonly
         [value]="key.key"
         aria-label="API key"
-        class="min-w-0 flex-1 rounded border border-amber-300 bg-white px-2 py-1 font-mono text-sm"
+        class="min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 py-1 font-mono text-slate-900"
         (focus)="$any($event.target).select()"
       />
-      <button type="button" class="rounded-md border border-amber-400 px-3 py-1 text-sm" (click)="copyKey()">
+      <button type="button" class="rounded-md border border-slate-400 bg-white px-3 py-1 text-slate-900" (click)="copyKey()">
         {{ copied() ? 'Copiada' : 'Copiar' }}
       </button>
-      <button type="button" class="rounded-md bg-amber-900 px-3 py-1 text-sm text-white" (click)="dismissKey()">
+      <button type="button" class="rounded-md bg-slate-900 px-3 py-1 text-white hover:bg-slate-700" (click)="dismissKey()">
         Ya la guardé
       </button>
     </div>
-  </section>
-}
-
-@if (loadFailed()) {
-  <div role="alert" class="mt-2 rounded-md border border-red-300 bg-red-50 p-3 text-red-900">
-    No se pudieron cargar las estaciones.
-    <button type="button" class="underline" (click)="load()">Reintentar</button>
-  </div>
+  </app-notice>
 }
 
 <div class="mt-4 grid gap-6 lg:grid-cols-[2fr_1fr]">
@@ -149,7 +138,7 @@
         </fieldset>
 
         @if (problem(); as p) {
-          <div role="alert" class="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">{{ p }}</div>
+          <app-notice>{{ p }}</app-notice>
         }
 
         <div class="flex gap-2">
@@ -167,22 +156,37 @@
 
     <section aria-labelledby="station-list-title">
       <h3 id="station-list-title" class="font-semibold">Listado ({{ stations().length }})</h3>
+      <app-load-state
+        class="mt-2 block"
+        [status]="listStatus()"
+        loading="Cargando estaciones…"
+        empty="Todavía no hay estaciones."
+        error="No se pudieron cargar las estaciones."
+        (retry)="load()"
+      />
       <ul class="mt-2 flex flex-col gap-2">
         @for (station of stations(); track station.id) {
           <li class="rounded-md border border-slate-200 p-3" [class.opacity-60]="station.status === 'inactive'">
-            <p class="font-medium text-slate-900">
-              <span class="font-mono">{{ station.code }}</span> · {{ station.name }}
-              @if (!station.has_zone) {
-                <span class="ml-1 rounded border border-amber-400 bg-amber-50 px-1.5 text-xs font-medium text-amber-900">Sin zona</span>
+            <p class="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-slate-900">
+              <span><span class="font-mono">{{ station.code }}</span> · {{ station.name }}</span>
+              @if (stateOf(station); as state) {
+                <app-state-badge [state]="stationStates[state]" />
               }
-              @if (station.status === 'inactive') {
-                <span class="text-sm font-normal text-slate-600">(desactivada)</span>
+              @if (station.status === 'active' && !station.has_zone) {
+                <app-state-badge [state]="stationStates.unzoned" />
               }
             </p>
             <p class="text-sm text-slate-700">
               {{ variableLabels[station.variable] }} ({{ station.unit }})
-              @if (station.heartbeat?.last_value !== null && station.heartbeat?.last_value !== undefined) {
-                · Último: {{ station.heartbeat?.last_value }} {{ station.unit }} {{ age(station) }}
+              @if (station.heartbeat; as heartbeat) {
+                @if (heartbeat.last_value !== null) {
+                  · Último: {{ value(heartbeat.last_value, station.unit) }}
+                  <time [attr.datetime]="heartbeat.last_measured_at" [title]="time(heartbeat.last_measured_at)">{{
+                    age(heartbeat.last_measured_at)
+                  }}</time>
+                } @else {
+                  · Sin lecturas todavía
+                }
               } @else {
                 · Sin lecturas todavía
               }
@@ -202,8 +206,6 @@
               </div>
             }
           </li>
-        } @empty {
-          <li class="text-sm text-slate-600">Todavía no hay estaciones.</li>
         }
       </ul>
     </section>

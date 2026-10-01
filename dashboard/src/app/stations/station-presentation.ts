@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Variable, ZonePosition } from './stations.api';
+import { StationState } from '../ui/visual-states';
+import { Station, Variable, ZonePosition } from './stations.api';
 
 export const VARIABLES: readonly Variable[] = ['discharge', 'water_level', 'rainfall'];
 
@@ -22,13 +23,17 @@ export const POSITION_LABELS: Record<ZonePosition, string> = {
   downstream: 'Aguas abajo',
 };
 
-/** "hace 12 s", "hace 3 min"... a partir de una fecha ISO. */
-export function ageText(iso: string, now: number): string {
-  const seconds = Math.max(0, Math.round((now - Date.parse(iso)) / 1000));
-  if (seconds < 60) return `hace ${seconds} s`;
-  if (seconds < 3600) return `hace ${Math.floor(seconds / 60)} min`;
-  if (seconds < 86_400) return `hace ${Math.floor(seconds / 3600)} h`;
-  return `hace ${Math.floor(seconds / 86_400)} d`;
+/**
+ * Si la estación está reportando o callada, con la misma regla que el worker `silence`:
+ * sin lotes durante K × intervalo esperado. Es una vista aproximada con el reloj del
+ * navegador; el incidente lo abre el worker. Una estación que nunca reportó no está callada
+ * (SPEC: aún no empezó a transmitir), así que no tiene estado: devuelve null.
+ */
+export function stationState(station: Station, now: number): StationState | null {
+  if (station.status === 'inactive') return 'inactive';
+  if (station.heartbeat === null) return null;
+  const silentAfterMs = station.expected_interval_s * station.silence_multiplier * 1000;
+  return now - Date.parse(station.heartbeat.last_seen_at) > silentAfterMs ? 'silent' : 'reporting';
 }
 
 /** Traduce un error al guardar una estación a un mensaje para el operador. */

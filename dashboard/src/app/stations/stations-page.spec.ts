@@ -86,6 +86,35 @@ function setup(permissions: string[]) {
 }
 
 describe('StationsPage', () => {
+  it('says it is loading, not that there are no stations, until the list arrives', async () => {
+    const { fixture, element, loaded } = setup(['view']);
+    await fixture.whenStable();
+    expect(element.textContent).toContain('Cargando estaciones…');
+    expect(element.textContent).not.toContain('Todavía no hay estaciones.');
+    loaded([]);
+    await fixture.whenStable();
+    expect(element.textContent).toContain('Todavía no hay estaciones.');
+  });
+
+  it('marks a station that stopped reporting, with its last value and exact time', async () => {
+    const { fixture, element, loaded } = setup(['view']);
+    const tenMinutesAgo = new Date(Date.now() - 600_000).toISOString();
+    loaded([
+      {
+        ...STATION,
+        has_zone: true,
+        heartbeat: { last_seen_at: tenMinutesAgo, last_measured_at: tenMinutesAgo, last_value: 12.3456789 },
+      },
+    ]);
+    await fixture.whenStable();
+    expect(element.textContent).toContain('Sin reportar'); // 10 min > 3 × 10 s
+    expect(element.textContent).not.toContain('Sin zona');
+    expect(element.textContent).toContain('12.3457 mm');
+    const age = element.querySelector('time');
+    expect(age?.textContent).toContain('hace 10 min');
+    expect(age?.getAttribute('title')).toMatch(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/);
+  });
+
   it('marks stations without a zone with text, not only on the map', async () => {
     const { fixture, element, loaded } = setup(['view']);
     loaded([STATION]);
