@@ -127,6 +127,31 @@ describe('StationsPage', () => {
     expect(age?.getAttribute('title')).toMatch(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/);
   });
 
+  it('refreshes heartbeats with the clock, so a reporting station never looks silent', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+    try {
+      const { fixture, http, element, loaded } = setup(['view']);
+      const reporting = (iso: string): Station => ({
+        ...STATION,
+        has_zone: true,
+        heartbeat: { last_seen_at: iso, last_measured_at: iso, last_value: 1 },
+      });
+      loaded([reporting(new Date().toISOString())]);
+      await fixture.whenStable();
+      expect(element.textContent).toContain('Reportando');
+
+      vi.advanceTimersByTime(45_000); // más que 3 × 10 s: con datos viejos diría "Sin reportar"
+      const refreshes = http.match(`${URL}?include_inactive=false`);
+      expect(refreshes).toHaveLength(3);
+      refreshes.forEach((request) => request.flush([reporting(new Date().toISOString())]));
+      await fixture.whenStable();
+      expect(element.textContent).toContain('Reportando');
+      expect(element.textContent).not.toContain('Sin reportar');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('marks stations without a zone with text, not only on the map', async () => {
     const { fixture, element, loaded } = setup(['view']);
     loaded([STATION]);
