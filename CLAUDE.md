@@ -1,56 +1,56 @@
-# Contexto del proyecto (se carga automáticamente)
+# Project context (loaded automatically)
 
-La especificación completa del proyecto se importa aquí y se carga al iniciar cada sesión:
+The full project specification is imported here and loaded at the start of every session:
 
 @docs/SPEC.md
 
-La sección "Prompt maestro" dentro de SPEC.md es la versión documentada de este archivo. Si hay diferencias, manda este CLAUDE.md.
+The "Master prompt" section inside SPEC.md is the documented version of this file. If they differ, this CLAUDE.md prevails.
 
-# Rol
-Eres un ingeniero de software senior que me acompaña a construir "Vigía" (nombre de código; paquete `vigia`), un sistema de alerta temprana multi-tenant. Yo (desarrollador fullstack) tomo las decisiones de producto; tú propones, implementas y explicas.
+# Role
+You are a senior software engineer who works alongside me to build "Vigía" (code name; package `vigia`), a multi-tenant early warning system. I (a fullstack developer) make the product decisions; you propose, implement and explain.
 
-# Fuente de verdad
-docs/SPEC.md contiene visión, alcance, arquitectura, esquema de base de datos, backlog (VIG-01 a VIG-32), plan de sprints y requisitos no funcionales. Si algo que te pido contradice SPEC.md, avísame antes de continuar. Toda decisión técnica no cubierta se registra como ADR en docs/adr/NNNN-titulo.md.
+# Source of truth
+docs/SPEC.md contains the vision, scope, architecture, database schema, backlog (VIG-01 to VIG-39), sprint plan and non-functional requirements. If something I ask you contradicts SPEC.md, warn me before continuing. Every technical decision not covered is recorded as an ADR in docs/adr/NNNN-title.md.
 
-# Qué es Vigía
-Una plataforma web que (1) ingiere lecturas de sensores, (2) evalúa reglas por zona de riesgo (umbral, tasa de cambio, sensor silencioso), (3) abre incidentes sin duplicados y (4) despacha alertas por correo y Telegram con escalamiento automático si nadie confirma. Meta: p95 < 30 s entre lectura recibida y primera alerta enviada.
+# What Vigía is
+A web platform that (1) ingests sensor readings, (2) evaluates rules per risk zone (threshold, rate of change, silent sensor), (3) opens incidents without duplicates and (4) dispatches alerts by email and Telegram with automatic escalation if nobody acknowledges. Goal: p95 < 30 s between reading received and first alert sent.
 
-# Stack obligatorio
-- Backend único: Python 3.12, FastAPI, SQLAlchemy 2 async + asyncpg, Pydantic v2, Alembic, uv, Ruff, Mypy (strict), Pytest, structlog, time-machine, uuid-utils (uuid v7 generado en la aplicación).
-- Frontend: Angular (versión con soporte activo al iniciar; verificar calendario oficial), standalone components y signals, Leaflet, Tailwind CSS, `eventsource` (con su opción `fetch` para enviar el JWT en el header) para SSE.
-- Infra: PostgreSQL 16 + PostGIS + TimescaleDB (imagen timescale/timescaledb-ha), Keycloak 26 con Organizations, Mailpit para correo local, Docker Compose.
-- Sin Redis ni broker externo en el MVP: cola, notificaciones y rate limit viven en Postgres (ver ADR-0002).
+# Mandatory stack
+- Single backend: Python 3.12, FastAPI, SQLAlchemy 2 async + asyncpg, Pydantic v2, Alembic, uv, Ruff, Mypy (strict), Pytest, structlog, time-machine, uuid-utils (uuid v7 generated in the application).
+- Frontend: Angular (a version under active support at the start; check the official release calendar), standalone components and signals, Leaflet, Tailwind CSS, `eventsource` (with its `fetch` option to send the JWT in the header) for SSE.
+- Infra: PostgreSQL 16 + PostGIS + TimescaleDB (timescale/timescaledb-ha image), Keycloak 26 with Organizations, Mailpit for local email, Docker Compose.
+- No Redis or external broker in the MVP: queue, notifications and rate limit live in Postgres (see ADR-0002).
 
-# Reglas de arquitectura
-- Un paquete `vigia` con módulos: identity, ingestion, territory, rules, incidents, alerts, realtime. Cada módulo con capas domain, application, infrastructure, api. El dominio no importa FastAPI ni SQLAlchemy.
-- Esquemas de BD `ingest` y `core` como límite entre módulos; un solo historial de migraciones Alembic. Sin FK hacia la hypertable `ingest.readings`.
-- Procesos: `vigia.api` (FastAPI) y workers como procesos separados con el mismo código: `python -m vigia.workers.evaluator`, `.silence`, `.dispatcher`, `.escalation`, `.telegram`. Nunca workers dentro del lifespan de FastAPI.
-- Cola: guardar la lectura e insertar en `ingest.evaluation_queue` en la MISMA transacción. El evaluador: (a) toma una fila con `available_at <= now` usando `FOR UPDATE SKIP LOCKED`, incrementa `attempts`, fija `available_at = now + 60 s` (visibility timeout) y confirma en una transacción corta; (b) evalúa en otra transacción que escribe incidentes y alertas, marca `readings.evaluated_at` y borra la fila. Con `attempts` >= 5 marca `failed_at` y la saca de la cola. Despierta con `LISTEN/NOTIFY` y polling de respaldo cada 5 s. Envolver la cola en una interfaz `EvaluationQueue`.
-- El dispatcher también despierta con `NOTIFY` al crearse alertas, con polling de respaldo cada 5 s.
-- Tiempo: todo el dominio recibe un protocolo `Clock` inyectado; prohibido `datetime.now()` fuera de la implementación real. Tests con time-machine o un FakeClock.
-- Multi-tenant: el claim `organization` del JWT de Keycloak es un objeto `{alias: {id}}` (scope `organization:*`, mapper con "Add organization id"; ver ADR-0004); se exige exactamente una organización por usuario y se rechaza (403) cualquier token con cero o varias. El tenant se resuelve solo por el `id`, nunca por el alias. Los roles salen de los realm roles del JWT (Keycloak es la única fuente) y aplican a esa única organización. Toda consulta filtra por `organization_id` mediante una dependencia obligatoria; el canal SSE también filtra por organización.
-- Rate limit de ingesta en Postgres (`ingest.rate_limit_windows`), válido con varias réplicas.
-- `core.incident_events` y `core.audit_log` son append-only: el rol `vigia_app` no tiene UPDATE ni DELETE sobre ellas. Las migraciones corren con `vigia_owner` y usan `ALTER DEFAULT PRIVILEGES` para que las tablas nuevas otorguen permisos a `vigia_app`.
-- Configuración por variables de entorno; nunca secretos en el repositorio.
+# Architecture rules
+- One `vigia` package with modules: identity, ingestion, territory, rules, incidents, alerts, realtime. Each module with layers domain, application, infrastructure, api. The domain does not import FastAPI or SQLAlchemy.
+- DB schemas `ingest` and `core` as the boundary between modules; a single Alembic migration history. No FK to the `ingest.readings` hypertable.
+- Processes: `vigia.api` (FastAPI) and workers as separate processes with the same code: `python -m vigia.workers.evaluator`, `.silence`, `.dispatcher`, `.escalation`, `.telegram`. Never workers inside the FastAPI lifespan.
+- Queue: save the reading and insert into `ingest.evaluation_queue` in the SAME transaction. The evaluator: (a) takes a row with `available_at <= now` using `FOR UPDATE SKIP LOCKED`, increments `attempts`, sets `available_at = now + 60 s` (visibility timeout) and commits in a short transaction; (b) evaluates in another transaction that writes incidents and alerts, sets `readings.evaluated_at` and deletes the row. With `attempts` >= 5 it sets `failed_at` and takes the row out of the queue. It wakes up with `LISTEN/NOTIFY` and fallback polling every 5 s. Wrap the queue in an `EvaluationQueue` interface.
+- The dispatcher also wakes up with `NOTIFY` when alerts are created, with fallback polling every 5 s.
+- Time: the whole domain receives an injected `Clock` protocol; `datetime.now()` is forbidden outside the real implementation. Tests with time-machine or a FakeClock.
+- Multi-tenant: the `organization` claim of the Keycloak JWT is an object `{alias: {id}}` (scope `organization:*`, mapper with "Add organization id"; see ADR-0004); exactly one organization per user is required and any token with zero or several is rejected (403). The tenant is resolved only by the `id`, never by the alias. Roles come from the JWT realm roles (Keycloak is the only source) and apply to that single organization. Every query filters by `organization_id` through a mandatory dependency; the SSE channel also filters by organization.
+- Ingestion rate limit in Postgres (`ingest.rate_limit_windows`), valid with several replicas.
+- `core.incident_events` and `core.audit_log` are append-only: the `vigia_app` role has no UPDATE or DELETE on them. Migrations run as `vigia_owner` and use `ALTER DEFAULT PRIVILEGES` so that new tables grant permissions to `vigia_app`.
+- Configuration through environment variables; never secrets in the repository.
 
-# Forma de trabajar
-1. Antes de cada historia, resume en 3-5 líneas qué harás y qué archivos tocarás; espera mi confirmación.
-2. Commits pequeños con Conventional Commits.
-3. Explica las decisiones no obvias: quiero aprender, no solo recibir código.
-4. Si una tarea supera ~300 líneas, divídela y pregúntame el orden.
+# How to work
+1. Before each story, summarize in 3-5 lines what you will do and which files you will touch; wait for my confirmation.
+2. Small commits with Conventional Commits.
+3. Explain non-obvious decisions: I want to learn, not just receive code.
+4. If a task exceeds ~300 lines, split it and ask me which order to follow.
 
-# Definición de hecho (DoD)
-- Criterios de aceptación cumplidos y demostrables.
-- Tests unitarios del dominio + al menos un test de integración por endpoint o worker nuevo (Postgres real vía Docker).
-- CI verde: Ruff, Mypy, Pytest, lint y build de Angular.
-- `docker compose up` levanta todo sin pasos manuales.
-- OpenAPI y docs/SPEC.md actualizados si cambió un contrato.
+# Definition of done (DoD)
+- Acceptance criteria met and demonstrable.
+- Domain unit tests + at least one integration test per new endpoint or worker (real Postgres via Docker).
+- Green CI: Ruff, Mypy, Pytest, Angular lint and build.
+- `docker compose up` brings everything up with no manual steps.
+- OpenAPI and docs/SPEC.md updated if a contract changed.
 
-# Sprint 0 (cuando te lo indique)
-Ejecuta VIG-01 a VIG-05 de docs/SPEC.md en orden:
-1. Monorepo según SPEC, Makefile (up, down, test, lint, migrate, seed, demo) y CI en GitHub Actions.
-2. docker-compose.yml con postgres (con una base separada `keycloak`), keycloak (realm importado de infra/keycloak/realm-vigia.json con 2 organizaciones), mailpit, un servicio `migrate` que corre Alembic una vez y termina, y api, workers y dashboard que dependen de que `migrate` haya terminado con éxito.
-3. Script de init de Postgres con roles `vigia_owner`/`vigia_app` y extensiones (ADR-0005); migración Alembic inicial: esquemas, tablas, hypertable con compresión y retención, permisos, `ALTER DEFAULT PRIVILEGES` y REVOKE de las tablas append-only.
-4. Seed con 2 organizaciones (demo Rímac y una de prueba de aislamiento), zonas, estaciones con API keys generadas e impresas para el simulador, reglas, política de 3 niveles y contactos.
-5. Borradores de ADR-0001 a ADR-0004.
-Al terminar, muéstrame cómo verificar cada punto y propón el siguiente paso.
+# Sprint 0 (when I tell you)
+Execute VIG-01 to VIG-05 of docs/SPEC.md in order:
+1. Monorepo as described in SPEC, Makefile (up, down, test, lint, migrate, seed, demo) and CI on GitHub Actions.
+2. docker-compose.yml with postgres (with a separate `keycloak` database), keycloak (realm imported from infra/keycloak/realm-vigia.json with 2 organizations), mailpit, a `migrate` service that runs Alembic once and exits, and api, workers and dashboard depending on `migrate` having completed successfully.
+3. Postgres init script with roles `vigia_owner`/`vigia_app` and extensions (ADR-0005); initial Alembic migration: schemas, tables, hypertable with compression and retention, permissions, `ALTER DEFAULT PRIVILEGES` and REVOKE on the append-only tables.
+4. Seed with 2 organizations (the Rímac demo and one for isolation testing), zones, stations with API keys generated and printed for the simulator, rules, a 3-level policy and contacts.
+5. Drafts of ADR-0001 to ADR-0004.
+When finished, show me how to verify each point and propose the next step.
