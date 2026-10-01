@@ -26,3 +26,7 @@ Todos los cambios visibles se documentan aquí. Formato [Keep a Changelog](https
 - Enfriamiento tras resolver un incidente y lecturas que lo agravan en su línea de tiempo (VIG-18).
 - API de incidentes: lista, detalle con línea de tiempo, confirmar y resolver (VIG-19).
 - Alertas por correo al abrir un incidente, con reintentos, hora local y enlace de confirmación; visibles en Mailpit (VIG-20).
+- Vinculación de Telegram: enlace de un solo uso (7 días) que genera un admin y worker `telegram` que guarda el chat del contacto (VIG-21).
+- Alertas por Telegram con un botón de confirmación que solo vale para quien recibió la alerta; tras el clic, el botón se reemplaza por quién confirmó y cuándo (VIG-22).
+- Página de confirmación de alertas sin login: abrir el enlace solo muestra el incidente y el botón confirma. Las alertas pendientes de un incidente ya confirmado o resuelto no se envían (VIG-23).
+- Escalamiento automático por niveles con el worker `escalation` y API de políticas de escalamiento para admin (VIG-24).
