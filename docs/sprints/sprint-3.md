@@ -1,53 +1,53 @@
-# Sprint 3 — Silencio detectado, incidentes sin duplicados y primer correo (VIG-17 a VIG-20)
+# Sprint 3 — Silence detected, incidents without duplicates and first email (VIG-17 to VIG-20)
 
-**Estado al 2026-09-29:** las 4 historias (16 puntos) están terminadas, fusionadas en `main` con CI en verde y verificadas contra el stack real. El plan las ubicaba entre el 9 y el 22 de noviembre, así que seguimos adelantados.
+**Status as of 2026-09-29:** the 4 stories (16 points) are done, merged into `main` with green CI and verified against the real stack. The plan placed them between November 9 and 22, so we are still ahead of schedule.
 
-## Qué se entregó
+## What was delivered
 
-| Historia | PR | Resultado | Verificación en el stack real |
+| Story | PR | Result | Verification on the real stack |
 | --- | --- | --- | --- |
-| VIG-17 | #8 | Worker `silence` cada 15 s: un incidente por estación callada, `station_recovered` una sola vez (migración 0005) y purga del rate limit | RIM-SEU-01 abrió su incidente 35,4 s después de su último latido (límite: 60 s); las 3 estaciones de una regla de zona abrieron uno cada una; RIM-003, que nunca reportó, no alertó |
-| VIG-18 | #9 | Enfriamiento para todos los tipos de regla, `reading_added` solo si la lectura agrava el incidente, carrera de dos evaluadores | Un silencio resuelto no se reabrió durante el enfriamiento; el incidente de caída de RIM-CHA-01 registró solo sus nuevos mínimos |
-| VIG-19 | #10 | API de incidentes: lista, detalle con línea de tiempo, confirmar (responder en adelante) y resolver (operator en adelante); 409 en transiciones inválidas | Con un token real de Keycloak: confirmar, resolver sin confirmar y 409 al repetir |
-| VIG-20 | #11 | Alertas del nivel 1 al abrir un incidente y worker `dispatcher` de correo con reintentos, hora local y enlace de confirmación (migración 0006) | El correo llegó a Mailpit 0,04 s después de recibirse la lectura (objetivo p95: 30 s) |
+| VIG-17 | #8 | `silence` worker every 15 s: one incident per silent station, `station_recovered` only once (migration 0005) and rate limit purge | RIM-SEU-01 opened its incident 35.4 s after its last heartbeat (limit: 60 s); the 3 stations of a zone rule opened one each; RIM-003, which never reported, did not alert |
+| VIG-18 | #9 | Cooldown for every rule type, `reading_added` only if the reading worsens the incident, race between two evaluators | A resolved silence did not reopen during the cooldown; the RIM-CHA-01 drop incident recorded only its new minimums |
+| VIG-19 | #10 | Incidents API: list, detail with timeline, acknowledge (responder and above) and resolve (operator and above); 409 on invalid transitions | With a real Keycloak token: acknowledge, resolve without acknowledging, and 409 on repeating |
+| VIG-20 | #11 | Level 1 alerts when an incident opens and an email `dispatcher` worker with retries, local time and a confirmation link (migration 0006) | The email reached Mailpit 0.04 s after the reading was received (p95 target: 30 s) |
 
-## Decisiones del sprint
+## Sprint decisions
 
-- **Silencio:** una estación que nunca reportó no cuenta como silenciosa, y `station_recovered` lo registra el worker `silence`, no la ingesta.
-- **Unicidad en la base:** "una sola vez" (incidente activo, recuperación) la garantiza un índice único parcial, no un "insertar si no existe" con carrera.
-- **`reading_added`:** solo entran las lecturas que empeoran el valor disparador; reprocesar una lectura no duplica eventos.
-- **Ciclo de vida:** un incidente abierto se puede resolver sin confirmarlo antes; `resolved` es final.
-- **Correo:** texto plano con la hora local de la organización; reintentos a los 5, 10 y 20 s; la línea de tiempo nunca guarda el correo ni el `chat_id`.
-- **Confirmación:** el enlace abre una página de la API sin login con un botón (POST). Abrirlo nunca confirma, porque los escáneres de correo abren los enlaces solos.
+- **Silence:** a station that never reported does not count as silent, and `station_recovered` is recorded by the `silence` worker, not by ingestion.
+- **Uniqueness in the database:** "only once" (active incident, recovery) is guaranteed by a partial unique index, not by a racy "insert if not exists".
+- **`reading_added`:** only the readings that worsen the trigger value get in; reprocessing a reading does not duplicate events.
+- **Lifecycle:** an open incident can be resolved without acknowledging it first; `resolved` is final.
+- **Email:** plain text with the organization's local time; retries after 5, 10 and 20 s; the timeline never stores the email address or the `chat_id`.
+- **Confirmation:** the link opens an API page without login with a button (POST). Opening it never confirms, because email scanners open links on their own.
 
-## Retomar
+## Picking it up again
 
 ```bash
 git switch main
 make up && make seed
 make lint test
-make simulate ARGS="--scenario rimac --seed 42"   # caída en RIM-CHA-01 y, 4 min después, silencio en RIM-SEU-01
+make simulate ARGS="--scenario rimac --seed 42"   # drop on RIM-CHA-01 and, 4 min later, silence on RIM-SEU-01
 ```
 
-Los correos de alerta se ven en Mailpit: http://localhost:8025.
+The alert emails can be seen in Mailpit: http://localhost:8025.
 
-## Cambios a SPEC.md y CLAUDE.md en este sprint
+## Changes to SPEC.md and CLAUDE.md in this sprint
 
 - `c753099` docs(spec): silence ignores stations that never reported (PR #8)
 - `23c3f5a` docs(spec): reading_added only when the trigger value worsens (PR #9)
 - `7c531e3` docs(spec): an open incident can be resolved without acknowledging (PR #10)
 - `db11f26` docs(spec): email content, retry timing and a confirmation page (PR #11)
 
-## Pendientes
+## To do
 
-- [ ] El enlace de confirmación de los correos responde 404 hasta VIG-23, que trae la página y el POST.
-- [ ] Las alertas de Telegram se crean pero quedan pendientes hasta VIG-22.
-- [ ] Un nivel sin ningún envío debe escalar de inmediato (VIG-24).
-- [ ] Decidir con VIG-23/24 si una alerta pendiente se sigue enviando cuando el incidente ya fue confirmado.
-- [ ] De sprints anteriores: aceptar los ADR 0001–0006; mostrar el nombre de la organización en `/v1/me` y en el panel; Node 24 en WSL y mover el repo al sistema de archivos de WSL; decidir si se borran `refs/backup/*` y las ramas locales `feat/VIG-01` a `feat/VIG-11`.
+- [ ] The confirmation link in the emails answers 404 until VIG-23, which brings the page and the POST.
+- [ ] Telegram alerts are created but stay pending until VIG-22.
+- [ ] A level with no deliveries at all must escalate immediately (VIG-24).
+- [ ] Decide with VIG-23/24 whether a pending alert is still sent when the incident has already been acknowledged.
+- [ ] From previous sprints: accept ADRs 0001–0006; show the organization's name in `/v1/me` and in the dashboard; Node 24 in WSL and move the repo to the WSL file system; decide whether to delete `refs/backup/*` and the local branches `feat/VIG-01` to `feat/VIG-11`.
 
 ## Retro
 
-- **Bien:** preguntar las decisiones de producto antes de cada historia, con una opción recomendada, mantuvo el ritmo. Las pruebas en vivo encontraron un hueco real (un silencio resuelto se reabría) que VIG-18 cerró, y dos textos mal redactados.
-- **Mejorar:** en VIG-18 prometí tres commits pero los separé al final, reconstruyendo un estado intermedio. Hay que commitear cada parte en cuanto pasan sus tests.
-- **Probar:** en el Sprint 4, además de las mutaciones, registrar los mutantes equivalentes como el del filtro de tenant, que el rollback de la petición neutraliza. Documentan defensas en profundidad que ningún test puede ver.
+- **Went well:** asking the product decisions before each story, with a recommended option, kept the pace. The live tests found a real gap (a resolved silence reopened) that VIG-18 closed, and two poorly worded texts.
+- **To improve:** in VIG-18 I promised three commits but split them at the end, rebuilding an intermediate state. Each part has to be committed as soon as its tests pass.
+- **To try:** in Sprint 4, besides the mutations, record the equivalent mutants, such as the tenant filter one that the request rollback neutralizes. They document defenses in depth that no test can see.

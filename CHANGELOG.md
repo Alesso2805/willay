@@ -1,32 +1,32 @@
 # Changelog
 
-Todos los cambios visibles se documentan aquí. Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y versionado [SemVer](https://semver.org/lang/es/).
+All notable changes are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
 ### Added
-- Monorepo con backend Python (`vigia`), dashboard Angular 22, Makefile y CI en GitHub Actions (VIG-01).
-- Stack de Docker Compose: Postgres (TimescaleDB + PostGIS), Keycloak 26.7 con el realm `vigia` y 2 organizaciones, Mailpit, contenedor `migrate`, API, 5 workers y dashboard, con healthchecks (VIG-02).
-- Migraciones iniciales: esquemas `core` e `ingest`, 20 tablas, hypertable de lecturas con compresión y retención, roles `vigia_owner` y `vigia_app` con tablas append-only (VIG-03).
-- `make seed`: datos demo del Rímac y organización de aislamiento, con API keys de estación Argon2id (VIG-04).
-- ADR-0001 a ADR-0006 (VIG-05).
-- Login OIDC en el panel con Keycloak y `GET /v1/me`; los tokens con cero o varias organizaciones reciben 403 (VIG-06).
-- Matriz de permisos por rol aplicada por endpoint (VIG-07).
-- `POST /v1/readings`: lotes de hasta 500 lecturas autenticados con la API key de la estación, límite de 60 lotes por minuto (VIG-08).
-- Lecturas tardías (> 1 h) guardadas sin evaluar y aviso inmediato al evaluador (VIG-09).
-- Latido de cada estación con su último valor y la hora de medición (VIG-10).
-- Simulador de estaciones `make simulate` con el escenario de demo del Rímac (VIG-11).
-- Contrato OpenAPI versionado en `docs/openapi.json`.
-- Zonas de riesgo: CRUD con validación de geometría y auditoría, y dibujo y edición de polígonos en el mapa del panel (VIG-12).
-- Estaciones: CRUD con su posición en cada zona, rotación de API key mostrada una sola vez y página en el panel (VIG-13).
-- Worker evaluador: toma lecturas de la cola con `SKIP LOCKED`, despierta con `LISTEN/NOTIFY` y marca como fallida una lectura tras 5 intentos (VIG-14).
-- Reglas de umbral e incidentes sin duplicados, con copia de las lecturas que los dispararon (VIG-15).
-- Reglas de tasa de cambio, medidas del pico al valle dentro de la ventana (VIG-16).
-- Worker `silence`: un incidente por estación que deja de reportar, registro de su recuperación y purga del rate limit (VIG-17).
-- Enfriamiento tras resolver un incidente y lecturas que lo agravan en su línea de tiempo (VIG-18).
-- API de incidentes: lista, detalle con línea de tiempo, confirmar y resolver (VIG-19).
-- Alertas por correo al abrir un incidente, con reintentos, hora local y enlace de confirmación; visibles en Mailpit (VIG-20).
-- Vinculación de Telegram: enlace de un solo uso (7 días) que genera un admin y worker `telegram` que guarda el chat del contacto (VIG-21).
-- Alertas por Telegram con un botón de confirmación que solo vale para quien recibió la alerta; tras el clic, el botón se reemplaza por quién confirmó y cuándo (VIG-22).
-- Página de confirmación de alertas sin login: abrir el enlace solo muestra el incidente y el botón confirma. Las alertas pendientes de un incidente ya confirmado o resuelto no se envían (VIG-23).
-- Escalamiento automático por niveles con el worker `escalation` y API de políticas de escalamiento para admin (VIG-24).
+- Monorepo with a Python backend (`vigia`), an Angular 22 dashboard, a Makefile and CI on GitHub Actions (VIG-01).
+- Docker Compose stack: Postgres (TimescaleDB + PostGIS), Keycloak 26.7 with the `vigia` realm and 2 organizations, Mailpit, a `migrate` container, API, 5 workers and dashboard, with healthchecks (VIG-02).
+- Initial migrations: `core` and `ingest` schemas, 20 tables, readings hypertable with compression and retention, `vigia_owner` and `vigia_app` roles with append-only tables (VIG-03).
+- `make seed`: Rímac demo data and an isolation organization, with Argon2id station API keys (VIG-04).
+- ADR-0001 to ADR-0006 (VIG-05).
+- OIDC login in the dashboard with Keycloak and `GET /v1/me`; tokens with zero or several organizations get 403 (VIG-06).
+- Per-role permission matrix enforced per endpoint (VIG-07).
+- `POST /v1/readings`: batches of up to 500 readings authenticated with the station's API key, limited to 60 batches per minute (VIG-08).
+- Late readings (> 1 h) stored without being evaluated, and immediate notification to the evaluator (VIG-09).
+- Heartbeat of each station with its latest value and measurement time (VIG-10).
+- `make simulate` station simulator with the Rímac demo scenario (VIG-11).
+- Versioned OpenAPI contract in `docs/openapi.json`.
+- Risk zones: CRUD with geometry validation and auditing, and polygon drawing and editing on the dashboard map (VIG-12).
+- Stations: CRUD with their position in each zone, API key rotation shown only once and a dashboard page (VIG-13).
+- Evaluator worker: takes readings from the queue with `SKIP LOCKED`, wakes up with `LISTEN/NOTIFY` and marks a reading as failed after 5 attempts (VIG-14).
+- Threshold rules and incidents without duplicates, with a copy of the readings that triggered them (VIG-15).
+- Rate-of-change rules, measured from peak to trough within the window (VIG-16).
+- `silence` worker: one incident per station that stops reporting, recording of its recovery and rate limit purge (VIG-17).
+- Cooldown after resolving an incident, and readings that worsen it in its timeline (VIG-18).
+- Incidents API: list, detail with timeline, acknowledge and resolve (VIG-19).
+- Email alerts when an incident opens, with retries, local time and a confirmation link; visible in Mailpit (VIG-20).
+- Telegram linking: a single-use link (7 days) generated by an admin, and a `telegram` worker that stores the contact's chat (VIG-21).
+- Telegram alerts with a confirmation button that only works for whoever received the alert; after the click, the button is replaced by who confirmed and when (VIG-22).
+- Alert confirmation page without login: opening the link only shows the incident, and the button confirms. Pending alerts of an incident that is already acknowledged or resolved are not sent (VIG-23).
+- Automatic escalation by levels with the `escalation` worker, and an escalation policies API for admin (VIG-24).
