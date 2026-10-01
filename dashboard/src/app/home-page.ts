@@ -1,50 +1,191 @@
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Session } from './session';
+import { forkJoin } from 'rxjs';
+import { Incident, IncidentsApi } from './incidents/incidents.api';
+import { Session, roleLabels } from './session';
+import { stationState } from './stations/station-presentation';
+import { Station, StationsApi } from './stations/stations.api';
+import { Icon } from './ui/icon';
+import { Notice } from './ui/notice';
+import { PageHeader } from './ui/page-header';
+import { Zone, ZonesApi } from './zones/zones.api';
 
-const ROLE_LABELS: Record<string, string> = {
-  admin: 'Administración',
-  operator: 'Operación',
-  responder: 'Respuesta',
-  viewer: 'Lectura',
-};
+interface Summary {
+  incidents: Incident[];
+  stations: Station[];
+  zones: Zone[];
+  at: number;
+}
 
+/** Inicio: lo que un operador quiere saber al abrir el panel, y quién es en Vigía. */
 @Component({
   selector: 'app-home-page',
-  imports: [RouterLink],
+  imports: [RouterLink, Icon, Notice, PageHeader],
   template: `
     @if (session.me(); as me) {
-      <dl class="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-slate-800">
-        <dt class="font-medium">Correo</dt>
-        <dd class="min-w-0 break-words">{{ me.email }}</dd>
-        <dt class="font-medium">Organización</dt>
-        <dd>{{ me.organization_name }}</dd>
-        <dt class="font-medium">Zona horaria</dt>
-        <dd>{{ me.organization_timezone }}</dd>
-        <dt class="font-medium">Roles</dt>
-        <dd>{{ roleLabels(me.roles) }}</dd>
-      </dl>
+      <app-page-header
+        title="Resumen"
+        [subtitle]="me.organization_name + ' · horas en ' + me.organization_timezone"
+      />
+
       @if (me.permissions.length === 0) {
         <!-- SPEC: sin roles solo se consulta /v1/me, para que el panel explique por qué no ve nada. -->
-        <div role="status" class="mt-6 rounded-md border border-slate-300 bg-slate-50 p-4 text-slate-800">
+        <app-notice tone="info" class="mb-6">
           <p class="font-semibold">Tu usuario todavía no tiene un rol en Vigía</p>
           <p class="mt-1">
             Por eso no ves zonas, estaciones ni incidentes. Pide a quien administra Vigía en tu
             organización que te asigne uno.
           </p>
-        </div>
+        </app-notice>
       } @else {
-        <p class="mt-6 text-slate-700">
-          <a routerLink="/zonas" class="underline">Ver las zonas de riesgo en el mapa</a>
-        </p>
+        @if (failed()) {
+          <app-notice class="mb-6">
+            No se pudo cargar el resumen.
+            <button type="button" class="ml-1 underline" (click)="load()">Reintentar</button>
+          </app-notice>
+        }
+        <section aria-label="Resumen" class="mb-6 grid gap-4 md:grid-cols-3">
+          <div class="card p-5">
+            <div class="flex items-center gap-3">
+              <span
+                class="grid size-10 place-items-center rounded-lg"
+                [class]="
+                  activeIncidents() > 0
+                    ? 'bg-orange-100 text-orange-800'
+                    : 'bg-green-100 text-green-800'
+                "
+              >
+                <app-icon [name]="activeIncidents() > 0 ? 'bell' : 'check'" [size]="20" />
+              </span>
+              <h2 class="text-sm font-medium text-slate-600">Incidentes activos</h2>
+            </div>
+            <p class="mt-4 text-3xl font-semibold tabular-nums text-slate-900">
+              {{ summary() ? activeIncidents() : '—' }}
+            </p>
+            <p class="mt-1 text-sm text-slate-500">{{ incidentDetail() }}</p>
+          </div>
+
+          <a routerLink="/estaciones" class="card group p-5 transition hover:ring-brand-600">
+            <div class="flex items-center gap-3">
+              <span class="grid size-10 place-items-center rounded-lg bg-brand-50 text-brand-700">
+                <app-icon name="antenna" [size]="20" />
+              </span>
+              <h2 class="text-sm font-medium text-slate-600">Estaciones reportando</h2>
+            </div>
+            <p class="mt-4 text-3xl font-semibold tabular-nums text-slate-900">
+              {{ summary() ? stationCounts().reporting + ' de ' + stationCounts().total : '—' }}
+            </p>
+            <p class="mt-1 text-sm text-slate-500">
+              {{ stationDetail() }}
+              <span class="text-brand-700 group-hover:underline">Ver estaciones →</span>
+            </p>
+          </a>
+
+          <a routerLink="/zonas" class="card group p-5 transition hover:ring-brand-600">
+            <div class="flex items-center gap-3">
+              <span class="grid size-10 place-items-center rounded-lg bg-brand-50 text-brand-700">
+                <app-icon name="map" [size]="20" />
+              </span>
+              <h2 class="text-sm font-medium text-slate-600">Zonas de riesgo</h2>
+            </div>
+            <p class="mt-4 text-3xl font-semibold tabular-nums text-slate-900">
+              {{ summary() ? summary()!.zones.length : '—' }}
+            </p>
+            <p class="mt-1 text-sm text-slate-500">
+              {{ zoneDetail() }}
+              <span class="text-brand-700 group-hover:underline">Ver mapa →</span>
+            </p>
+          </a>
+        </section>
       }
+
+      <section class="card p-5" aria-labelledby="profile-title">
+        <h2 id="profile-title" class="font-semibold text-slate-900">Tu cuenta</h2>
+        <dl class="mt-4 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
+          <div>
+            <dt class="text-slate-500">Correo</dt>
+            <dd class="mt-0.5 font-medium break-words text-slate-900">{{ me.email }}</dd>
+          </div>
+          <div>
+            <dt class="text-slate-500">Organización</dt>
+            <dd class="mt-0.5 font-medium text-slate-900">{{ me.organization_name }}</dd>
+          </div>
+          <div>
+            <dt class="text-slate-500">Zona horaria</dt>
+            <dd class="mt-0.5 font-medium text-slate-900">{{ me.organization_timezone }}</dd>
+          </div>
+          <div>
+            <dt class="text-slate-500">Roles</dt>
+            <dd class="mt-0.5 font-medium text-slate-900">{{ roles(me.roles) }}</dd>
+          </div>
+        </dl>
+      </section>
     }
   `,
 })
 export class HomePage {
   protected readonly session = inject(Session);
+  private readonly incidentsApi = inject(IncidentsApi);
+  private readonly stationsApi = inject(StationsApi);
+  private readonly zonesApi = inject(ZonesApi);
 
-  protected roleLabels(roles: string[]): string {
-    return roles.map((role) => ROLE_LABELS[role] ?? role).join(', ') || 'Sin rol asignado';
+  protected readonly roles = roleLabels;
+  protected readonly summary = signal<Summary | null>(null);
+  protected readonly failed = signal(false);
+
+  protected readonly activeIncidents = computed(() => this.summary()?.incidents.length ?? 0);
+  protected readonly incidentDetail = computed(() => {
+    const incidents = this.summary()?.incidents;
+    if (!incidents) return 'Cargando…';
+    if (incidents.length === 0) return 'Nada que atender ahora.';
+    const open = incidents.filter((i) => i.status === 'open').length;
+    const exhausted = incidents.filter((i) => i.escalation_exhausted_at !== null).length;
+    const parts = [`${open} sin confirmar`, `${incidents.length - open} confirmados`];
+    if (exhausted > 0) parts.push(`${exhausted} con escalamiento agotado`);
+    return parts.join(' · ');
+  });
+  protected readonly stationCounts = computed(() => {
+    const summary = this.summary();
+    const states = (summary?.stations ?? []).map((s) => stationState(s, summary?.at ?? 0));
+    return {
+      total: states.length,
+      reporting: states.filter((s) => s === 'reporting').length,
+      silent: states.filter((s) => s === 'silent').length,
+      unzoned: (summary?.stations ?? []).filter((s) => !s.has_zone).length,
+    };
+  });
+  protected readonly stationDetail = computed(() => {
+    if (!this.summary()) return 'Cargando…';
+    const { silent, unzoned } = this.stationCounts();
+    return `${silent} sin reportar · ${unzoned} sin zona ·`;
+  });
+  protected readonly zoneDetail = computed(() => {
+    const zones = this.summary()?.zones;
+    if (!zones) return 'Cargando…';
+    const critical = zones.filter((z) => z.risk_level === 'critical').length;
+    const high = zones.filter((z) => z.risk_level === 'high').length;
+    return `${critical} de riesgo crítico · ${high} alto ·`;
+  });
+
+  constructor() {
+    this.load();
+    // Como en Estaciones: el resumen se refresca hasta que llegue el SSE (VIG-25).
+    const timer = setInterval(() => this.load(), 15_000);
+    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+  }
+
+  protected load(): void {
+    if (!this.session.me()?.permissions.includes('view')) return;
+    forkJoin({
+      incidents: this.incidentsApi.list(['open', 'acknowledged']),
+      stations: this.stationsApi.list(),
+      zones: this.zonesApi.list(),
+    }).subscribe({
+      next: (data) => {
+        this.summary.set({ ...data, at: Date.now() });
+        this.failed.set(false);
+      },
+      error: () => this.failed.set(true),
+    });
   }
 }
