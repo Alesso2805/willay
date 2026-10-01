@@ -6,7 +6,7 @@ Sep 25, 2026 · @Alessandro David
 
 Willay cuts from minutes to seconds the time between an anomalous data point appearing and operators and community leaders receiving the alert, without depending on a human phone call.
 
-**About the name.** The product is called **Willay**, Quechua for "to warn, to inform" (chosen on October 1, 2026): short, easy to say in Spanish and English, and rooted in the first market. Known risks: a public ICT program in Peru already used the word, and it may be confused with Willax, a Peruvian television channel; the trademark must be checked with INDECOPI before any commercial use. Earlier options were discarded: "Yaku", the name of the cyclone that caused severe flooding in northern Peru in 2023, and "SAT", which in Lima is the Servicio de Administración Tributaria (the tax administration service). "Vigía" was the code name during the first sprints: the repository, the code package `vigia`, the database and the environment variables (`VIGIA_*`) keep it, so the product name can change without touching code.
+**About the name.** The product is called **Willay**, Quechua for "to warn, to inform" (chosen on October 1, 2026): short, easy to say in Spanish and English, and rooted in the first market. Known risks: a public ICT program in Peru already used the word, and it may be confused with Willax, a Peruvian television channel; the trademark must be checked with INDECOPI before any commercial use. Earlier options were discarded: "Yaku", the name of the cyclone that caused severe flooding in northern Peru in 2023, and "SAT", which in Lima is the Servicio de Administración Tributaria (the tax administration service). "Vigía" was the code name during the first sprints; on October 1, 2026 the repository, the code package, the database and its roles, the environment variables, the notification channels and the Keycloak realm were renamed to `willay`. Story IDs keep the `VIG-` prefix so that they still match the commits and pull requests that cite them.
 
 **The problem.** In the Rasuwa flood (Nepal, August 26, 2026) the river overflowed around 8:40 according to the government ([Rising Nepal](https://risingnepaldaily.com/news/85570)). The Bhote Koshi–Syafrubesi hydrological station stopped transmitting around 8:50, and the DHM confirmed the flood wave and issued downstream warnings at 9:15 ([NDRRMA, SitRep](https://ndrrma.gov.np/mediafiles/rasuwa/Rasuwa_Flood_SitRep_Temp_ENG_01_01092026.pdf)). About 35 minutes went by, and the station's silence was the first available signal. Having sensors is not having a system: what is missing is the layer that connects data, rules and people.
 
@@ -45,7 +45,7 @@ Save this prompt as `CLAUDE.md` at the root of the repository (single copy) and 
 
 ```markdown
 # Role
-You are a senior software engineer who works alongside me to build "Willay" (product name; code name Vigía, package `vigia`), a multi-tenant early warning system. I (a fullstack developer) make the product decisions; you propose, implement and explain.
+You are a senior software engineer who works alongside me to build "Willay" (product name; package `willay`), a multi-tenant early warning system. I (a fullstack developer) make the product decisions; you propose, implement and explain.
 
 # Source of truth
 Read docs/SPEC.md before writing code. If something I ask you contradicts SPEC.md, warn me before continuing. Every technical decision not covered is recorded as an ADR in docs/adr/NNNN-title.md.
@@ -60,15 +60,15 @@ A web platform that (1) ingests sensor readings, (2) evaluates rules per risk zo
 - No Redis or external broker in the MVP: queue, notifications and rate limit live in Postgres (see ADR-0002).
 
 # Architecture rules
-- One `vigia` package with modules: identity, ingestion, territory, rules, incidents, alerts, realtime. Each module with layers domain, application, infrastructure, api. The domain does not import FastAPI or SQLAlchemy.
+- One `willay` package with modules: identity, ingestion, territory, rules, incidents, alerts, realtime. Each module with layers domain, application, infrastructure, api. The domain does not import FastAPI or SQLAlchemy.
 - DB schemas `ingest` and `core` as the boundary between modules; a single Alembic migration history. No FK to the `ingest.readings` hypertable.
-- Processes: `vigia.api` (FastAPI) and workers as separate processes with the same code: `python -m vigia.workers.evaluator`, `.silence`, `.dispatcher`, `.escalation`, `.telegram`. Never workers inside the FastAPI lifespan.
+- Processes: `willay.api` (FastAPI) and workers as separate processes with the same code: `python -m willay.workers.evaluator`, `.silence`, `.dispatcher`, `.escalation`, `.telegram`. Never workers inside the FastAPI lifespan.
 - Queue: save the reading and insert into `ingest.evaluation_queue` in the SAME transaction. The evaluator: (a) takes a row with `available_at <= now` using `FOR UPDATE SKIP LOCKED`, increments `attempts`, sets `available_at = now + 60 s` (visibility timeout) and commits in a short transaction; (b) evaluates in another transaction that writes incidents and alerts, sets `readings.evaluated_at` and deletes the row. With `attempts` ≥ 5 it sets `failed_at` and takes the row out of the queue. It wakes up with `LISTEN/NOTIFY` and fallback polling every 5 s. Wrap the queue in an `EvaluationQueue` interface.
 - The dispatcher also wakes up with `NOTIFY` when alerts are created, with fallback polling every 5 s.
 - Time: the whole domain receives an injected `Clock` protocol; `datetime.now()` is forbidden outside the real implementation. Tests with time-machine or a FakeClock.
 - Multi-tenant: the `organization` claim of the Keycloak JWT is an object `{alias: {id}}` (scope `organization:*`, mapper with "Add organization id"); exactly one organization per user is required and any token with zero or several is rejected (403). The tenant is resolved only by the `id`. Roles come from the JWT realm roles (Keycloak is the only source) and, by the previous rule, apply to that single organization. Every query filters by `organization_id` through a mandatory dependency; the SSE channel also filters by organization.
 - Ingestion rate limit in Postgres (`ingest.rate_limit_windows`), valid with several replicas.
-- `core.incident_events` and `core.audit_log` are append-only: the `vigia_app` role has no UPDATE or DELETE on them. Migrations run as `vigia_owner` and use `ALTER DEFAULT PRIVILEGES` so that new tables grant permissions to `vigia_app`.
+- `core.incident_events` and `core.audit_log` are append-only: the `willay_app` role has no UPDATE or DELETE on them. Migrations run as `willay_owner` and use `ALTER DEFAULT PRIVILEGES` so that new tables grant permissions to `willay_app`.
 - Configuration through environment variables; never secrets in the repository.
 
 # How to work
@@ -87,8 +87,8 @@ A web platform that (1) ingests sensor readings, (2) evaluates rules per risk zo
 # First task (Sprint 0)
 Execute VIG-01 to VIG-05 of docs/SPEC.md in order:
 1. Monorepo as described in SPEC, Makefile (up, down, test, lint, migrate, seed, demo) and CI on GitHub Actions.
-2. docker-compose.yml with postgres, keycloak (realm imported from infra/keycloak/realm-vigia.json with 2 organizations), mailpit, a `migrate` service that runs Alembic once and exits, and api, workers and dashboard depending on `migrate` having completed successfully.
-3. Postgres init script with roles `vigia_owner`/`vigia_app` and extensions; initial Alembic migration: schemas, tables, hypertable with compression and retention, permissions, `ALTER DEFAULT PRIVILEGES` and REVOKE on the append-only tables.
+2. docker-compose.yml with postgres, keycloak (realm imported from infra/keycloak/realm-willay.json with 2 organizations), mailpit, a `migrate` service that runs Alembic once and exits, and api, workers and dashboard depending on `migrate` having completed successfully.
+3. Postgres init script with roles `willay_owner`/`willay_app` and extensions; initial Alembic migration: schemas, tables, hypertable with compression and retention, permissions, `ALTER DEFAULT PRIVILEGES` and REVOKE on the append-only tables.
 4. Seed with 2 organizations (the Rímac demo and one for isolation testing), zones, stations with API keys generated and printed for the simulator, rules, one policy per organization (3 levels in Rímac) and contacts.
 5. Drafts of ADR-0001 to ADR-0004.
 Before ADR-0004, configure in Keycloak 26 the mapper that includes the organization id in the `organization` claim; the tenant is resolved only by that id.
@@ -142,7 +142,7 @@ A Python backend with an API and five workers as separate processes on a single 
 
 ```mermaid
 flowchart LR
-  S[Sensors / Simulator] -->|HTTP batch| API[vigia.api<br/>FastAPI]
+  S[Sensors / Simulator] -->|HTTP batch| API[willay.api<br/>FastAPI]
   API -->|1 transaction: reading + queue| DB[(PostgreSQL<br/>PostGIS + Timescale)]
   DB -->|NOTIFY / SKIP LOCKED| EV[worker evaluator]
   EV -->|incidents + alerts| DB
@@ -162,7 +162,7 @@ flowchart LR
 | Component | Technology | Responsibility |
 | --- | --- | --- |
 | `migrate` | Alembic | Container that applies migrations and exits; the other services start only if it completed successfully |
-| `vigia.api` | FastAPI async | Ingestion with rate limit, business API, acknowledgements via link, SSE stream |
+| `willay.api` | FastAPI async | Ingestion with rate limit, business API, acknowledgements via link, SSE stream |
 | `worker evaluator` | Python, asyncpg | Takes readings from the queue, evaluates threshold and rate of change, opens or updates incidents and creates alerts |
 | `worker silence` | Python | Every 15 s goes through the active silence rules and their stations; opens one incident per silenced station |
 | `worker dispatcher` | Python, httpx2, aiosmtplib | Wakes up with `NOTIFY` when alerts are created; sends with 3 exponential retries |
@@ -174,7 +174,7 @@ flowchart LR
 
 **No-loss guarantee.** The reading and its `evaluation_queue` row are inserted in the same transaction. The evaluator processes each row in two transactions: 1. It takes a row with `available_at <= now` using `SKIP LOCKED`, increments `attempts`, sets `available_at = now + 60 s` and commits. That visibility timeout prevents another evaluator from taking the same row while it is being processed, and the counter survives even if the worker crashes. 2. It evaluates, writes incidents and alerts, sets `readings.evaluated_at` and deletes the row. If the worker dies in step 2, everything is rolled back and the row becomes available again when its `available_at` expires. At 5 attempts `failed_at` is set, the row leaves the queue and the operator sees the failure in the dashboard. `evaluated_at` makes it possible to verify that no reading was left unevaluated.
 
-**Real time to the dashboard.** The database emits `NOTIFY vigia_events` through triggers on `incident_events` and `station_heartbeats`, in the same transaction as the change: the notifications carry the `organization_id` and just enough to know what to refresh, never personal data (ADR-0007). The API keeps a `LISTEN` connection and forwards via SSE only to that organization's connections. On connect it sends `ready` (the dashboard fetches its state via REST), sends `resync` if any notification may have been lost, and closes the stream when the token expires, so that the client reconnects with a valid one. The native `EventSource` does not allow sending the `Authorization` header, so the dashboard uses the `eventsource` library, whose `fetch` option adds the JWT in the header; never the token in the URL. It was chosen on September 30, 2026 instead of `@microsoft/fetch-event-source`, which has not published a release since April 2021.
+**Real time to the dashboard.** The database emits `NOTIFY willay_events` through triggers on `incident_events` and `station_heartbeats`, in the same transaction as the change: the notifications carry the `organization_id` and just enough to know what to refresh, never personal data (ADR-0007). The API keeps a `LISTEN` connection and forwards via SSE only to that organization's connections. On connect it sends `ready` (the dashboard fetches its state via REST), sends `resync` if any notification may have been lost, and closes the stream when the token expires, so that the client reconnects with a valid one. The native `EventSource` does not allow sending the `Authorization` header, so the dashboard uses the `eventsource` library, whose `fetch` option adds the JWT in the header; never the token in the URL. It was chosen on September 30, 2026 instead of `@microsoft/fetch-event-source`, which has not published a release since April 2021.
 
 **Rate limit.** Table `ingest.rate_limit_windows` with a counter per station and minute, updated with an atomic upsert. It works with several API replicas without extra infrastructure.
 
@@ -262,10 +262,10 @@ erDiagram
 
 ### Database roles
 
-- The `vigia_owner` and `vigia_app` roles, the `keycloak` database and the extensions (`timescaledb`, `postgis`) are created by the script in `infra/postgres/init/`, which runs as superuser only on an empty volume. The extensions are not *trusted* and a role cannot create itself, so the migration cannot do this as `vigia_owner`; the initial migration only runs `CREATE EXTENSION IF NOT EXISTS` as a check (see ADR-0005).
-- `vigia_owner`: owner of the objects; only the `migrate` container uses it.
-- `vigia_app`: used by the API and workers; SELECT, INSERT, UPDATE and DELETE on business tables, but only SELECT and INSERT on `incident_events` and `audit_log`.
-- The initial migration runs `ALTER DEFAULT PRIVILEGES FOR ROLE vigia_owner` in both schemas so that every future table grants permissions to `vigia_app` without manual steps.
+- The `willay_owner` and `willay_app` roles, the `keycloak` database and the extensions (`timescaledb`, `postgis`) are created by the script in `infra/postgres/init/`, which runs as superuser only on an empty volume. The extensions are not *trusted* and a role cannot create itself, so the migration cannot do this as `willay_owner`; the initial migration only runs `CREATE EXTENSION IF NOT EXISTS` as a check (see ADR-0005).
+- `willay_owner`: owner of the objects; only the `migrate` container uses it.
+- `willay_app`: used by the API and workers; SELECT, INSERT, UPDATE and DELETE on business tables, but only SELECT and INSERT on `incident_events` and `audit_log`.
+- The initial migration runs `ALTER DEFAULT PRIVILEGES FOR ROLE willay_owner` in both schemas so that every future table grants permissions to `willay_app` without manual steps.
 
 ### Format of `rules.params` and events
 
@@ -285,7 +285,7 @@ erDiagram
 | --- | --- | --- | --- | --- | --- | --- |
 | VIG-01 | E0 Foundations | As a developer I want a monorepo with a Makefile and CI | Structure as described in SPEC; `make lint` and `make test` pass; GitHub Actions runs Ruff, Mypy, Pytest and the Angular build | M | 3 | 0 |
 | VIG-02 | E0 Foundations | As a developer I want to bring everything up with Docker Compose | `make up` brings up Postgres (with a separate keycloak database for Keycloak), Keycloak, Mailpit, the `migrate` container (runs once and exits), the API, 5 workers and the dashboard; API and workers wait for `migrate` to complete successfully; healthchecks green | M | 5 | 0 |
-| VIG-03 | E0 Foundations | As a developer I want the initial migration and the DB roles | `vigia_owner` and `vigia_app` roles and extensions in the Postgres init; schemas, tables, hypertable, compression and retention in the migration, with `ALTER DEFAULT PRIVILEGES`; tests: `vigia_app` cannot UPDATE `incident_events` and does have permissions on a table created by a later migration | M | 5 | 0 |
+| VIG-03 | E0 Foundations | As a developer I want the initial migration and the DB roles | `willay_owner` and `willay_app` roles and extensions in the Postgres init; schemas, tables, hypertable, compression and retention in the migration, with `ALTER DEFAULT PRIVILEGES`; tests: `willay_app` cannot UPDATE `incident_events` and does have permissions on a table created by a later migration | M | 5 | 0 |
 | VIG-04 | E0 Foundations | As a developer I want seed data | `make seed` creates 2 organizations (the Rímac demo and another one for isolation), 3 zones, 10 stations with API keys printed for the simulator, 6 rules, 5 contacts and one policy per organization (3 levels in Rímac, 1 level in the isolation one, because `rules.escalation_policy_id` is mandatory and policies are per organization) | M | 3 | 0 |
 | VIG-05 | E0 Foundations | As a developer I want to document the initial decisions | ADR-0001 to ADR-0004 in `docs/adr/`; ADR-0004 establishes the Keycloak 26 mapper that includes the organization id in the `organization` claim | M | 2 | 0 |
 | VIG-06 | E1 Identity | As a user I want to log in and see only my organization's data | OIDC login with Keycloak 26 Organizations; tokens with zero or several organizations receive 403; test with the 2 seed organizations on every endpoint | M | 5 | 1 |
@@ -363,7 +363,7 @@ In an alerting system, a lost alert is worse than a duplicate one: every design 
 | Authentication | Keycloak JWT in the API, dashboard and SSE (in the header, never in the URL); station API keys hashed with Argon2id and rotatable | 401 and 403 tests; the key is shown only when it is created |
 | Acknowledgements | Random 256-bit token, stored as a hash, single use, 24 h | Reuse and expiration test |
 | Usage limit | 60 batches per minute per station, counted in Postgres, valid with several replicas | Test with 2 replicas that receives 429 |
-| Audit | `incident_events` and `audit_log` append-only at the DB permission level; correct permissions also on future tables | Tests with the `vigia_app` role |
+| Audit | `incident_events` and `audit_log` append-only at the DB permission level; correct permissions also on future tables | Tests with the `willay_app` role |
 | Evidence | An incident's timeline stays complete even if the original readings expire | Test that deletes readings and queries the incident |
 | Privacy | Contacts' email is visible only to admin and operator; the `chat_id` never leaves the API (only whether the contact has Telegram linked is reported); neither of the two goes to the logs | Serialization test per role and log review |
 | Observability | JSON logs with `correlation_id` from the reading to the incident and the alert; healthcheck on the API and each worker | Trace a demo incident using only the logs |
@@ -371,7 +371,7 @@ In an alerting system, a lost alert is worse than a duplicate one: every design 
 | Accessibility | Dashboard meeting WCAG 2.1 AA in the main views; status is never conveyed by color alone | axe-core in CI on each view, with no serious or critical violations (it is the engine behind Lighthouse's accessibility score), and tests that measure the contrast of each status and notice color. Lighthouse does not run in CI: it opens each page in a new tab and the logged-in views would require storing the token in `localStorage` or a test access without login |
 | Version support | No main dependency goes out of support during the plan | Review the Python, Angular, PostgreSQL and Keycloak release calendars in sprint 0 |
 
-**Permissions by role.** Roles come from the JWT realm roles (Keycloak is the only source). Each endpoint declares the permission it needs, not a list of roles; the matrix lives in `vigia/identity/domain/permissions.py` and this table is its specification. Multiple roles add up their permissions. A user with none of the four roles can only call `GET /v1/me`, so that the dashboard can explain to them why they see nothing.
+**Permissions by role.** Roles come from the JWT realm roles (Keycloak is the only source). Each endpoint declares the permission it needs, not a list of roles; the matrix lives in `willay/identity/domain/permissions.py` and this table is its specification. Multiple roles add up their permissions. A user with none of the four roles can only call `GET /v1/me`, so that the dashboard can explain to them why they see nothing.
 
 | Permission | viewer | responder | operator | admin |
 | --- | :-: | :-: | :-: | :-: |
@@ -393,9 +393,9 @@ In an alerting system, a lost alert is worse than a duplicate one: every design 
 A monorepo with a modular Python backend, the Angular dashboard and the documentation versioned alongside the code, so that each contract change is reviewed in the same pull request.
 
 ```text
-vigia/
+willay/
 ├── backend/
-│   ├── src/vigia/
+│   ├── src/willay/
 │   │   ├── shared/               # Clock, config, db, tenancy, logging
 │   │   ├── identity/
 │   │   ├── ingestion/            # readings API, rate limit, simulator
@@ -410,8 +410,8 @@ vigia/
 │   └── tests/{unit,integration}/
 ├── dashboard/                    # Angular
 ├── infra/
-│   ├── keycloak/realm-vigia.json
-│   └── postgres/init/            # creation of the vigia_owner and vigia_app roles
+│   ├── keycloak/realm-willay.json
+│   └── postgres/init/            # creation of the willay_owner and willay_app roles
 ├── docs/
 │   ├── SPEC.md                   # this document
 │   ├── adr/
@@ -425,7 +425,7 @@ vigia/
 └── README.md
 ```
 
-Each module in `src/vigia/` follows the layers `domain`, `application`, `infrastructure` and `api`. The package is called `vigia` even if the commercial name changes.
+Each module in `src/willay/` follows the layers `domain`, `application`, `infrastructure` and `api`. The package is called `willay`, like the product.
 
 | Artifact | Purpose | When it is updated |
 | --- | --- | --- |
