@@ -1,5 +1,5 @@
-# Stack local de Vigía. `make up` crea .env desde .env.example si falta.
-# Orden de arranque: postgres -> (keycloak, migrate) -> api, workers, dashboard.
+# Vigía local stack. `make up` creates .env from .env.example if it is missing.
+# Startup order: postgres -> (keycloak, migrate) -> api, workers, dashboard.
 
 x-backend: &backend
   build: ./backend
@@ -34,8 +34,8 @@ services:
     ports:
       - "${VIGIA_PG_PORT:-5433}:5432"
     healthcheck:
-      # -h 127.0.0.1: durante el init el servidor temporal solo escucha en el socket,
-      # así el healthcheck no da verde antes de que existan las bases y los roles.
+      # -h 127.0.0.1: during the init the temporary server only listens on the socket,
+      # so the healthcheck does not turn green before the databases and roles exist.
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d vigia"]
       interval: 5s
       timeout: 5s
@@ -55,7 +55,7 @@ services:
       KC_HEALTH_ENABLED: "true"
       KC_HOSTNAME: http://localhost:${VIGIA_KEYCLOAK_PORT:-8080}
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
-      # Placeholder ${VIGIA_DEV_USER_PASSWORD} de realm-vigia.json
+      # ${VIGIA_DEV_USER_PASSWORD} placeholder in realm-vigia.json
       VIGIA_DEV_USER_PASSWORD: ${VIGIA_DEV_USER_PASSWORD:?}
     volumes:
       - ./infra/keycloak:/opt/keycloak/data/import:ro
@@ -65,7 +65,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      # La imagen no trae curl: petición HTTP a mano al puerto de gestión.
+      # The image has no curl: a hand-written HTTP request to the management port.
       test:
         - CMD-SHELL
         - >-
@@ -105,11 +105,11 @@ services:
     command: ["uvicorn", "--factory", "vigia.api.main:create_app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
       <<: *backend-env
-      # iss = URL pública con la que el navegador pide el token; el JWKS va por la red interna.
+      # iss = public URL the browser uses to request the token; the JWKS goes over the internal network.
       VIGIA_OIDC_ISSUER: http://localhost:${VIGIA_KEYCLOAK_PORT:-8080}/realms/vigia
       VIGIA_OIDC_JWKS_URL: http://keycloak:8080/realms/vigia/protocol/openid-connect/certs
       VIGIA_OIDC_AUDIENCE: vigia-api
-      # Para armar los enlaces de vinculación de Telegram (sin él, la API responde 503).
+      # To build the Telegram linking links (without it, the API answers 503).
       VIGIA_TELEGRAM_BOT_USERNAME: ${VIGIA_TELEGRAM_BOT_USERNAME:-}
     ports:
       - "${VIGIA_API_PORT:-8000}:8000"
@@ -145,9 +145,9 @@ services:
       <<: *backend-env
       VIGIA_SMTP_HOST: mailpit
       VIGIA_SMTP_PORT: "1025"
-      # Base de los enlaces de confirmación de los correos: la API vista desde el navegador.
+      # Base of the confirmation links in the emails: the API as seen from the browser.
       VIGIA_PUBLIC_URL: http://localhost:${VIGIA_API_PORT:-8000}
-      # Sin token (vacío), las alertas de Telegram quedan pendientes.
+      # Without a token (empty), Telegram alerts stay pending.
       VIGIA_TELEGRAM_BOT_TOKEN: ${VIGIA_TELEGRAM_BOT_TOKEN:-}
     healthcheck:
       <<: *worker-healthcheck
@@ -165,7 +165,7 @@ services:
     command: ["python", "-m", "vigia.workers.telegram"]
     environment:
       <<: *backend-env
-      # Sin token (vacío), el worker arranca deshabilitado y solo late.
+      # Without a token (empty), the worker starts disabled and only sends heartbeats.
       VIGIA_TELEGRAM_BOT_TOKEN: ${VIGIA_TELEGRAM_BOT_TOKEN:-}
       VIGIA_TELEGRAM_BOT_USERNAME: ${VIGIA_TELEGRAM_BOT_USERNAME:-}
     healthcheck:
