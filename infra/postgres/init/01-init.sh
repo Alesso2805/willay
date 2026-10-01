@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Corre como superusuario una sola vez, cuando el volumen de datos está vacío.
-# Crea lo que una migración con vigia_owner no puede crear (ADR-0005):
-#   - roles vigia_owner, vigia_app y keycloak (un rol no puede crearse a sí mismo)
-#   - bases vigia y keycloak
-#   - extensiones timescaledb y postgis (no son "trusted": exigen superusuario)
+# Runs as superuser only once, when the data volume is empty.
+# Creates what a migration run as vigia_owner cannot create (ADR-0005):
+#   - roles vigia_owner, vigia_app and keycloak (a role cannot create itself)
+#   - databases vigia and keycloak
+#   - extensions timescaledb and postgis (they are not "trusted": they require a superuser)
 set -euo pipefail
 
-: "${VIGIA_OWNER_PASSWORD:?falta VIGIA_OWNER_PASSWORD}"
-: "${VIGIA_APP_PASSWORD:?falta VIGIA_APP_PASSWORD}"
-: "${KEYCLOAK_DB_PASSWORD:?falta KEYCLOAK_DB_PASSWORD}"
+: "${VIGIA_OWNER_PASSWORD:?missing VIGIA_OWNER_PASSWORD}"
+: "${VIGIA_APP_PASSWORD:?missing VIGIA_APP_PASSWORD}"
+: "${KEYCLOAK_DB_PASSWORD:?missing KEYCLOAK_DB_PASSWORD}"
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres \
   -v owner_pw="$VIGIA_OWNER_PASSWORD" \
@@ -21,7 +21,7 @@ CREATE ROLE keycloak LOGIN PASSWORD :'kc_pw';
 CREATE DATABASE vigia OWNER vigia_owner;
 CREATE DATABASE keycloak OWNER keycloak;
 
--- Nadie más que los roles de Vigía se conecta a su base.
+-- Nobody but Vigía's roles connects to its database.
 REVOKE ALL ON DATABASE vigia FROM PUBLIC;
 GRANT CONNECT ON DATABASE vigia TO vigia_app;
 REVOKE ALL ON DATABASE keycloak FROM PUBLIC;
@@ -29,6 +29,6 @@ REVOKE ALL ON DATABASE keycloak FROM PUBLIC;
 \connect vigia
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 CREATE EXTENSION IF NOT EXISTS postgis;
--- En PG15+ public ya no es escribible por PUBLIC; lo dejamos explícito.
+-- In PG15+ public is no longer writable by PUBLIC; we make it explicit.
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 SQL

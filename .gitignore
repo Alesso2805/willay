@@ -1,4 +1,4 @@
-# Secretos locales: nunca en el repositorio
+# Local secrets: never in the repository
 .env
 .secrets/
 
@@ -9,7 +9,7 @@ __pycache__/
 # Node
 node_modules/
 
-# Sistema y editores
+# OS and editors
 .DS_Store
 Thumbs.db
 .idea/

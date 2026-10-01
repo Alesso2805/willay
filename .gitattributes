@@ -1,4 +1,4 @@
-# LF en todo el repo: los .sh del init de Postgres y el Makefile se rompen con CRLF.
+# LF across the whole repo: the Postgres init .sh scripts and the Makefile break with CRLF.
 * text=auto eol=lf
 
 *.ico binary
