@@ -19,6 +19,12 @@ export interface ZoneAssignment {
   position: ZonePosition;
 }
 
+export interface Heartbeat {
+  last_seen_at: string;
+  last_measured_at: string;
+  last_value: number | null;
+}
+
 /** docs/openapi.json › StationOut */
 export interface Station {
   id: string;
@@ -33,7 +39,7 @@ export interface Station {
   status: StationStatus;
   zones: ZoneAssignment[];
   has_zone: boolean;
-  heartbeat: { last_seen_at: string; last_measured_at: string; last_value: number | null } | null;
+  heartbeat: Heartbeat | null;
   api_key_rotated_at: string;
   created_at: string;
 }
