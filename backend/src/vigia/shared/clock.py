@@ -1,8 +1,7 @@
-"""Reloj inyectable.
+"""Injectable clock.
 
-Todo el dominio y los workers reciben un `Clock` en lugar de llamar a `datetime.now()`.
-Así los tests del detector de silencio y del escalamiento avanzan el tiempo con
-`FakeClock` sin esperas reales. Ruff (TID251) prohíbe `datetime.now()` fuera de este archivo.
+The domain and workers receive a `Clock` instead of calling `datetime.now()`, so tests advance
+time with `FakeClock` without real waits. Ruff (TID251) bans `datetime.now()` outside this file.
 """
 
 from datetime import UTC, datetime, timedelta
@@ -11,19 +10,19 @@ from typing import Protocol
 
 class Clock(Protocol):
     def now(self) -> datetime:
-        """Instante actual, siempre con zona horaria UTC."""
+        """Current instant, always timezone-aware UTC."""
         ...
 
 
 class SystemClock:
-    """Implementación real: la única que consulta el reloj del sistema."""
+    """Real implementation: the only one that reads the system clock."""
 
     def now(self) -> datetime:
         return datetime.now(UTC)
 
 
 class FakeClock:
-    """Reloj controlado para tests: solo avanza cuando se le pide."""
+    """Controlled clock for tests: only advances when told to."""
 
     def __init__(self, start: datetime) -> None:
         self._now = _require_aware(start)
@@ -33,7 +32,7 @@ class FakeClock:
 
     def advance(self, delta: timedelta) -> None:
         if delta < timedelta(0):
-            raise ValueError("FakeClock no retrocede; usa set() si lo necesitas")
+            raise ValueError("FakeClock does not go back; use set() if you need to")
         self._now += delta
 
     def set(self, instant: datetime) -> None:
@@ -41,7 +40,7 @@ class FakeClock:
 
 
 def _require_aware(instant: datetime) -> datetime:
-    # Un datetime sin zona compararía mal con los timestamptz de Postgres.
+    # A naive datetime would compare wrongly against Postgres timestamptz values.
     if instant.tzinfo is None or instant.utcoffset() is None:
-        raise ValueError("El reloj solo acepta datetimes con zona horaria")
+        raise ValueError("The clock only accepts timezone-aware datetimes")
     return instant.astimezone(UTC)

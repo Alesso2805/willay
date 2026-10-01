@@ -1,8 +1,8 @@
-"""Worker telegram (VIG-21, VIG-22): `python -m vigia.workers.telegram`.
+"""Telegram worker (VIG-21, VIG-22): `python -m vigia.workers.telegram`.
 
-Long polling con `getUpdates` para vincular contactos y recibir los clics en el botón de
-confirmación de las alertas. Sin `VIGIA_TELEGRAM_BOT_TOKEN` arranca deshabilitado: solo
-late, para que `docker compose up` funcione sin un bot creado.
+Long polling with `getUpdates` to link contacts and receive alert confirmation button clicks.
+Without `VIGIA_TELEGRAM_BOT_TOKEN` it starts disabled and only beats, so `docker compose up`
+works without a bot.
 """
 
 import asyncio
@@ -21,8 +21,8 @@ from vigia.shared.db import create_engine
 from vigia.workers._runner import run_async_worker, run_loop
 
 NAME = "telegram"
-POLL_TIMEOUT_S = 20  # menos que los 30 s del healthcheck: el latido llega entre sondeos
-RETRY_S = 5.0  # si Telegram no responde, no insistir en bucle
+POLL_TIMEOUT_S = 20  # under the 30 s healthcheck: the heartbeat lands between polls
+RETRY_S = 5.0  # if Telegram does not answer, do not retry in a tight loop
 
 log = structlog.get_logger()
 
@@ -42,8 +42,8 @@ async def run_telegram(
         bot = api
     else:
         if settings.telegram_bot_token is None:
-            log.warning("telegram_disabled", reason="falta VIGIA_TELEGRAM_BOT_TOKEN")
-            await run_loop(NAME, 30.0, heartbeat, stop)  # solo late
+            log.warning("telegram_disabled", reason="VIGIA_TELEGRAM_BOT_TOKEN is not set")
+            await run_loop(NAME, 30.0, heartbeat, stop)  # heartbeat only
             return
         owned = TelegramBotApi(
             settings.telegram_bot_token.get_secret_value(), base_url=settings.telegram_api_url
@@ -63,15 +63,15 @@ async def run_telegram(
     )
 
     async def tick() -> bool:
-        # El long polling tarda hasta `poll_timeout_s`: ante una parada no se lo espera.
+        # Long polling takes up to `poll_timeout_s`: do not wait for it on shutdown.
         polling = asyncio.create_task(poller.poll(poll_timeout_s))
         stopping = asyncio.create_task(stop.wait())
         done, pending = await asyncio.wait({polling, stopping}, return_when=asyncio.FIRST_COMPLETED)
         for task in pending:
             task.cancel()
         if polling in done:
-            polling.result()  # si falló, run_loop lo registra y reintenta tras RETRY_S
-            return True  # seguir sondeando sin esperar
+            polling.result()  # on failure, run_loop logs it and retries after RETRY_S
+            return True  # keep polling without waiting
         return False
 
     try:

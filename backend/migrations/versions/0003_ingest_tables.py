@@ -1,9 +1,9 @@
-"""Tablas del esquema ingest (4) y hypertable de lecturas.
+"""ingest schema tables (4) and the readings hypertable.
 
-- readings: hypertable por measured_at (chunks de 1 día), columnstore (compresión)
-  a los 7 días y retención de 180 días (ADR-0003).
-- Nada apunta con FK a readings: TimescaleDB restringe las FK hacia hypertables.
-  evaluation_queue guarda (station_id, measured_at) sin FK.
+- readings: hypertable on measured_at (1-day chunks), columnstore (compression) after 7 days
+  and 180-day retention (ADR-0003).
+- No FK points to readings: TimescaleDB restricts FKs to hypertables. evaluation_queue
+  stores (station_id, measured_at) without an FK.
 
 Revision ID: 0003
 Revises: 0002
@@ -30,16 +30,16 @@ def upgrade() -> None:
             value            double precision NOT NULL,
             quality          text NOT NULL CHECK (quality IN ('ok', 'late')),
             evaluated_at     timestamptz,
-            -- La PK incluye la columna de partición (requisito de Timescale) y hace
-            -- que una lectura duplicada por (station_id, measured_at) se ignore.
+            -- The PK includes the partition column (a Timescale requirement) and makes a
+            -- duplicate reading by (station_id, measured_at) get ignored.
             PRIMARY KEY (station_id, measured_at)
         )
     """)
     op.execute(
         "SELECT create_hypertable('ingest.readings', by_range('measured_at', INTERVAL '1 day'))"
     )
-    # segmentby station_id: las consultas son "lecturas de una estación en una ventana",
-    # así cada estación queda en su propio segmento comprimido, ordenado por tiempo.
+    # segmentby station_id: queries are "one station's readings in a window", so each station
+    # gets its own compressed segment, ordered by time.
     op.execute("""
         ALTER TABLE ingest.readings SET (
             timescaledb.enable_columnstore = true,
@@ -49,7 +49,7 @@ def upgrade() -> None:
     """)
     op.execute("CALL add_columnstore_policy('ingest.readings', after => INTERVAL '7 days')")
     op.execute("SELECT add_retention_policy('ingest.readings', drop_after => INTERVAL '180 days')")
-    # Verificación de la NFR "cero lecturas ok sin evaluated_at pasados 120 s".
+    # Checks the NFR "zero ok readings without evaluated_at after 120 s".
     op.execute("""
         CREATE INDEX readings_pending_evaluation_idx
             ON ingest.readings (received_at) WHERE quality = 'ok' AND evaluated_at IS NULL
@@ -59,18 +59,18 @@ def upgrade() -> None:
         CREATE TABLE ingest.evaluation_queue (
             id               bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
             station_id       uuid NOT NULL REFERENCES core.stations (id),
-            measured_at      timestamptz NOT NULL,  -- sin FK a readings (hypertable)
+            measured_at      timestamptz NOT NULL,  -- no FK to readings (hypertable)
             organization_id  uuid NOT NULL,
             enqueued_at      timestamptz NOT NULL,
-            available_at     timestamptz NOT NULL,  -- visibility timeout de 60 s
+            available_at     timestamptz NOT NULL,  -- 60 s visibility timeout
             attempts         integer NOT NULL DEFAULT 0 CHECK (attempts >= 0),
             last_error       text,
             failed_at        timestamptz,
-            -- Reencolar la misma lectura no crea una segunda fila.
+            -- Re-enqueuing the same reading does not create a second row.
             UNIQUE (station_id, measured_at)
         )
     """)
-    # Solo las filas vivas: las que llegaron a failed_at salen del índice que usa el evaluador.
+    # Live rows only: rows that reached failed_at leave the index the evaluator uses.
     op.execute("""
         CREATE INDEX evaluation_queue_available_idx
             ON ingest.evaluation_queue (available_at) WHERE failed_at IS NULL
@@ -79,7 +79,7 @@ def upgrade() -> None:
     op.execute("""
         CREATE TABLE ingest.station_heartbeats (
             station_id    uuid PRIMARY KEY REFERENCES core.stations (id) ON DELETE CASCADE,
-            last_seen_at  timestamptz NOT NULL,  -- received_at de la última lectura no tardía
+            last_seen_at  timestamptz NOT NULL,  -- received_at of the latest non-late reading
             last_value    double precision,
             updated_at    timestamptz NOT NULL
         )
@@ -99,5 +99,5 @@ def downgrade() -> None:
     op.execute("DROP TABLE ingest.rate_limit_windows")
     op.execute("DROP TABLE ingest.station_heartbeats")
     op.execute("DROP TABLE ingest.evaluation_queue")
-    # Borrar la hypertable elimina también sus chunks y sus políticas.
+    # Dropping the hypertable also drops its chunks and policies.
     op.execute("DROP TABLE ingest.readings")

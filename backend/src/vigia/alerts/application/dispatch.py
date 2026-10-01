@@ -1,17 +1,15 @@
-"""Enviar las alertas pendientes por correo (VIG-20) y Telegram (VIG-22), con el mismo patrón.
+"""Sending pending alerts by email (VIG-20) and Telegram (VIG-22) with the same pattern.
 
-Como la cola de lecturas (ADR-0002), cada alerta pasa por transacciones cortas:
-1. reclamo: SKIP LOCKED, `attempts + 1` y visibility timeout de 60 s, así otro dispatcher
-   no la toma mientras se envía y, si este muere, se reintenta al vencer;
-2. token: se guarda el hash del token de confirmación ANTES de enviar, para que el enlace
-   del correo siempre funcione;
-3. envío por el canal, fuera de toda transacción (un SMTP lento no retiene conexiones);
-4. resultado: `sent`, reintento con espera exponencial, o `failed` al agotar los intentos,
-   con su evento en la línea de tiempo del incidente.
+Like the readings queue (ADR-0002), each alert goes through short transactions:
+1. claim: SKIP LOCKED, `attempts + 1` and a 60 s visibility timeout, so no other
+   dispatcher takes it while sending, and it is retried if this one dies;
+2. token: the confirmation token hash is stored BEFORE sending, so the link always works;
+3. send through the channel outside any transaction (slow SMTP holds no connections);
+4. result: `sent`, retry with backoff, or `failed` once attempts run out, with its event.
 
-Los pasos 2 a 4 exigen que el reclamo siga siendo suyo (`attempts` no cambió). Los envíos
-de un lote van en paralelo: con un SMTP lento, en serie podrían superar el visibility
-timeout y otro dispatcher reclamaría alertas que aún se están enviando.
+Steps 2-4 require the claim to still be ours (`attempts` unchanged). A batch is sent in
+parallel: serially, a slow SMTP could exceed the visibility timeout and let another
+dispatcher claim alerts still being sent.
 """
 
 import asyncio
@@ -48,20 +46,21 @@ class ClaimedAlert:
 
 
 class DeliveryError(Exception):
-    """El canal no entregó el mensaje. El texto no debe incluir el destino (dato personal)."""
+    """The channel did not deliver the message. The text must not include the destination
+    (personal data)."""
 
 
 class DispatchQueue(Protocol):
     async def claim(
         self, channel: Channel, now: datetime, visible_again_at: datetime, limit: int
     ) -> list[ClaimedAlert]:
-        """Reclama alertas pendientes y vencidas de incidentes abiertos. Antes omite las
-        pendientes de incidentes ya confirmados o resueltos y da por fallidas las que
-        agotaron sus intentos sin resultado (el worker murió a mitad de un envío)."""
+        """Claims due pending alerts of open incidents. First it skips pending alerts of
+        acknowledged or resolved incidents and fails those that used up their attempts
+        without a result (the worker died mid-send)."""
         ...
 
     async def attach_token(self, alert: ClaimedAlert, token: AckToken) -> bool:
-        """Guarda el hash del token. False si el reclamo ya no es suyo."""
+        """Stores the token hash. False if the claim is no longer ours."""
         ...
 
     async def sent(self, alert: ClaimedAlert, now: datetime) -> None: ...
@@ -69,13 +68,13 @@ class DispatchQueue(Protocol):
     async def failed(
         self, alert: ClaimedAlert, error: str, retry: datetime | None, now: datetime
     ) -> None:
-        """Reintento en `retry`, o `failed` definitivo si es None."""
+        """Retry at `retry`, or permanently `failed` if it is None."""
         ...
 
 
 class EmailSender(Protocol):
     async def send(self, to: str, content: EmailContent) -> None:
-        """Lanza DeliveryError si el servidor no aceptó el mensaje."""
+        """Raises DeliveryError if the server did not accept the message."""
         ...
 
 
@@ -87,18 +86,18 @@ class DispatchResult:
 
 
 class DeliveryChannel(Protocol):
-    """Cómo se entrega una alerta por un canal: arma su mensaje y lo envía."""
+    """How an alert is delivered through a channel: builds its message and sends it."""
 
     @property
     def channel(self) -> Channel: ...
 
     async def deliver(self, destination: str, message: AlertMessage, token: str) -> None:
-        """Lanza DeliveryError si el canal no la aceptó."""
+        """Raises DeliveryError if the channel did not accept it."""
         ...
 
 
 class EmailChannel:
-    """Correo con el enlace a la página de confirmación (VIG-20, VIG-23)."""
+    """Email with a link to the confirmation page (VIG-20, VIG-23)."""
 
     channel = Channel.EMAIL
 
@@ -113,13 +112,13 @@ class EmailChannel:
 
 class TelegramSender(Protocol):
     async def send_alert(self, chat_id: int, text: str, callback_data: str) -> None:
-        """Lanza TelegramError si Telegram no aceptó el mensaje."""
+        """Raises TelegramError if Telegram did not accept the message."""
         ...
 
 
 class TelegramChannel:
-    """Mensaje de Telegram con un botón cuyo `callback_data` es el token (VIG-22): 43
-    caracteres, dentro de los 64 que admite Telegram."""
+    """Telegram message with a button whose `callback_data` is the token (VIG-22): 43
+    chars, within Telegram's 64-char limit."""
 
     channel = Channel.TELEGRAM
 
@@ -149,7 +148,7 @@ class AlertDispatcher:
         )
         for alert, outcome in zip(claimed, outcomes, strict=True):
             if isinstance(outcome, BaseException):
-                # Un error inesperado no pierde la alerta: se reintenta al vencer el reclamo.
+                # An unexpected error does not lose the alert: retried once the claim expires.
                 log.error("alert_dispatch_crashed", alert_id=str(alert.alert_id), exc_info=outcome)
         return DispatchResult(
             claimed=len(claimed),
@@ -158,7 +157,7 @@ class AlertDispatcher:
         )
 
     async def _deliver(self, alert: ClaimedAlert) -> bool | None:
-        """True si se envió, False si falló, None si el reclamo ya no era suyo."""
+        """True if sent, False if it failed, None if the claim was no longer ours."""
         token = new_ack_token(self._clock.now())
         if not await self._queue.attach_token(alert, token):
             return None
@@ -179,7 +178,7 @@ class AlertDispatcher:
 
 
 class EmailDispatcher(AlertDispatcher):
-    """Atajo del dispatcher de correo."""
+    """Shortcut for the email dispatcher."""
 
     def __init__(
         self, queue: DispatchQueue, sender: EmailSender, clock: Clock, confirm_base_url: str
@@ -188,7 +187,7 @@ class EmailDispatcher(AlertDispatcher):
 
 
 class TelegramDispatcher(AlertDispatcher):
-    """Atajo del dispatcher de Telegram."""
+    """Shortcut for the Telegram dispatcher."""
 
     def __init__(self, queue: DispatchQueue, api: TelegramSender, clock: Clock) -> None:
         super().__init__(queue, TelegramChannel(api), clock)

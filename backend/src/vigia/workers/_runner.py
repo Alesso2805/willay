@@ -1,12 +1,8 @@
-"""Bucle común de los workers: latido, despertar, log y parada ordenada con SIGTERM/SIGINT.
+"""Common worker loop: heartbeat, wakeup, logging and graceful SIGTERM/SIGINT shutdown.
 
-Cada vuelta ejecuta `tick`. Luego el worker espera el intervalo (consulta de respaldo)
-salvo que:
-- `tick` devuelva True: quedó trabajo pendiente y se repite sin esperar;
-- llegue un aviso por `wakeup` (LISTEN/NOTIFY): despierta en el acto.
-
-El latido solo se toca si la vuelta terminó bien: si la base se cae, el proceso sigue
-vivo (reintenta en la próxima vuelta) pero su healthcheck se pone en rojo.
+Each round runs `tick`, then waits for the fallback polling interval unless `tick` returns
+True (work remains) or a `wakeup` (LISTEN/NOTIFY) arrives. The heartbeat is touched only after
+a successful round: if the database is down the process stays alive but its healthcheck turns red.
 """
 
 import asyncio
@@ -36,12 +32,12 @@ async def run_loop(
     wakeup: asyncio.Event | None = None,
 ) -> None:
     log = structlog.get_logger().bind(worker=name)
-    # I/O de disco en un hilo para no bloquear el event loop (ASYNC240).
+    # Disk I/O in a thread so it does not block the event loop (ASYNC240).
     await asyncio.to_thread(heartbeat.parent.mkdir, parents=True, exist_ok=True)
     log.info("worker_started", interval_s=interval_s)
     while not stop.is_set():
-        # Se limpia ANTES del trabajo: un aviso que llegue mientras se procesa deja el
-        # evento puesto y la espera siguiente termina al instante (no se pierde).
+        # Cleared BEFORE the work: a notification arriving mid-round leaves the event set,
+        # so the next wait returns at once and the notification is not lost.
         if wakeup is not None:
             wakeup.clear()
         try:
@@ -50,8 +46,8 @@ async def run_loop(
             log.exception("worker_tick_failed")
             more = False
         else:
-            # El latido va después de una vuelta correcta: si el trabajo se cuelga o
-            # falla una y otra vez, el healthcheck lo detecta.
+            # Heartbeat only after a successful round, so the healthcheck catches work that
+            # hangs or keeps failing.
             await asyncio.to_thread(heartbeat.touch)
         if not more:
             await _wait(stop, wakeup, interval_s)
@@ -59,7 +55,7 @@ async def run_loop(
 
 
 async def _wait(stop: asyncio.Event, wakeup: asyncio.Event | None, timeout_s: float) -> None:
-    """Espera hasta `timeout_s`, la parada o un aviso, lo que ocurra primero."""
+    """Waits for `timeout_s`, shutdown or a wakeup, whichever comes first."""
     waiters = [asyncio.create_task(stop.wait())]
     if wakeup is not None:
         waiters.append(asyncio.create_task(wakeup.wait()))
@@ -71,7 +67,7 @@ async def _wait(stop: asyncio.Event, wakeup: asyncio.Event | None, timeout_s: fl
 
 
 def run_async_worker(name: str, body: WorkerBody) -> None:
-    """Punto de entrada de un worker: logging, señales de parada y su cuerpo async."""
+    """Worker entry point: logging, shutdown signals and its async body."""
     settings = get_settings()
     configure_logging(settings.log_level)
 
@@ -86,7 +82,7 @@ def run_async_worker(name: str, body: WorkerBody) -> None:
 
 
 def run_worker(name: str, interval_s: float, tick: Tick = _noop) -> None:
-    """Workers sencillos (aún sin despertar por aviso): un tick cada `interval_s`."""
+    """Simple workers (no wakeup notifications yet): one tick every `interval_s`."""
 
     async def body(settings: Settings, stop: asyncio.Event) -> None:
         await run_loop(name, interval_s, settings.heartbeat_dir / f"{name}.alive", stop, tick)

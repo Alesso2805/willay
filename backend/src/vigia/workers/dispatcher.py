@@ -1,12 +1,9 @@
-"""Worker dispatcher (VIG-20, VIG-22): `python -m vigia.workers.dispatcher`.
+"""Dispatcher worker (VIG-20, VIG-22): `python -m vigia.workers.dispatcher`.
 
-Envía las alertas pendientes por correo y por Telegram. Despierta con LISTEN vigia_alerts
-en cuanto el evaluador, el worker silence o el de escalamiento confirman alertas nuevas, y
-consulta cada 5 s por si un aviso se perdió y para tomar los reintentos que ya vencieron.
-
-Cada canal se despacha por su lado: si Telegram no responde, el correo sigue saliendo
-(SPEC: la caída de un canal no detiene a los demás). Sin token de bot, las alertas de
-Telegram quedan pendientes hasta que se configure.
+Sends pending alerts by email and Telegram. Wakes on LISTEN vigia_alerts when new alerts are
+committed, and polls every 5 s for lost notifications and due retries. Each channel runs on
+its own, so a Telegram outage does not stop email (SPEC); without a bot token, Telegram alerts
+stay pending until one is configured.
 """
 
 import asyncio
@@ -79,8 +76,8 @@ async def run_dispatcher(
             if isinstance(result, BaseException):
                 log.error("dispatch_channel_failed", exc_info=result)
         if not done:
-            raise RuntimeError("ningún canal pudo despachar")  # el healthcheck lo muestra
-        return any(r.claimed == batch_size for r in done)  # lote lleno: quedan más
+            raise RuntimeError("no channel could dispatch")  # shows up in the healthcheck
+        return any(r.claimed == batch_size for r in done)  # full batch: more remain
 
     try:
         dsn = asyncpg_dsn(settings.database_url)

@@ -1,10 +1,9 @@
-"""Cliente mínimo de la Bot API de Telegram (httpx2): lo que usan VIG-21 y VIG-22.
+"""Minimal Telegram Bot API client (httpx2): what VIG-21 and VIG-22 use.
 
-El token del bot va en la URL (`/bot<TOKEN>/<método>`), así que hay que cuidarlo:
-- el logger de httpx2 registra cada petición con su URL a nivel INFO: queda en WARNING;
-- los errores de httpx2 repiten la URL en su mensaje, y el worker registra la traza de
-  los errores: se traducen a TelegramError SIN encadenar la excepción original (`from
-  None`), solo con el método y el tipo de fallo.
+The bot token is part of the URL (`/bot<TOKEN>/<method>`), so it must not leak:
+- httpx2 logs every request URL at INFO, so its logger is raised to WARNING;
+- httpx2 errors repeat the URL and the worker logs tracebacks, so they become a
+  TelegramError WITHOUT chaining (`from None`), carrying only the method and error type.
 """
 
 import logging
@@ -17,7 +16,7 @@ from vigia.alerts.domain.telegram import CONFIRM_BUTTON
 
 logging.getLogger("httpx2").setLevel(logging.WARNING)
 
-# Solo lo que el bot atiende: mensajes (vincular) y clics en botones (confirmar, VIG-22).
+# Only what the bot handles: messages (linking) and button clicks (confirming, VIG-22).
 ALLOWED_UPDATES = ["message", "callback_query"]
 
 
@@ -33,8 +32,8 @@ class TelegramBotApi:
         self._client = client or httpx2.AsyncClient()
 
     async def get_updates(self, offset: int | None, timeout_s: int) -> list[Update]:
-        """Long polling: Telegram responde en cuanto hay algo o a los `timeout_s`. Pedir
-        desde `offset` confirma las anteriores: Telegram no las vuelve a entregar."""
+        """Long polling: Telegram answers as soon as there is something or after
+        `timeout_s`. Asking from `offset` acknowledges earlier updates: they are not resent."""
         payload: dict[str, Any] = {"timeout": timeout_s, "allowed_updates": ALLOWED_UPDATES}
         if offset is not None:
             payload["offset"] = offset
@@ -45,7 +44,7 @@ class TelegramBotApi:
         await self._call("sendMessage", {"chat_id": chat_id, "text": text}, timeout_s=10)
 
     async def send_alert(self, chat_id: int, text: str, callback_data: str) -> None:
-        """Mensaje con un botón en línea: el clic llega al bot como `callback_query`."""
+        """Message with an inline button: the click reaches the bot as a `callback_query`."""
         button = {"text": CONFIRM_BUTTON, "callback_data": callback_data}
         payload = {
             "chat_id": chat_id,
@@ -55,13 +54,13 @@ class TelegramBotApi:
         await self._call("sendMessage", payload, timeout_s=10)
 
     async def answer_click(self, click_id: str, text: str) -> None:
-        """El aviso breve que Telegram muestra al pulsar; sin respuesta, el botón queda
-        cargando."""
+        """The short notice Telegram shows on click; without an answer the button keeps
+        spinning."""
         payload = {"callback_query_id": click_id, "text": text}
         await self._call("answerCallbackQuery", payload, timeout_s=10)
 
     async def edit_message(self, chat_id: int, message_id: int, text: str) -> None:
-        """Un teclado vacío quita el botón: ya no hay nada que confirmar."""
+        """An empty keyboard removes the button: there is nothing left to confirm."""
         payload = {
             "chat_id": chat_id,
             "message_id": message_id,
@@ -103,12 +102,12 @@ def _update(raw: dict[str, Any]) -> Update:
 
 
 def _click(callback: dict[str, Any]) -> Click | None:
-    """None si le falta lo mínimo: una actualización que no se puede leer se confirma y se
-    descarta, nunca bloquea a las siguientes."""
+    """None if the essentials are missing: an unreadable update is acknowledged and
+    dropped, never blocking the ones after it."""
     sender = callback.get("from") or {}
     if "id" not in callback or "id" not in sender:
         return None
-    # Un mensaje de más de 48 h llega "inaccesible": con chat y message_id pero sin texto.
+    # A message older than 48 h arrives "inaccessible": chat and message_id but no text.
     message = callback.get("message") or {}
     return Click(
         id=callback["id"],

@@ -1,4 +1,4 @@
-"""Lecturas de una estación: reglas del lote que no dependen de HTTP ni de SQL."""
+"""Station readings: batch rules independent of HTTP and SQL."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -6,11 +6,11 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 
 MAX_BATCH_SIZE = 500
-# Tolerancia al desfase del reloj de la estación. Más allá, una lectura "del futuro" es un
-# reloj mal configurado: aceptarla abriría ventanas de reglas con datos imposibles.
+# Tolerated station clock skew. Beyond it, a reading "from the future" means a misconfigured
+# clock: accepting it would open rule windows with impossible data.
 MAX_CLOCK_SKEW = timedelta(minutes=5)
-# Una lectura que llega más de 1 h después de medirse ya no sirve para alertar a tiempo:
-# se guarda para el historial, pero no se evalúa ni cuenta como latido (SPEC).
+# A reading arriving more than 1 h after measurement is useless for timely alerts: it is
+# stored for history but neither evaluated nor counted as a heartbeat (SPEC).
 LATE_AFTER = timedelta(hours=1)
 
 
@@ -34,7 +34,7 @@ class ClassifiedReading:
 
 class FutureReadingsError(Exception):
     def __init__(self, indices: list[int]) -> None:
-        super().__init__(f"lecturas con measured_at en el futuro: {indices}")
+        super().__init__(f"readings with measured_at in the future: {indices}")
         self.indices = indices
 
 
@@ -50,19 +50,19 @@ def quality_of(measured_at: datetime, received_at: datetime) -> Quality:
 
 
 def heartbeat_reading(readings: Sequence[ClassifiedReading]) -> ClassifiedReading | None:
-    """La lectura que actualiza el latido: la no tardía medida más recientemente.
+    """The reading that updates the heartbeat: the most recently measured non-late one.
 
-    None si el lote solo trae tardías: una estación que envía datos de hace horas no
-    demuestra estar viva ahora, y el detector de silencio debe seguir viéndola callada.
-    Los duplicados sí cuentan: reenviar lecturas recientes es señal de que comunica.
+    None if the batch has only late readings: data from hours ago does not prove the station is
+    alive now, so silence detection must still see it as silent. Duplicates do count:
+    resending recent readings shows the station is communicating.
     """
     on_time = [r for r in readings if r.quality is Quality.OK]
     return max(on_time, key=lambda r: r.measured_at) if on_time else None
 
 
 def classify(readings: Sequence[Reading], received_at: datetime) -> list[ClassifiedReading]:
-    """Ordena por measured_at (las estaciones pueden enviar el lote desordenado) y
-    marca la calidad de cada lectura según cuánto tardó en llegar."""
+    """Sort by measured_at (stations may send unordered batches) and set each reading's
+    quality from how long it took to arrive."""
     ordered = sorted(readings, key=lambda reading: reading.measured_at)
     return [
         ClassifiedReading(r.measured_at, r.value, quality_of(r.measured_at, received_at))

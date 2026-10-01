@@ -1,4 +1,4 @@
-"""Configuración por variables de entorno (prefijo `VIGIA_`). Nunca secretos en el repo."""
+"""Configuration from environment variables (prefix `VIGIA_`). Never secrets in the repo."""
 
 from functools import lru_cache
 from pathlib import Path
@@ -10,25 +10,25 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="VIGIA_", extra="ignore")
 
-    # URL de la API y los workers (rol vigia_app), p. ej. postgresql+asyncpg://...
+    # URL for the API and workers (vigia_app role), e.g. postgresql+asyncpg://...
     database_url: str
     log_level: str = "INFO"
-    # Cada worker toca aquí su archivo de latido; el healthcheck de Compose revisa su antigüedad.
+    # Each worker touches its heartbeat file here; the Compose healthcheck checks its age.
     heartbeat_dir: Path = Path("/tmp/vigia")
 
-    # OIDC (Keycloak). El issuer es la URL pública con la que el navegador pidió el token
-    # (localhost); el JWKS se descarga por la red interna (keycloak:8080). Son distintos.
+    # OIDC (Keycloak). The issuer is the public URL the browser got the token from (localhost);
+    # the JWKS is fetched over the internal network (keycloak:8080). They differ on purpose.
     oidc_issuer: str = "http://localhost:8080/realms/vigia"
     oidc_jwks_url: str = "http://keycloak:8080/realms/vigia/protocol/openid-connect/certs"
     oidc_audience: str = "vigia-api"
 
-    # Orígenes del panel que pueden llamar a la API desde el navegador (JSON en el entorno).
+    # Dashboard origins allowed to call the API from the browser (JSON in the environment).
     cors_origins: list[str] = ["http://localhost:4200"]
 
-    # URL pública de la API: base de los enlaces que salen en las alertas (confirmación).
+    # Public API URL: base for the links sent in alerts (confirmation).
     public_url: str = "http://localhost:8000"
 
-    # Correo saliente (dispatcher). En local, Mailpit: sin TLS ni credenciales.
+    # Outgoing mail (dispatcher). Locally, Mailpit: no TLS or credentials.
     smtp_host: str = "localhost"
     smtp_port: int = 1025
     smtp_from: str = "Vigía <alertas@vigia.local>"
@@ -37,9 +37,9 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     smtp_timeout_s: float = 10.0
 
-    # Bot de Telegram (VIG-21/22): se crea con @BotFather y su token va solo en .env.
-    # SecretStr: se imprime enmascarado si alguien registra la configuración. Sin
-    # token, el worker telegram arranca deshabilitado y la API no genera enlaces.
+    # Telegram bot (VIG-21/22): created with @BotFather; its token lives only in .env.
+    # SecretStr masks it if the settings get logged. Without a token the telegram worker
+    # starts disabled and the API does not generate links.
     telegram_bot_token: SecretStr | None = None
     telegram_bot_username: str | None = None
     telegram_api_url: str = "https://api.telegram.org"
@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     @field_validator("telegram_bot_token", "telegram_bot_username", mode="before")
     @classmethod
     def _empty_means_unset(cls, value: object) -> object:
-        # Compose pasa "" si la variable no está en .env: eso es "sin bot", no un token vacío.
+        # Compose passes "" when the variable is missing from .env: that means "no bot".
         return None if value == "" else value
 
 

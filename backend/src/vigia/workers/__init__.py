@@ -1,1 +1,1 @@
-"""Workers: cada uno es un proceso separado (`python -m vigia.workers.<nombre>`)."""
+"""Workers: each runs as a separate process (`python -m vigia.workers.<name>`)."""

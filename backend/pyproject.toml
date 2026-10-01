@@ -1,7 +1,7 @@
 [project]
 name = "vigia"
 version = "0.1.0"
-description = "Vigía: sistema de alerta temprana multi-tenant"
+description = "Vigía: multi-tenant early warning system"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [project.scripts]
-# Simulador de estaciones (VIG-11): `uv run simulate --scenario rimac --seed 42`
+# Station simulator (VIG-11): `uv run simulate --scenario rimac --seed 42`
 simulate = "vigia.ingestion.api.simulator_cli:main"
 
 [build-system]
@@ -48,18 +48,18 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = [
     "E", "W", "F", "I", "N", "UP", "B", "SIM", "RUF",
-    "ASYNC",  # errores típicos de asyncio
-    "DTZ",    # datetimes sin zona horaria
-    "TID",    # imports prohibidos (ver banned-api)
-    "PT",     # estilo pytest
+    "ASYNC",  # typical asyncio mistakes
+    "DTZ",    # datetimes without a time zone
+    "TID",    # banned imports (see banned-api)
+    "PT",     # pytest style
 ]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
-# Regla de CLAUDE.md: el tiempo entra solo por el protocolo Clock.
-"datetime.datetime.now".msg = "Usa vigia.shared.clock.Clock; datetime.now() solo vive en SystemClock."
-"datetime.datetime.utcnow".msg = "Usa vigia.shared.clock.Clock."
-"datetime.datetime.today".msg = "Usa vigia.shared.clock.Clock."
-"time.time".msg = "Usa vigia.shared.clock.Clock (o time.monotonic para medir duraciones)."
+# CLAUDE.md rule: time comes in only through the Clock protocol.
+"datetime.datetime.now".msg = "Use vigia.shared.clock.Clock; datetime.now() only lives in SystemClock."
+"datetime.datetime.utcnow".msg = "Use vigia.shared.clock.Clock."
+"datetime.datetime.today".msg = "Use vigia.shared.clock.Clock."
+"time.time".msg = "Use vigia.shared.clock.Clock (or time.monotonic to measure durations)."
 
 [tool.ruff.lint.per-file-ignores]
 "src/vigia/shared/clock.py" = ["TID251"]
@@ -82,5 +82,5 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 addopts = "-ra --strict-markers"
 markers = [
-    "integration: requiere Postgres real vía Docker (testcontainers)",
+    "integration: requires a real Postgres via Docker (testcontainers)",
 ]

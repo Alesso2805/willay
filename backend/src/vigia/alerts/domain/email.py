@@ -1,9 +1,8 @@
-"""Plantilla del correo de alerta (VIG-20): zona, severidad, valor, hora local y enlace.
+"""Alert email template (VIG-20): zone, severity, value, local time and confirmation link.
 
-Texto plano: se lee en cualquier cliente, también en un teléfono básico, y no depende de
-imágenes ni estilos que el cliente puede bloquear. La hora va en la zona horaria de la
-organización (en la base todo es UTC). El pie recuerda que Vigía es una herramienta de
-apoyo y no reemplaza los avisos oficiales (SPEC: Riesgo ético).
+Plain text so it reads in any client, even a basic phone, without images or styles that
+may be blocked. Times use the organization's timezone (the database stores UTC). The
+footer states Vigía does not replace official warnings (SPEC: Explicit ethical risk).
 """
 
 from dataclasses import dataclass
@@ -11,7 +10,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 SEVERITY_LABEL = {"info": "INFORMATIVO", "warning": "ADVERTENCIA", "critical": "CRÍTICO"}
-# La frase del cuerpo concuerda con cada severidad ("un incidente ADVERTENCIA" no se dice).
+# Spanish grammar differs per severity ("un incidente ADVERTENCIA" is not idiomatic).
 SEVERITY_PHRASE = {
     "info": "un incidente INFORMATIVO",
     "warning": "un incidente de ADVERTENCIA",
@@ -26,7 +25,7 @@ RULE_LABEL = {
 
 @dataclass(frozen=True)
 class AlertMessage:
-    """Lo que el correo necesita saber del incidente y de su destinatario."""
+    """What the message needs to know about the incident and its recipient."""
 
     contact_name: str
     organization_name: str
@@ -49,8 +48,8 @@ class EmailContent:
 
 
 def summary(message: AlertMessage) -> list[tuple[str, str]]:
-    """Los datos del incidente como pares (etiqueta, valor): el correo y la página de
-    confirmación los muestran igual."""
+    """Incident data as (label, value) pairs, shared by the email and the confirmation page
+    so both show the same thing."""
     fields = [
         ("Severidad", SEVERITY_LABEL.get(message.severity, message.severity.upper())),
         ("Causa", RULE_LABEL.get(message.rule_type, message.rule_type)),
@@ -61,7 +60,7 @@ def summary(message: AlertMessage) -> list[tuple[str, str]]:
             f" · {message.station_name}" if message.station_name else ""
         )
         fields.append(("Estación", station))
-    # En silencio el valor es el último conocido, no el que disparó la regla.
+    # For silence the value is the last known reading, not one that triggered the rule.
     fields.append(("Último" if message.rule_type == "silence" else "Valor", _value(message)))
     fields.append(("Abierto", local_time(message.opened_at, message.timezone)))
     return fields
@@ -75,7 +74,7 @@ def compose_email(message: AlertMessage, confirm_url: str) -> EmailContent:
     severity = SEVERITY_LABEL.get(message.severity, message.severity.upper())
     cause = RULE_LABEL.get(message.rule_type, message.rule_type)
     where = message.zone_name + (f" ({message.station_code})" if message.station_code else "")
-    # Severidad y zona ya van en la frase de apertura; el resto, alineado en columnas.
+    # Severity and zone are already in the opening sentence; the rest go in aligned columns.
     details = [
         f"  {label + ':':<11}{value}"
         for label, value in summary(message)

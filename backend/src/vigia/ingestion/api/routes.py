@@ -16,9 +16,9 @@ router = APIRouter(prefix="/v1", tags=["ingestion"])
 class ReadingIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    # AwareDatetime: sin zona horaria no se puede saber cuándo se midió (422).
+    # AwareDatetime: without a timezone the measurement instant is unknown (422).
     measured_at: AwareDatetime
-    # allow_inf_nan=False: un NaN o infinito es un sensor averiado, no una lectura.
+    # allow_inf_nan=False: NaN or infinity is a broken sensor, not a reading.
     value: Annotated[float, Field(allow_inf_nan=False)]
 
 
@@ -31,27 +31,27 @@ class ReadingBatchIn(BaseModel):
 class ReadingBatchOut(BaseModel):
     received: int
     stored: int
-    duplicates: int = Field(description="Ya existían por (estación, measured_at); se ignoran.")
+    duplicates: int = Field(description="Already stored for (station, measured_at); ignored.")
     late: int = Field(
-        description="De las guardadas, cuántas llegaron más de 1 h tarde: quedan en el "
-        "historial pero no se evalúan. Muchas tardías suelen indicar un reloj o un enlace "
-        "con problemas en la estación."
+        description="Of those stored, how many arrived more than 1 h late: they stay in the "
+        "history but are not evaluated. Many late readings usually point to a faulty clock "
+        "or link at the station."
     )
 
 
 @router.post(
     "/readings",
     status_code=status.HTTP_202_ACCEPTED,
-    summary="Lote de lecturas de la estación dueña de la API key",
+    summary="A batch of readings from the station that owns the API key",
     responses={
-        401: {"description": "API key ausente o inválida"},
-        403: {"description": "Estación inactiva"},
-        429: {"description": "Más de 60 lotes por minuto; ver el header Retry-After"},
+        401: {"description": "Missing or invalid API key"},
+        403: {"description": "Inactive station"},
+        429: {"description": "More than 60 batches per minute; see the Retry-After header"},
     },
 )
 async def post_readings(
     batch: ReadingBatchIn,
-    station: IngestingStation,  # antes que conn: la conexión de escritura se pide al final
+    station: IngestingStation,  # before conn: the write connection is acquired last
     conn: DbConnection,
     clock: ClockDep,
 ) -> ReadingBatchOut:
@@ -79,5 +79,5 @@ async def post_readings(
 
 
 def _utc(value: datetime) -> datetime:
-    # Todo en UTC en la base (NFR de tiempo); la estación puede enviar cualquier offset.
+    # Everything is UTC in the database (time NFR); stations may send any offset.
     return value.astimezone(UTC)

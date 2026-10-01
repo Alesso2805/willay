@@ -1,4 +1,4 @@
-"""Caso de uso: guardar un lote de lecturas de una estación y encolarlas para evaluar."""
+"""Use case: store a station's batch of readings and enqueue them for evaluation."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -19,8 +19,8 @@ from vigia.shared.clock import Clock
 
 @dataclass(frozen=True)
 class StoreCounts:
-    stored: int  # nuevas; el resto eran duplicados por (station_id, measured_at)
-    late: int  # de las nuevas, cuántas llegaron tarde (guardadas, no encoladas)
+    stored: int  # new ones; the rest were duplicates by (station_id, measured_at)
+    late: int  # of the new ones, how many were late (stored, not enqueued)
     enqueued: int
 
 
@@ -43,8 +43,8 @@ class ReadingWriter(Protocol):
         received_at: datetime,
         heartbeat: ClassifiedReading | None,
     ) -> StoreCounts:
-        """En la transacción en curso: guarda las lecturas, encola las nuevas con calidad
-        ok, actualiza el latido con `heartbeat` (si hay) y avisa al evaluador."""
+        """In the current transaction: store the readings, enqueue the new `ok` ones,
+        update the heartbeat with `heartbeat` (if any) and notify the evaluator."""
         ...
 
 

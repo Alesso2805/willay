@@ -1,4 +1,4 @@
-"""API REST de estaciones (VIG-13). La ubicación viaja como GeoJSON Point [lon, lat]."""
+"""Station REST API (VIG-13). Location travels as a GeoJSON Point [lon, lat]."""
 
 from datetime import datetime
 from typing import Annotated, Any, Literal
@@ -51,7 +51,7 @@ CanManage = Annotated[Principal, Depends(require(Permission.MANAGE_TERRITORY))]
 Hasher = Annotated[ApiKeyHasher, Depends(get_api_key_hasher)]
 
 _NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, detail="Estación no encontrada")
-# Una respuesta con una clave en claro no debe quedar en ninguna caché.
+# A response carrying a plaintext key must never be cached.
 _NO_STORE = {"Cache-Control": "no-store"}
 
 
@@ -67,7 +67,7 @@ class ZoneAssignmentIn(BaseModel):
 
 
 class StationBodyIn(BaseModel):
-    """Lo editable. El código no está: se fija al crear y no cambia."""
+    """The editable fields. The code is not here: it is set on creation and never changes."""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -98,14 +98,14 @@ class StationOut(BaseModel):
     code: str
     name: str
     variable: Variable
-    unit: str = Field(description="Fija por variable: discharge m3/s, water_level m, rainfall mm")
+    unit: str = Field(description="Fixed per variable: discharge m3/s, water_level m, rainfall mm")
     location: dict[str, Any] = Field(description="GeoJSON Point [lon, lat]")
     source: Source
     expected_interval_s: int
     silence_multiplier: int
     status: StationStatus
     zones: list[ZoneAssignmentIn]
-    has_zone: bool = Field(description="Sin zona, la estación no genera alertas")
+    has_zone: bool = Field(description="Without a zone, the station raises no alerts")
     heartbeat: HeartbeatOut | None
     api_key_rotated_at: datetime
     created_at: datetime
@@ -113,14 +113,14 @@ class StationOut(BaseModel):
 
 class IssuedKeyOut(BaseModel):
     station: StationOut
-    api_key: str = Field(description="Se muestra una sola vez; Vigía solo guarda su hash")
+    api_key: str = Field(description="Shown only once; Vigía only stores its hash")
 
 
-@router.get("", summary="Estaciones de la organización")
+@router.get("", summary="The organization's stations")
 async def list_stations(
     principal: CanView,
     conn: DbConnection,
-    include_inactive: Annotated[bool, Query(description="incluir las desactivadas")] = False,
+    include_inactive: Annotated[bool, Query(description="include deactivated ones")] = False,
 ) -> list[StationOut]:
     stations = await SqlStationRepository(conn).list(
         principal.organization_id, include_inactive=include_inactive
@@ -128,7 +128,7 @@ async def list_stations(
     return [_out(station) for station in stations]
 
 
-@router.get("/{station_id}", summary="Una estación", responses={404: {"description": "No existe"}})
+@router.get("/{station_id}", summary="A station", responses={404: {"description": "Not found"}})
 async def get_station(station_id: UUID, principal: CanView, conn: DbConnection) -> StationOut:
     station = await SqlStationRepository(conn).get(principal.organization_id, station_id)
     if station is None:
@@ -139,8 +139,8 @@ async def get_station(station_id: UUID, principal: CanView, conn: DbConnection) 
 @router.post(
     "",
     status_code=status.HTTP_201_CREATED,
-    summary="Crear una estación (devuelve su API key una sola vez)",
-    responses={409: {"description": "Código repetido"}, 422: {"description": "Datos inválidos"}},
+    summary="Create a station (returns its API key only once)",
+    responses={409: {"description": "Duplicate code"}, 422: {"description": "Invalid data"}},
 )
 async def post_station(
     body: StationCreateIn,
@@ -172,8 +172,8 @@ async def post_station(
 
 @router.put(
     "/{station_id}",
-    summary="Reemplazar una estación (no cambia el código; también reactiva)",
-    responses={404: {"description": "No existe"}, 422: {"description": "Datos inválidos"}},
+    summary="Replace a station (the code does not change; also reactivates it)",
+    responses={404: {"description": "Not found"}, 422: {"description": "Invalid data"}},
 )
 async def put_station(
     station_id: UUID, body: StationBodyIn, principal: CanManage, conn: DbConnection, clock: ClockDep
@@ -197,8 +197,8 @@ async def put_station(
 @router.delete(
     "/{station_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Desactivar una estación (sus lotes reciben 403; la historia se conserva)",
-    responses={404: {"description": "No existe"}},
+    summary="Deactivate a station (its batches get 403; its history is kept)",
+    responses={404: {"description": "Not found"}},
 )
 async def delete_station(
     station_id: UUID, principal: CanManage, conn: DbConnection, clock: ClockDep
@@ -217,8 +217,8 @@ async def delete_station(
 
 @router.post(
     "/{station_id}/api-key",
-    summary="Rotar la API key: la anterior deja de valer al instante",
-    responses={404: {"description": "No existe"}},
+    summary="Rotate the API key: the previous one stops working immediately",
+    responses={404: {"description": "Not found"}},
 )
 async def post_api_key(
     station_id: UUID,

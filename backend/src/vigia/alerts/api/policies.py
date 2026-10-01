@@ -1,8 +1,8 @@
-"""API REST de políticas de escalamiento (VIG-24).
+"""Escalation policies REST API (VIG-24).
 
-Leer: cualquier rol (el formulario de reglas, VIG-27, elige una política; no hay datos
-personales, solo grupos). Crear, editar y borrar: solo admin (SPEC: Permisos por rol).
-Los niveles se envían como lista: su orden es su posición.
+Any role can read (the rules form, VIG-27, picks a policy; there is no personal data, only
+groups). Only admin can create, edit and delete (SPEC: Permissions by role). Levels are sent
+as a list: their order is their position.
 """
 
 from datetime import datetime
@@ -80,13 +80,13 @@ class PolicyOut(BaseModel):
     created_at: datetime
 
 
-@router.get("", summary="Políticas de escalamiento de la organización")
+@router.get("", summary="The organization's escalation policies")
 async def list_policies(principal: CanView, conn: DbConnection) -> list[PolicyOut]:
     policies = await SqlPolicyRepository(conn).all_of(principal.organization_id)
     return [_out(policy) for policy in policies]
 
 
-@router.get("/{policy_id}", summary="Una política", responses={404: {"description": "No existe"}})
+@router.get("/{policy_id}", summary="A policy", responses={404: {"description": "Not found"}})
 async def get_policy(policy_id: UUID, principal: CanView, conn: DbConnection) -> PolicyOut:
     policy = await SqlPolicyRepository(conn).get(principal.organization_id, policy_id)
     if policy is None:
@@ -97,10 +97,10 @@ async def get_policy(policy_id: UUID, principal: CanView, conn: DbConnection) ->
 @router.post(
     "",
     status_code=status.HTTP_201_CREATED,
-    summary="Crear una política",
+    summary="Create a policy",
     responses={
-        409: {"description": "Ya hay una política con ese nombre"},
-        422: {"description": "Niveles inválidos o grupos que no son de la organización"},
+        409: {"description": "A policy with that name already exists"},
+        422: {"description": "Invalid levels, or groups that do not belong to the organization"},
     },
 )
 async def post_policy(
@@ -122,11 +122,11 @@ async def post_policy(
 
 @router.put(
     "/{policy_id}",
-    summary="Reemplazar una política (nombre y niveles); aplica a los incidentes en curso",
+    summary="Replace a policy (name and levels); applies to ongoing incidents",
     responses={
-        404: {"description": "No existe"},
-        409: {"description": "Ya hay una política con ese nombre"},
-        422: {"description": "Niveles inválidos o grupos que no son de la organización"},
+        404: {"description": "Not found"},
+        409: {"description": "A policy with that name already exists"},
+        422: {"description": "Invalid levels, or groups that do not belong to the organization"},
     },
 )
 async def put_policy(
@@ -151,8 +151,8 @@ async def put_policy(
 @router.delete(
     "/{policy_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Borrar una política que ninguna regla usa",
-    responses={404: {"description": "No existe"}, 409: {"description": "Alguna regla la usa"}},
+    summary="Delete a policy that no rule uses",
+    responses={404: {"description": "Not found"}, 409: {"description": "A rule uses it"}},
 )
 async def delete_policy_route(
     policy_id: UUID, principal: CanManage, conn: DbConnection, clock: ClockDep
@@ -194,7 +194,7 @@ def _data(body: PolicyIn) -> PolicyData:
 def _rejected(exc: Exception) -> HTTPException:
     if isinstance(exc, DuplicatePolicyNameError):
         return HTTPException(status.HTTP_409_CONFLICT, detail="Ya hay una política con ese nombre.")
-    # Mismo formato que los 422 de validación de FastAPI, para que el panel los trate igual.
+    # Same shape as FastAPI's validation 422s, so the dashboard handles them the same way.
     if isinstance(exc, UnknownGroupsError):
         detail = [{"loc": ["body", "levels"], "msg": str(exc), "type": "unknown_contact_group"}]
     else:

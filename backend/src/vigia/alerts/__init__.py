@@ -1,1 +1,1 @@
-"""Alertas: canales, confirmación y escalamiento."""
+"""Alerts: channels, confirmation and escalation."""

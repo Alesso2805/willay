@@ -1,11 +1,10 @@
-"""station_heartbeats.last_measured_at: cuándo se midió last_value.
+"""station_heartbeats.last_measured_at: when last_value was measured.
 
-Sin esta columna no se sabe la antigüedad del último valor (la necesita el mapa) ni se
-puede evitar que un lote concurrente o un reenvío antiguo lo pise con uno más viejo.
+Without it the map cannot show the age of the last value, and a concurrent batch or an old
+resend could overwrite it with an older one.
 
-Patrón para columnas obligatorias en tablas que pueden tener filas: añadir nullable,
-rellenar y después exigir NOT NULL. Añadir directamente NOT NULL sin DEFAULT falla si
-la tabla no está vacía.
+Pattern for required columns on tables that may have rows: add nullable, backfill, then set
+NOT NULL. Adding NOT NULL without a DEFAULT directly fails on a non-empty table.
 
 Revision ID: 0004
 Revises: 0003
@@ -24,7 +23,7 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     op.execute("ALTER TABLE ingest.station_heartbeats ADD COLUMN last_measured_at timestamptz")
-    # Mejor aproximación disponible para filas previas: el momento en que se recibió.
+    # Best available approximation for existing rows: when it was received.
     op.execute("UPDATE ingest.station_heartbeats SET last_measured_at = last_seen_at")
     op.execute("ALTER TABLE ingest.station_heartbeats ALTER COLUMN last_measured_at SET NOT NULL")
 

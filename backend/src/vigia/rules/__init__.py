@@ -1,1 +1,1 @@
-"""Reglas: umbral, tasa de cambio y sensor silencioso."""
+"""Rules: threshold, rate of change and silent sensor."""

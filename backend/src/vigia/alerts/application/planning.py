@@ -1,10 +1,9 @@
-"""Crear las alertas de un nivel de escalamiento (VIG-20; VIG-24 lo usa para subir de nivel).
+"""Creating the alerts of an escalation level (VIG-20; VIG-24 reuses it to move up a level).
 
-Al abrirse un incidente se crean, en la misma transacción, las alertas del nivel 1 de la
-política de su regla: una por contacto y canal, aunque el contacto esté en dos grupos
-del nivel. Las que se pueden enviar quedan pendientes para el dispatcher, que despierta
-con NOTIFY al confirmarse la transacción; las demás quedan omitidas, con su evento
-`alert_skipped` en la línea de tiempo del incidente.
+Created in the same transaction that opens (or escalates) the incident: one per contact
+and channel, even if the contact is in two groups of the level. Sendable ones stay pending
+for the dispatcher, woken by NOTIFY on commit; the rest are skipped with an
+`alert_skipped` timeline event.
 """
 
 from collections.abc import Sequence
@@ -30,7 +29,7 @@ class AlertRepository(Protocol):
     async def targets(
         self, tx: AsyncConnection, incident_id: UUID, level_order: int
     ) -> list[Target]:
-        """Contactos del nivel (uno por contacto y canal) con su destino."""
+        """The level's contacts (one per contact and channel) with their destination."""
         ...
 
     async def add(
@@ -41,7 +40,7 @@ class AlertRepository(Protocol):
         targets: Sequence[Target],
         now: datetime,
     ) -> None:
-        """Una alerta por destino, en el estado inicial que le corresponde."""
+        """One alert per target, in its corresponding initial status."""
         ...
 
     async def record_skipped(
@@ -53,16 +52,16 @@ class AlertRepository(Protocol):
         reason: str,
         now: datetime,
     ) -> None:
-        """Evento `alert_skipped` (sin el destino: es un dato personal)."""
+        """`alert_skipped` event (without the destination: it is personal data)."""
         ...
 
     async def wake_dispatcher(self, tx: AsyncConnection) -> None:
-        """NOTIFY al dispatcher; se entrega solo si `tx` confirma."""
+        """NOTIFY to the dispatcher; delivered only if `tx` commits."""
         ...
 
 
 class IncidentAlerting(Protocol):
-    """Lo que el evaluador y el worker silence necesitan: alertar un nivel."""
+    """What the evaluator and the silence worker need: alerting a level."""
 
     async def alert_level(
         self, tx: AsyncConnection, incident_id: UUID, level_order: int, now: datetime

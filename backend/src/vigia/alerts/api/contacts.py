@@ -1,8 +1,7 @@
-"""API de contactos: por ahora, el enlace para vincular su Telegram (VIG-21).
+"""Contacts API: for now, the link to connect a contact's Telegram (VIG-21).
 
-Solo admin (SPEC: gestionar contactos). El enlace se muestra una sola vez: la base guarda
-solo el hash de su token, así que no se puede volver a leer; si se pierde, se genera otro
-y el anterior deja de valer.
+Admin only (SPEC: manage contacts). The link is shown once: only its token hash is stored,
+so it cannot be read again; if lost, a new one is generated and the old one stops working.
 """
 
 from datetime import datetime
@@ -38,10 +37,10 @@ class TelegramLinkOut(BaseModel):
 @router.post(
     "/{contact_id}/telegram-link",
     status_code=status.HTTP_201_CREATED,
-    summary="Enlace de un solo uso para que el contacto vincule su Telegram (se muestra una vez)",
+    summary="Single-use link for the contact to link their Telegram (shown once)",
     responses={
-        404: {"description": "El contacto no existe"},
-        503: {"description": "El bot de Telegram no está configurado"},
+        404: {"description": "The contact does not exist"},
+        503: {"description": "The Telegram bot is not configured"},
     },
 )
 async def post_telegram_link(
@@ -68,5 +67,5 @@ async def post_telegram_link(
             status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="El bot de Telegram no está configurado (VIGIA_TELEGRAM_BOT_USERNAME).",
         ) from exc
-    response.headers["Cache-Control"] = "no-store"  # el enlace es un secreto de un solo uso
+    response.headers["Cache-Control"] = "no-store"  # the link is a single-use secret
     return TelegramLinkOut(url=link.url, expires_at=link.expires_at)

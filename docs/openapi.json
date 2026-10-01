@@ -10,7 +10,7 @@
         "type": "string"
       },
       "GeoJsonGeometry": {
-        "description": "Polygon (lo que dibuja el mapa) o MultiPolygon. Coordenadas [longitud, latitud].",
+        "description": "Polygon (what the map draws) or MultiPolygon. Coordinates [longitude, latitude].",
         "properties": {
           "coordinates": {
             "items": {},
@@ -508,7 +508,7 @@
       "IssuedKeyOut": {
         "properties": {
           "api_key": {
-            "description": "Se muestra una sola vez; Vigía solo guarda su hash",
+            "description": "Shown only once; Vigía only stores its hash",
             "title": "Api Key",
             "type": "string"
           },
@@ -596,12 +596,12 @@
             "type": "string"
           },
           "organization_timezone": {
-            "description": "Zona horaria IANA de la organización: el panel muestra las horas en ella.",
+            "description": "The organization's IANA time zone: the dashboard shows times in it.",
             "title": "Organization Timezone",
             "type": "string"
           },
           "permissions": {
-            "description": "Para que el panel oculte acciones; la API las valida igual en cada endpoint.",
+            "description": "So the dashboard can hide actions; the API checks them on every endpoint.",
             "items": {
               "$ref": "#/components/schemas/Permission"
             },
@@ -727,12 +727,12 @@
       "ReadingBatchOut": {
         "properties": {
           "duplicates": {
-            "description": "Ya existían por (estación, measured_at); se ignoran.",
+            "description": "Already stored for (station, measured_at); ignored.",
             "title": "Duplicates",
             "type": "integer"
           },
           "late": {
-            "description": "De las guardadas, cuántas llegaron más de 1 h tarde: quedan en el historial pero no se evalúan. Muchas tardías suelen indicar un reloj o un enlace con problemas en la estación.",
+            "description": "Of those stored, how many arrived more than 1 h late: they stay in the history but are not evaluated. Many late readings usually point to a faulty clock or link at the station.",
             "title": "Late",
             "type": "integer"
           },
@@ -825,7 +825,7 @@
       },
       "StationBodyIn": {
         "additionalProperties": false,
-        "description": "Lo editable. El código no está: se fija al crear y no cambia.",
+        "description": "The editable fields. The code is not here: it is set on creation and never changes.",
         "properties": {
           "expected_interval_s": {
             "maximum": 86400.0,
@@ -965,7 +965,7 @@
             "type": "integer"
           },
           "has_zone": {
-            "description": "Sin zona, la estación no genera alertas",
+            "description": "Without a zone, the station raises no alerts",
             "title": "Has Zone",
             "type": "boolean"
           },
@@ -1005,7 +1005,7 @@
             "$ref": "#/components/schemas/StationStatus"
           },
           "unit": {
-            "description": "Fija por variable: discharge m3/s, water_level m, rainfall mm",
+            "description": "Fixed per variable: discharge m3/s, water_level m, rainfall mm",
             "title": "Unit",
             "type": "string"
           },
@@ -1313,7 +1313,7 @@
     },
     "securitySchemes": {
       "APIKeyHeader": {
-        "description": "API key de la estación: `<station_id>.<secreto>`",
+        "description": "The station's API key: `<station_id>.<secret>`",
         "in": "header",
         "name": "X-Api-Key",
         "type": "apiKey"
@@ -1356,10 +1356,10 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "Enlace no válido"
+            "description": "Invalid link"
           },
           "410": {
-            "description": "El enlace venció o ya se usó"
+            "description": "The link expired or was already used"
           },
           "422": {
             "content": {
@@ -1372,7 +1372,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Página de confirmación de una alerta (abrirla no confirma nada)",
+        "summary": "Confirmation page of an alert (opening it acknowledges nothing)",
         "tags": [
           "confirmation"
         ]
@@ -1402,10 +1402,10 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "Enlace no válido"
+            "description": "Invalid link"
           },
           "410": {
-            "description": "El enlace venció o ya se usó"
+            "description": "The link expired or was already used"
           },
           "422": {
             "content": {
@@ -1418,7 +1418,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Confirmar una alerta: confirma su incidente y detiene el escalamiento",
+        "summary": "Acknowledge an alert: acknowledges its incident and stops the escalation",
         "tags": [
           "confirmation"
         ]
@@ -1476,7 +1476,7 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "El contacto no existe"
+            "description": "The contact does not exist"
           },
           "422": {
             "content": {
@@ -1489,7 +1489,7 @@
             "description": "Validation Error"
           },
           "503": {
-            "description": "El bot de Telegram no está configurado"
+            "description": "The Telegram bot is not configured"
           }
         },
         "security": [
@@ -1497,7 +1497,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Enlace de un solo uso para que el contacto vincule su Telegram (se muestra una vez)",
+        "summary": "Single-use link for the contact to link their Telegram (shown once)",
         "tags": [
           "alerts"
         ]
@@ -1527,7 +1527,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Políticas de escalamiento de la organización",
+        "summary": "The organization's escalation policies",
         "tags": [
           "alerts"
         ]
@@ -1556,10 +1556,10 @@
             "description": "Successful Response"
           },
           "409": {
-            "description": "Ya hay una política con ese nombre"
+            "description": "A policy with that name already exists"
           },
           "422": {
-            "description": "Niveles inválidos o grupos que no son de la organización"
+            "description": "Invalid levels, or groups that do not belong to the organization"
           }
         },
         "security": [
@@ -1567,7 +1567,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Crear una política",
+        "summary": "Create a policy",
         "tags": [
           "alerts"
         ]
@@ -1593,10 +1593,10 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "No existe"
+            "description": "Not found"
           },
           "409": {
-            "description": "Alguna regla la usa"
+            "description": "A rule uses it"
           },
           "422": {
             "content": {
@@ -1614,7 +1614,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Borrar una política que ninguna regla usa",
+        "summary": "Delete a policy that no rule uses",
         "tags": [
           "alerts"
         ]
@@ -1645,7 +1645,7 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "No existe"
+            "description": "Not found"
           },
           "422": {
             "content": {
@@ -1663,7 +1663,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Una política",
+        "summary": "A policy",
         "tags": [
           "alerts"
         ]
@@ -1704,13 +1704,13 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "No existe"
+            "description": "Not found"
           },
           "409": {
-            "description": "Ya hay una política con ese nombre"
+            "description": "A policy with that name already exists"
           },
           "422": {
-            "description": "Niveles inválidos o grupos que no son de la organización"
+            "description": "Invalid levels, or groups that do not belong to the organization"
           }
         },
         "security": [
@@ -1718,7 +1718,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Reemplazar una política (nombre y niveles); aplica a los incidentes en curso",
+        "summary": "Replace a policy (name and levels); applies to ongoing incidents",
         "tags": [
           "alerts"
         ]
@@ -1754,10 +1754,10 @@
             "description": "Successful Response"
           },
           "401": {
-            "description": "Token ausente o inválido"
+            "description": "Missing or invalid token"
           },
           "403": {
-            "description": "Sin acceso"
+            "description": "No access"
           }
         },
         "security": [
@@ -1765,7 +1765,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Eventos en vivo de la organización (SSE)",
+        "summary": "The organization's live events (SSE)",
         "tags": [
           "realtime"
         ]
@@ -1776,7 +1776,7 @@
         "operationId": "list_incidents_v1_incidents_get",
         "parameters": [
           {
-            "description": "filtrar por estado (se puede repetir)",
+            "description": "filter by status (repeatable)",
             "in": "query",
             "name": "status",
             "required": false,
@@ -1792,7 +1792,7 @@
                   "type": "null"
                 }
               ],
-              "description": "filtrar por estado (se puede repetir)",
+              "description": "filter by status (repeatable)",
               "title": "Status"
             }
           },
@@ -1840,7 +1840,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Incidentes de la organización, los más recientes primero",
+        "summary": "The organization's incidents, most recent first",
         "tags": [
           "incidents"
         ]
@@ -1873,7 +1873,7 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "No existe"
+            "description": "Not found"
           },
           "422": {
             "content": {
@@ -1891,7 +1891,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Un incidente con su línea de tiempo",
+        "summary": "An incident with its timeline",
         "tags": [
           "incidents"
         ]
@@ -1924,10 +1924,10 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "No existe"
+            "description": "Not found"
           },
           "409": {
-            "description": "Transición inválida para el estado actual"
+            "description": "Invalid transition for the current status"
           },
           "422": {
             "content": {
@@ -1945,7 +1945,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Confirmar un incidente abierto",
+        "summary": "Acknowledge an open incident",
         "tags": [
           "incidents"
         ]
@@ -1988,10 +1988,10 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "No existe"
+            "description": "Not found"
           },
           "409": {
-            "description": "Transición inválida para el estado actual"
+            "description": "Invalid transition for the current status"
           },
           "422": {
             "content": {
@@ -2009,7 +2009,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Resolver un incidente (resuelto o falsa alarma), confirmado o no",
+        "summary": "Resolve an incident (resolved or false alarm), acknowledged or not",
         "tags": [
           "incidents"
         ]
@@ -2035,7 +2035,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Usuario autenticado, su organización, roles y permisos",
+        "summary": "The authenticated user, their organization, roles and permissions",
         "tags": [
           "identity"
         ]
@@ -2066,10 +2066,10 @@
             "description": "Successful Response"
           },
           "401": {
-            "description": "API key ausente o inválida"
+            "description": "Missing or invalid API key"
           },
           "403": {
-            "description": "Estación inactiva"
+            "description": "Inactive station"
           },
           "422": {
             "content": {
@@ -2082,7 +2082,7 @@
             "description": "Validation Error"
           },
           "429": {
-            "description": "Más de 60 lotes por minuto; ver el header Retry-After"
+            "description": "More than 60 batches per minute; see the Retry-After header"
           }
         },
         "security": [
@@ -2090,7 +2090,7 @@
             "APIKeyHeader": []
           }
         ],
-        "summary": "Lote de lecturas de la estación dueña de la API key",
+        "summary": "A batch of readings from the station that owns the API key",
         "tags": [
           "ingestion"
         ]
@@ -2101,13 +2101,13 @@
         "operationId": "list_stations_v1_stations_get",
         "parameters": [
           {
-            "description": "incluir las desactivadas",
+            "description": "include deactivated ones",
             "in": "query",
             "name": "include_inactive",
             "required": false,
             "schema": {
               "default": false,
-              "description": "incluir las desactivadas",
+              "description": "include deactivated ones",
               "title": "Include Inactive",
               "type": "boolean"
             }
@@ -2144,7 +2144,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Estaciones de la organización",
+        "summary": "The organization's stations",
         "tags": [
           "territory"
         ]
@@ -2173,10 +2173,10 @@
             "description": "Successful Response"
           },
           "409": {
-            "description": "Código repetido"
+            "description": "Duplicate code"
           },
           "422": {
-            "description": "Datos inválidos"
+            "description": "Invalid data"
           }
         },
         "security": [
@@ -2184,7 +2184,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Crear una estación (devuelve su API key una sola vez)",
+        "summary": "Create a station (returns its API key only once)",
         "tags": [
           "territory"
         ]
@@ -2210,7 +2210,7 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "No existe"
+            "description": "Not found"
           },
           "422": {
             "content": {
@@ -2228,7 +2228,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Desactivar una estación (sus lotes reciben 403; la historia se conserva)",
+        "summary": "Deactivate a station (its batches get 403; its history is kept)",
         "tags": [
           "territory"
         ]
@@ -2259,7 +2259,7 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "No existe"
+            "description": "Not found"
           },
           "422": {
             "content": {
@@ -2277,7 +2277,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Una estación",
+        "summary": "A station",
         "tags": [
           "territory"
         ]
@@ -2318,10 +2318,10 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "No existe"
+            "description": "Not found"
           },
           "422": {
-            "description": "Datos inválidos"
+            "description": "Invalid data"
           }
         },
         "security": [
@@ -2329,7 +2329,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Reemplazar una estación (no cambia el código; también reactiva)",
+        "summary": "Replace a station (the code does not change; also reactivates it)",
         "tags": [
           "territory"
         ]
@@ -2362,7 +2362,7 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "No existe"
+            "description": "Not found"
           },
           "422": {
             "content": {
@@ -2380,7 +2380,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Rotar la API key: la anterior deja de valer al instante",
+        "summary": "Rotate the API key: the previous one stops working immediately",
         "tags": [
           "territory"
         ]
@@ -2391,13 +2391,13 @@
         "operationId": "list_zones_v1_zones_get",
         "parameters": [
           {
-            "description": "incluir las desactivadas",
+            "description": "include deactivated ones",
             "in": "query",
             "name": "include_inactive",
             "required": false,
             "schema": {
               "default": false,
-              "description": "incluir las desactivadas",
+              "description": "include deactivated ones",
               "title": "Include Inactive",
               "type": "boolean"
             }
@@ -2434,7 +2434,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Zonas de la organización",
+        "summary": "The organization's zones",
         "tags": [
           "territory"
         ]
@@ -2463,7 +2463,7 @@
             "description": "Successful Response"
           },
           "422": {
-            "description": "Datos o geometría inválidos (el motivo va en el detalle)"
+            "description": "Invalid data or geometry (the reason is in the detail)"
           }
         },
         "security": [
@@ -2471,7 +2471,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Crear una zona",
+        "summary": "Create a zone",
         "tags": [
           "territory"
         ]
@@ -2497,7 +2497,7 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "No existe"
+            "description": "Not found"
           },
           "422": {
             "content": {
@@ -2515,7 +2515,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Desactivar una zona (no se borra: la historia de sus incidentes se conserva)",
+        "summary": "Deactivate a zone (not deleted: the history of its incidents is kept)",
         "tags": [
           "territory"
         ]
@@ -2546,7 +2546,7 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "No existe"
+            "description": "Not found"
           },
           "422": {
             "content": {
@@ -2564,7 +2564,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Una zona",
+        "summary": "A zone",
         "tags": [
           "territory"
         ]
@@ -2605,10 +2605,10 @@
             "description": "Successful Response"
           },
           "404": {
-            "description": "No existe"
+            "description": "Not found"
           },
           "422": {
-            "description": "Datos o geometría inválidos"
+            "description": "Invalid data or geometry"
           }
         },
         "security": [
@@ -2616,7 +2616,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Reemplazar una zona (atributos y geometría; también reactiva)",
+        "summary": "Replace a zone (attributes and geometry; also reactivates it)",
         "tags": [
           "territory"
         ]

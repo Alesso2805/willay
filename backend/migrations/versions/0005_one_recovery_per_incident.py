@@ -1,9 +1,9 @@
-"""Un solo evento station_recovered por incidente.
+"""A single station_recovered event per incident.
 
-El worker silence registra station_recovered cuando una estación silenciada vuelve a
-reportar. Con dos workers a la vez, "insertar si no existe" tiene carrera: ambos ven que
-no existe e insertan. Igual que con los incidentes activos, la unicidad la garantiza
-Postgres con un índice único parcial y el worker inserta con ON CONFLICT DO NOTHING.
+The silence worker records station_recovered when a silenced station reports again. With two
+workers, "insert if absent" races (both see nothing and insert). As with active incidents,
+Postgres guarantees uniqueness with a partial unique index and the worker inserts with
+ON CONFLICT DO NOTHING.
 
 Revision ID: 0005
 Revises: 0004

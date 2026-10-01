@@ -1,1 +1,1 @@
-"""Vigía: sistema de alerta temprana multi-tenant."""
+"""Vigía: multi-tenant early-warning system."""

@@ -1,8 +1,7 @@
-"""Registro de auditoría (core.audit_log, append-only por permisos de BD).
+"""Audit log (core.audit_log, append-only through DB privileges).
 
-SPEC pide auditar cambios en zonas, estaciones, reglas, políticas y contactos. Cada caso
-de uso registra la entrada con la MISMA conexión que hace el cambio: o quedan los dos o
-ninguno. `vigia_app` solo puede insertar aquí (ADR-0005), nunca reescribir.
+Use cases record the entry on the SAME connection that makes the change, so both commit or
+neither does. `vigia_app` can only insert here (ADR-0005), never rewrite.
 """
 
 import json
@@ -19,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 @dataclass(frozen=True)
 class AuditEntry:
     organization_id: UUID
-    actor_id: UUID | None  # usuario (sub de Keycloak); None si lo hizo el sistema
+    actor_id: UUID | None  # user (Keycloak sub); None when done by the system
     entity_type: str
     entity_id: UUID
     action: str  # create, update, deactivate, ...
@@ -58,5 +57,5 @@ class SqlAuditLog:
 
 
 def _json(snapshot: Mapping[str, Any] | None) -> str | None:
-    # default=str: uuids y fechas quedan como texto legible en el jsonb.
+    # default=str: uuids and datetimes become readable text in the jsonb.
     return None if snapshot is None else json.dumps(snapshot, default=str, ensure_ascii=False)

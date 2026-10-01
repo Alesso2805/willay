@@ -1,1 +1,1 @@
-"""Tiempo real: LISTEN/NOTIFY hacia SSE por organización."""
+"""Realtime: LISTEN/NOTIFY to per-organization SSE."""

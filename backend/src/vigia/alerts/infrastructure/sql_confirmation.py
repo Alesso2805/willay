@@ -1,4 +1,4 @@
-"""ConfirmationRepository sobre core.alerts (rol vigia_app, en la transacción de la petición)."""
+"""ConfirmationRepository over core.alerts (vigia_app role, in the request's transaction)."""
 
 from datetime import datetime
 from uuid import UUID
@@ -14,9 +14,9 @@ from vigia.alerts.infrastructure.alert_messages import (
 )
 from vigia.incidents.domain.lifecycle import IncidentStatus
 
-# El token se busca por su hash: la base nunca guarda ni recibe el token en claro. Quien
-# confirmó el incidente puede ser un usuario (con cuenta) o un contacto.
-# El f-string solo une fragmentos fijos de alert_messages; los datos van como parámetros.
+# Looked up by hash: the database never stores or receives the plain token. The incident
+# may have been acknowledged by a user (with an account) or by a contact.
+# The f-string only joins fixed fragments from alert_messages; data goes as parameters.
 _FIND = f"""
     SELECT a.id AS alert_id, a.incident_id, i.organization_id, a.contact_id, a.destination,
            a.ack_token_expires_at, a.acknowledged_at AS used_at,
@@ -33,7 +33,7 @@ _FIND = f"""
 _FIND_PLAIN = text(_FIND)
 _FIND_LOCKED = text(_FIND + " FOR UPDATE OF a")
 
-# Una alerta confirmada deja de reintentarse: next_attempt_at en NULL.
+# An acknowledged alert is no longer retried: next_attempt_at becomes NULL.
 _MARK_ACKNOWLEDGED = text("""
     UPDATE core.alerts
     SET status = 'acknowledged', acknowledged_at = :now, next_attempt_at = NULL

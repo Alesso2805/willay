@@ -1,1 +1,1 @@
-"""Datos semilla de desarrollo y demo (`python -m vigia.seed`)."""
+"""Development and demo seed data (`python -m vigia.seed`)."""

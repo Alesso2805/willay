@@ -1,10 +1,10 @@
-"""Estaciones: datos, unidad por variable, código y asociación a zonas.
+"""Stations: data, unit per variable, code and zone assignment.
 
-Decisiones de producto (SPEC.md, Alcance, fila "Territorio - Estaciones"):
-- La unidad no se elige: sale de la variable, para que una regla de umbral nunca
-  compare metros con centímetros.
-- El código identifica la estación fuera de Vigía (documentos, equipo en campo, archivo
-  de claves del simulador): se fija al crearla y no cambia. El nombre sí es editable.
+Product decisions (SPEC.md, scope, "Territorio - Estaciones" row):
+- The unit is not chosen: it follows from the variable, so a threshold rule never compares
+  metres with centimetres.
+- The code identifies the station outside Vigía (documents, field crews, simulator key file):
+  fixed at creation and never changed. The name is editable.
 """
 
 import re
@@ -13,9 +13,9 @@ from enum import StrEnum
 from uuid import UUID
 
 MAX_NAME_LENGTH = 120
-# Mayúsculas, dígitos y guiones, como RIM-CHA-01. Se normaliza a mayúsculas.
+# Uppercase letters, digits and dashes, like RIM-CHA-01. Normalized to uppercase.
 CODE_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9-]{1,31}$")
-# El detector de silencio revisa cada 15 s: intervalos menores no aportan nada.
+# The silence detector runs every 15 s: shorter intervals add nothing.
 MIN_INTERVAL_S = 5
 MAX_INTERVAL_S = 86_400
 MIN_SILENCE_MULTIPLIER = 1
@@ -79,7 +79,7 @@ class ZoneAssignment:
 
 @dataclass(frozen=True)
 class StationData:
-    """Lo editable de una estación (el código va aparte: no cambia)."""
+    """The editable part of a station (the code is separate: it never changes)."""
 
     name: str
     variable: Variable
@@ -105,7 +105,7 @@ def normalize_code(raw: str) -> str:
 
 
 def check_zones(zones: tuple[ZoneAssignment, ...]) -> None:
-    """Una estación está en una zona con una sola posición: aguas arriba O dentro O abajo."""
+    """A station has one position per zone: upstream OR in the zone OR downstream."""
     if len(zones) > MAX_ZONES:
         raise InvalidStationError("zones", f"máximo {MAX_ZONES} zonas por estación")
     ids = [zone.zone_id for zone in zones]

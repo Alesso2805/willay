@@ -1,9 +1,9 @@
-"""Worker silence (VIG-17): `python -m vigia.workers.silence`.
+"""Silence worker (VIG-17): `python -m vigia.workers.silence`.
 
-Cada 15 s busca estaciones que dejaron de reportar y abre un incidente por estación. Con
-ese ciclo, el incidente llega antes de K * intervalo + 30 s desde el último latido
-(SPEC): como mucho K * intervalo más un ciclo. En el mismo ciclo anota station_recovered
-en las estaciones que volvieron y purga las ventanas de rate limit de más de una hora.
+Every 15 s it opens one incident per station that stopped reporting; with that cycle the
+incident arrives within K * interval + 30 s of the last heartbeat (SPEC). The same cycle
+records station_recovered for stations that came back and purges rate-limit windows older
+than one hour.
 """
 
 import asyncio

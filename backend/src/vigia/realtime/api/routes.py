@@ -1,13 +1,9 @@
-"""`GET /v1/events`: eventos en vivo de la organización por SSE (VIG-25).
+"""`GET /v1/events`: the organization's live events over SSE (VIG-25).
 
-El JWT va en el header `Authorization`, nunca en la URL (SPEC): el panel usa la librería
-`eventsource`, que permite enviarlo.
-
-- Al conectar llega `ready`: el panel pide su estado por REST y desde ahí aplica cambios.
-  Así una reconexión nunca deja huecos.
-- El stream se cierra cuando vence el token. El cliente se reconecta solo, con un token
-  vigente: un token revocado o vencido no mantiene abierto el canal.
-- Sin eventos, FastAPI manda un comentario de keepalive cada 15 s (proxies, balanceadores).
+The JWT goes in the `Authorization` header, never in the URL (SPEC). On connect the client
+gets `ready` and reloads its state over REST, so a reconnect never leaves gaps. The stream
+closes when the token expires, so a revoked or expired token cannot keep the channel open.
+When idle, FastAPI sends a keepalive comment every 15 s (proxies, load balancers).
 """
 
 import asyncio
@@ -22,17 +18,17 @@ from vigia.shared.web import ClockDep
 
 router = APIRouter(prefix="/v1", tags=["realtime"])
 
-# Espera antes de reconectar, en milisegundos: corta para que el panel no quede ciego.
+# Reconnect delay in milliseconds: short so the dashboard is never blind for long.
 RETRY_MS = 2000
 
 
 @router.get(
     "/events",
     response_class=EventSourceResponse,
-    summary="Eventos en vivo de la organización (SSE)",
+    summary="The organization's live events (SSE)",
     responses={
-        401: {"description": "Token ausente o inválido"},
-        403: {"description": "Sin acceso"},
+        401: {"description": "Missing or invalid token"},
+        403: {"description": "No access"},
     },
 )
 async def events(
@@ -44,7 +40,7 @@ async def events(
         while True:
             remaining = (grant.expires_at - clock.now()).total_seconds()
             if remaining <= 0:
-                return  # el cliente se reconecta con un token vigente
+                return  # the client reconnects with a valid token
             try:
                 event = await asyncio.wait_for(subscription.next(), timeout=remaining)
             except TimeoutError:

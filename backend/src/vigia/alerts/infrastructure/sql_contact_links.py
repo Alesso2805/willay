@@ -1,4 +1,4 @@
-"""ContactLinkRepository sobre core.contacts (rol vigia_app)."""
+"""ContactLinkRepository over core.contacts (vigia_app role)."""
 
 from datetime import datetime
 from typing import Any
@@ -19,7 +19,7 @@ _GET = text(_SELECT + " WHERE c.organization_id = :organization_id AND c.id = :i
 _GET_LOCKED = text(
     _SELECT + " WHERE c.organization_id = :organization_id AND c.id = :id FOR UPDATE OF c"
 )
-# Bloqueado: dos /start con el mismo enlace (doble toque) no lo usan dos veces.
+# Locked: two /start with the same link (double tap) cannot use it twice.
 _BY_HASH = text(_SELECT + " WHERE c.telegram_link_token_hash = :hash FOR UPDATE OF c")
 _STORE = text("""
     UPDATE core.contacts

@@ -1,15 +1,11 @@
-"""El worker telegram atiende al bot: vincula contactos (VIG-21) y recibe los clics en
-el botón de confirmación de las alertas (VIG-22).
+"""The telegram worker serves the bot: links contacts (VIG-21) and receives clicks on alert
+confirmation buttons (VIG-22).
 
-Long polling con `getUpdates`. Cada actualización se procesa en su propia transacción y
-recién después se pide la siguiente: pedir desde `update_id + 1` es lo que confirma a
-Telegram que ya se atendió. Si la base falla, la actualización no se confirma y se
-reintenta. Si lo que falla es la respuesta al contacto, lo hecho en la base ya quedó y no
-se reintenta (un segundo intento respondería "enlace no válido": ya se usó).
-
-Solo se atienden conversaciones privadas con el bot: en un grupo nadie vincula nada.
-Un clic confirma solo si lo hace el destinatario de la alerta: en un chat privado el
-`chat_id` es el id de la persona, así que se compara con quien pulsó (`from.id`).
+Long polling with `getUpdates`; asking from `update_id + 1` acknowledges the previous update
+to Telegram, so each one is committed before the next is requested and a database failure
+means a retry. A failed reply is not retried (a second try would answer "invalid link").
+Only private chats are served. A click confirms only if made by the recipient: in a
+private chat `chat_id` equals the person's id, so it is compared with `from.id`.
 """
 
 from collections.abc import Callable
@@ -36,26 +32,26 @@ log = structlog.get_logger()
 
 
 class TelegramError(Exception):
-    """Telegram no respondió o rechazó la llamada. Nunca incluye el token del bot."""
+    """Telegram did not respond or rejected the call. Never includes the bot token."""
 
 
 @dataclass(frozen=True)
 class Click:
-    """Un clic en el botón de una alerta (`callback_query`)."""
+    """A click on an alert's button (`callback_query`)."""
 
-    id: str  # para responderlo con answerCallbackQuery
-    from_id: int  # quién pulsó
-    data: str | None  # el token de la alerta
-    chat_id: int | None = None  # el mensaje del botón, para editarlo
+    id: str  # to answer it with answerCallbackQuery
+    from_id: int  # who clicked
+    data: str | None  # the alert token
+    chat_id: int | None = None  # the button's message, to edit it
     message_id: int | None = None
-    message_text: str | None = None  # None si Telegram ya no lo entrega
+    message_text: str | None = None  # None if Telegram no longer provides it
 
 
 @dataclass(frozen=True)
 class Update:
     update_id: int
     chat_id: int | None = None
-    chat_type: str | None = None  # "private" en una conversación con el bot
+    chat_type: str | None = None  # "private" in a one-to-one chat with the bot
     text: str | None = None
     click: Click | None = None
 
@@ -68,7 +64,7 @@ class TelegramApi(Protocol):
     async def answer_click(self, click_id: str, text: str) -> None: ...
 
     async def edit_message(self, chat_id: int, message_id: int, text: str) -> None:
-        """Reemplaza el texto y quita el botón."""
+        """Replaces the text and removes the button."""
         ...
 
 
@@ -90,12 +86,12 @@ class TelegramPoller:
         self._audit = audit
         self._confirmations = confirmations
         self._incidents = incidents
-        self._offset: int | None = None  # None: todo lo que Telegram aún no dio por atendido
+        self._offset: int | None = None  # None: everything Telegram has not marked as handled
 
     async def poll(self, timeout_s: int) -> int:
         updates = await self._api.get_updates(self._offset, timeout_s)
         for update in updates:
-            await self._handle(update)  # si la base falla, no se confirma y se reintenta
+            await self._handle(update)  # on a database failure it is not acked and is retried
             self._offset = update.update_id + 1
         return len(updates)
 
@@ -116,7 +112,7 @@ class TelegramPoller:
         try:
             await self._api.send_message(update.chat_id, reply)
         except TelegramError as exc:
-            # Nunca el chat_id: es un dato personal.
+            # Never log the chat_id: it is personal data.
             log.warning("telegram_reply_failed", update_id=update.update_id, error=str(exc))
 
     async def _confirm(self, update_id: int, click: Click) -> None:
@@ -137,7 +133,7 @@ class TelegramPoller:
             outcome=view.outcome,
             alert_id=str(alert.alert_id) if alert is not None else None,
         )
-        # Lo hecho en la base ya quedó: si Telegram falla al responder, no se reintenta.
+        # The database work is committed: a failed Telegram reply is not retried.
         outcome = view.outcome or ConfirmOutcome.UNKNOWN
         try:
             await self._api.answer_click(click.id, CLICK_ANSWER[outcome])

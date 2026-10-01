@@ -1,11 +1,10 @@
-"""Ver y confirmar una alerta desde su enlace (VIG-23) o desde el botón de Telegram
-(VIG-22): el token es el mismo.
+"""Viewing and confirming an alert from its email link (VIG-23) or Telegram button (VIG-22).
 
-- `preview_confirmation` (GET) solo lee: abrir el enlace nunca confirma, porque los
-  escáneres de correo abren los enlaces solos (SPEC).
-- `confirm_alert` (POST) bloquea la alerta: si llegan dos clics a la vez, el segundo ve
-  el token ya usado. Desde Telegram exige además que quien pulsa sea el destinatario:
-  el enlace del correo vale para quien lo tenga (SPEC), el botón solo en su chat.
+- `preview_confirmation` (GET) only reads: opening the link never confirms, because email
+  scanners open links on their own (SPEC).
+- `confirm_alert` (POST) locks the alert so a concurrent second click sees the token used.
+  From Telegram it also requires the clicker to be the recipient; the email link works
+  for whoever holds it (SPEC).
 """
 
 from dataclasses import dataclass
@@ -33,16 +32,16 @@ class AlertToConfirm:
     contact_id: UUID
     destination: str | None
     token_expires_at: datetime | None
-    used_at: datetime | None  # cuándo se confirmó esta alerta; None si nunca
+    used_at: datetime | None  # when this alert was confirmed; None if never
     incident_status: IncidentStatus
     incident_acknowledged_at: datetime | None
-    acknowledged_by: str | None  # nombre del usuario o contacto que confirmó el incidente
+    acknowledged_by: str | None  # name of the user or contact who acknowledged the incident
     message: AlertMessage
 
 
 class ConfirmationRepository(Protocol):
     async def find(self, token_hash: str, *, lock: bool) -> AlertToConfirm | None:
-        """La alerta cuyo token tiene ese hash; con `lock`, bloqueada hasta el final."""
+        """The alert with this token hash; with `lock`, locked until the transaction ends."""
         ...
 
     async def mark_acknowledged(self, alert_id: UUID, now: datetime) -> None: ...
@@ -50,7 +49,7 @@ class ConfirmationRepository(Protocol):
 
 @dataclass(frozen=True)
 class ConfirmationView:
-    """Lo que la página muestra. `outcome` None: el token vale y se puede confirmar."""
+    """What the page shows. `outcome` None: the token is valid and can be confirmed."""
 
     outcome: ConfirmOutcome | None
     alert: AlertToConfirm | None
@@ -78,13 +77,13 @@ async def confirm_alert(
     clock: Clock,
     expected_destination: str | None = None,
 ) -> ConfirmationView:
-    """Con `expected_destination`, solo confirma si la alerta se envió ahí."""
+    """With `expected_destination`, confirms only if the alert was sent there."""
     token_hash = hash_ack_token(token)
     alert = await confirmations.find(token_hash, lock=True)
     if alert is None:
         return ConfirmationView(ConfirmOutcome.UNKNOWN, None)
     if expected_destination is not None and alert.destination != expected_destination:
-        # Sin la alerta: a quien no la recibió no se le cuenta nada del incidente.
+        # Without the alert: someone who did not receive it learns nothing about the incident.
         return ConfirmationView(ConfirmOutcome.NOT_YOURS, None)
     problem = token_problem(alert.token_expires_at, alert.used_at, clock.now())
     if problem is not None:
@@ -98,7 +97,7 @@ async def confirm_alert(
         return ConfirmationView(ConfirmOutcome.ALREADY_RESOLVED, alert)
     await confirmations.mark_acknowledged(alert.alert_id, clock.now())
 
-    # Releer: la página dice quién confirmó el incidente y cuándo.
+    # Re-read: the page shows who acknowledged the incident and when.
     fresh = await confirmations.find(token_hash, lock=False)
     confirmed = previous is IncidentStatus.OPEN
     outcome = ConfirmOutcome.CONFIRMED if confirmed else ConfirmOutcome.ALREADY_ACKNOWLEDGED

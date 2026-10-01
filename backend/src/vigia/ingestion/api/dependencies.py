@@ -1,11 +1,10 @@
-"""Autenticación de estaciones por API key (header X-Api-Key) y rate limit.
+"""Station authentication by API key (X-Api-Key header) and rate limiting.
 
-No usa `Authorization` para no mezclar las claves de estación con los JWT de usuarios.
-Códigos: 401 clave ausente o inválida; 403 estación inactiva; 429 más de 60 lotes/min.
+Not `Authorization`, so station keys never mix with user JWTs. Codes: 401 missing or invalid
+key; 403 inactive station; 429 over 60 batches/min.
 
-Cada paso usa como mucho una conexión a la vez (lectura de la credencial, contador,
-escritura del lote). Si una petición retuviera una conexión mientras pide otra, con
-carga alta todas podrían quedar esperando una segunda conexión que nunca llega.
+Each step holds at most one connection at a time (credential read, counter, batch write): a
+request holding one while asking for another could deadlock the pool under load.
 """
 
 from typing import Annotated
@@ -28,7 +27,7 @@ from vigia.shared.web import ClockDep, EngineDep
 _api_key = APIKeyHeader(
     name="X-Api-Key",
     auto_error=False,
-    description="API key de la estación: `<station_id>.<secreto>`",
+    description="The station's API key: `<station_id>.<secret>`",
 )
 
 
@@ -59,8 +58,8 @@ async def rate_limited_station(
     engine: EngineDep,
     clock: ClockDep,
 ) -> AuthenticatedStation:
-    # Se cuenta después de autenticar: el límite es por estación. Frenar a clientes sin
-    # clave (que igual cuestan un Argon2id) es tarea del proxy, por IP.
+    # Counted after authenticating: the limit is per station. Throttling keyless clients
+    # (which still cost an Argon2id) is the proxy's job, by IP.
     try:
         await enforce_rate_limit(station.station_id, clock, SqlBatchCounter(engine))
     except RateLimitExceededError as exc:

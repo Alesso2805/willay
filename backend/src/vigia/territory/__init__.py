@@ -1,1 +1,1 @@
-"""Territorio: zonas de riesgo y estaciones."""
+"""Territory: risk zones and stations."""

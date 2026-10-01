@@ -1,4 +1,4 @@
-"""AlertRepository sobre core.alerts, las políticas de escalamiento y los contactos."""
+"""AlertRepository over core.alerts, escalation policies and contacts."""
 
 import json
 from collections.abc import Sequence
@@ -12,9 +12,9 @@ from uuid_utils.compat import uuid7
 from vigia.alerts.domain.alerts import Channel, Target
 from vigia.shared import notifications
 
-# Del incidente a su regla, de la regla a su política y de ahí al nivel pedido, sus grupos
-# destino y los miembros. DISTINCT ON: un contacto que está en dos grupos del mismo nivel
-# recibe una sola alerta por canal. El filtro por organización es una defensa más.
+# Incident -> rule -> policy -> requested level -> target groups -> members. DISTINCT ON:
+# a contact in two groups of the same level gets a single alert per channel. The
+# organization filter is defense in depth.
 _TARGETS = text("""
     SELECT DISTINCT ON (c.id, lt.channel)
            c.id AS contact_id, lt.channel,
@@ -78,7 +78,7 @@ class SqlAlertRepository:
                     "channel": t.channel.value,
                     "destination": t.destination if t.reachable else None,
                     "status": t.initial_status.value,
-                    # Pendiente desde ya; una omitida no se reintenta nunca.
+                    # Pending right away; a skipped alert is never retried.
                     "next_attempt_at": now if t.reachable else None,
                 }
                 for t in targets

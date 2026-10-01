@@ -1,14 +1,9 @@
-"""Telegram: vincular un contacto (VIG-21) y enviarle alertas con botón (VIG-22).
+"""Telegram: linking a contact (VIG-21) and sending them alerts with a button (VIG-22).
 
-El admin genera un enlace `https://t.me/<bot>?start=<token>` y se lo comparte al contacto
-por donde suela hablar con esa persona. Al abrirlo, Telegram le escribe al bot
-`/start <token>`: así el bot conoce el `chat_id` de esa persona sin que nadie lo copie a
-mano. El token (43 caracteres base64url) cabe en los 64 que admite `start` y solo usa
-los caracteres que Telegram permite ahí. Vale 7 días: un líder comunal puede tardar en
-abrirlo. Uno nuevo invalida el anterior.
-
-Al pulsar el botón de una alerta, Telegram muestra un aviso breve (máximo 200 caracteres)
-y el bot reemplaza el botón por una nota con quién confirmó y cuándo.
+Opening the `https://t.me/<bot>?start=<token>` link makes Telegram send `/start <token>`
+to the bot, which thus learns the person's `chat_id` without anyone copying it by hand.
+The 43-char base64url token fits the 64 chars `start` allows. It is valid for 7 days
+because a community leader may take a while to open it.
 """
 
 from datetime import datetime, timedelta
@@ -35,8 +30,8 @@ def deep_link(bot_username: str, token: str) -> str:
 
 
 def start_parameter(text: str) -> str | None:
-    """El token de un mensaje `/start <token>` (o `/start@bot <token>`), o None si el
-    mensaje no es /start o no trae token."""
+    """The token of a `/start <token>` (or `/start@bot <token>`) message, or None if the
+    message is not /start or carries no token."""
     command, _, argument = text.strip().partition(" ")
     if command.split("@", 1)[0] != "/start":
         return None
@@ -53,9 +48,9 @@ ESCALATION_NOTE = "Si nadie lo confirma, Vigía avisará al siguiente nivel."
 
 
 def compose_alert_text(message: AlertMessage) -> str:
-    """El mensaje de una alerta por Telegram: el mismo resumen del correo, en texto plano
-    (sin Markdown: un nombre con `*` o `_` rompería el formato y Telegram lo rechazaría).
-    El botón de confirmación va aparte, con el token como `callback_data`."""
+    """A Telegram alert: the same summary as the email, in plain text (no Markdown: a name
+    with `*` or `_` would break the markup and Telegram would reject the message). The
+    confirmation button is sent separately, with the token as `callback_data`."""
     severity, cause, zone = (value for label, value in summary(message)[:3])
     details = [f"{label}: {value}" for label, value in summary(message)[3:]]
     return "\n".join(
@@ -96,8 +91,8 @@ def closing_note(
     acknowledged_at: datetime | None,
     timezone: str,
 ) -> str | None:
-    """La nota que reemplaza al botón, o None si el mensaje no se toca: un token
-    desconocido o un clic ajeno no dicen nada del incidente."""
+    """The note that replaces the button, or None to leave the message untouched: an
+    unknown token or someone else's click must reveal nothing about the incident."""
     if outcome in (ConfirmOutcome.UNKNOWN, ConfirmOutcome.NOT_YOURS):
         return None
     if outcome is ConfirmOutcome.ALREADY_RESOLVED:
@@ -110,7 +105,7 @@ def closing_note(
 
 
 def closed_text(original: str, note: str) -> str:
-    """El mensaje ya atendido: lo que la persona vio, sin el aviso de escalamiento (dejó de
-    ser cierto) y con la nota que reemplaza al botón."""
+    """The handled message: what the person saw, minus the escalation notice (no longer
+    true), plus the note that replaces the button."""
     lines = [line for line in original.split("\n") if line != ESCALATION_NOTE]
     return "\n".join(lines) + f"\n\n{note}"

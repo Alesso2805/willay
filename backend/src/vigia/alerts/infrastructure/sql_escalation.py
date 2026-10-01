@@ -1,4 +1,4 @@
-"""EscalationRepository: los niveles se leen de la política vigente al escalar (SPEC)."""
+"""EscalationRepository: levels are read from the current policy when escalating (SPEC)."""
 
 import json
 from datetime import datetime
@@ -10,14 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from vigia.alerts.domain.escalation import LevelState
 
-# "Nadie avisado": ninguna alerta del nivel actual salió de `skipped` (canal faltante).
+# "Nobody alerted": every alert of the current level is `skipped` (missing channel).
 _NOBODY_ALERTED = """
     NOT EXISTS (SELECT 1 FROM core.alerts a
                 WHERE a.incident_id = i.id AND a.level_order = i.current_level
                   AND a.status <> 'skipped')
 """
 
-# Un solo filtro para candidatos y bloqueo: nivel vencido, sin avisos o que ya no existe.
+# Due when the level expired, alerted nobody, or no longer exists in the policy.
 _DUE = text(f"""
     SELECT i.id
     FROM core.incidents i
@@ -32,8 +32,8 @@ _DUE = text(f"""
     LIMIT :limit
 """)
 
-# SKIP LOCKED: si otro worker lo escala, o alguien lo está confirmando, se deja para el
-# ciclo siguiente. Solo se bloquea el incidente; los niveles se leen tal como están.
+# SKIP LOCKED: if another worker is escalating it, or someone is acknowledging it, it is
+# left for the next cycle. Only the incident is locked; levels are read as they are.
 _LOCK = text(f"""
     SELECT i.current_level, i.level_started_at, cur.wait_s,
            (SELECT min(n.level_order) FROM core.escalation_levels n

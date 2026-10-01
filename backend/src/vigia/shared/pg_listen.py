@@ -1,8 +1,8 @@
-"""LISTEN de Postgres convertido en un asyncio.Event (ADR-0002).
+"""Postgres LISTEN exposed as an asyncio.Event (ADR-0002).
 
-NOTIFY no es duradero: si esta conexión se cae o nunca se abre, los avisos se pierden.
-Por eso los workers también consultan cada pocos segundos; el aviso solo acelera. Si
-LISTEN no está disponible, se registra y el worker sigue con la consulta periódica.
+NOTIFY is not durable: if this connection drops or never opens, notifications are lost, so
+workers also poll every few seconds and the notification only speeds things up. If LISTEN is
+unavailable it is logged and the worker keeps polling.
 """
 
 import asyncio
@@ -17,7 +17,7 @@ log = structlog.get_logger()
 
 
 def asyncpg_dsn(sqlalchemy_url: str) -> str:
-    """postgresql+asyncpg://... (SQLAlchemy) → postgresql://... (asyncpg directo)."""
+    """postgresql+asyncpg://... (SQLAlchemy) -> postgresql://... (plain asyncpg)."""
     return sqlalchemy_url.replace("postgresql+asyncpg://", "postgresql://", 1)
 
 

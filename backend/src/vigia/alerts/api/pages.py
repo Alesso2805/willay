@@ -1,8 +1,8 @@
-"""Las páginas de confirmación de una alerta (VIG-23): HTML plano, sin JavaScript.
+"""Alert confirmation pages (VIG-23): plain HTML, no JavaScript.
 
-Las abre un contacto desde su correo, a veces en un teléfono modesto: una página liviana
-que funciona sin scripts, en español, legible y accesible (el estado se dice con texto,
-nunca solo con color). Todo dato variable se escapa.
+Opened from email, sometimes on a modest phone: a light page that works without scripts
+and is accessible (state is stated in text, never by color alone). All variable data is
+escaped.
 """
 
 from html import escape
@@ -12,7 +12,7 @@ from vigia.alerts.domain.confirmation import ConfirmOutcome
 from vigia.alerts.domain.email import local_time, summary
 from vigia.incidents.domain.lifecycle import IncidentStatus
 
-# Estilos en línea: la CSP de estas páginas no permite recursos externos.
+# Inline styles: these pages' CSP allows no external resources.
 _STYLE = """
 body { font-family: system-ui, sans-serif; color: #1b1b1b; background: #fff;
        max-width: 34rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
@@ -29,7 +29,7 @@ footer { margin-top: 2rem; font-size: .85rem; color: #4a4a4a; }
 
 
 def render_preview(view: ConfirmationView) -> tuple[int, str]:
-    """La página que abre el enlace (GET). Solo el botón confirma."""
+    """The page the link opens (GET). Only the button confirms."""
     alert = view.alert
     if view.outcome is not None or alert is None:
         return _problem(view)
@@ -49,7 +49,7 @@ def render_preview(view: ConfirmationView) -> tuple[int, str]:
 
 
 def render_result(view: ConfirmationView) -> tuple[int, str]:
-    """La página tras pulsar el botón (POST)."""
+    """The page after pressing the button (POST)."""
     alert = view.alert
     if view.outcome is ConfirmOutcome.CONFIRMED and alert is not None:
         return 200, _page(

@@ -1,10 +1,9 @@
-"""Quién hace la petición y en nombre de qué organización (ADR-0004).
+"""Who makes the request and on behalf of which organization (ADR-0004).
 
-Reglas:
-- El claim `organization` es un objeto `{alias: {"id": uuid}}`. Se exige exactamente
-  una clave; cero, varias o un formato distinto se rechazan (fail closed).
-- El tenant se identifica por el `id` de Keycloak, nunca por el alias.
-- Los roles son los realm roles de Keycloak que Vigía conoce; el resto se ignora.
+- The `organization` claim is an object `{alias: {"id": uuid}}` with exactly one key; zero,
+  several or any other shape is rejected (fail closed).
+- The tenant is identified by the Keycloak `id`, never by the alias.
+- Roles are the Keycloak realm roles Vigía knows; the rest are ignored.
 """
 
 from collections.abc import Iterable, Mapping
@@ -21,7 +20,7 @@ class Role(StrEnum):
 
 
 class TenantError(Exception):
-    """El token es auténtico pero no identifica exactamente una organización válida (403)."""
+    """The token is authentic but does not identify exactly one valid organization (403)."""
 
 
 class NoOrganizationError(TenantError):
@@ -37,7 +36,7 @@ class MalformedOrganizationClaimError(TenantError):
 
 
 class UnknownOrganizationError(TenantError):
-    """La organización existe en Keycloak pero no en core.organizations."""
+    """The organization exists in Keycloak but not in core.organizations."""
 
 
 @dataclass(frozen=True)
@@ -48,11 +47,11 @@ class OrganizationMembership:
 
 @dataclass(frozen=True)
 class Principal:
-    user_id: UUID  # = sub de Keycloak = core.users.id
-    organization_id: UUID  # core.organizations.id: el tenant de todas las consultas
+    user_id: UUID  # = Keycloak sub = core.users.id
+    organization_id: UUID  # core.organizations.id: the tenant for every query
     keycloak_org_id: UUID
     organization_name: str
-    organization_timezone: str  # IANA, p. ej. America/Lima
+    organization_timezone: str  # IANA, e.g. America/Lima
     email: str
     full_name: str
     roles: frozenset[Role]
@@ -63,26 +62,26 @@ class Principal:
 
 def single_organization(claim: object) -> OrganizationMembership:
     if claim is None:
-        raise NoOrganizationError("el token no trae el claim organization")
-    # Una lista es el formato sin "Add organization id": solo alias, sin id. Se rechaza.
+        raise NoOrganizationError("the token has no organization claim")
+    # A list is the format without "Add organization id" (aliases only, no id): rejected.
     if not isinstance(claim, Mapping):
-        raise MalformedOrganizationClaimError("organization debe ser un objeto {alias: {id}}")
+        raise MalformedOrganizationClaimError("organization must be an object {alias: {id}}")
     if len(claim) == 0:
-        raise NoOrganizationError("el usuario no pertenece a ninguna organización")
+        raise NoOrganizationError("the user belongs to no organization")
     if len(claim) > 1:
-        raise MultipleOrganizationsError("el usuario pertenece a varias organizaciones")
+        raise MultipleOrganizationsError("the user belongs to several organizations")
 
     ((alias, value),) = claim.items()
     raw_id = value.get("id") if isinstance(value, Mapping) else None
     if not isinstance(alias, str) or not isinstance(raw_id, str):
-        raise MalformedOrganizationClaimError("falta el id de la organización en el claim")
+        raise MalformedOrganizationClaimError("the claim is missing the organization id")
     try:
         return OrganizationMembership(alias, UUID(raw_id))
     except ValueError as exc:
-        raise MalformedOrganizationClaimError("el id de la organización no es un uuid") from exc
+        raise MalformedOrganizationClaimError("the organization id is not a uuid") from exc
 
 
 def known_roles(realm_roles: Iterable[object]) -> frozenset[Role]:
-    # Keycloak añade roles propios (default-roles-vigia, offline_access...): se ignoran.
+    # Keycloak adds its own roles (default-roles-vigia, offline_access...): ignored.
     valid = {role.value for role in Role}
     return frozenset(Role(r) for r in realm_roles if isinstance(r, str) and r in valid)

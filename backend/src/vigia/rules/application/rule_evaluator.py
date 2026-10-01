@@ -1,13 +1,9 @@
-"""Evaluador de reglas del worker: aplica las reglas de la estación a cada lectura.
+"""Worker rule evaluator: applies the station's rules to each reading.
 
-Una regla aplica a la estación si:
-- la regla y su zona están activas;
-- la estación está asignada a esa zona (una estación sin zona nunca alerta, SPEC);
-- la regla es de esa estación o de toda la zona (station_id nulo).
-
-Una regla con parámetros inválidos se salta y se registra: si hiciera fallar la
-evaluación, todas las lecturas de la estación acabarían con failed_at y las demás reglas,
-sanas, dejarían de evaluarse.
+A rule applies if the rule and its zone are active, the station is assigned to that zone (a
+station without a zone never alerts, SPEC) and the rule targets that station or the whole zone
+(null station_id). A rule with invalid params is skipped and logged: failing the evaluation
+would send every reading of the station to failed_at and stop the healthy rules too.
 """
 
 from collections.abc import Mapping
@@ -51,7 +47,7 @@ class RuleRepository(Protocol):
     async def applicable(
         self, tx: AsyncConnection, organization_id: UUID, station_id: UUID
     ) -> list[ApplicableRule]:
-        """Reglas de umbral y tasa de cambio que aplican a la estación (ver módulo)."""
+        """Threshold and rate-of-change rules that apply to the station (see module)."""
         ...
 
 
@@ -59,13 +55,13 @@ class ReadingHistory(Protocol):
     async def latest_ok(
         self, tx: AsyncConnection, station_id: UUID, until: datetime, limit: int
     ) -> list[EvidenceReading]:
-        """Las `limit` lecturas `ok` más recientes con measured_at <= until, la última primero."""
+        """The `limit` most recent `ok` readings with measured_at <= until, latest first."""
         ...
 
     async def ok_between(
         self, tx: AsyncConnection, station_id: UUID, since: datetime, until: datetime
     ) -> list[EvidenceReading]:
-        """Las lecturas `ok` con since <= measured_at <= until, en orden cronológico."""
+        """The `ok` readings with since <= measured_at <= until, in chronological order."""
         ...
 
 
@@ -99,7 +95,7 @@ class RuleEvaluator:
             recorded = await record_trigger(self._incidents, tx, trigger, now)
             incident = str(recorded.incident_id)
             if recorded.outcome is TriggerOutcome.OPENED and recorded.incident_id is not None:
-                # En la misma transacción que el incidente: o existen los dos o ninguno.
+                # Same transaction as the incident: both exist or neither does.
                 alerted = await self._alerts.alert_level(tx, recorded.incident_id, FIRST_LEVEL, now)
                 bound.info(
                     "incident_opened",
@@ -130,26 +126,24 @@ class RuleEvaluator:
         )
         if not fires(params, [r.value for r in recent]):
             return None
-        # Un umbral superior (gt, ge) se agrava hacia arriba; uno inferior, hacia abajo.
         upper = params.operator in (Operator.GT, Operator.GE)
         worsening = Worsening.HIGHER if upper else Worsening.LOWER
-        return _trigger(rule, item, recent[0], tuple(reversed(recent)), worsening)  # cronológico
+        return _trigger(rule, item, recent[0], tuple(reversed(recent)), worsening)  # chronological
 
     async def _check_rate_of_change(
         self, tx: AsyncConnection, rule: ApplicableRule, item: QueuedReading
     ) -> Trigger | None:
         params = parse_rate_of_change(rule.params)
-        # La ventana termina en la lectura evaluada, no en "ahora": una lectura que llega
-        # con retraso (sin ser tardía) se evalúa con las lecturas de su momento.
+        # The window ends at the evaluated reading, not at "now": a delayed (but not late)
+        # reading is evaluated against the readings of its own time.
         window = await self._history.ok_between(
             tx, item.station_id, item.measured_at - params.window, item.measured_at
         )
         change = detect_change(params, [r.value for r in window])
         if change is None:
             return None
-        # Evidencia: la ventana completa, con el antes y el después de la variación. El
-        # valor disparador es la lectura que completó la caída o la subida, y una caída se
-        # agrava con valores más bajos.
+        # Evidence is the whole window (before and after the change); the trigger value is
+        # the reading that completed the drop or rise.
         down = params.direction is Direction.DOWN
         worsening = Worsening.LOWER if down else Worsening.HIGHER
         return _trigger(rule, item, window[change.end], tuple(window), worsening)

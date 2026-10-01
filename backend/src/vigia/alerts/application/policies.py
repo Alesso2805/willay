@@ -1,8 +1,8 @@
-"""Casos de uso de políticas de escalamiento (VIG-24). Solo admin; todo se audita y
-filtra por la organización del actor (una política de otra organización no existe: 404).
+"""Escalation policy use cases (VIG-24). Admin only; audited and scoped to the actor's
+organization (another organization's policy does not exist: 404).
 
-Editar una política cambia también los incidentes en curso (SPEC): el worker lee sus
-niveles al escalar. Una política que alguna regla usa no se puede borrar.
+Edits also apply to ongoing incidents (SPEC): the worker reads levels when escalating.
+A policy used by any rule cannot be deleted.
 """
 
 from dataclasses import dataclass
@@ -27,7 +27,7 @@ ENTITY_TYPE = "escalation_policy"
 
 @dataclass(frozen=True)
 class Actor:
-    organization_id: UUID  # el tenant: nunca sale del cuerpo de la petición
+    organization_id: UUID  # the tenant: never taken from the request body
     user_id: UUID
 
 
@@ -66,7 +66,7 @@ class Policy:
         )
 
     def snapshot(self) -> dict[str, Any]:
-        """Lo que se guarda en la auditoría: la política completa."""
+        """What the audit log stores: the full policy."""
         return {
             "name": self.name,
             "levels": [
@@ -98,7 +98,7 @@ class UnknownGroupsError(Exception):
 
 
 class PolicyInUseError(Exception):
-    """Alguna regla la usa: borrarla dejaría reglas sin a quién avisar."""
+    """Some rule uses it: deleting it would leave rules with nobody to notify."""
 
 
 class PolicyRepository(Protocol):
@@ -111,21 +111,21 @@ class PolicyRepository(Protocol):
     async def missing_groups(
         self, organization_id: UUID, group_ids: frozenset[UUID]
     ) -> frozenset[UUID]:
-        """Los grupos que no existen en la organización (los de otra no cuentan)."""
+        """Groups that do not exist in the organization (another organization's don't count)."""
         ...
 
     async def add(
         self, policy_id: UUID, organization_id: UUID, data: PolicyData, now: datetime
     ) -> Policy:
-        """Lanza DuplicatePolicyNameError si el nombre ya existe en la organización."""
+        """Raises DuplicatePolicyNameError if the name already exists in the organization."""
         ...
 
     async def replace(self, organization_id: UUID, policy_id: UUID, data: PolicyData) -> Policy:
-        """Nombre y niveles completos; lanza DuplicatePolicyNameError."""
+        """Replaces name and all levels; raises DuplicatePolicyNameError."""
         ...
 
     async def delete(self, policy_id: UUID) -> None:
-        """Lanza PolicyInUseError si alguna regla la usa."""
+        """Raises PolicyInUseError if any rule uses it."""
         ...
 
 
@@ -148,12 +148,12 @@ async def update_policy(
     audit: AuditLog,
     clock: Clock,
 ) -> Policy:
-    # FOR UPDATE: dos admins editando la misma política no se pisan el "antes" auditado.
+    # FOR UPDATE: two admins editing the same policy don't clobber the audited "before".
     current = await policies.get(actor.organization_id, policy_id, for_update=True)
     if current is None:
         raise PolicyNotFoundError(policy_id)
     if current.data == data:
-        return current  # sin cambios: ni escritura ni entrada de auditoría vacía
+        return current  # no changes: no write and no empty audit entry
     await _check(actor, data, policies)
     updated = await policies.replace(actor.organization_id, policy_id, data)
     await audit.record(_entry(actor, policy_id, "update", current, updated, clock.now()))

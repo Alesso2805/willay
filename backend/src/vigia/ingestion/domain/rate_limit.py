@@ -1,8 +1,8 @@
-"""Límite de 60 lotes por minuto y estación (SPEC: Rate limit).
+"""Limit of 60 batches per minute per station (SPEC: Rate limit).
 
-Ventanas fijas de un minuto (hh:mm:00). Es la variante más simple y barata de contar en
-Postgres; su límite conocido es que en el cambio de minuto caben hasta 120 lotes en
-pocos segundos, aceptable para proteger la API de una estación desbocada.
+Fixed one-minute windows (hh:mm:00): the simplest and cheapest to count in Postgres. Known
+trade-off: up to 120 batches fit in a few seconds around the minute boundary, which is
+acceptable to protect the API from a runaway station.
 """
 
 import math
@@ -10,14 +10,14 @@ from datetime import datetime, timedelta
 
 MAX_BATCHES_PER_MINUTE = 60
 WINDOW = timedelta(minutes=1)
-# Solo se consulta la ventana del minuto en curso; las de más de una hora se purgan
-# (el worker silence, en cada ciclo) para que la tabla no crezca sin fin.
+# Only the current window is read; the silence worker purges windows older than this on
+# every cycle so the table does not grow forever.
 WINDOW_RETENTION = timedelta(hours=1)
 
 
 class RateLimitExceededError(Exception):
     def __init__(self, retry_after_s: int) -> None:
-        super().__init__(f"límite de {MAX_BATCHES_PER_MINUTE} lotes por minuto superado")
+        super().__init__(f"limit of {MAX_BATCHES_PER_MINUTE} batches per minute exceeded")
         self.retry_after_s = retry_after_s
 
 
@@ -31,6 +31,6 @@ def seconds_until_next_window(now: datetime) -> int:
 
 
 def check_count(count: int, now: datetime) -> None:
-    """`count` incluye el lote actual."""
+    """`count` includes the current batch."""
     if count > MAX_BATCHES_PER_MINUTE:
         raise RateLimitExceededError(seconds_until_next_window(now))

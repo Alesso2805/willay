@@ -1,4 +1,4 @@
-"""Caso de uso: de un header X-Api-Key a la estación (y su organización) que envía el lote."""
+"""Use case: from an X-Api-Key header to the station (and organization) sending the batch."""
 
 import asyncio
 from dataclasses import dataclass
@@ -19,7 +19,7 @@ class StationCredential:
 @dataclass(frozen=True)
 class AuthenticatedStation:
     station_id: UUID
-    organization_id: UUID  # el tenant sale de la estación, nunca del cuerpo de la petición
+    organization_id: UUID  # tenant comes from the station, never from the request body
 
 
 class StationCredentials(Protocol):
@@ -34,11 +34,11 @@ class KeyVerifier(Protocol):
 
 
 class InvalidApiKeyError(Exception):
-    """Clave ausente, mal formada, de una estación inexistente o que no coincide (401)."""
+    """Key missing, malformed, for a nonexistent station, or not matching (401)."""
 
 
 class InactiveStationError(Exception):
-    """La clave es correcta pero la estación está desactivada (403)."""
+    """The key is valid but the station is deactivated (403)."""
 
 
 async def authenticate_station(
@@ -46,16 +46,16 @@ async def authenticate_station(
 ) -> AuthenticatedStation:
     parsed = parse_api_key(raw_key or "")
     if parsed is None:
-        raise InvalidApiKeyError("falta la API key o no tiene el formato <station_id>.<secreto>")
+        raise InvalidApiKeyError("API key missing or not in the <station_id>.<secret> format")
 
     credential = await credentials.find(parsed.station_id)
-    # Argon2id es lento a propósito (~decenas de ms): se ejecuta en un hilo para no
-    # bloquear el event loop. Si la estación no existe se verifica igual contra un hash
-    # ficticio, para que el tiempo de respuesta no revele qué station_id existen.
+    # Argon2id is slow on purpose (tens of ms), so it runs in a thread to keep the event loop
+    # free. Unknown stations are verified against a dummy hash so response time does not
+    # reveal which station_ids exist.
     expected_hash = credential.api_key_hash if credential else verifier.dummy_hash
     matches = await asyncio.to_thread(verifier.verify, expected_hash, raw_key or "")
     if credential is None or not matches:
-        raise InvalidApiKeyError("API key inválida")
+        raise InvalidApiKeyError("invalid API key")
     if not credential.is_active:
-        raise InactiveStationError(f"la estación {credential.station_id} está inactiva")
+        raise InactiveStationError(f"station {credential.station_id} is inactive")
     return AuthenticatedStation(credential.station_id, credential.organization_id)

@@ -1,8 +1,8 @@
-"""Confirmar una alerta desde su enlace (VIG-23), sin login: el token es la credencial.
+"""Confirming an alert from its link (VIG-23), without login: the token is the credential.
 
-GET muestra la página y no cambia nada (los escáneres de correo abren los enlaces
-solos); solo el POST del botón confirma. No hace falta protección CSRF: sin el token no
-se puede construir el POST, y no hay sesión ni cookies que otro sitio pueda aprovechar.
+GET only shows the page (email scanners open links on their own); only the button's POST
+confirms. No CSRF protection needed: the POST cannot be built without the token, and
+there is no session or cookie another site could ride on.
 """
 
 from fastapi import APIRouter
@@ -18,7 +18,7 @@ from vigia.shared.web import ClockDep, DbConnection
 router = APIRouter(tags=["confirmation"])
 log = get_logger()
 
-# El token viaja en la URL: que no salga en el Referer, ni quede en cachés, ni se indexe.
+# The token travels in the URL: keep it out of the Referer, caches and search indexes.
 _HEADERS = {
     "Cache-Control": "no-store",
     "Referrer-Policy": "no-referrer",
@@ -29,15 +29,15 @@ _HEADERS = {
     ),
 }
 _RESPONSES: dict[int | str, dict[str, str]] = {
-    404: {"description": "Enlace no válido"},
-    410: {"description": "El enlace venció o ya se usó"},
+    404: {"description": "Invalid link"},
+    410: {"description": "The link expired or was already used"},
 }
 
 
 @router.get(
     "/confirmar/{token}",
     response_class=HTMLResponse,
-    summary="Página de confirmación de una alerta (abrirla no confirma nada)",
+    summary="Confirmation page of an alert (opening it acknowledges nothing)",
     responses=_RESPONSES,
 )
 async def get_confirmation(token: str, conn: DbConnection, clock: ClockDep) -> HTMLResponse:
@@ -51,7 +51,7 @@ async def get_confirmation(token: str, conn: DbConnection, clock: ClockDep) -> H
 @router.post(
     "/confirmar/{token}",
     response_class=HTMLResponse,
-    summary="Confirmar una alerta: confirma su incidente y detiene el escalamiento",
+    summary="Acknowledge an alert: acknowledges its incident and stops the escalation",
     responses=_RESPONSES,
 )
 async def post_confirmation(token: str, conn: DbConnection, clock: ClockDep) -> HTMLResponse:
@@ -61,7 +61,7 @@ async def post_confirmation(token: str, conn: DbConnection, clock: ClockDep) -> 
         incidents=SqlIncidentRepository(conn),
         clock=clock,
     )
-    if view.alert is not None:  # nunca el token: basta con saber de qué alerta se trató
+    if view.alert is not None:  # never log the token: the alert id is enough
         log.info(
             "alert_confirmation",
             outcome=str(view.outcome),

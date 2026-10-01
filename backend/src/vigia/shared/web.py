@@ -1,4 +1,4 @@
-"""Dependencias de FastAPI compartidas por los módulos (capa api)."""
+"""FastAPI dependencies shared by the modules (api layer)."""
 
 import math
 from collections.abc import AsyncIterator
@@ -15,14 +15,14 @@ from vigia.shared.config import Settings
 
 
 async def db_connection(request: Request) -> AsyncIterator[AsyncConnection]:
-    """Una transacción por petición: commit si el endpoint termina bien, rollback si lanza."""
+    """One transaction per request: commit if the endpoint succeeds, rollback if it raises."""
     engine: AsyncEngine = request.app.state.engine
     async with engine.begin() as conn:
         yield conn
 
 
 def get_engine(request: Request) -> AsyncEngine:
-    """Para pasos que abren su propia transacción corta, fuera de la de la petición."""
+    """For steps that open their own short transaction, outside the request's one."""
     engine: AsyncEngine = request.app.state.engine
     return engine
 
@@ -33,7 +33,7 @@ def get_clock(request: Request) -> Clock:
 
 
 def get_app_settings(request: Request) -> Settings:
-    """La configuración con que arrancó la app (en los tests, la del test)."""
+    """The settings the app started with (in tests, the test's settings)."""
     settings: Settings = request.app.state.settings
     return settings
 
@@ -55,10 +55,10 @@ def _json_safe(value: Any) -> Any:
 
 
 async def validation_error_handler(request: Request, exc: Exception) -> JSONResponse:
-    """422 con el mismo formato que FastAPI, pero serializable aunque el input traiga NaN.
+    """422 in FastAPI's format, but serializable even when the input contains NaN.
 
-    El manejador por defecto incluye el valor recibido; si un sensor averiado envía NaN,
-    el JSON de la respuesta no se puede generar y la API devolvería 500 en lugar de 422.
+    The default handler echoes the received value; a broken sensor sending NaN would make the
+    response JSON unrenderable and the API would return 500 instead of 422.
     """
     assert isinstance(exc, RequestValidationError)
     return JSONResponse(

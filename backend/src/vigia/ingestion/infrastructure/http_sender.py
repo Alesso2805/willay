@@ -1,4 +1,4 @@
-"""Envío de lecturas simuladas a POST /v1/readings, como lo haría una estación real."""
+"""Sends simulated readings to POST /v1/readings, as a real station would."""
 
 from datetime import datetime
 
@@ -19,8 +19,8 @@ class HttpReadingSender:
                 "/v1/readings", json=body, headers={"X-Api-Key": api_key}
             )
         except httpx2.HTTPError as exc:
-            # Una estación real reintentaría en su próximo ciclo; el simulador sigue igual.
-            # Nunca se registra la clave: solo el tipo de error.
+            # A real station would retry on its next cycle; the simulator just carries on.
+            # Never log the API key: only the error type.
             log.warning("simulator_send_failed", error=type(exc).__name__)
             return 0
         return response.status_code

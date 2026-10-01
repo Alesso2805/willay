@@ -1,4 +1,4 @@
-"""EmailSender por SMTP (aiosmtplib). En local, el servidor es Mailpit."""
+"""SMTP EmailSender (aiosmtplib). Locally, the server is Mailpit."""
 
 from email.message import EmailMessage
 
@@ -41,7 +41,7 @@ class SmtpEmailSender:
                 password=self._password,
             )
         except aiosmtplib.SMTPResponseException as exc:
-            # Solo el código y el tipo: el mensaje del servidor suele repetir el destinatario.
+            # Only code and type: the server's message often repeats the recipient address.
             raise DeliveryError(f"{type(exc).__name__} {exc.code}") from exc
         except (aiosmtplib.SMTPException, OSError, TimeoutError) as exc:
             raise DeliveryError(type(exc).__name__) from exc

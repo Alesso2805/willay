@@ -1,4 +1,4 @@
-"""Repositorio SQL de zonas de riesgo (rol vigia_app). Toda consulta filtra por tenant."""
+"""Risk zone SQL repository (vigia_app role). Every query filters by tenant."""
 
 import json
 from datetime import datetime

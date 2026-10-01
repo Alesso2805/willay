@@ -1,4 +1,4 @@
-"""Repositorios SQL de ingesta (rol vigia_app)."""
+"""Ingestion SQL repositories (vigia_app role)."""
 
 from collections.abc import Sequence
 from datetime import datetime
@@ -14,8 +14,8 @@ from vigia.shared import notifications
 
 
 class SqlStationCredentials:
-    """Lectura en una conexión propia y breve: se devuelve al pool antes de verificar el
-    hash Argon2id (decenas de ms), en lugar de retenerla durante el cálculo."""
+    """Reads on its own short connection, returned to the pool before verifying the Argon2id
+    hash (tens of ms) instead of holding it during the computation."""
 
     def __init__(self, engine: AsyncEngine) -> None:
         self._engine = engine
@@ -37,12 +37,12 @@ class SqlStationCredentials:
 
 
 class SqlBatchCounter:
-    """Contador de lotes por estación y minuto en ingest.rate_limit_windows.
+    """Per-station, per-minute batch counter in ingest.rate_limit_windows.
 
-    El upsert es atómico: con varias réplicas de la API, Postgres serializa los
-    incrementos de la misma fila y cada petición ve un total distinto. Va en su propia
-    transacción corta, no en la de la petición: así el bloqueo de la fila dura
-    microsegundos, y un lote que luego falla (422) igual cuenta para el límite.
+    The upsert is atomic: with several API replicas Postgres serializes increments of the same
+    row and each request sees a distinct total. It runs in its own short transaction, not the
+    request's, so the row lock lasts microseconds and a batch that later fails (422) still
+    counts toward the limit.
     """
 
     def __init__(self, engine: AsyncEngine) -> None:
@@ -63,7 +63,7 @@ class SqlBatchCounter:
         return int(count)
 
     async def purge(self, older_than: datetime) -> int:
-        """Borra las ventanas que empezaron antes de `older_than`; devuelve cuántas."""
+        """Delete windows that started before `older_than`; return how many."""
         async with self._engine.begin() as conn:
             result = await conn.execute(
                 text("DELETE FROM ingest.rate_limit_windows WHERE window_start < :older_than"),
@@ -72,14 +72,14 @@ class SqlBatchCounter:
         return result.rowcount
 
 
-# Una sola sentencia: lecturas, cola y latido se escriben juntos o no se escribe nada.
-# El CTE `stored` solo devuelve las filas realmente insertadas (ON CONFLICT DO NOTHING
-# descarta los duplicados), así que nunca se encola una lectura que ya existía. Las
-# tardías se guardan pero no se encolan: no entran en las ventanas de las reglas.
+# One statement: readings, queue and heartbeat are written together or not at all. The
+# `stored` CTE returns only rows actually inserted (ON CONFLICT DO NOTHING drops duplicates),
+# so an existing reading is never re-enqueued. Late readings are stored but not enqueued:
+# they never enter rule windows.
 #
-# El latido nunca retrocede: con dos lotes concurrentes, o un reenvío de lecturas
-# antiguas, gana siempre la recepción y la medición más recientes. En DO UPDATE las
-# expresiones leen la fila anterior (station_heartbeats.*), no las ya asignadas.
+# The heartbeat never goes backwards: with concurrent batches or resent old readings, the
+# latest reception and measurement always win. In DO UPDATE the expressions read the previous
+# row (station_heartbeats.*), not the values already assigned.
 _STORE_AND_ENQUEUE = text("""
     WITH batch AS (
         SELECT measured_at, value, quality
@@ -111,7 +111,7 @@ _STORE_AND_ENQUEUE = text("""
                                                last_value, updated_at)
         SELECT :station_id, :received_at, CAST(:hb_measured_at AS timestamptz),
                CAST(:hb_value AS float8), :received_at
-        WHERE CAST(:hb_measured_at AS timestamptz) IS NOT NULL  -- lote solo de tardías
+        WHERE CAST(:hb_measured_at AS timestamptz) IS NOT NULL  -- batch with only late readings
         ON CONFLICT (station_id) DO UPDATE SET
             last_seen_at = GREATEST(ingest.station_heartbeats.last_seen_at,
                                     EXCLUDED.last_seen_at),
@@ -161,8 +161,8 @@ class SqlReadingWriter:
         ).one()
         counts = StoreCounts(stored=int(row.stored), late=int(row.late), enqueued=int(row.enqueued))
         if counts.enqueued:
-            # Misma transacción que las filas: Postgres entrega el aviso solo si hace commit.
-            # Sin filas nuevas en la cola no se despierta al evaluador en vano.
+            # Same transaction as the rows: Postgres delivers it only on commit. No new queue
+            # rows means no point waking the evaluator.
             await self._conn.execute(
                 text("SELECT pg_notify(:channel, '')"), {"channel": notifications.EVALUATION_QUEUE}
             )

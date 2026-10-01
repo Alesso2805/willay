@@ -1,4 +1,4 @@
-"""Caso de uso: de claims verificados a un Principal con tenant resuelto."""
+"""Use case: from verified claims to a Principal with a resolved tenant."""
 
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -25,7 +25,7 @@ class UserProfile:
 class Organization:
     id: UUID
     name: str
-    timezone: str  # IANA: el panel y los mensajes muestran las horas en esta zona
+    timezone: str  # IANA: the dashboard and messages show times in this zone
 
 
 class OrganizationRepository(Protocol):
@@ -37,7 +37,7 @@ class UserRepository(Protocol):
 
 
 class InvalidClaimsError(Exception):
-    """Faltan claims obligatorios (sub, email): el token no sirve para Vigía (401)."""
+    """Required claims (sub, email) are missing: the token is unusable for Vigía (401)."""
 
 
 async def authenticate(
@@ -49,7 +49,7 @@ async def authenticate(
     organization = await organizations.by_keycloak_id(membership.keycloak_org_id)
     if organization is None:
         raise UnknownOrganizationError(
-            f"organización {membership.keycloak_org_id} sin alta en Vigía"
+            f"organization {membership.keycloak_org_id} is not registered in Vigía"
         )
     organization_id = organization.id
 
@@ -57,10 +57,10 @@ async def authenticate(
         user_id = UUID(str(claims["sub"]))
         email = str(claims["email"])
     except (KeyError, ValueError) as exc:
-        raise InvalidClaimsError("el token debe traer sub (uuid) y email") from exc
+        raise InvalidClaimsError("the token must carry sub (uuid) and email") from exc
     full_name = str(claims.get("name") or email)
 
-    # Alta o actualización just-in-time: Keycloak es la fuente; la fila existe para las FK
+    # Just-in-time upsert: Keycloak is the source of truth; the row exists for the FKs
     # (rules.created_by, incidents.acknowledged_by_user_id).
     await users.upsert(UserProfile(user_id, organization_id, email, full_name))
 

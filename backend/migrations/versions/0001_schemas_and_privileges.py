@@ -1,12 +1,11 @@
-"""Esquemas core e ingest y privilegios por defecto para vigia_app.
+"""core and ingest schemas and default privileges for vigia_app.
 
-Va primero a propósito: con ALTER DEFAULT PRIVILEGES fijado antes de crear tablas,
-todas (las de 0002, 0003 y cualquier migración futura) reciben permisos para
-vigia_app por el mismo mecanismo, sin GRANT manuales.
+First on purpose: with ALTER DEFAULT PRIVILEGES set before any table exists, every table (from
+0002, 0003 and any future migration) grants vigia_app access the same way, with no manual GRANT.
 
-Las extensiones y los roles los crea infra/postgres/init (ADR-0005). Aquí
-CREATE EXTENSION IF NOT EXISTS solo comprueba que estén: si faltan, falla por
-permisos y el contenedor migrate termina con error, que es lo que queremos.
+Extensions and roles are created by infra/postgres/init (ADR-0005). CREATE EXTENSION IF NOT
+EXISTS here only checks they exist: if missing it fails on permissions and the migrate container
+exits with an error, which is what we want.
 
 Revision ID: 0001
 Revises:
@@ -32,13 +31,13 @@ def upgrade() -> None:
     op.execute("REVOKE ALL ON SCHEMA core, ingest FROM PUBLIC")
     op.execute("GRANT USAGE ON SCHEMA core, ingest TO vigia_app")
 
-    # FOR ROLE vigia_owner: aplica a los objetos que cree vigia_owner, que es quien
-    # corre las migraciones. Sin esto, cada tabla nueva necesitaría su propio GRANT.
+    # FOR ROLE vigia_owner: applies to objects created by vigia_owner, which runs the
+    # migrations. Without it every new table would need its own GRANT.
     op.execute(
         "ALTER DEFAULT PRIVILEGES FOR ROLE vigia_owner IN SCHEMA core, ingest "
         "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO vigia_app"
     )
-    # Las columnas identity (incident_events, audit_log, evaluation_queue) usan secuencias.
+    # Identity columns (incident_events, audit_log, evaluation_queue) use sequences.
     op.execute(
         "ALTER DEFAULT PRIVILEGES FOR ROLE vigia_owner IN SCHEMA core, ingest "
         "GRANT USAGE, SELECT ON SEQUENCES TO vigia_app"

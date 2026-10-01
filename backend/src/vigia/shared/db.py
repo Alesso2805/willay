@@ -1,4 +1,4 @@
-"""Motor y sesiones async de SQLAlchemy (asyncpg)."""
+"""SQLAlchemy async engine and sessions (asyncpg)."""
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -13,5 +13,5 @@ def create_engine(database_url: str) -> AsyncEngine:
 
 
 def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
-    # expire_on_commit=False: los objetos siguen legibles tras el commit sin otra consulta.
+    # expire_on_commit=False: objects stay readable after commit without another query.
     return async_sessionmaker(engine, expire_on_commit=False)

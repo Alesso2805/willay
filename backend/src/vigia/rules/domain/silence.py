@@ -1,12 +1,9 @@
-"""Regla de sensor silencioso (VIG-17): una estación que dejó de reportar.
+"""Silent sensor rule (VIG-17): a station that stopped reporting.
 
-Una estación está en silencio cuando pasaron al menos K * expected_interval_s desde su
-último latido (`station_heartbeats.last_seen_at`, el último lote con alguna lectura no
-tardía). K sale solo de `stations.silence_multiplier` (SPEC): la regla no tiene
-parámetros, así una estación tiene el mismo umbral en todas las reglas que la vigilan.
-
-Una estación que nunca reportó no está en silencio: todavía no empezó a transmitir, y
-contarla haría que un stack recién sembrado abriera incidentes antes de recibir datos.
+A station is silent once K * expected_interval_s have passed since its last heartbeat
+(`station_heartbeats.last_seen_at`). K comes only from `stations.silence_multiplier` (SPEC),
+so a station has the same threshold in every rule watching it. A station that never reported
+is not silent: otherwise a freshly seeded stack would open incidents before receiving data.
 """
 
 from datetime import datetime, timedelta

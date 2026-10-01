@@ -1,1 +1,1 @@
-"""Aplicación FastAPI (proceso vigia.api)."""
+"""FastAPI application (the vigia.api process)."""

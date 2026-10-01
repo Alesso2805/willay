@@ -1,4 +1,4 @@
-"""Repositorio SQL de estaciones (rol vigia_app). Toda consulta filtra por tenant."""
+"""Station SQL repository (vigia_app role). Every query filters by tenant."""
 
 import json
 from collections.abc import Collection
@@ -26,8 +26,8 @@ from vigia.territory.domain.stations import (
     ZonePosition,
 )
 
-# Lectura para el panel: estación + sus zonas + su latido. El latido lo escribe la
-# ingesta; aquí solo se lee (es el único cruce hacia el esquema ingest y es de lectura).
+# Dashboard read: station + zones + heartbeat. Ingestion writes the heartbeat; this only reads
+# it (the single, read-only crossing into the ingest schema).
 _SELECT = """
     SELECT s.id, s.code, s.name, s.variable, ST_X(s.location) AS lon, ST_Y(s.location) AS lat,
            s.source, s.expected_interval_s, s.silence_multiplier, s.status,
@@ -43,7 +43,7 @@ _SELECT = """
     LEFT JOIN core.zone_stations zs ON zs.station_id = s.id
 """
 _GROUP = " GROUP BY s.id, h.station_id "
-# Nombre que Postgres dio a UNIQUE (organization_id, code) en la migración 0002.
+# Name Postgres gave UNIQUE (organization_id, code) in migration 0002.
 _UNIQUE_CODE = "stations_organization_id_code_key"
 
 
@@ -73,8 +73,8 @@ class SqlStationRepository:
         now: datetime,
     ) -> Station:
         try:
-            # SAVEPOINT: si el código está repetido, la transacción de la petición sigue
-            # usable y el error se traduce a 409 en lugar de abortarla.
+            # SAVEPOINT: on a duplicate code the request transaction stays usable and the
+            # error becomes a 409 instead of aborting it.
             async with self._conn.begin_nested():
                 await self._conn.execute(
                     text("""
@@ -97,7 +97,7 @@ class SqlStationRepository:
                     },
                 )
         except IntegrityError as exc:
-            # Solo esta restricción significa "código repetido"; cualquier otra se propaga.
+            # Only this constraint means "duplicate code"; anything else propagates.
             if _UNIQUE_CODE in str(exc.orig):
                 raise DuplicateStationCodeError(code) from exc
             raise
@@ -108,7 +108,7 @@ class SqlStationRepository:
         self, organization_id: UUID, station_id: UUID, *, for_update: bool = False
     ) -> Station | None:
         if for_update:
-            # Se bloquea la fila de la estación (no el LEFT JOIN, que FOR UPDATE no admite).
+            # Lock the station row (not the LEFT JOIN, which FOR UPDATE does not allow).
             locked = await self._conn.scalar(
                 text("""
                     SELECT id FROM core.stations
@@ -174,8 +174,8 @@ class SqlStationRepository:
         return await self._get_one(organization_id, station_id)
 
     async def _set_zones(self, station_id: UUID, data: StationData) -> None:
-        # Reemplazo completo: la lista enviada es la verdad. Las zonas ya se validaron
-        # como de la misma organización en el caso de uso.
+        # Full replacement: the submitted list is the truth. The use case already checked
+        # the zones belong to the same organization.
         await self._conn.execute(
             text("DELETE FROM core.zone_stations WHERE station_id = :id"), {"id": station_id}
         )
