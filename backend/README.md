@@ -1,3 +1,3 @@
-# vigia (backend)
+# willay (backend)
 
-Python package of Willay (code name Vigía). See the README at the repository root.
+Python package of Willay. See the README at the repository root.

@@ -4,7 +4,7 @@ Multi-tenant early warning system: it ingests sensor readings, evaluates rules p
 
 > **Support tool.** Willay helps operators and community leaders detect, decide and warn. It does not replace the official public warning systems (INDECI, regional COERs, SISMATE).
 
-"Willay" is Quechua for "to warn, to inform". "Vigía" was the code name during the first sprints: the repository and the package (`vigia`) keep it. The full specification is in [docs/SPEC.md](docs/SPEC.md) and the technical decisions in [docs/adr/](docs/adr/).
+"Willay" is Quechua for "to warn, to inform". "Vigía" was the code name during the first sprints; story IDs keep its `VIG-` prefix. The full specification is in [docs/SPEC.md](docs/SPEC.md) and the technical decisions in [docs/adr/](docs/adr/).
 
 ## Requirements
 
@@ -16,7 +16,7 @@ Multi-tenant early warning system: it ingests sensor readings, evaluates rules p
 
 Before the first `make up`, check inside WSL that `docker info` and `make --version` respond. The ports in `.env` must also be free: 5433 (Postgres), 8080 (Keycloak), 8000 (API), 4200 (dashboard) and 8025 (Mailpit). If another project is using any of them, Willay's containers stay in `Created` and `make up` fails.
 
-Recommendation: clone the repo inside the WSL file system (for example `~/code/vigia-project`), not in `/mnt/c`. Bind mounts and `node_modules` on `/mnt/c` are slow.
+Recommendation: clone the repo inside the WSL file system (for example `~/code/willay`), not in `/mnt/c`. Bind mounts and `node_modules` on `/mnt/c` are slow.
 
 ## Starting it
 
@@ -61,14 +61,14 @@ A cause that was just resolved or acknowledged does not open a new incident whil
 Without a bot, the `telegram` worker starts disabled and Telegram alerts stay pending; email works the same. To enable it:
 
 1. Create a bot with [@BotFather](https://t.me/BotFather) (`/newbot`).
-2. Put its token and its username (without `@`) in `.env`: `VIGIA_TELEGRAM_BOT_TOKEN` and `VIGIA_TELEGRAM_BOT_USERNAME`. The token is a secret: it never goes into the repository.
+2. Put its token and its username (without `@`) in `.env`: `WILLAY_TELEGRAM_BOT_TOKEN` and `WILLAY_TELEGRAM_BOT_USERNAME`. The token is a secret: it never goes into the repository.
 3. Run `make up` so that the API and the workers read it.
 4. Generate a contact's link as admin and open it in Telegram. The example is for Rosa Brigada, from level 2 of the seed; the dashboard will have a button for this with VIG-36.
 
 ```bash
-JWT=$(curl -s http://localhost:8080/realms/vigia/protocol/openid-connect/token \
-  -d grant_type=password -d client_id=vigia-dev-cli -d username=rimac-admin \
-  --data-urlencode "password=$(grep '^VIGIA_DEV_USER_PASSWORD=' .env | cut -d= -f2-)" \
+JWT=$(curl -s http://localhost:8080/realms/willay/protocol/openid-connect/token \
+  -d grant_type=password -d client_id=willay-dev-cli -d username=rimac-admin \
+  --data-urlencode "password=$(grep '^WILLAY_DEV_USER_PASSWORD=' .env | cut -d= -f2-)" \
   --data-urlencode 'scope=openid organization:*' \
   | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
 curl -s -X POST -H "Authorization: Bearer $JWT" \
@@ -81,7 +81,7 @@ The link is valid for 7 days and can be used only once; a new one cancels the pr
 
 | Folder | Contents |
 | --- | --- |
-| `backend/` | Python package `vigia`: FastAPI API, workers, Alembic migrations and tests |
+| `backend/` | Python package `willay`: FastAPI API, workers, Alembic migrations and tests |
 | `dashboard/` | Angular dashboard |
 | `infra/` | Keycloak realm and Postgres init scripts |
 | `docs/` | SPEC, ADRs, interviews, sprints and runbooks |

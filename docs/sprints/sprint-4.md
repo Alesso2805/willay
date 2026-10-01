@@ -36,7 +36,7 @@ make simulate ARGS="--scenario rimac --seed 42"
 
 To receive alerts via Telegram:
 1. Create a bot with @BotFather.
-2. Put `VIGIA_TELEGRAM_BOT_TOKEN` and `VIGIA_TELEGRAM_BOT_USERNAME` (without `@`) in `.env`.
+2. Put `WILLAY_TELEGRAM_BOT_TOKEN` and `WILLAY_TELEGRAM_BOT_USERNAME` (without `@`) in `.env`.
 3. Generate a contact's link with `POST /v1/contacts/{id}/telegram-link` using an admin token (see README).
 
 The emails can be seen in Mailpit: http://localhost:8025.
