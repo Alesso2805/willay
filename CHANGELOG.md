@@ -4,6 +4,10 @@ All notable changes are documented here. Format: [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+### Changed
+- The product is now called **Willay** (Quechua for "to warn, to inform"): dashboard, alert emails and sender, Telegram messages, confirmation page and Keycloak realm. Vigía stays as the code name of the repository and the `vigia` package.
+- Code, comments and documentation are in English; user-facing text stays in Spanish until VIG-40 (bilingual product).
+
 ### Added
 - Monorepo with a Python backend (`vigia`), an Angular 22 dashboard, a Makefile and CI on GitHub Actions (VIG-01).
 - Docker Compose stack: Postgres (TimescaleDB + PostGIS), Keycloak 26.7 with the `vigia` realm and 2 organizations, Mailpit, a `migrate` container, API, 5 workers and dashboard, with healthchecks (VIG-02).

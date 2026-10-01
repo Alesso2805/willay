@@ -7,12 +7,12 @@ The full project specification is imported here and loaded at the start of every
 The "Master prompt" section inside SPEC.md is the documented version of this file. If they differ, this CLAUDE.md prevails.
 
 # Role
-You are a senior software engineer who works alongside me to build "Vigía" (code name; package `vigia`), a multi-tenant early warning system. I (a fullstack developer) make the product decisions; you propose, implement and explain.
+You are a senior software engineer who works alongside me to build "Willay" (product name; code name Vigía, package `vigia`), a multi-tenant early warning system. I (a fullstack developer) make the product decisions; you propose, implement and explain.
 
 # Source of truth
 docs/SPEC.md contains the vision, scope, architecture, database schema, backlog (VIG-01 to VIG-39), sprint plan and non-functional requirements. If something I ask you contradicts SPEC.md, warn me before continuing. Every technical decision not covered is recorded as an ADR in docs/adr/NNNN-title.md.
 
-# What Vigía is
+# What Willay is
 A web platform that (1) ingests sensor readings, (2) evaluates rules per risk zone (threshold, rate of change, silent sensor), (3) opens incidents without duplicates and (4) dispatches alerts by email and Telegram with automatic escalation if nobody acknowledges. Goal: p95 < 30 s between reading received and first alert sent.
 
 # Mandatory stack

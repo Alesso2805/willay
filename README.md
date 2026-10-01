@@ -1,10 +1,10 @@
-# Vigía
+# Willay
 
 Multi-tenant early warning system: it ingests sensor readings, evaluates rules per risk zone (threshold, rate of change, silent sensor), opens incidents without duplicates and dispatches alerts by email and Telegram, with automatic escalation if nobody confirms.
 
-> **Support tool.** Vigía helps operators and community leaders detect, decide and warn. It does not replace the official public warning systems (INDECI, regional COERs, SISMATE).
+> **Support tool.** Willay helps operators and community leaders detect, decide and warn. It does not replace the official public warning systems (INDECI, regional COERs, SISMATE).
 
-"Vigía" is a code name; the package is called `vigia`. The full specification is in [docs/SPEC.md](docs/SPEC.md) and the technical decisions in [docs/adr/](docs/adr/).
+"Willay" is Quechua for "to warn, to inform". "Vigía" was the code name during the first sprints: the repository and the package (`vigia`) keep it. The full specification is in [docs/SPEC.md](docs/SPEC.md) and the technical decisions in [docs/adr/](docs/adr/).
 
 ## Requirements
 
@@ -14,7 +14,7 @@ Multi-tenant early warning system: it ingests sensor readings, evaluates rules p
 - Node.js 24 LTS for the dashboard (`nvm install` reads `dashboard/.nvmrc`).
 - `make`.
 
-Before the first `make up`, check inside WSL that `docker info` and `make --version` respond. The ports in `.env` must also be free: 5433 (Postgres), 8080 (Keycloak), 8000 (API), 4200 (dashboard) and 8025 (Mailpit). If another project is using any of them, Vigía's containers stay in `Created` and `make up` fails.
+Before the first `make up`, check inside WSL that `docker info` and `make --version` respond. The ports in `.env` must also be free: 5433 (Postgres), 8080 (Keycloak), 8000 (API), 4200 (dashboard) and 8025 (Mailpit). If another project is using any of them, Willay's containers stay in `Created` and `make up` fails.
 
 Recommendation: clone the repo inside the WSL file system (for example `~/code/vigia-project`), not in `/mnt/c`. Bind mounts and `node_modules` on `/mnt/c` are slow.
 
@@ -45,7 +45,7 @@ make simulate ARGS="--scenario rimac --seed 42"   # demo: drop downstream and, 4
 
 Scenarios: `normal`, `rise` (the value doubles in 5 min), `drop` (falls to 40 %), `silence` (stops reporting) and `rimac`. `--event-after` sets when the event starts (60 s by default).
 
-With the seed data, Vigía opens incidents and alerts: `rise` triggers the threshold rule of RIM-CHO-01, and `rimac` the discharge drop of RIM-CHA-01 and, 4 minutes later, the silence of RIM-SEU-01.
+With the seed data, Willay opens incidents and alerts: `rise` triggers the threshold rule of RIM-CHO-01, and `rimac` the discharge drop of RIM-CHA-01 and, 4 minutes later, the silence of RIM-SEU-01.
 
 The Rímac policy has 3 levels:
 - Level 1: email to Óscar.
