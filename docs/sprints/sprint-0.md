@@ -1,44 +1,44 @@
-# Sprint 0 — Fundaciones (VIG-01 a VIG-05)
+# Sprint 0 — Foundations (VIG-01 to VIG-05)
 
-**Estado al 2026-09-26:** historias terminadas y verificadas en local. Falta CI en GitHub (no hay remoto).
+**Status as of 2026-09-26:** stories done and verified locally. CI on GitHub is still missing (there is no remote).
 
-## Dónde quedó el código
+## Where the code stands
 
-Las ramas están **apiladas**: cada una parte de la anterior. `main` solo tiene los commits `docs(spec)`.
+The branches are **stacked**: each one starts from the previous one. `main` only has the `docs(spec)` commits.
 
 ```
 main → feat/VIG-01-monorepo-ci → feat/VIG-02-docker-compose
-     → feat/VIG-03-initial-migration → feat/VIG-04-seed → feat/VIG-05-adrs  (la más reciente)
+     → feat/VIG-03-initial-migration → feat/VIG-04-seed → feat/VIG-05-adrs  (the most recent)
 ```
 
-Para retomar: `git checkout feat/VIG-05-adrs`. `git log --oneline main..HEAD` lista los 8 commits del sprint.
+To pick it up again: `git checkout feat/VIG-05-adrs`. `git log --oneline main..HEAD` lists the 8 commits of the sprint.
 
-## Verificación rápida (desde WSL)
+## Quick check (from WSL)
 
 ```bash
-make up         # 11 servicios: todo healthy y migrate en Exited (0)
-make seed       # claves en .secrets/station-keys.json
-make lint test  # Ruff, Mypy, ESLint; Pytest (37) y Vitest (3)
-make down       # al terminar
+make up         # 11 services: all healthy and migrate in Exited (0)
+make seed       # keys in .secrets/station-keys.json
+make lint test  # Ruff, Mypy, ESLint; Pytest (37) and Vitest (3)
+make down       # when you are done
 ```
 
-## Pendientes antes del Sprint 1
+## To do before Sprint 1
 
-- [ ] Crear el repo en GitHub, hacer push y fusionar las ramas en orden (o abrir un PR por historia). Confirmar CI en verde.
-- [ ] Decidir si se alinea CLAUDE.md con SPEC: el claim `organization` es un objeto `{alias: {id}}`, y los roles y las extensiones viven en el init de Postgres.
-- [ ] Revisar los ADR 0001–0006 y pasarlos a "Aceptado".
-- [ ] Instalar Node 24 en WSL (`nvm install` lee `dashboard/.nvmrc`).
+- [ ] Create the repo on GitHub, push and merge the branches in order (or open one PR per story). Confirm CI is green.
+- [ ] Decide whether to align CLAUDE.md with SPEC: the `organization` claim is an object `{alias: {id}}`, and the roles and extensions live in the Postgres init.
+- [ ] Review ADRs 0001–0006 and move them to "Accepted".
+- [ ] Install Node 24 in WSL (`nvm install` reads `dashboard/.nvmrc`).
 
-## Siguiente paso
+## Next step
 
-Planificar el Sprint 1 empezando por **VIG-06** (login OIDC y resolución del tenant con 403 para cero o varias organizaciones). En paralelo, **VIG-08** (`POST /v1/readings`), que ya tiene el formato y el hash de las API keys en `ingestion/infrastructure/api_keys.py`.
+Plan Sprint 1 starting with **VIG-06** (OIDC login and tenant resolution with 403 for zero or several organizations). In parallel, **VIG-08** (`POST /v1/readings`), which already has the format and the hash of the API keys in `ingestion/infrastructure/api_keys.py`.
 
-## Cambios a SPEC.md en este sprint
+## Changes to SPEC.md in this sprint
 
-`71e637f`, `7cea26e`, `fe25e48`, `515d115`, `7896ba9` (ver `git log -- docs/SPEC.md`).
+`71e637f`, `7cea26e`, `fe25e48`, `515d115`, `7896ba9` (see `git log -- docs/SPEC.md`).
 
 ## Retro
 
-- **Bien:** verificar contra el stack real destapó a tiempo tres supuestos falsos: el formato del claim, los scopes por defecto de Keycloak y el orden de los privilegios.
-- **Mejorar:** trabajar en `/mnt/c` desde Windows causó problemas de CRLF y de conversión de rutas. Conviene clonar el repo dentro de WSL.
-- **Probar:** abrir un PR por historia en cuanto exista el remoto, en vez de apilar ramas.
+- **Went well:** verifying against the real stack uncovered three false assumptions in time: the claim format, Keycloak's default scopes and the order of the privileges.
+- **To improve:** working on `/mnt/c` from Windows caused CRLF and path conversion problems. It is better to clone the repo inside WSL.
+- **To try:** open one PR per story as soon as the remote exists, instead of stacking branches.

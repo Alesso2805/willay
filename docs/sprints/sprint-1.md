@@ -1,21 +1,21 @@
-# Sprint 1 — Lecturas autenticadas se encolan de forma atómica por tenant (VIG-06 a VIG-11)
+# Sprint 1 — Authenticated readings are enqueued atomically per tenant (VIG-06 to VIG-11)
 
-**Estado al 2026-09-29:** las 6 historias terminadas y verificadas contra el stack real, antes de las fechas del plan (12–25 oct). CI en GitHub sigue sin correr: no hay remoto.
+**Status as of 2026-09-29:** all 6 stories done and verified against the real stack, ahead of the planned dates (Oct 12–25). CI on GitHub still does not run: there is no remote.
 
-## Qué se entregó
+## What was delivered
 
-| Historia | Resultado | Verificación en el stack real |
+| Story | Result | Verification on the real stack |
 | --- | --- | --- |
-| VIG-06 | Login OIDC (Code + PKCE, scope `organization:*`), `CurrentPrincipal`, `GET /v1/me`, 403 con cero o varias organizaciones | Login en el navegador con `rimac-operator`; 403 para `sin-org` y `dos-orgs` |
-| VIG-07 | Matriz de permisos (SPEC › Permisos por rol) y `require(Permission)` | `/v1/me` devuelve los permisos de cada rol con tokens de Keycloak |
-| VIG-08 | `POST /v1/readings` con `X-Api-Key`, lotes de 1 a 500, 60 lotes/min por estación | 70 lotes concurrentes en 2 réplicas: 60 aceptados y 10 con 429 |
-| VIG-09 | Lecturas tardías (> 1 h) guardadas sin encolar; `NOTIFY` al evaluador solo tras commit | `LISTEN` recibe el aviso; `"late": 1` en la respuesta |
-| VIG-10 | Latido en `station_heartbeats` con `last_measured_at` (migración 0004); nunca retrocede | Latido con el valor más reciente a tiempo, ignorando la tardía |
-| VIG-11 | `make simulate` con escenarios normal/rise/drop/silence/rimac, reproducible con semilla | Escenario `rimac` contra la API: caída de 85 a 33 m³/s en el paso del evento |
+| VIG-06 | OIDC login (Code + PKCE, `organization:*` scope), `CurrentPrincipal`, `GET /v1/me`, 403 with zero or several organizations | Browser login with `rimac-operator`; 403 for `sin-org` and `dos-orgs` |
+| VIG-07 | Permission matrix (SPEC › Permissions by role) and `require(Permission)` | `/v1/me` returns each role's permissions with Keycloak tokens |
+| VIG-08 | `POST /v1/readings` with `X-Api-Key`, batches of 1 to 500, 60 batches/min per station | 70 concurrent batches on 2 replicas: 60 accepted and 10 with 429 |
+| VIG-09 | Late readings (> 1 h) stored without being enqueued; `NOTIFY` to the evaluator only after commit | `LISTEN` receives the notification; `"late": 1` in the response |
+| VIG-10 | Heartbeat in `station_heartbeats` with `last_measured_at` (migration 0004); it never goes backwards | Heartbeat with the most recent on-time value, ignoring the late one |
+| VIG-11 | `make simulate` with the normal/rise/drop/silence/rimac scenarios, reproducible with a seed | `rimac` scenario against the API: drop from 85 to 33 m³/s at the event step |
 
-## Retomar
+## Picking it up again
 
-Rama más reciente: `feat/VIG-11-simulator` (apilada sobre `feat/VIG-01` … `feat/VIG-10`).
+Most recent branch: `feat/VIG-11-simulator` (stacked on `feat/VIG-01` … `feat/VIG-10`).
 
 ```bash
 make up && make seed
@@ -23,22 +23,22 @@ make lint test
 make simulate ARGS="--scenario rimac --seed 42"
 ```
 
-## Cambios a SPEC.md y CLAUDE.md en este sprint
+## Changes to SPEC.md and CLAUDE.md in this sprint
 
 - `d14aea4` docs: align CLAUDE.md with SPEC on organization claim and DB init
 - `6eb3d39` docs(spec): role permission matrix
 - `8062938` docs(spec): add last_measured_at to station heartbeats
 - `f06a80b` docs(spec): use httpx2 as the HTTP client
 
-## Pendientes
+## To do
 
-- [ ] Crear el remoto en GitHub, hacer push y confirmar CI en verde.
-- [ ] Aceptar los ADR 0001–0006.
-- [ ] Mostrar el nombre de la organización (no su uuid) en `/v1/me` y en el panel.
-- [ ] Node 24 en WSL.
+- [ ] Create the GitHub remote, push and confirm CI is green.
+- [ ] Accept ADRs 0001–0006.
+- [ ] Show the organization's name (not its uuid) in `/v1/me` and in the dashboard.
+- [ ] Node 24 in WSL.
 
 ## Retro
 
-- **Bien:** probar contra el stack real y con mutaciones encontró errores que los tests verdes no mostraban: un 500 con `NaN`, un Keycloak sin puerto y una sintaxis SQL.
-- **Mejorar:** trabajar desde Windows sobre `/mnt/c` siguió dando fricción (CRLF, rutas de MSYS, Node viejo). Hay que pasar el repo a WSL.
-- **Probar:** en el Sprint 2 hay que abrir el remoto y un PR por historia, para que CI valide cada entrega.
+- **Went well:** testing against the real stack and with mutations found bugs that the green tests did not show: a 500 with `NaN`, a Keycloak without a port and an SQL syntax error.
+- **To improve:** working from Windows on `/mnt/c` kept causing friction (CRLF, MSYS paths, old Node). The repo has to move into WSL.
+- **To try:** in Sprint 2, open the remote and one PR per story, so that CI validates each delivery.
