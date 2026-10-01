@@ -1724,6 +1724,53 @@
         ]
       }
     },
+    "/v1/events": {
+      "get": {
+        "operationId": "events_v1_events_get",
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "itemSchema": {
+                  "properties": {
+                    "data": {
+                      "type": "string"
+                    },
+                    "event": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "retry": {
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Token ausente o inválido"
+          },
+          "403": {
+            "description": "Sin acceso"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Eventos en vivo de la organización (SSE)",
+        "tags": [
+          "realtime"
+        ]
+      }
+    },
     "/v1/incidents": {
       "get": {
         "operationId": "list_incidents_v1_incidents_get",
