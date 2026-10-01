@@ -1,27 +1,26 @@
-<div class="flex flex-wrap items-center justify-between gap-3">
-  <h2 class="text-xl font-semibold text-slate-900">Estaciones</h2>
-  <div class="flex items-center gap-4">
-    <label class="flex items-center gap-2 text-sm text-slate-700">
-      <input type="checkbox" [checked]="includeInactive()" (change)="toggleInactive($any($event.target).checked)" />
-      Mostrar desactivadas
-    </label>
-    @if (canManage() && !editing()) {
-      <button
-        type="button"
-        class="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
-        (click)="startCreate()"
-      >
-        Nueva estación
-      </button>
-    }
-  </div>
-</div>
+<app-page-header title="Estaciones" [subtitle]="subtitle()">
+  <label class="flex items-center gap-2 text-sm text-slate-600">
+    <input
+      type="checkbox"
+      class="size-4 rounded border-slate-300 accent-brand-700"
+      [checked]="includeInactive()"
+      (change)="toggleInactive($any($event.target).checked)"
+    />
+    Mostrar desactivadas
+  </label>
+  @if (canManage() && !editing()) {
+    <button type="button" class="btn-primary" (click)="startCreate()">
+      <app-icon name="plus" />
+      Nueva estación
+    </button>
+  }
+</app-page-header>
 
-<p class="mt-2 min-h-5 text-sm text-slate-700" aria-live="polite">{{ status() }}</p>
+<p class="-mt-3 mb-3 text-sm text-slate-600" aria-live="polite">{{ status() }}</p>
 
 @if (issued(); as key) {
-  <app-notice tone="warning" aria-labelledby="issued-key-title" class="mt-2">
-    <h3 id="issued-key-title" class="font-semibold">API key de {{ key.code }}</h3>
+  <app-notice tone="warning" aria-labelledby="issued-key-title" class="mb-6">
+    <h2 id="issued-key-title" class="font-semibold">API key de {{ key.code }}</h2>
     <p class="mt-1">
       Cópiala ahora y configúrala en la estación: <strong>no se volverá a mostrar</strong>.
       Vigía solo guarda su hash. Si la pierdes, rota la clave.
@@ -31,98 +30,100 @@
         readonly
         [value]="key.key"
         aria-label="API key"
-        class="min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 py-1 font-mono text-slate-900"
+        class="field min-w-0 flex-1 bg-white font-mono"
         (focus)="$any($event.target).select()"
       />
-      <button type="button" class="rounded-md border border-slate-400 bg-white px-3 py-1 text-slate-900" (click)="copyKey()">
+      <button type="button" class="btn-secondary" (click)="copyKey()">
         {{ copied() ? 'Copiada' : 'Copiar' }}
       </button>
-      <button type="button" class="rounded-md bg-slate-900 px-3 py-1 text-white hover:bg-slate-700" (click)="dismissKey()">
-        Ya la guardé
-      </button>
+      <button type="button" class="btn-primary" (click)="dismissKey()">Ya la guardé</button>
     </div>
   </app-notice>
 }
 
-<div class="mt-4 grid gap-6 lg:grid-cols-[2fr_1fr]">
-  <app-station-map
-    [stations]="stations()"
-    [zones]="zones()"
-    [picking]="editing() !== null"
-    [pending]="pending()"
-    [selectedId]="editing()?.kind === 'edit' ? $any(editing()).station.id : null"
-    (picked)="onPicked($event)"
-  />
+<div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+  <div class="card overflow-hidden lg:sticky lg:top-8 lg:self-start">
+    <app-station-map
+      [stations]="stations()"
+      [zones]="zones()"
+      [picking]="editing() !== null"
+      [pending]="pending()"
+      [selectedId]="editing()?.kind === 'edit' ? $any(editing()).station.id : null"
+      (picked)="onPicked($event)"
+    />
+  </div>
 
-  <div class="flex flex-col gap-6">
+  <div class="flex flex-col gap-4">
     @if (editing(); as current) {
-      <form class="flex flex-col gap-3 rounded-md border border-slate-300 p-4" [formGroup]="form" (ngSubmit)="save()">
-        <h3 class="font-semibold">{{ current.kind === 'new' ? 'Nueva estación' : 'Editar ' + form.controls.code.value }}</h3>
+      <form class="card flex flex-col gap-4 p-5" [formGroup]="form" (ngSubmit)="save()">
+        <h2 class="font-semibold text-slate-900">
+          {{ current.kind === 'new' ? 'Nueva estación' : 'Editar ' + form.controls.code.value }}
+        </h2>
 
         @if (current.kind === 'new') {
-          <label class="flex flex-col gap-1 text-sm">
+          <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
             Código (no se puede cambiar después)
-            <input formControlName="code" class="rounded border border-slate-300 px-2 py-1 font-mono uppercase" placeholder="RIM-CHA-02" />
+            <input formControlName="code" class="field font-mono uppercase" placeholder="RIM-CHA-02" />
           </label>
         }
 
-        <label class="flex flex-col gap-1 text-sm">
+        <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
           Nombre
-          <input formControlName="name" class="rounded border border-slate-300 px-2 py-1" />
+          <input formControlName="name" class="field" />
         </label>
 
         <div class="grid grid-cols-2 gap-3">
-          <label class="flex flex-col gap-1 text-sm">
+          <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
             Variable
-            <select formControlName="variable" class="rounded border border-slate-300 px-2 py-1">
+            <select formControlName="variable" class="field">
               @for (variable of variables; track variable) {
                 <option [value]="variable">{{ variableLabels[variable] }}</option>
               }
             </select>
           </label>
-          <p class="flex flex-col gap-1 text-sm">
+          <p class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
             Unidad
-            <span class="py-1 font-mono">{{ units[form.controls.variable.value] }}</span>
+            <span class="py-1.5 font-mono font-normal text-slate-900">{{ units[form.controls.variable.value] }}</span>
           </p>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
-          <label class="flex flex-col gap-1 text-sm">
+          <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
             Longitud
-            <input type="number" step="any" formControlName="lon" (change)="onCoordinatesTyped()" class="rounded border border-slate-300 px-2 py-1" />
+            <input type="number" step="any" formControlName="lon" (change)="onCoordinatesTyped()" class="field" />
           </label>
-          <label class="flex flex-col gap-1 text-sm">
+          <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
             Latitud
-            <input type="number" step="any" formControlName="lat" (change)="onCoordinatesTyped()" class="rounded border border-slate-300 px-2 py-1" />
+            <input type="number" step="any" formControlName="lat" (change)="onCoordinatesTyped()" class="field" />
           </label>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
-          <label class="flex flex-col gap-1 text-sm">
+          <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
             Intervalo esperado (s)
-            <input type="number" min="5" formControlName="expected_interval_s" class="rounded border border-slate-300 px-2 py-1" />
+            <input type="number" min="5" formControlName="expected_interval_s" class="field" />
           </label>
-          <label class="flex flex-col gap-1 text-sm">
+          <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
             Silencio tras (× intervalo)
-            <input type="number" min="1" max="20" formControlName="silence_multiplier" class="rounded border border-slate-300 px-2 py-1" />
+            <input type="number" min="1" max="20" formControlName="silence_multiplier" class="field" />
           </label>
         </div>
 
-        <label class="flex flex-col gap-1 text-sm">
+        <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
           Origen
-          <select formControlName="source" class="rounded border border-slate-300 px-2 py-1">
+          <select formControlName="source" class="field">
             <option value="sensor">Sensor</option>
             <option value="simulator">Simulador</option>
           </select>
         </label>
 
         <fieldset class="flex flex-col gap-2 text-sm">
-          <legend class="font-medium">Zonas (sin zona, la estación no genera alertas)</legend>
+          <legend class="mb-1 font-medium text-slate-700">Zonas (sin zona, la estación no genera alertas)</legend>
           @for (zone of zones(); track zone.id) {
-            <label class="flex items-center justify-between gap-2">
+            <label class="flex items-center justify-between gap-2 text-slate-700">
               <span>{{ zone.name }}</span>
               <select
-                class="rounded border border-slate-300 px-2 py-1"
+                class="field"
                 [value]="assignments()[zone.id] ?? ''"
                 (change)="setPosition(zone.id, $any($event.target).value)"
               >
@@ -133,7 +134,7 @@
               </select>
             </label>
           } @empty {
-            <span class="text-slate-600">No hay zonas activas.</span>
+            <span class="text-slate-500">No hay zonas activas.</span>
           }
         </fieldset>
 
@@ -142,66 +143,73 @@
         }
 
         <div class="flex gap-2">
-          <button
-            type="submit"
-            class="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-            [disabled]="saving()"
-          >
+          <button type="submit" class="btn-primary" [disabled]="saving()">
             {{ saving() ? 'Guardando…' : 'Guardar' }}
           </button>
-          <button type="button" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm" (click)="cancel()">Cancelar</button>
+          <button type="button" class="btn-secondary" (click)="cancel()">Cancelar</button>
         </div>
       </form>
     }
 
     <section aria-labelledby="station-list-title">
-      <h3 id="station-list-title" class="font-semibold">Listado ({{ stations().length }})</h3>
+      <h2 id="station-list-title" class="sr-only">Listado de estaciones</h2>
       <app-load-state
-        class="mt-2 block"
+        class="block"
         [status]="listStatus()"
         loading="Cargando estaciones…"
         empty="Todavía no hay estaciones."
         error="No se pudieron cargar las estaciones."
         (retry)="load()"
       />
-      <ul class="mt-2 flex flex-col gap-2">
+      <ul class="flex flex-col gap-3">
         @for (station of stations(); track station.id) {
-          <li class="rounded-md border border-slate-200 p-3" [class.opacity-60]="station.status === 'inactive'">
-            <p class="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-slate-900">
-              <span><span class="font-mono">{{ station.code }}</span> · {{ station.name }}</span>
-              @if (stateOf(station); as state) {
-                <app-state-badge [state]="stationStates[state]" />
-              }
-              @if (station.status === 'active' && !station.has_zone) {
-                <app-state-badge [state]="stationStates.unzoned" />
-              }
-            </p>
-            <p class="text-sm text-slate-700">
-              {{ variableLabels[station.variable] }} ({{ station.unit }})
-              @if (station.heartbeat; as heartbeat) {
-                @if (heartbeat.last_value !== null) {
-                  · Último: {{ value(heartbeat.last_value, station.unit) }}
-                  <time [attr.datetime]="heartbeat.last_measured_at" [title]="time(heartbeat.last_measured_at)">{{
-                    age(heartbeat.last_measured_at)
-                  }}</time>
-                } @else {
-                  · Sin lecturas todavía
+          <li class="card p-4" [class.opacity-60]="station.status === 'inactive'">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-mono text-xs font-medium text-slate-500">{{ station.code }}</p>
+                <p class="truncate font-semibold text-slate-900">{{ station.name }}</p>
+              </div>
+              <div class="flex shrink-0 flex-col items-end gap-1">
+                @if (stateOf(station); as state) {
+                  <app-state-badge [state]="stationStates[state]" />
                 }
-              } @else {
-                · Sin lecturas todavía
+                @if (station.status === 'active' && !station.has_zone) {
+                  <app-state-badge [state]="stationStates.unzoned" />
+                }
+              </div>
+            </div>
+
+            @if (station.heartbeat?.last_value !== null && station.heartbeat?.last_value !== undefined) {
+              <div class="mt-3 flex items-baseline justify-between gap-3">
+                <p class="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
+                  {{ number(station.heartbeat!.last_value!) }} <span class="text-sm font-normal text-slate-500">{{ station.unit }}</span>
+                </p>
+                <time
+                  class="text-xs text-slate-500"
+                  [attr.datetime]="station.heartbeat!.last_measured_at"
+                  [title]="time(station.heartbeat!.last_measured_at)"
+                  >{{ age(station.heartbeat!.last_measured_at) }}</time
+                >
+              </div>
+            } @else {
+              <p class="mt-3 text-sm text-slate-500">Sin lecturas todavía</p>
+            }
+
+            <p class="mt-1 text-xs text-slate-500">
+              {{ variableLabels[station.variable] }}
+              @if (station.has_zone) {
+                · {{ zoneSummary(station) }}
               }
             </p>
-            @if (station.has_zone) {
-              <p class="text-sm text-slate-600">{{ zoneSummary(station) }}</p>
-            }
+
             @if (canManage() && !editing()) {
-              <div class="mt-2 flex flex-wrap gap-3 text-sm">
+              <div class="mt-3 flex flex-wrap gap-4 border-t border-slate-100 pt-3 text-sm">
                 @if (station.status === 'active') {
-                  <button type="button" class="underline" (click)="startEdit(station)">Editar</button>
-                  <button type="button" class="underline" (click)="rotate(station)">Rotar clave</button>
-                  <button type="button" class="text-red-800 underline" (click)="deactivate(station)">Desactivar</button>
+                  <button type="button" class="link-action" (click)="startEdit(station)">Editar</button>
+                  <button type="button" class="link-action" (click)="rotate(station)">Rotar clave</button>
+                  <button type="button" class="link-danger" (click)="deactivate(station)">Desactivar</button>
                 } @else {
-                  <button type="button" class="underline" (click)="reactivate(station)">Reactivar</button>
+                  <button type="button" class="link-action" (click)="reactivate(station)">Reactivar</button>
                 }
               </div>
             }

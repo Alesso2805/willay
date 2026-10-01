@@ -24,7 +24,7 @@ export type LonLat = [number, number];
   selector: 'app-station-map',
   template: `<div
     #container
-    class="h-[28rem] w-full rounded-md border border-slate-300"
+    class="h-[24rem] w-full lg:h-[calc(100vh-11rem)] lg:min-h-[28rem]"
     [class.cursor-crosshair]="picking()"
     role="region"
     aria-label="Mapa de estaciones. La lista junto al mapa muestra la misma información."

@@ -29,7 +29,7 @@ const NO_SELF_INTERSECTION = { allowSelfIntersection: false } as const;
   selector: 'app-zone-map',
   template: `<div
     #container
-    class="h-[28rem] w-full rounded-md border border-slate-300"
+    class="h-[24rem] w-full lg:h-[calc(100vh-11rem)] lg:min-h-[28rem]"
     role="region"
     aria-label="Mapa de zonas de riesgo. La lista junto al mapa muestra la misma información."
   ></div>`,

@@ -1,9 +1,11 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Session } from '../session';
-import { ageText, localTime, valueWithUnit } from '../ui/formats';
+import { ageText, localTime, measurement } from '../ui/formats';
+import { Icon } from '../ui/icon';
 import { LoadState, loadStatus } from '../ui/load-state';
 import { Notice } from '../ui/notice';
+import { PageHeader } from '../ui/page-header';
 import { StateBadge } from '../ui/state-badge';
 import { STATION_STATES } from '../ui/visual-states';
 import { Zone, ZonesApi } from '../zones/zones.api';
@@ -30,7 +32,7 @@ type Editing = { kind: 'new' } | { kind: 'edit'; station: Station };
 
 @Component({
   selector: 'app-stations-page',
-  imports: [StationMap, ReactiveFormsModule, LoadState, Notice, StateBadge],
+  imports: [StationMap, ReactiveFormsModule, LoadState, Notice, StateBadge, PageHeader, Icon],
   templateUrl: './stations-page.html',
 })
 export class StationsPage {
@@ -70,6 +72,19 @@ export class StationsPage {
   protected readonly zoneNames = computed(
     () => new Map(this.zones().map((zone) => [zone.id, zone.name])),
   );
+  /** "7 estaciones · 6 reportando · 1 sin reportar · 1 sin zona" para leer de un vistazo. */
+  protected readonly subtitle = computed(() => {
+    if (!this.loaded()) return '';
+    const active = this.stations().filter((station) => station.status === 'active');
+    const states = active.map((station) => stationState(station, this.now()));
+    const parts = [`${active.length} ${active.length === 1 ? 'estación' : 'estaciones'}`];
+    parts.push(`${states.filter((s) => s === 'reporting').length} reportando`);
+    const silent = states.filter((s) => s === 'silent').length;
+    if (silent > 0) parts.push(`${silent} sin reportar`);
+    const unzoned = active.filter((station) => !station.has_zone).length;
+    if (unzoned > 0) parts.push(`${unzoned} sin zona`);
+    return parts.join(' · ');
+  });
 
   protected readonly form = new FormGroup({
     code: new FormControl('', { nonNullable: true }),
@@ -138,8 +153,8 @@ export class StationsPage {
     return localTime(iso, timezone);
   }
 
-  protected value(value: number, unit: string): string {
-    return valueWithUnit(value, unit);
+  protected number(value: number): string {
+    return measurement(value);
   }
 
   protected zoneSummary(station: Station): string {
