@@ -1,18 +1,26 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { visibleNavItems } from './navigation';
+import { LiveEvents } from './realtime/live-events';
 import { Session, roleLabels } from './session';
 import { Icon } from './ui/icon';
 import { Notice } from './ui/notice';
+import { StateBadge } from './ui/state-badge';
+import { CONNECTION_STATES } from './ui/visual-states';
 
 @Component({
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, Notice],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, Notice, StateBadge],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',
 })
 export class App {
   protected readonly session = inject(Session);
+  protected readonly live = inject(LiveEvents);
+  protected readonly connection = computed(() => {
+    const status = this.live.status();
+    return status === 'off' ? null : CONNECTION_STATES[status];
+  });
   protected readonly navItems = computed(() =>
     visibleNavItems(this.session.me()?.permissions ?? []),
   );
@@ -26,6 +34,11 @@ export class App {
 
   constructor() {
     this.session.start();
+    // One live channel per session, and only for users who may see what it announces.
+    effect(() => {
+      if (this.session.me()?.permissions.includes('view')) this.live.connect();
+      else this.live.disconnect();
+    });
   }
 
   protected toggleMenu(): void {
