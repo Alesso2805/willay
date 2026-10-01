@@ -1,272 +1,272 @@
-# Vigía (nombre de código) — Especificación del MVP y prompt de desarrollo
+# Vigía (code name) — MVP specification and development prompt
 
 Sep 25, 2026 · @Alessandro David
 
-## Visión y problema
+## Vision and problem
 
-Vigía (nombre de código provisional; el producto aún no tiene nombre comercial) reduce de minutos a segundos el tiempo entre que un dato anómalo aparece y los operadores y líderes comunales reciben la alerta, sin depender de una llamada humana.
+Vigía (provisional code name; the product does not have a commercial name yet) cuts from minutes to seconds the time between an anomalous data point appearing and operators and community leaders receiving the alert, without depending on a human phone call.
 
-**Sobre el nombre.** Se descartó "Yaku" porque fue el nombre del ciclón que causó inundaciones graves en el norte del Perú en 2023. También se descartó "SAT" como código porque en Lima es el Servicio de Administración Tributaria. El paquete de código se llama \`vigia\` y no depende del nombre comercial final, que se probará en las entrevistas de validación.
+**About the name.** "Yaku" was discarded because it was the name of the cyclone that caused severe flooding in northern Peru in 2023. "SAT" was also discarded as a code name because in Lima it is the Servicio de Administración Tributaria (the tax administration service). The code package is called \`vigia\` and does not depend on the final commercial name, which will be tested in the validation interviews.
 
-**El problema.** En la inundación de Rasuwa (Nepal, 26 de agosto de 2026) el río se desbordó hacia las 8:40 según el gobierno ([Rising Nepal](https://risingnepaldaily.com/news/85570)). La estación hidrológica Bhote Koshi–Syafrubesi dejó de transmitir hacia las 8:50 y el DHM confirmó la onda de crecida y emitió avisos aguas abajo a las 9:15 ([NDRRMA, SitRep](https://ndrrma.gov.np/mediafiles/rasuwa/Rasuwa_Flood_SitRep_Temp_ENG_01_01092026.pdf)). Pasaron unos 35 minutos, y el silencio de la estación fue la primera señal disponible. Tener sensores no es tener un sistema: falta la capa que conecta datos, reglas y personas.
+**The problem.** In the Rasuwa flood (Nepal, August 26, 2026) the river overflowed around 8:40 according to the government ([Rising Nepal](https://risingnepaldaily.com/news/85570)). The Bhote Koshi–Syafrubesi hydrological station stopped transmitting around 8:50, and the DHM confirmed the flood wave and issued downstream warnings at 9:15 ([NDRRMA, SitRep](https://ndrrma.gov.np/mediafiles/rasuwa/Rasuwa_Flood_SitRep_Temp_ENG_01_01092026.pdf)). About 35 minutes went by, and the station's silence was the first available signal. Having sensors is not having a system: what is missing is the layer that connects data, rules and people.
 
-**La propuesta.** Una plataforma web que ingiere datos de sensores, evalúa reglas configurables y despacha alertas multicanal con escalamiento automático. Trata el silencio de un sensor en zona de riesgo como un posible evento, no como un fallo de mantenimiento.
+**The proposal.** A web platform that ingests sensor data, evaluates configurable rules and dispatches multichannel alerts with automatic escalation. It treats the silence of a sensor in a risk zone as a possible event, not as a maintenance failure.
 
-**Posicionamiento.** Vigía es una herramienta de apoyo para operadores y líderes comunales: detectar, decidir y avisar. No reemplaza la difusión oficial a la población (INDECI, COER regionales, SISMATE del MTC) y está diseñado para integrarse con ella más adelante mediante el estándar CAP.
+**Positioning.** Vigía is a support tool for operators and community leaders: detect, decide and warn. It does not replace official dissemination to the public (INDECI, regional COERs, the MTC's SISMATE) and is designed to integrate with it later through the CAP standard.
 
-**Usuarios objetivo.** Oficinas de gestión de riesgo de municipalidades pequeñas y medianas (primer mercado: Perú, por huaicos y Niño costero), ONGs de prevención y operadores de infraestructura crítica (hidroeléctricas, minas).
+**Target users.** Risk management offices of small and medium-sized municipalities (first market: Peru, because of huaicos and the Niño costero, i.e. debris flows and coastal El Niño), prevention NGOs and critical infrastructure operators (hydroelectric plants, mines).
 
-**Hoja de ruta a largo plazo**
+**Long-term roadmap**
 
-1. MVP (este documento): ciclo dato → regla → incidente → alerta → confirmación.
-2. Fase 2: página pública de suscripción ciudadana, SMS, exportación CAP, capa de contexto con pronósticos de caudal.
-3. Fase 3 candidata (por confirmar): modelos predictivos, por ejemplo estimar la probabilidad de huaico a partir de lluvia acumulada y caudal. Motivo para mantener el backend en Python.
+1. MVP (this document): data → rule → incident → alert → acknowledgement cycle.
+2. Phase 2: public citizen subscription page, SMS, CAP export, context layer with discharge forecasts.
+3. Candidate phase 3 (to be confirmed): predictive models, for example estimating the probability of a huaico from accumulated rainfall and discharge. Reason to keep the backend in Python.
 
-**Objetivos del MVP**
+**MVP goals**
 
-- Demostrar una alerta de extremo a extremo en menos de 30 s desde que la lectura anómala es aceptada.
-- Detectar un sensor silencioso en menos de K × intervalo esperado + 30 s (K = `stations.silence_multiplier`, 3 por defecto).
-- Registrar una línea de tiempo auditable de cada incidente, que sobreviva a la expiración de las lecturas.
-- Servir como proyecto de portafolio con un backend Python sólido, geoespacial y orientado a eventos.
+- Demonstrate an end-to-end alert in under 30 s from the moment the anomalous reading is accepted.
+- Detect a silent sensor in under K × expected interval + 30 s (K = `stations.silence_multiplier`, 3 by default).
+- Record an auditable timeline of every incident that survives the expiration of the readings.
+- Serve as a portfolio project with a solid, geospatial, event-driven Python backend.
 
-**Métricas de éxito**
+**Success metrics**
 
-| Métrica | Objetivo MVP | Cómo se mide |
+| Metric | MVP target | How it is measured |
 | --- | --- | --- |
-| Lectura aceptada → primera alerta enviada | < 30 s (p95) | `alerts.sent_at − readings.received_at` |
-| Sensor silencioso → incidente | < K × intervalo + 30 s | `incidents.opened_at − station_heartbeats.last_seen_at` |
-| Incidentes confirmados antes de agotar el último nivel | 100 % en la demo (el nivel 2 confirma los dos incidentes) | Por incidente, no por alerta |
-| Lecturas procesadas sin pérdida | 100 % con 50 estaciones a 1 lectura/10 s durante 30 min | Cero lecturas con quality = ok y sin evaluated\_at pasados 120 s de recibidas |
-| Entrevistas de validación | Pospuestas fuera del MVP (decisión del 30 de septiembre de 2026; ver "Validación" en el plan de sprints) | — |
+| Accepted reading → first alert sent | < 30 s (p95) | `alerts.sent_at − readings.received_at` |
+| Silent sensor → incident | < K × interval + 30 s | `incidents.opened_at − station_heartbeats.last_seen_at` |
+| Incidents acknowledged before the last level is exhausted | 100 % in the demo (level 2 acknowledges both incidents) | Per incident, not per alert |
+| Readings processed without loss | 100 % with 50 stations at 1 reading/10 s for 30 min | Zero readings with quality = ok and no evaluated\_at 120 s after being received |
+| Validation interviews | Postponed out of the MVP (decision of September 30, 2026; see "Validation" in the sprint plan) | — |
 
-## Prompt maestro para el agente de desarrollo
+## Master prompt for the development agent
 
-Guarda este prompt como `CLAUDE.md` en la raíz del repositorio (única copia) y exporta este documento como `docs/SPEC.md`. El agente de código lee `CLAUDE.md` al iniciar cada sesión.
+Save this prompt as `CLAUDE.md` at the root of the repository (single copy) and export this document as `docs/SPEC.md`. The coding agent reads `CLAUDE.md` at the start of every session.
 
 ```markdown
-# Rol
-Eres un ingeniero de software senior que me acompaña a construir "Vigía" (nombre de código; paquete `vigia`), un sistema de alerta temprana multi-tenant. Yo (desarrollador fullstack) tomo las decisiones de producto; tú propones, implementas y explicas.
+# Role
+You are a senior software engineer who works alongside me to build "Vigía" (code name; package `vigia`), a multi-tenant early warning system. I (a fullstack developer) make the product decisions; you propose, implement and explain.
 
-# Fuente de verdad
-Lee docs/SPEC.md antes de escribir código. Si algo que te pido contradice SPEC.md, avísame antes de continuar. Toda decisión técnica no cubierta se registra como ADR en docs/adr/NNNN-titulo.md.
+# Source of truth
+Read docs/SPEC.md before writing code. If something I ask you contradicts SPEC.md, warn me before continuing. Every technical decision not covered is recorded as an ADR in docs/adr/NNNN-title.md.
 
-# Qué es Vigía
-Una plataforma web que (1) ingiere lecturas de sensores, (2) evalúa reglas por zona de riesgo (umbral, tasa de cambio, sensor silencioso), (3) abre incidentes sin duplicados y (4) despacha alertas por correo y Telegram con escalamiento automático si nadie confirma. Meta: p95 < 30 s entre lectura recibida y primera alerta enviada.
+# What Vigía is
+A web platform that (1) ingests sensor readings, (2) evaluates rules per risk zone (threshold, rate of change, silent sensor), (3) opens incidents without duplicates and (4) dispatches alerts by email and Telegram with automatic escalation if nobody acknowledges. Goal: p95 < 30 s between reading received and first alert sent.
 
-# Stack obligatorio
-- Backend único: Python 3.12, FastAPI, SQLAlchemy 2 async + asyncpg, Pydantic v2, Alembic, uv, Ruff, Mypy (strict), Pytest, structlog, time-machine, uuid-utils (uuid v7 generado en la aplicación).
-- Frontend: Angular (versión con soporte activo al iniciar; verificar calendario oficial), standalone components y signals, Leaflet, Tailwind CSS, `eventsource` (con su opción `fetch` para enviar el JWT en el header) para SSE.
-- Infra: PostgreSQL 16 + PostGIS + TimescaleDB (imagen timescale/timescaledb-ha), Keycloak 26 con Organizations, Mailpit para correo local, Docker Compose.
-- Sin Redis ni broker externo en el MVP: cola, notificaciones y rate limit viven en Postgres (ver ADR-0002).
+# Mandatory stack
+- Single backend: Python 3.12, FastAPI, SQLAlchemy 2 async + asyncpg, Pydantic v2, Alembic, uv, Ruff, Mypy (strict), Pytest, structlog, time-machine, uuid-utils (uuid v7 generated in the application).
+- Frontend: Angular (a version under active support at the start; check the official release calendar), standalone components and signals, Leaflet, Tailwind CSS, `eventsource` (with its `fetch` option to send the JWT in the header) for SSE.
+- Infra: PostgreSQL 16 + PostGIS + TimescaleDB (timescale/timescaledb-ha image), Keycloak 26 with Organizations, Mailpit for local email, Docker Compose.
+- No Redis or external broker in the MVP: queue, notifications and rate limit live in Postgres (see ADR-0002).
 
-# Reglas de arquitectura
-- Un paquete `vigia` con módulos: identity, ingestion, territory, rules, incidents, alerts, realtime. Cada módulo con capas domain, application, infrastructure, api. El dominio no importa FastAPI ni SQLAlchemy.
-- Esquemas de BD `ingest` y `core` como límite entre módulos; un solo historial de migraciones Alembic. Sin FK hacia la hypertable `ingest.readings`.
-- Procesos: `vigia.api` (FastAPI) y workers como procesos separados con el mismo código: `python -m vigia.workers.evaluator`, `.silence`, `.dispatcher`, `.escalation`, `.telegram`. Nunca workers dentro del lifespan de FastAPI.
-- Cola: guardar la lectura e insertar en `ingest.evaluation_queue` en la MISMA transacción. El evaluador: (a) toma una fila con `available_at <= now` usando `FOR UPDATE SKIP LOCKED`, incrementa `attempts`, fija `available_at = now + 60 s` (visibility timeout) y confirma en una transacción corta; (b) evalúa en otra transacción que escribe incidentes y alertas, marca `readings.evaluated_at` y borra la fila. Con `attempts` ≥ 5 marca `failed_at` y la saca de la cola. Despierta con `LISTEN/NOTIFY` y polling de respaldo cada 5 s. Envolver la cola en una interfaz `EvaluationQueue`.
-- El dispatcher también despierta con `NOTIFY` al crearse alertas, con polling de respaldo cada 5 s.
-- Tiempo: todo el dominio recibe un protocolo `Clock` inyectado; prohibido `datetime.now()` fuera de la implementación real. Tests con time-machine o un FakeClock.
-- Multi-tenant: el claim `organization` del JWT de Keycloak es un objeto `{alias: {id}}` (scope `organization:*`, mapper con "Add organization id"); se exige exactamente una organización por usuario y se rechaza (403) cualquier token con cero o varias. El tenant se resuelve solo por el `id`. Los roles salen de los realm roles del JWT (Keycloak es la única fuente) y, por la regla anterior, aplican a esa única organización. Toda consulta filtra por `organization_id` mediante una dependencia obligatoria; el canal SSE también filtra por organización.
-- Rate limit de ingesta en Postgres (`ingest.rate_limit_windows`), válido con varias réplicas.
-- `core.incident_events` y `core.audit_log` son append-only: el rol `vigia_app` no tiene UPDATE ni DELETE sobre ellas. Las migraciones corren con `vigia_owner` y usan `ALTER DEFAULT PRIVILEGES` para que las tablas nuevas otorguen permisos a `vigia_app`.
-- Configuración por variables de entorno; nunca secretos en el repositorio.
+# Architecture rules
+- One `vigia` package with modules: identity, ingestion, territory, rules, incidents, alerts, realtime. Each module with layers domain, application, infrastructure, api. The domain does not import FastAPI or SQLAlchemy.
+- DB schemas `ingest` and `core` as the boundary between modules; a single Alembic migration history. No FK to the `ingest.readings` hypertable.
+- Processes: `vigia.api` (FastAPI) and workers as separate processes with the same code: `python -m vigia.workers.evaluator`, `.silence`, `.dispatcher`, `.escalation`, `.telegram`. Never workers inside the FastAPI lifespan.
+- Queue: save the reading and insert into `ingest.evaluation_queue` in the SAME transaction. The evaluator: (a) takes a row with `available_at <= now` using `FOR UPDATE SKIP LOCKED`, increments `attempts`, sets `available_at = now + 60 s` (visibility timeout) and commits in a short transaction; (b) evaluates in another transaction that writes incidents and alerts, sets `readings.evaluated_at` and deletes the row. With `attempts` ≥ 5 it sets `failed_at` and takes the row out of the queue. It wakes up with `LISTEN/NOTIFY` and fallback polling every 5 s. Wrap the queue in an `EvaluationQueue` interface.
+- The dispatcher also wakes up with `NOTIFY` when alerts are created, with fallback polling every 5 s.
+- Time: the whole domain receives an injected `Clock` protocol; `datetime.now()` is forbidden outside the real implementation. Tests with time-machine or a FakeClock.
+- Multi-tenant: the `organization` claim of the Keycloak JWT is an object `{alias: {id}}` (scope `organization:*`, mapper with "Add organization id"); exactly one organization per user is required and any token with zero or several is rejected (403). The tenant is resolved only by the `id`. Roles come from the JWT realm roles (Keycloak is the only source) and, by the previous rule, apply to that single organization. Every query filters by `organization_id` through a mandatory dependency; the SSE channel also filters by organization.
+- Ingestion rate limit in Postgres (`ingest.rate_limit_windows`), valid with several replicas.
+- `core.incident_events` and `core.audit_log` are append-only: the `vigia_app` role has no UPDATE or DELETE on them. Migrations run as `vigia_owner` and use `ALTER DEFAULT PRIVILEGES` so that new tables grant permissions to `vigia_app`.
+- Configuration through environment variables; never secrets in the repository.
 
-# Forma de trabajar
-1. Antes de cada historia, resume en 3-5 líneas qué harás y qué archivos tocarás; espera mi confirmación.
-2. Commits pequeños con Conventional Commits.
-3. Explica las decisiones no obvias: quiero aprender, no solo recibir código.
-4. Si una tarea supera ~300 líneas, divídela y pregúntame el orden.
+# How to work
+1. Before each story, summarize in 3-5 lines what you will do and which files you will touch; wait for my confirmation.
+2. Small commits with Conventional Commits.
+3. Explain non-obvious decisions: I want to learn, not just receive code.
+4. If a task exceeds ~300 lines, split it and ask me which order to follow.
 
-# Definición de hecho (DoD)
-- Criterios de aceptación cumplidos y demostrables.
-- Tests unitarios del dominio + al menos un test de integración por endpoint o worker nuevo (Postgres real vía Docker).
-- CI verde: Ruff, Mypy, Pytest, lint y build de Angular.
-- `docker compose up` levanta todo sin pasos manuales.
-- OpenAPI y docs/SPEC.md actualizados si cambió un contrato.
+# Definition of done (DoD)
+- Acceptance criteria met and demonstrable.
+- Domain unit tests + at least one integration test per new endpoint or worker (real Postgres via Docker).
+- Green CI: Ruff, Mypy, Pytest, Angular lint and build.
+- `docker compose up` brings everything up with no manual steps.
+- OpenAPI and docs/SPEC.md updated if a contract changed.
 
-# Primera tarea (Sprint 0)
-Ejecuta VIG-01 a VIG-05 de docs/SPEC.md en orden:
-1. Monorepo según SPEC, Makefile (up, down, test, lint, migrate, seed, demo) y CI en GitHub Actions.
-2. docker-compose.yml con postgres, keycloak (realm importado de infra/keycloak/realm-vigia.json con 2 organizaciones), mailpit, un servicio `migrate` que corre Alembic una vez y termina, y api, workers y dashboard que dependen de que `migrate` haya terminado con éxito.
-3. Script de init de Postgres con roles `vigia_owner`/`vigia_app` y extensiones; migración Alembic inicial: esquemas, tablas, hypertable con compresión y retención, permisos, `ALTER DEFAULT PRIVILEGES` y REVOKE de las tablas append-only.
-4. Seed con 2 organizaciones (demo Rímac y una de prueba de aislamiento), zonas, estaciones con API keys generadas e impresas para el simulador, reglas, una política por organización (3 niveles en Rímac) y contactos.
-5. Borradores de ADR-0001 a ADR-0004.
-Antes del ADR-0004, configura en Keycloak 26 el mapper que incluye el id de la organización en el claim `organization`; el tenant se resuelve solo por ese id.
-Al terminar, muéstrame cómo verificar cada punto y propón el siguiente paso.
+# First task (Sprint 0)
+Execute VIG-01 to VIG-05 of docs/SPEC.md in order:
+1. Monorepo as described in SPEC, Makefile (up, down, test, lint, migrate, seed, demo) and CI on GitHub Actions.
+2. docker-compose.yml with postgres, keycloak (realm imported from infra/keycloak/realm-vigia.json with 2 organizations), mailpit, a `migrate` service that runs Alembic once and exits, and api, workers and dashboard depending on `migrate` having completed successfully.
+3. Postgres init script with roles `vigia_owner`/`vigia_app` and extensions; initial Alembic migration: schemas, tables, hypertable with compression and retention, permissions, `ALTER DEFAULT PRIVILEGES` and REVOKE on the append-only tables.
+4. Seed with 2 organizations (the Rímac demo and one for isolation testing), zones, stations with API keys generated and printed for the simulator, rules, one policy per organization (3 levels in Rímac) and contacts.
+5. Drafts of ADR-0001 to ADR-0004.
+Before ADR-0004, configure in Keycloak 26 the mapper that includes the organization id in the `organization` claim; the tenant is resolved only by that id.
+When finished, show me how to verify each point and propose the next step.
 ```
 
-## Alcance del MVP y funcionalidades
+## MVP scope and features
 
-El MVP cubre el ciclo completo dato → regla → incidente → alerta → confirmación, con correo y Telegram como canales y un simulador como fuente principal de datos.
+The MVP covers the full data → rule → incident → alert → acknowledgement cycle, with email and Telegram as channels and a simulator as the main data source.
 
-| Módulo | Funcionalidad | Detalle |
+| Module | Feature | Detail |
 | --- | --- | --- |
-| Ingesta | Recepción de lecturas | `POST /v1/readings` (lote ≤ 500) autenticado con API key por estación; 60 lotes/min por estación |
-| Ingesta | Encolado atómico | Lectura y fila en `evaluation_queue` en la misma transacción |
-| Ingesta | Lecturas tardías y desordenadas | Se ordenan por `measured_at`; si `received_at − measured_at` > 1 h se guardan con `quality = late`: no se encolan, no entran en ventanas de reglas y no actualizan el latido |
-| Ingesta | Simulador | Escenarios normal, subida, caída brusca y apagado de sensor, reproducibles con semilla |
-| Ingesta | Latido de estación | `last_seen_at` = `received_at` del último lote con alguna lectura no tardía; `last_value` y `last_measured_at` = la medición no tardía más reciente |
-| Territorio | Zonas de riesgo | CRUD de polígonos en mapa, nivel de riesgo, población estimada |
-| Territorio | Estaciones | CRUD con ubicación, variable, unidad, intervalo esperado, multiplicador de silencio y API key rotable; el panel marca las estaciones sin zona. La unidad es fija por variable (caudal m3/s, nivel m, lluvia mm) para que una regla nunca compare unidades distintas; el código no cambia tras crear la estación (el nombre sí); al rotar la API key la anterior deja de valer al instante y la nueva se muestra una sola vez |
-| Reglas | Umbral | Valor fuera de límite durante N lecturas consecutivas con `quality = ok` (N entre 1 y 60); la frontera es exacta según el operador (`gt`, `ge`, `lt`, `le`) |
-| Reglas | Tasa de cambio | Variación mayor a delta en una ventana de T minutos (subida o caída), solo con lecturas `ok`. Se mide del pico al valle respetando el orden (en una caída el pico va antes que el valle; en una subida, al revés), así también dispara una caída brusca que se recupera en parte dentro de la ventana. La ventana va desde T minutos antes de la lectura evaluada hasta ella, ambos extremos incluidos; T entre 1 y 60 |
-| Reglas | Sensor silencioso | Se evalúa a partir de las reglas de silencio activas y sus estaciones: sin lectura durante K × intervalo esperado (K solo en `stations.silence_multiplier`); un incidente por estación silenciada; una estación sin zona no genera alertas; una estación que nunca reportó no cuenta como silenciosa (aún no empezó a transmitir); si la estación vuelve a reportar, el worker `silence` registra station\_recovered en su siguiente ciclo y el operador resuelve el incidente (sin cierre automático) |
-| Reglas | Enfriamiento | Tras resolver un incidente, la misma causa no reabre otro durante `cooldown_s`; las lecturas se registran igual |
-| Incidentes | Apertura sin duplicados | Un solo incidente activo por causa. Mientras está activo, una lectura que sigue disparando la regla se agrega como evento `reading_added` solo si empeora el valor disparador (un nuevo máximo en un umbral superior, un nuevo mínimo en uno inferior o en una caída); igualarlo no cuenta, así que reprocesar una lectura no duplica eventos. La serie completa queda en las lecturas |
-| Incidentes | Evidencia | El evento de apertura guarda una copia de las lecturas que dispararon la regla |
-| Incidentes | Ciclo de vida | `open` → `acknowledged` → `resolved` (resolución: resuelto o falsa alarma). Un incidente abierto también se puede resolver sin confirmarlo antes (p. ej. una falsa alarma evidente); el evento `resolved` registra quién lo hizo. `resolved` es final |
-| Alertas | Correo | SMTP, visible en Mailpit en local. Texto plano con zona, severidad, causa, estación, valor, hora local de la organización y enlace de confirmación; un contacto en dos grupos del mismo nivel recibe una sola alerta por canal. Un envío fallido se reintenta 3 veces (a los 5, 10 y 20 s) y cada fallo queda como `alert_failed`; la línea de tiempo nunca guarda el correo ni el `chat_id` |
-| Alertas | Telegram | Vinculación del contacto por enlace de un solo uso: lo genera un admin, se muestra una sola vez y él mismo se lo comparte al contacto por el medio que usen; vale 7 días y uno nuevo invalida el anterior. Mensaje con botón de confirmación: solo confirma si lo pulsa el destinatario de la alerta (quien pulsa debe ser el chat al que se envió; otro recibe un aviso sin datos del incidente), y tras pulsarlo el botón se reemplaza por una nota con quién confirmó y cuándo; worker con long polling (`getUpdates`). Sin token del bot en el entorno, el worker arranca deshabilitado |
-| Alertas | Escalamiento | Si nadie confirma en `wait_s`, contado desde que se avisó a ese nivel, se notifica al siguiente nivel; al agotar el último nivel se registra un evento y el panel muestra el incidente en rojo. El worker lee la política al escalar: los cambios que haga un admin aplican también a los incidentes en curso |
-| Alertas | Canal faltante | Si el contacto no tiene el canal del nivel, se omite y se registra; un nivel sin ningún envío escala de inmediato |
-| Alertas | Confirmación | Token aleatorio de 256 bits (43 caracteres en base64url, dentro del límite de 64 de Telegram) guardado como hash, un solo uso, 24 h. El enlace del correo abre una página de la API, sin login, con el resumen del incidente y un botón Confirmar (POST): abrir el enlace nunca confirma, porque los escáneres de correo abren los enlaces solos y detendrían el escalamiento. Si el incidente ya estaba confirmado, la alerta queda registrada como vista sin cambiar quién lo confirmó; si ya estaba resuelto, no se cambia nada. Las alertas todavía pendientes de un incidente confirmado o resuelto no se envían: quedan omitidas con su motivo |
-| Panel | Mapa en vivo | Zonas por estado, estaciones con último valor y antigüedad, actualización por SSE autenticado y aislado por organización |
-| Panel | Detalle de incidente | Gráfico de lecturas, línea de tiempo, alertas por destinatario |
-| Panel | Sistema visual | Un catálogo único de estados (color, ícono y texto) para incidentes, severidades, zonas y estaciones; ningún estado se comunica solo por color; navegación según los permisos del usuario; usable a 360 px de ancho |
-| Panel | Bandeja de incidentes | Lista filtrable por estado y severidad, actualizada por SSE; un escalamiento agotado se destaca con texto además del color |
-| Panel | Acciones sobre incidentes | Confirmar, resolver (resuelto o falsa alarma) y comentar desde el detalle, según los permisos |
-| Panel | Lecturas fallidas | Lista de las lecturas con `failed_at` y reprocesamiento; aviso en el encabezado mientras haya alguna, porque cada una puede ser una alerta que no salió |
-| Seguridad | Identidad y roles | Keycloak 26 Organizations; un usuario pertenece a una sola organización; roles admin, operator, responder, viewer |
-| Administración | Contactos y grupos | CRUD auditado; un contacto con historial (alertas o confirmaciones) no se borra: se lo quita de sus grupos para que deje de recibir; desde el panel se genera el enlace de Telegram y se desvincula |
-| Administración | Políticas de escalamiento | Edición desde el panel (historia Could; mientras tanto, por la API) |
-| Auditoría | Registro de acciones | Cambios en zonas, estaciones, reglas, políticas y contactos; el admin los consulta desde el panel con filtros |
+| Ingestion | Reading intake | `POST /v1/readings` (batch ≤ 500) authenticated with a per-station API key; 60 batches/min per station |
+| Ingestion | Atomic enqueueing | Reading and `evaluation_queue` row in the same transaction |
+| Ingestion | Late and out-of-order readings | They are sorted by `measured_at`; if `received_at − measured_at` > 1 h they are stored with `quality = late`: they are not enqueued, do not enter rule windows and do not update the heartbeat |
+| Ingestion | Simulator | Scenarios normal, rise, sudden drop and sensor shutdown, reproducible with a seed |
+| Ingestion | Station heartbeat | `last_seen_at` = `received_at` of the last batch with at least one non-late reading; `last_value` and `last_measured_at` = the most recent non-late measurement |
+| Territory | Risk zones | CRUD of polygons on a map, risk level, estimated population |
+| Territory | Stations | CRUD with location, variable, unit, expected interval, silence multiplier and rotatable API key; the dashboard flags stations without a zone. The unit is fixed per variable (discharge m3/s, water level m, rainfall mm) so that a rule never compares different units; the code does not change after the station is created (the name does); when the API key is rotated the previous one stops working immediately and the new one is shown only once |
+| Rules | Threshold | Value out of bounds for N consecutive readings with `quality = ok` (N between 1 and 60); the boundary is exact according to the operator (`gt`, `ge`, `lt`, `le`) |
+| Rules | Rate of change | Variation greater than delta within a window of T minutes (rise or drop), only with `ok` readings. It is measured from peak to trough respecting their order (in a drop the peak comes before the trough; in a rise, the other way round), so it also fires on a sudden drop that partially recovers within the window. The window runs from T minutes before the evaluated reading up to that reading, both ends included; T between 1 and 60 |
+| Rules | Silent sensor | Evaluated starting from the active silence rules and their stations: no reading for K × expected interval (K only in `stations.silence_multiplier`); one incident per silenced station; a station without a zone does not generate alerts; a station that never reported does not count as silent (it has not started transmitting yet); if the station reports again, the `silence` worker records station\_recovered in its next cycle and the operator resolves the incident (no automatic closing) |
+| Rules | Cooldown | After an incident is resolved, the same cause does not reopen another one for `cooldown_s`; readings are recorded anyway |
+| Incidents | Opening without duplicates | A single active incident per cause. While it is active, a reading that keeps firing the rule is added as a `reading_added` event only if it worsens the triggering value (a new maximum on an upper threshold, a new minimum on a lower one or in a drop); equaling it does not count, so reprocessing a reading does not duplicate events. The full series remains in the readings |
+| Incidents | Evidence | The opening event stores a copy of the readings that fired the rule |
+| Incidents | Lifecycle | `open` → `acknowledged` → `resolved` (resolution: resolved or false alarm). An open incident can also be resolved without acknowledging it first (e.g. an obvious false alarm); the `resolved` event records who did it. `resolved` is final |
+| Alerts | Email | SMTP, visible in Mailpit locally. Plain text with zone, severity, cause, station, value, the organization's local time and acknowledgement link; a contact in two groups of the same level receives a single alert per channel. A failed send is retried 3 times (at 5, 10 and 20 s) and each failure is recorded as `alert_failed`; the timeline never stores the email address or the `chat_id` |
+| Alerts | Telegram | Contact linking through a single-use link: an admin generates it, it is shown only once and the admin personally shares it with the contact through whatever means they use; it is valid for 7 days and a new one invalidates the previous one. Message with an acknowledgement button: it only acknowledges if the alert's recipient presses it (whoever presses must be the chat it was sent to; anyone else receives a notice without incident data), and once pressed the button is replaced by a note saying who acknowledged and when; worker with long polling (`getUpdates`). Without a bot token in the environment, the worker starts disabled |
+| Alerts | Escalation | If nobody acknowledges within `wait_s`, counted from when that level was notified, the next level is notified; when the last level is exhausted an event is recorded and the dashboard shows the incident in red. The worker reads the policy when escalating: changes an admin makes also apply to ongoing incidents |
+| Alerts | Missing channel | If the contact does not have the level's channel, it is skipped and recorded; a level with no send at all escalates immediately |
+| Alerts | Acknowledgement | Random 256-bit token (43 characters in base64url, within Telegram's 64-character limit) stored as a hash, single use, 24 h. The email link opens an API page, without login, with the incident summary and a Confirm button (POST): opening the link never acknowledges, because email scanners open links on their own and would stop the escalation. If the incident was already acknowledged, the alert is recorded as seen without changing who acknowledged it; if it was already resolved, nothing is changed. Still-pending alerts of an acknowledged or resolved incident are not sent: they are marked skipped, with their reason |
+| Dashboard | Live map | Zones by status, stations with last value and its age, updated via authenticated SSE isolated per organization |
+| Dashboard | Incident detail | Readings chart, timeline, alerts per recipient |
+| Dashboard | Visual system | A single catalog of statuses (color, icon and text) for incidents, severities, zones and stations; no status is conveyed by color alone; navigation according to the user's permissions; usable at 360 px wide |
+| Dashboard | Incident inbox | List filterable by status and severity, updated via SSE; an exhausted escalation is highlighted with text in addition to color |
+| Dashboard | Incident actions | Acknowledge, resolve (resolved or false alarm) and comment from the detail view, according to permissions |
+| Dashboard | Failed readings | List of the readings with `failed_at` and reprocessing; a notice in the header while there is any, because each one may be an alert that did not go out |
+| Security | Identity and roles | Keycloak 26 Organizations; a user belongs to a single organization; roles admin, operator, responder, viewer |
+| Administration | Contacts and groups | Audited CRUD; a contact with history (alerts or acknowledgements) is not deleted: it is removed from its groups so that it stops receiving; the dashboard can generate the Telegram link and unlink the contact's Telegram |
+| Administration | Escalation policies | Editing from the dashboard (Could story; meanwhile, through the API) |
+| Audit | Action log | Changes to zones, stations, rules, policies and contacts; the admin queries them from the dashboard with filters |
 
-**Fuera del MVP:** SMS masivo y WhatsApp, app móvil, página pública de suscripción ciudadana, usuarios en varias organizaciones, exportación CAP (se diseña la entidad de alerta para facilitarla), modelos predictivos, facturación. Open-Meteo queda como capa de contexto opcional (historia "Could"): entrega caudal diario, no ve quebradas pequeñas y su API gratuita es de uso no comercial.
+**Out of the MVP:** mass SMS and WhatsApp, mobile app, public citizen subscription page, users in several organizations, CAP export (the alert entity is designed to make it easier), predictive models, billing. Open-Meteo remains an optional context layer ("Could" story): it provides daily discharge, does not see small ravines and its free API is for non-commercial use.
 
-**Escenario de demo obligatorio.** Represamiento simulado en el Rímac: la estación aguas abajo registra una caída brusca de caudal y 4 minutos después la estación aguas arriba deja de reportar. Vigía abre dos incidentes (tasa de cambio y silencio), alerta al nivel 1, escala al nivel 2 por falta de confirmación, el nivel 2 confirma ambos incidentes por Telegram y el panel muestra la línea de tiempo completa.
+**Mandatory demo scenario.** Simulated damming on the Rímac: the downstream station records a sudden drop in discharge and 4 minutes later the upstream station stops reporting. Vigía opens two incidents (rate of change and silence), alerts level 1, escalates to level 2 for lack of acknowledgement, level 2 acknowledges both incidents via Telegram and the dashboard shows the full timeline.
 
-## Arquitectura
+## Architecture
 
-Un backend Python con una API y cinco workers como procesos separados sobre una sola base PostgreSQL, que también hace de cola, canal de notificaciones y almacén del rate limit.
+A Python backend with an API and five workers as separate processes on a single PostgreSQL database, which also serves as queue, notification channel and rate limit store.
 
 ```mermaid
 flowchart LR
-  S[Sensores / Simulador] -->|HTTP lote| API[vigia.api<br/>FastAPI]
-  API -->|1 transaccion: lectura + cola| DB[(PostgreSQL<br/>PostGIS + Timescale)]
+  S[Sensors / Simulator] -->|HTTP batch| API[vigia.api<br/>FastAPI]
+  API -->|1 transaction: reading + queue| DB[(PostgreSQL<br/>PostGIS + Timescale)]
   DB -->|NOTIFY / SKIP LOCKED| EV[worker evaluator]
-  EV -->|incidentes + alertas| DB
+  EV -->|incidents + alerts| DB
   SI[worker silence] --> DB
   DB -->|NOTIFY| DI[worker dispatcher]
-  DI -->|SMTP / Bot API| CH[Correo · Telegram]
-  TG[worker telegram<br/>getUpdates] -->|vinculacion y confirmaciones| DB
+  DI -->|SMTP / Bot API| CH[Email · Telegram]
+  TG[worker telegram<br/>getUpdates] -->|linking and acknowledgements| DB
   ES[worker escalation] --> DB
   DB -->|LISTEN/NOTIFY| API
-  API -->|SSE por organizacion| D[dashboard<br/>Angular]
+  API -->|SSE per organization| D[dashboard<br/>Angular]
   D -->|REST + JWT| API
   K[Keycloak 26] -.OIDC / JWT.-> API
   K -.OIDC.-> D
-  M[migrate<br/>Alembic, una vez] --> DB
+  M[migrate<br/>Alembic, once] --> DB
 ```
 
-| Componente | Tecnología | Responsabilidad |
+| Component | Technology | Responsibility |
 | --- | --- | --- |
-| `migrate` | Alembic | Contenedor que aplica migraciones y termina; los demás servicios arrancan solo si terminó con éxito |
-| `vigia.api` | FastAPI async | Ingesta con rate limit, API de negocio, confirmaciones por enlace, stream SSE |
-| `worker evaluator` | Python, asyncpg | Toma lecturas de la cola, evalúa umbral y tasa de cambio, abre o actualiza incidentes y crea alertas |
-| `worker silence` | Python | Cada 15 s recorre las reglas de silencio activas y sus estaciones; abre un incidente por estación silenciada |
-| `worker dispatcher` | Python, httpx2, aiosmtplib | Despierta con `NOTIFY` al crearse alertas; envía con 3 reintentos exponenciales |
-| `worker escalation` | Python | Cada 15 s escala incidentes cuyo nivel venció sin confirmación |
-| `worker telegram` | Python, long polling | Vincula `chat_id` de contactos y recibe clics de confirmación |
-| `dashboard` | Angular + Leaflet | Mapa e incidentes en vivo con sus acciones; gestión de territorio, reglas y contactos; auditoría y lecturas fallidas |
-| PostgreSQL 16 | PostGIS + TimescaleDB | Datos, geometrías, series temporales, cola, notificaciones y rate limit |
-| Keycloak 26 | OIDC + Organizations | Usuarios, organización de cada usuario y roles |
+| `migrate` | Alembic | Container that applies migrations and exits; the other services start only if it completed successfully |
+| `vigia.api` | FastAPI async | Ingestion with rate limit, business API, acknowledgements via link, SSE stream |
+| `worker evaluator` | Python, asyncpg | Takes readings from the queue, evaluates threshold and rate of change, opens or updates incidents and creates alerts |
+| `worker silence` | Python | Every 15 s goes through the active silence rules and their stations; opens one incident per silenced station |
+| `worker dispatcher` | Python, httpx2, aiosmtplib | Wakes up with `NOTIFY` when alerts are created; sends with 3 exponential retries |
+| `worker escalation` | Python | Every 15 s escalates incidents whose level expired without acknowledgement |
+| `worker telegram` | Python, long polling | Links contacts' `chat_id` and receives acknowledgement clicks |
+| `dashboard` | Angular + Leaflet | Live map and incidents with their actions; management of territory, rules and contacts; audit and failed readings |
+| PostgreSQL 16 | PostGIS + TimescaleDB | Data, geometries, time series, queue, notifications and rate limit |
+| Keycloak 26 | OIDC + Organizations | Users, each user's organization and roles |
 
-**Garantía de no pérdida.** La lectura y su fila en `evaluation_queue` se insertan en la misma transacción. El evaluador procesa cada fila en dos transacciones: 1. Toma una fila con `available_at <= now` usando `SKIP LOCKED`, incrementa `attempts`, fija `available_at = now + 60 s` y confirma. Ese visibility timeout impide que otro evaluador tome la misma fila mientras se procesa, y el contador sobrevive aunque el worker caiga. 2. Evalúa, escribe incidentes y alertas, marca `readings.evaluated_at` y borra la fila. Si el worker muere en el paso 2, todo se revierte y la fila vuelve a estar disponible cuando vence su `available_at`. A los 5 intentos se marca `failed_at`, sale de la cola y el operador ve el fallo en el panel. `evaluated_at` permite verificar que ninguna lectura quedó sin evaluar.
+**No-loss guarantee.** The reading and its `evaluation_queue` row are inserted in the same transaction. The evaluator processes each row in two transactions: 1. It takes a row with `available_at <= now` using `SKIP LOCKED`, increments `attempts`, sets `available_at = now + 60 s` and commits. That visibility timeout prevents another evaluator from taking the same row while it is being processed, and the counter survives even if the worker crashes. 2. It evaluates, writes incidents and alerts, sets `readings.evaluated_at` and deletes the row. If the worker dies in step 2, everything is rolled back and the row becomes available again when its `available_at` expires. At 5 attempts `failed_at` is set, the row leaves the queue and the operator sees the failure in the dashboard. `evaluated_at` makes it possible to verify that no reading was left unevaluated.
 
-**Tiempo real hacia el panel.** La base emite `NOTIFY vigia_events` con triggers sobre `incident_events` y `station_heartbeats`, en la misma transacción que el cambio: llevan la `organization_id` y lo justo para saber qué refrescar, nunca datos personales (ADR-0007). La API mantiene una conexión `LISTEN` y reenvía por SSE solo a las conexiones de esa organización. Al conectar envía `ready` (el panel pide su estado por REST), envía `resync` si pudo perderse algún aviso y cierra el stream cuando vence el token, para que el cliente se reconecte con uno vigente. El `EventSource` nativo no permite enviar el header `Authorization`, así que el panel usa la librería `eventsource`, cuya opción `fetch` agrega el JWT en el header; nunca el token en la URL. Se eligió el 30 de septiembre de 2026 en lugar de `@microsoft/fetch-event-source`, que no publica versiones desde abril de 2021.
+**Real time to the dashboard.** The database emits `NOTIFY vigia_events` through triggers on `incident_events` and `station_heartbeats`, in the same transaction as the change: the notifications carry the `organization_id` and just enough to know what to refresh, never personal data (ADR-0007). The API keeps a `LISTEN` connection and forwards via SSE only to that organization's connections. On connect it sends `ready` (the dashboard fetches its state via REST), sends `resync` if any notification may have been lost, and closes the stream when the token expires, so that the client reconnects with a valid one. The native `EventSource` does not allow sending the `Authorization` header, so the dashboard uses the `eventsource` library, whose `fetch` option adds the JWT in the header; never the token in the URL. It was chosen on September 30, 2026 instead of `@microsoft/fetch-event-source`, which has not published a release since April 2021.
 
-**Rate limit.** Tabla `ingest.rate_limit_windows` con un contador por estación y minuto, actualizada con un upsert atómico. Funciona con varias réplicas de la API sin infraestructura extra.
+**Rate limit.** Table `ingest.rate_limit_windows` with a counter per station and minute, updated with an atomic upsert. It works with several API replicas without extra infrastructure.
 
-**Tenant y roles.** Los realm roles de Keycloak 26 son globales. Para el MVP se fija la regla "un usuario pertenece a una sola organización": la API rechaza con 403 tokens con cero o varias organizaciones, y los roles aplican a esa organización. El mapper del client scope `organization` se configura con "Add organization id"; con esa opción Keycloak (verificado en 26.7.4) emite el claim como un **objeto** indexado por alias, `{"rimac": {"id": "<uuid>"}}`, no como una lista. La API exige exactamente una clave y resuelve el tenant solo por su `id`, nunca por el alias. Los clientes piden el scope `organization:*`, que incluye todas las membresías: con `organization` a secas Keycloak pide elegir una organización al usuario, y un usuario con varias pasaría la validación llevando sus roles globales a la que elija (ver ADR-0004). Soportar varias organizaciones por usuario queda para después y exigirá roles por organización.
+**Tenant and roles.** Keycloak 26 realm roles are global. For the MVP the rule "a user belongs to a single organization" is set: the API rejects with 403 tokens with zero or several organizations, and roles apply to that organization. The mapper of the `organization` client scope is configured with "Add organization id"; with that option Keycloak (verified on 26.7.4) emits the claim as an **object** keyed by alias, `{"rimac": {"id": "<uuid>"}}`, not as a list. The API requires exactly one key and resolves the tenant only by its `id`, never by the alias. Clients request the `organization:*` scope, which includes all memberships: with plain `organization` Keycloak asks the user to choose an organization, and a user with several would pass validation carrying their global roles into whichever one they choose (see ADR-0004). Supporting several organizations per user is left for later and will require per-organization roles.
 
-**Reloj inyectable.** Todo el dominio y los workers reciben un `Clock`. Los tests del detector de silencio y del escalamiento avanzan el tiempo con time-machine o un FakeClock, sin esperas reales.
+**Injectable clock.** The whole domain and the workers receive a `Clock`. The silence detector and escalation tests advance time with time-machine or a FakeClock, without real waits.
 
-**Escalado futuro.** API y workers son stateless y escalan horizontalmente (`SKIP LOCKED` reparte el trabajo). Si la carga supera lo que Postgres maneja cómodamente, la interfaz `EvaluationQueue` permite migrar a Redis Streams o Kafka sin tocar el dominio. Un servicio de predicción en Python se sumaría en la fase 3.
+**Future scaling.** API and workers are stateless and scale horizontally (`SKIP LOCKED` distributes the work). If the load exceeds what Postgres handles comfortably, the `EvaluationQueue` interface allows migrating to Redis Streams or Kafka without touching the domain. A prediction service in Python would be added in phase 3.
 
-## Esquema de base de datos
+## Database schema
 
-Una base PostgreSQL 16 con dos esquemas que marcan el límite entre módulos: `ingest` (4 tablas) y `core` (16 tablas), con un solo historial de migraciones Alembic. Las claves primarias son `uuid` v7 generados en la aplicación con `uuid-utils` (PostgreSQL 16 no tiene `uuidv7()` nativo), salvo `incident_events`, `audit_log` y `evaluation_queue` (`bigint` identity); `readings`, `rate_limit_windows`, `zone_stations` y `contact_group_members` (compuestas); `station_heartbeats` (PK `station_id`); y `users`, cuyo `id` es el `sub` que emite Keycloak (uuid, no generado por la aplicación).
+A PostgreSQL 16 database with two schemas that mark the boundary between modules: `ingest` (4 tables) and `core` (16 tables), with a single Alembic migration history. Primary keys are `uuid` v7 generated in the application with `uuid-utils` (PostgreSQL 16 has no native `uuidv7()`), except `incident_events`, `audit_log` and `evaluation_queue` (`bigint` identity); `readings`, `rate_limit_windows`, `zone_stations` and `contact_group_members` (composite); `station_heartbeats` (PK `station_id`); and `users`, whose `id` is the `sub` issued by Keycloak (uuid, not generated by the application).
 
 ```mermaid
 erDiagram
-  organizations ||--o{ users : tiene
-  organizations ||--o{ risk_zones : define
-  organizations ||--o{ stations : opera
-  organizations ||--o{ contacts : registra
-  organizations ||--o{ contact_groups : agrupa
-  organizations ||--o{ escalation_policies : configura
+  organizations ||--o{ users : has
+  organizations ||--o{ risk_zones : defines
+  organizations ||--o{ stations : operates
+  organizations ||--o{ contacts : registers
+  organizations ||--o{ contact_groups : groups
+  organizations ||--o{ escalation_policies : configures
   risk_zones ||--o{ zone_stations : ""
   stations ||--o{ zone_stations : ""
-  risk_zones ||--o{ rules : "aplica en"
-  stations |o--o{ rules : evalua
-  escalation_policies ||--o{ rules : "usada por"
-  escalation_policies ||--|{ escalation_levels : "compuesta de"
-  escalation_levels ||--|{ level_targets : notifica
+  risk_zones ||--o{ rules : "applies in"
+  stations |o--o{ rules : evaluates
+  escalation_policies ||--o{ rules : "used by"
+  escalation_policies ||--|{ escalation_levels : "composed of"
+  escalation_levels ||--|{ level_targets : notifies
   contact_groups ||--o{ level_targets : ""
   contact_groups ||--o{ contact_group_members : ""
   contacts ||--o{ contact_group_members : ""
-  users |o--o| contacts : "puede ser"
-  rules ||--o{ incidents : dispara
-  risk_zones ||--o{ incidents : afecta
-  stations |o--o{ incidents : origina
-  incidents ||--|{ incident_events : "linea de tiempo"
-  incidents ||--o{ alerts : genera
-  contacts ||--o{ alerts : recibe
-  stations ||--o{ readings : produce
-  stations ||--|| station_heartbeats : latido
-  stations ||--o{ rate_limit_windows : limita
-  stations ||--o{ evaluation_queue : "pendiente (sin FK a readings)"
+  users |o--o| contacts : "can be"
+  rules ||--o{ incidents : triggers
+  risk_zones ||--o{ incidents : affects
+  stations |o--o{ incidents : originates
+  incidents ||--|{ incident_events : timeline
+  incidents ||--o{ alerts : generates
+  contacts ||--o{ alerts : receives
+  stations ||--o{ readings : produces
+  stations ||--|| station_heartbeats : heartbeat
+  stations ||--o{ rate_limit_windows : limits
+  stations ||--o{ evaluation_queue : "pending (no FK to readings)"
 ```
 
-### Esquema `core`
+### `core` schema
 
-| Tabla | Columnas principales | Restricciones clave |
+| Table | Main columns | Key constraints |
 | --- | --- | --- |
-| `organizations` | id, keycloak\_org\_id, name, timezone, created\_at | `keycloak_org_id` único; el claim `organization` se resuelve solo contra este id |
-| `users` | id (= `sub` de Keycloak), organization\_id, email, full\_name, is\_active, created\_at | `email` único (un usuario, una organización); sin columna de rol: los roles viven solo en Keycloak |
-| `risk_zones` | id, organization\_id, name, description, risk\_level, geom `geometry(MultiPolygon,4326)`, population\_estimate, is\_active, created\_at, updated\_at | índice GIST en `geom`; risk\_level ∈ low, medium, high, critical |
-| `stations` | id, organization\_id, code, name, variable, unit, location `geometry(Point,4326)`, source, expected\_interval\_s, silence\_multiplier, status, api\_key\_hash, api\_key\_rotated\_at, created\_at | `(organization_id, code)` único; variable ∈ water\_level, discharge, rainfall; source ∈ sensor, simulator; status ∈ active, inactive; `silence_multiplier` por defecto 3 (única fuente de K) |
+| `organizations` | id, keycloak\_org\_id, name, timezone, created\_at | `keycloak_org_id` unique; the `organization` claim is resolved only against this id |
+| `users` | id (= Keycloak `sub`), organization\_id, email, full\_name, is\_active, created\_at | `email` unique (one user, one organization); no role column: roles live only in Keycloak |
+| `risk_zones` | id, organization\_id, name, description, risk\_level, geom `geometry(MultiPolygon,4326)`, population\_estimate, is\_active, created\_at, updated\_at | GIST index on `geom`; risk\_level ∈ low, medium, high, critical |
+| `stations` | id, organization\_id, code, name, variable, unit, location `geometry(Point,4326)`, source, expected\_interval\_s, silence\_multiplier, status, api\_key\_hash, api\_key\_rotated\_at, created\_at | `(organization_id, code)` unique; variable ∈ water\_level, discharge, rainfall; source ∈ sensor, simulator; status ∈ active, inactive; `silence_multiplier` defaults to 3 (single source of K) |
 | `zone_stations` | zone\_id, station\_id, position | PK `(zone_id, station_id)`; position ∈ upstream, in\_zone, downstream |
-| `contacts` | id, organization\_id, user\_id (nullable), full\_name, email, telegram\_chat\_id, telegram\_link\_token\_hash, telegram\_link\_expires\_at | `user_id` único si no es nulo |
-| `contact_groups` | id, organization\_id, name, zone\_id (nullable) | `(organization_id, name)` único |
-| `contact_group_members` | group\_id, contact\_id | PK compuesta |
-| `escalation_policies` | id, organization\_id, name, created\_at | `(organization_id, name)` único |
-| `escalation_levels` | id, policy\_id, level\_order, wait\_s | `(policy_id, level_order)` único; level\_order ≥ 1 |
-| `level_targets` | id, level\_id, contact\_group\_id, channel | channel ∈ email, telegram; `(level_id, contact_group_id, channel)` único |
-| `rules` | id, organization\_id, zone\_id, station\_id (nullable), type, params `jsonb`, severity, escalation\_policy\_id, cooldown\_s, is\_active, created\_by, created\_at, updated\_at | type ∈ threshold, rate\_of\_change, silence; severity ∈ info, warning, critical; `params` validado por tipo con Pydantic |
-| `incidents` | id, organization\_id, zone\_id, rule\_id, station\_id, status, severity, current\_level, level\_started\_at, trigger\_value, dedup\_key, opened\_at, escalation\_exhausted\_at, acknowledged\_at, acknowledged\_by\_user\_id, acknowledged\_by\_contact\_id, resolved\_at, resolution | status ∈ open, acknowledged, resolved; resolution ∈ resolved, false\_alarm; índice único parcial en `dedup_key` WHERE status IN (open, acknowledged); CHECK: si status = open, ambos `acknowledged_by_*` nulos; si status = acknowledged, exactamente uno no nulo |
-| `incident_events` | id, incident\_id, organization\_id, occurred\_at, event\_type, actor\_type, actor\_id, payload `jsonb` | append-only; índice `(incident_id, occurred_at)` |
-| `alerts` | id, incident\_id, level\_order, contact\_id, channel, destination, status, attempts, next\_attempt\_at, sent\_at, ack\_token\_hash, ack\_token\_expires\_at, acknowledged\_at, last\_error | status ∈ pending, sent, failed, skipped, acknowledged; índice `(status, next_attempt_at)` |
+| `contacts` | id, organization\_id, user\_id (nullable), full\_name, email, telegram\_chat\_id, telegram\_link\_token\_hash, telegram\_link\_expires\_at | `user_id` unique when not null |
+| `contact_groups` | id, organization\_id, name, zone\_id (nullable) | `(organization_id, name)` unique |
+| `contact_group_members` | group\_id, contact\_id | Composite PK |
+| `escalation_policies` | id, organization\_id, name, created\_at | `(organization_id, name)` unique |
+| `escalation_levels` | id, policy\_id, level\_order, wait\_s | `(policy_id, level_order)` unique; level\_order ≥ 1 |
+| `level_targets` | id, level\_id, contact\_group\_id, channel | channel ∈ email, telegram; `(level_id, contact_group_id, channel)` unique |
+| `rules` | id, organization\_id, zone\_id, station\_id (nullable), type, params `jsonb`, severity, escalation\_policy\_id, cooldown\_s, is\_active, created\_by, created\_at, updated\_at | type ∈ threshold, rate\_of\_change, silence; severity ∈ info, warning, critical; `params` validated per type with Pydantic |
+| `incidents` | id, organization\_id, zone\_id, rule\_id, station\_id, status, severity, current\_level, level\_started\_at, trigger\_value, dedup\_key, opened\_at, escalation\_exhausted\_at, acknowledged\_at, acknowledged\_by\_user\_id, acknowledged\_by\_contact\_id, resolved\_at, resolution | status ∈ open, acknowledged, resolved; resolution ∈ resolved, false\_alarm; partial unique index on `dedup_key` WHERE status IN (open, acknowledged); CHECK: if status = open, both `acknowledged_by_*` null; if status = acknowledged, exactly one not null |
+| `incident_events` | id, incident\_id, organization\_id, occurred\_at, event\_type, actor\_type, actor\_id, payload `jsonb` | append-only; index `(incident_id, occurred_at)` |
+| `alerts` | id, incident\_id, level\_order, contact\_id, channel, destination, status, attempts, next\_attempt\_at, sent\_at, ack\_token\_hash, ack\_token\_expires\_at, acknowledged\_at, last\_error | status ∈ pending, sent, failed, skipped, acknowledged; index `(status, next_attempt_at)` |
 | `audit_log` | id, organization\_id, actor\_id, entity\_type, entity\_id, action, before `jsonb`, after `jsonb`, at | append-only |
 
-### Esquema `ingest`
+### `ingest` schema
 
-| Tabla | Columnas principales | Restricciones clave |
+| Table | Main columns | Key constraints |
 | --- | --- | --- |
-| `readings` | station\_id, organization\_id, measured\_at, received\_at, value `double precision`, quality, evaluated\_at | PK `(station_id, measured_at)`; FK a `core.stations` (de la hypertable hacia una tabla normal, soportado); hypertable por `measured_at` (chunks de 1 día); compresión a los 7 días y retención de 180 días; quality ∈ ok, late (una calidad suspect por validación de rango queda para después del MVP) |
-| `evaluation_queue` | id, station\_id, measured\_at, organization\_id, enqueued\_at, available\_at, attempts, last\_error, failed\_at | sin FK hacia `readings` (Timescale restringe las FK que apuntan a hypertables); índice parcial en available\_at WHERE failed\_at IS NULL (visibility timeout de 60 s) |
-| `station_heartbeats` | station\_id, last\_seen\_at, last\_measured\_at, last\_value, updated\_at | PK `station_id`; `last_seen_at` = `received_at` del último lote con al menos una lectura no tardía (también si era un duplicado: la estación está comunicando); `last_value` es el valor de la medición no tardía más reciente y `last_measured_at` su `measured_at`, para mostrar la antigüedad del dato; ninguno de los dos retrocede con lotes concurrentes o reenvíos antiguos |
-| `rate_limit_windows` | station\_id, window\_start, request\_count | PK `(station_id, window_start)`; upsert atómico por lote; el worker silence purga en cada ciclo las ventanas de más de 1 h |
+| `readings` | station\_id, organization\_id, measured\_at, received\_at, value `double precision`, quality, evaluated\_at | PK `(station_id, measured_at)`; FK to `core.stations` (from the hypertable to a regular table, supported); hypertable by `measured_at` (1-day chunks); compression after 7 days and 180-day retention; quality ∈ ok, late (a suspect quality from range validation is left for after the MVP) |
+| `evaluation_queue` | id, station\_id, measured\_at, organization\_id, enqueued\_at, available\_at, attempts, last\_error, failed\_at | no FK to `readings` (Timescale restricts FKs that point to hypertables); partial index on available\_at WHERE failed\_at IS NULL (60 s visibility timeout) |
+| `station_heartbeats` | station\_id, last\_seen\_at, last\_measured\_at, last\_value, updated\_at | PK `station_id`; `last_seen_at` = `received_at` of the last batch with at least one non-late reading (even if it was a duplicate: the station is communicating); `last_value` is the value of the most recent non-late measurement and `last_measured_at` its `measured_at`, to show the age of the data; neither of the two goes backwards with concurrent batches or old resends |
+| `rate_limit_windows` | station\_id, window\_start, request\_count | PK `(station_id, window_start)`; atomic upsert per batch; the silence worker purges windows older than 1 h in every cycle |
 
-### Cómo se relacionan
+### How they relate
 
-- Una **organización** es el tenant y corresponde a una Organization de Keycloak; cada usuario pertenece a una sola y todas las consultas filtran por `organization_id`.
-- **Zonas y estaciones** son N:M mediante `zone_stations`; `position` permite reglas como "caída aguas abajo". Una estación sin zona se muestra marcada en el panel y no genera alertas.
-- Una **regla** pertenece a una zona, opcionalmente a una estación (si es nula, aplica a todas las estaciones de la zona), y apunta a una **política de escalamiento**.
-- Una **política** tiene niveles ordenados; cada nivel notifica a grupos de contacto por un canal. Los **contactos** pueden ser personas sin cuenta o usuarios de la plataforma.
-- Un **incidente** nace de una regla en una zona. `dedup_key` impide dos incidentes activos por la misma causa: `rule_id:zone_id` para umbral y tasa de cambio, y `rule_id:zone_id:station_id` para silencio, así cada estación silenciada tiene su propio incidente. `cooldown_s` impide reabrir uno recién resuelto.
-- `current_level` indica el nivel de escalamiento y `level_started_at` cuándo se avisó a ese nivel (su `wait_s` cuenta desde ahí); no existe un estado "escalado". Si se agota el último nivel se llena `escalation_exhausted_at`.
-- Confirmar cualquier alerta confirma el incidente, detiene el escalamiento y registra quién confirmó (usuario o contacto).
-- Las **lecturas** pueden expirar, pero el evento `opened` guarda en su `payload` una copia de las lecturas que dispararon la regla, así que la línea de tiempo sigue siendo auditable.
+- An **organization** is the tenant and corresponds to a Keycloak Organization; each user belongs to only one and all queries filter by `organization_id`.
+- **Zones and stations** are N:M through `zone_stations`; `position` enables rules such as "drop downstream". A station without a zone is shown flagged in the dashboard and does not generate alerts.
+- A **rule** belongs to a zone, optionally to a station (if null, it applies to all the stations in the zone), and points to an **escalation policy**.
+- A **policy** has ordered levels; each level notifies contact groups through a channel. **Contacts** can be people without an account or platform users.
+- An **incident** is born from a rule in a zone. `dedup_key` prevents two active incidents for the same cause: `rule_id:zone_id` for threshold and rate of change, and `rule_id:zone_id:station_id` for silence, so each silenced station has its own incident. `cooldown_s` prevents reopening one that was just resolved.
+- `current_level` indicates the escalation level and `level_started_at` when that level was notified (its `wait_s` counts from there); there is no "escalated" status. If the last level is exhausted, `escalation_exhausted_at` is filled in.
+- Acknowledging any alert acknowledges the incident, stops the escalation and records who acknowledged (user or contact).
+- **Readings** can expire, but the `opened` event stores in its `payload` a copy of the readings that fired the rule, so the timeline remains auditable.
 
-### Roles de base de datos
+### Database roles
 
-- Los roles `vigia_owner` y `vigia_app`, la base `keycloak` y las extensiones (`timescaledb`, `postgis`) los crea el script de `infra/postgres/init/`, que corre como superusuario solo sobre un volumen vacío. Las extensiones no son *trusted* y un rol no puede crearse a sí mismo, así que la migración no puede hacerlo con `vigia_owner`; la migración inicial solo ejecuta `CREATE EXTENSION IF NOT EXISTS` como comprobación (ver ADR-0005).
-- `vigia_owner`: dueño de los objetos; solo lo usa el contenedor `migrate`.
-- `vigia_app`: usado por API y workers; SELECT, INSERT, UPDATE y DELETE en tablas de negocio, pero solo SELECT e INSERT en `incident_events` y `audit_log`.
-- La migración inicial ejecuta `ALTER DEFAULT PRIVILEGES FOR ROLE vigia_owner` en ambos esquemas para que toda tabla futura otorgue permisos a `vigia_app` sin pasos manuales.
+- The `vigia_owner` and `vigia_app` roles, the `keycloak` database and the extensions (`timescaledb`, `postgis`) are created by the script in `infra/postgres/init/`, which runs as superuser only on an empty volume. The extensions are not *trusted* and a role cannot create itself, so the migration cannot do this as `vigia_owner`; the initial migration only runs `CREATE EXTENSION IF NOT EXISTS` as a check (see ADR-0005).
+- `vigia_owner`: owner of the objects; only the `migrate` container uses it.
+- `vigia_app`: used by the API and workers; SELECT, INSERT, UPDATE and DELETE on business tables, but only SELECT and INSERT on `incident_events` and `audit_log`.
+- The initial migration runs `ALTER DEFAULT PRIVILEGES FOR ROLE vigia_owner` in both schemas so that every future table grants permissions to `vigia_app` without manual steps.
 
-### Formato de `rules.params` y eventos
+### Format of `rules.params` and events
 
 ```json
 { "threshold":      { "operator": "gt", "value": 3.5, "consecutive": 2 },
@@ -278,117 +278,117 @@ erDiagram
 
 ## Product backlog
 
-39 historias en 11 épicas (E0 a E10): 36 del MVP (153 puntos) y 3 opcionales, VIG-31, VIG-32 y VIG-37, de 3 puntos cada una. VIG-33 a VIG-39 se agregaron el 30 de septiembre de 2026, al revisar qué pantallas prometía esta especificación sin una historia que las construyera. Prioridad MoSCoW (M = Must, S = Should, C = Could) y estimación en puntos (1, 2, 3, 5, 8).
+39 stories in 11 epics (E0 to E10): 36 in the MVP (153 points) and 3 optional ones, VIG-31, VIG-32 and VIG-37, of 3 points each. VIG-33 to VIG-39 were added on September 30, 2026, after reviewing which screens this specification promised without a story that built them. MoSCoW priority (M = Must, S = Should, C = Could) and estimate in points (1, 2, 3, 5, 8).
 
-| ID | Épica | Historia | Criterios de aceptación | Prio | Pts | Sprint |
+| ID | Epic | Story | Acceptance criteria | Prio | Pts | Sprint |
 | --- | --- | --- | --- | --- | --- | --- |
-| VIG-01 | E0 Fundaciones | Como desarrollador quiero un monorepo con Makefile y CI | Estructura según SPEC; `make lint` y `make test` pasan; GitHub Actions ejecuta Ruff, Mypy, Pytest y build de Angular | M | 3 | 0 |
-| VIG-02 | E0 Fundaciones | Como desarrollador quiero levantar todo con Docker Compose | `make up` levanta Postgres (con una base separada keycloak para Keycloak), Keycloak, Mailpit, el contenedor `migrate` (corre una vez y termina), la API, 5 workers y el dashboard; API y workers esperan a que `migrate` termine con éxito; healthchecks en verde | M | 5 | 0 |
-| VIG-03 | E0 Fundaciones | Como desarrollador quiero la migración inicial y los roles de BD | Roles `vigia_owner` y `vigia_app` y extensiones en el init de Postgres; esquemas, tablas, hypertable, compresión y retención en la migración, con `ALTER DEFAULT PRIVILEGES`; tests: `vigia_app` no puede hacer UPDATE en `incident_events` y sí tiene permisos en una tabla creada por una migración posterior | M | 5 | 0 |
-| VIG-04 | E0 Fundaciones | Como desarrollador quiero datos semilla | `make seed` crea 2 organizaciones (demo Rímac y otra de aislamiento), 3 zonas, 10 estaciones con API keys impresas para el simulador, 6 reglas, 5 contactos y una política por organización (3 niveles en Rímac, 1 nivel en la de aislamiento, porque `rules.escalation_policy_id` es obligatoria y las políticas son por organización) | M | 3 | 0 |
-| VIG-05 | E0 Fundaciones | Como desarrollador quiero documentar las decisiones iniciales | ADR-0001 a ADR-0004 en `docs/adr/`; el ADR-0004 fija el mapper de Keycloak 26 que incluye el id de la organización en el claim `organization` | M | 2 | 0 |
-| VIG-06 | E1 Identidad | Como usuario quiero iniciar sesión y ver solo los datos de mi organización | Login OIDC con Keycloak 26 Organizations; tokens con cero o varias organizaciones reciben 403; test con las 2 organizaciones del seed en cada endpoint | M | 5 | 1 |
-| VIG-07 | E1 Identidad | Como admin quiero que cada rol tenga los permisos correctos | Roles leídos del JWT (Keycloak es la única fuente); 403 probado por rol | M | 3 | 1 |
-| VIG-08 | E2 Ingesta | Como estación quiero enviar lotes de lecturas autenticadas | `POST /v1/readings` acepta hasta 500 lecturas; API key con hash Argon2id; 401 sin clave, 422 con datos inválidos; 429 al superar 60 lotes/min, contados en `rate_limit_windows` y probado con 2 réplicas de la API | M | 5 | 1 |
-| VIG-09 | E2 Ingesta | Como sistema quiero encolar cada lectura de forma atómica | Lectura y fila de `evaluation_queue` en la misma transacción; `NOTIFY`; duplicados por `(station_id, measured_at)` ignorados; lecturas con más de 1 h de retraso marcadas `late` y no encoladas | M | 5 | 1 |
-| VIG-10 | E2 Ingesta | Como sistema quiero registrar el latido de cada estación | Upsert en `station_heartbeats` con el `received_at` de la última lectura no tardía; un lote solo con lecturas `late` no actualiza el latido; test de concurrencia | M | 2 | 1 |
-| VIG-11 | E2 Ingesta | Como operador quiero un simulador con escenarios | CLI `simulate --scenario normal/rise/drop/silence --stations N --seed S`; escenario Rímac reproducible | M | 5 | 1 |
-| VIG-12 | E3 Territorio | Como operador quiero crear y editar zonas de riesgo en el mapa | CRUD REST + dibujo de polígono en Leaflet; validación de geometría; auditoría registrada | M | 5 | 2 |
-| VIG-13 | E3 Territorio | Como operador quiero registrar estaciones y asociarlas a zonas | CRUD con posición upstream/in\_zone/downstream; rotación de API key mostrada una sola vez; estaciones sin zona marcadas | M | 5 | 2 |
-| VIG-14 | E4 Reglas | Como sistema quiero un worker evaluador confiable | Proceso separado con `SKIP LOCKED` + `LISTEN/NOTIFY` y polling de respaldo; `attempts` se incrementa en una transacción propia antes de evaluar, junto con un visibility timeout de 60 s en available\_at; la evaluación marca `evaluated_at` y borra la fila; tests: matar el worker a mitad de evaluación y verificar reprocesamiento, dos evaluadores nunca procesan la misma fila en paralelo, y una fila que siempre falla llega a `failed_at` al quinto intento; `Clock` inyectado | M | 5 | 2 |
-| VIG-15 | E4 Reglas | Como operador quiero reglas de umbral | Dispara tras N lecturas consecutivas `ok` fuera de límite; tests en la frontera | M | 3 | 2 |
-| VIG-16 | E4 Reglas | Como operador quiero reglas de tasa de cambio | Detecta subida o caída mayor a delta en la ventana usando solo lecturas `ok`; test del escenario `drop` | M | 5 | 2 |
-| VIG-17 | E4 Reglas | Como operador quiero detectar sensores silenciosos | Worker `silence` cada 15 s que parte de las reglas de silencio activas; un incidente por estación silenciada; incidente antes de K × intervalo + 30 s; estación sin zona no alerta; al volver a reportar se registra station\_recovered y el operador resuelve; purga de rate\_limit\_windows en cada ciclo; test con FakeClock | M | 5 | 3 |
-| VIG-18 | E5 Incidentes | Como sistema quiero abrir incidentes sin duplicados | Índice único parcial en `dedup_key` (con `station_id` para silencio); respeta `cooldown_s`; el evento `opened` guarda copia de las lecturas disparadoras; test de carrera con 2 evaluadores | M | 5 | 3 |
-| VIG-19 | E5 Incidentes | Como operador quiero gestionar el estado de un incidente | Transiciones `open → acknowledged → resolved` (resuelto o falsa alarma); transición inválida devuelve 409; CHECK de `acknowledged_by_*` probado; cada cambio crea un evento | M | 3 | 3 |
-| VIG-20 | E6 Alertas | Como contacto quiero recibir la alerta por correo | El dispatcher despierta con `NOTIFY`; plantilla con zona, severidad, valor, hora local y enlace de confirmación; visible en Mailpit | M | 3 | 3 |
-| VIG-21 | E6 Alertas | Como contacto quiero vincular mi Telegram | Enlace `t.me/<bot>?start=<token>` de un solo uso (≤ 64 caracteres); el worker `telegram` guarda el `chat_id` al recibir `/start` | M | 3 | 4 |
-| VIG-22 | E6 Alertas | Como contacto quiero recibir la alerta por Telegram | Mensaje con botón de confirmación (`callback_data` ≤ 64 caracteres); fallo registra `alert_failed` y reintenta 3 veces | M | 5 | 4 |
-| VIG-23 | E6 Alertas | Como contacto quiero confirmar la alerta con un clic | Token aleatorio de 256 bits guardado como hash, un solo uso, 24 h; funciona desde el correo y desde el botón de Telegram; confirmar detiene el escalamiento | M | 3 | 4 |
-| VIG-24 | E6 Alertas | Como admin quiero políticas de escalamiento por niveles | CRUD de políticas; worker `escalation` sube de nivel al vencer `wait_s`; canal faltante se omite y registra; al agotar el último nivel se registra `escalation_exhausted` | M | 5 | 4 |
-| VIG-25 | E7 Panel | Como operador quiero un mapa en vivo | Zonas por estado, estaciones con último valor y antigüedad; SSE con JWT en header vía `eventsource`, aislado por organización con test; actualización < 2 s; usa el catálogo visual de VIG-33 (estaciones silenciosas y sin zona distinguibles sin color); un incidente nuevo se anuncia de forma visible y por `aria-live` | M | 8 | 5 |
-| VIG-26 | E7 Panel | Como operador quiero ver el detalle de un incidente | Gráfico de lecturas (con la copia del evento `opened` si las lecturas ya expiraron), línea de tiempo completa, alertas por destinatario; el correo del destinatario solo lo ven admin y operator y el `chat_id` nunca se muestra (test de serialización por rol) | M | 5 | 5 |
-| VIG-27 | E7 Panel | Como operador quiero gestionar reglas desde el panel | CRUD REST de reglas con `params` validados por tipo y auditoría (hoy no existe); formularios por tipo de regla; vista previa con las últimas 24 h de lecturas | S | 8 | 6 |
-| VIG-28 | E8 Observabilidad | Como desarrollador quiero medir la latencia de extremo a extremo | Métrica `received_to_alert_seconds`; logs JSON con `correlation_id` desde la lectura hasta la alerta | M | 3 | 7 |
-| VIG-29 | E8 Observabilidad | Como desarrollador quiero una prueba de carga | 50 estaciones × 1 lectura/10 s durante 30 min; cero lecturas `ok` sin `evaluated_at` pasados 120 s; p95 < 30 s | S | 3 | 7 |
-| VIG-30 | E8 Observabilidad | Como evaluador quiero una demo guiada | `make demo` reproduce el escenario Rímac con confirmación de ambos incidentes en el nivel 2; README con video y capturas | M | 3 | 7 |
-| VIG-31 | E9 Contexto | Como operador quiero ver el pronóstico de caudal como contexto en el mapa | Capa informativa con Open-Meteo sin participar en reglas; licencia revisada antes de uso comercial | C | 3 | 7 |
-| VIG-32 | E9 Contexto | Como autoridad quiero recibir incidentes en formato CAP | Exportación CAP 1.2 de un incidente; validada contra el esquema oficial | C | 3 | Post-MVP |
-| VIG-33 | E7 Panel | Como operador quiero un panel coherente y accesible para leer el estado de un vistazo | Catálogo único de estados visuales (color, ícono y texto) para incidente, severidad, riesgo de zona y estación, sin colores de estado definidos por página; ningún estado solo por color, contraste ≥ 4.5:1 en texto y 3:1 en íconos y bordes; encabezado según permisos con el nombre de la organización (lo devuelve `/v1/me`) y del usuario; carga, vacío y error con un mismo componente; hora local, antigüedad relativa y unidades con formato común; vistas principales usables a 360 px sin scroll horizontal; axe-core en los tests de cada vista, sin violaciones serious ni critical (el contraste lo miden los tests del catálogo) | M | 5 | 5 |
-| VIG-34 | E7 Panel | Como operador quiero una bandeja de incidentes | Lista con estado, severidad, causa, zona, estación, apertura y nivel actual, los más recientes primero; filtros por estado (por defecto, abiertos y confirmados) y severidad, guardados en la URL; un escalamiento agotado se destaca en rojo con la etiqueta "Escalamiento agotado"; actualización por SSE y anuncio de incidentes nuevos por `aria-live`; sin incidentes muestra un estado vacío, no un error | M | 3 | 5 |
-| VIG-35 | E5 Incidentes | Como operador quiero confirmar, resolver y comentar un incidente desde el panel | Botones según permisos (confirmar: responder o superior; resolver: operator o superior); resolver pide elegir resuelto o falsa alarma y confirmar, porque es final; un 409 se explica y recarga el estado; `POST /v1/incidents/{id}/comments` (1 a 2000 caracteres, responder o superior, también en incidentes resueltos) crea un evento `comment` con su autor; tests por rol y de aislamiento | M | 3 | 5 |
-| VIG-36 | E10 Administración | Como admin quiero gestionar contactos y grupos | CRUD de contactos y de grupos (miembros y zona opcional): escribe admin, leen admin y operator, 403 al resto; cambios auditados; el `chat_id` nunca sale de la API, solo si Telegram está vinculado; borrar un contacto con alertas o confirmaciones devuelve 409 (se lo quita de sus grupos) y borrar un grupo que usa una política devuelve 409 indicando cuál; generar el enlace de Telegram (se muestra una vez, con Copiar y vencimiento) y desvincularlo, auditado; la pantalla marca a los contactos sin ningún canal | M | 8 | 6 |
-| VIG-37 | E10 Administración | Como admin quiero editar las políticas de escalamiento desde el panel | Pantalla sobre la API de VIG-24 con niveles ordenados, espera en minutos y grupos por canal; errores de validación junto a cada campo; aviso de que los cambios aplican también a los incidentes en curso; el 409 de una política que usan reglas se explica | C | 3 | 7 |
-| VIG-38 | E10 Administración | Como admin quiero ver la auditoría | `GET /v1/audit` solo para admin, con filtros por tipo de entidad, entidad, autor y fechas, paginado por cursor y más recientes primero; tabla con hora local, autor (o "el propio contacto" cuando lo pidió desde Telegram), acción y antes y después por campo; tests de permisos, aislamiento y paginación estable | S | 3 | 6 |
-| VIG-39 | E8 Observabilidad | Como operador quiero ver y reprocesar las lecturas que no se pudieron evaluar | Lista para operator y admin con estación, medición, intentos, fecha del fallo y último error; aviso con el número en el encabezado mientras haya alguna; reprocesar devuelve las filas elegidas a la cola con `NOTIFY` y queda auditado; el runbook pasa a usar el panel; test: la lectura reprocesada termina evaluada | M | 3 | 6 |
+| VIG-01 | E0 Foundations | As a developer I want a monorepo with a Makefile and CI | Structure as described in SPEC; `make lint` and `make test` pass; GitHub Actions runs Ruff, Mypy, Pytest and the Angular build | M | 3 | 0 |
+| VIG-02 | E0 Foundations | As a developer I want to bring everything up with Docker Compose | `make up` brings up Postgres (with a separate keycloak database for Keycloak), Keycloak, Mailpit, the `migrate` container (runs once and exits), the API, 5 workers and the dashboard; API and workers wait for `migrate` to complete successfully; healthchecks green | M | 5 | 0 |
+| VIG-03 | E0 Foundations | As a developer I want the initial migration and the DB roles | `vigia_owner` and `vigia_app` roles and extensions in the Postgres init; schemas, tables, hypertable, compression and retention in the migration, with `ALTER DEFAULT PRIVILEGES`; tests: `vigia_app` cannot UPDATE `incident_events` and does have permissions on a table created by a later migration | M | 5 | 0 |
+| VIG-04 | E0 Foundations | As a developer I want seed data | `make seed` creates 2 organizations (the Rímac demo and another one for isolation), 3 zones, 10 stations with API keys printed for the simulator, 6 rules, 5 contacts and one policy per organization (3 levels in Rímac, 1 level in the isolation one, because `rules.escalation_policy_id` is mandatory and policies are per organization) | M | 3 | 0 |
+| VIG-05 | E0 Foundations | As a developer I want to document the initial decisions | ADR-0001 to ADR-0004 in `docs/adr/`; ADR-0004 establishes the Keycloak 26 mapper that includes the organization id in the `organization` claim | M | 2 | 0 |
+| VIG-06 | E1 Identity | As a user I want to log in and see only my organization's data | OIDC login with Keycloak 26 Organizations; tokens with zero or several organizations receive 403; test with the 2 seed organizations on every endpoint | M | 5 | 1 |
+| VIG-07 | E1 Identity | As an admin I want each role to have the correct permissions | Roles read from the JWT (Keycloak is the only source); 403 tested per role | M | 3 | 1 |
+| VIG-08 | E2 Ingestion | As a station I want to send authenticated batches of readings | `POST /v1/readings` accepts up to 500 readings; API key with Argon2id hash; 401 without a key, 422 with invalid data; 429 when exceeding 60 batches/min, counted in `rate_limit_windows` and tested with 2 API replicas | M | 5 | 1 |
+| VIG-09 | E2 Ingestion | As the system I want to enqueue each reading atomically | Reading and `evaluation_queue` row in the same transaction; `NOTIFY`; duplicates by `(station_id, measured_at)` ignored; readings more than 1 h late marked `late` and not enqueued | M | 5 | 1 |
+| VIG-10 | E2 Ingestion | As the system I want to record each station's heartbeat | Upsert into `station_heartbeats` with the `received_at` of the last non-late reading; a batch with only `late` readings does not update the heartbeat; concurrency test | M | 2 | 1 |
+| VIG-11 | E2 Ingestion | As an operator I want a simulator with scenarios | CLI `simulate --scenario normal/rise/drop/silence --stations N --seed S`; reproducible Rímac scenario | M | 5 | 1 |
+| VIG-12 | E3 Territory | As an operator I want to create and edit risk zones on the map | REST CRUD + polygon drawing in Leaflet; geometry validation; audit recorded | M | 5 | 2 |
+| VIG-13 | E3 Territory | As an operator I want to register stations and associate them with zones | CRUD with position upstream/in\_zone/downstream; API key rotation shown only once; stations without a zone flagged | M | 5 | 2 |
+| VIG-14 | E4 Rules | As the system I want a reliable evaluator worker | Separate process with `SKIP LOCKED` + `LISTEN/NOTIFY` and fallback polling; `attempts` is incremented in its own transaction before evaluating, together with a 60 s visibility timeout on available\_at; the evaluation sets `evaluated_at` and deletes the row; tests: kill the worker mid-evaluation and verify reprocessing, two evaluators never process the same row in parallel, and a row that always fails reaches `failed_at` on the fifth attempt; injected `Clock` | M | 5 | 2 |
+| VIG-15 | E4 Rules | As an operator I want threshold rules | Fires after N consecutive `ok` readings out of bounds; boundary tests | M | 3 | 2 |
+| VIG-16 | E4 Rules | As an operator I want rate-of-change rules | Detects a rise or drop greater than delta within the window using only `ok` readings; test of the `drop` scenario | M | 5 | 2 |
+| VIG-17 | E4 Rules | As an operator I want to detect silent sensors | `silence` worker every 15 s that starts from the active silence rules; one incident per silenced station; incident before K × interval + 30 s; a station without a zone does not alert; when it reports again station\_recovered is recorded and the operator resolves; purge of rate\_limit\_windows in every cycle; test with FakeClock | M | 5 | 3 |
+| VIG-18 | E5 Incidents | As the system I want to open incidents without duplicates | Partial unique index on `dedup_key` (with `station_id` for silence); respects `cooldown_s`; the `opened` event stores a copy of the triggering readings; race test with 2 evaluators | M | 5 | 3 |
+| VIG-19 | E5 Incidents | As an operator I want to manage an incident's status | Transitions `open → acknowledged → resolved` (resolved or false alarm); an invalid transition returns 409; `acknowledged_by_*` CHECK tested; each change creates an event | M | 3 | 3 |
+| VIG-20 | E6 Alerts | As a contact I want to receive the alert by email | The dispatcher wakes up with `NOTIFY`; template with zone, severity, value, local time and acknowledgement link; visible in Mailpit | M | 3 | 3 |
+| VIG-21 | E6 Alerts | As a contact I want to link my Telegram | Single-use `t.me/<bot>?start=<token>` link (≤ 64 characters); the `telegram` worker stores the `chat_id` when it receives `/start` | M | 3 | 4 |
+| VIG-22 | E6 Alerts | As a contact I want to receive the alert by Telegram | Message with an acknowledgement button (`callback_data` ≤ 64 characters); a failure records `alert_failed` and retries 3 times | M | 5 | 4 |
+| VIG-23 | E6 Alerts | As a contact I want to acknowledge the alert with one click | Random 256-bit token stored as a hash, single use, 24 h; works from the email and from the Telegram button; acknowledging stops the escalation | M | 3 | 4 |
+| VIG-24 | E6 Alerts | As an admin I want tiered escalation policies | Policy CRUD; the `escalation` worker moves up a level when `wait_s` expires; a missing channel is skipped and recorded; when the last level is exhausted `escalation_exhausted` is recorded | M | 5 | 4 |
+| VIG-25 | E7 Dashboard | As an operator I want a live map | Zones by status, stations with last value and its age; SSE with JWT in the header via `eventsource`, isolated per organization with a test; update < 2 s; uses the VIG-33 visual catalog (silent stations and stations without a zone distinguishable without color); a new incident is announced visibly and via `aria-live` | M | 8 | 5 |
+| VIG-26 | E7 Dashboard | As an operator I want to see an incident's detail | Readings chart (with the copy from the `opened` event if the readings have already expired), full timeline, alerts per recipient; the recipient's email is visible only to admin and operator and the `chat_id` is never shown (serialization test per role) | M | 5 | 5 |
+| VIG-27 | E7 Dashboard | As an operator I want to manage rules from the dashboard | REST CRUD of rules with `params` validated per type and audit (it does not exist today); forms per rule type; preview with the last 24 h of readings | S | 8 | 6 |
+| VIG-28 | E8 Observability | As a developer I want to measure end-to-end latency | Metric `received_to_alert_seconds`; JSON logs with `correlation_id` from the reading to the alert | M | 3 | 7 |
+| VIG-29 | E8 Observability | As a developer I want a load test | 50 stations × 1 reading/10 s for 30 min; zero `ok` readings without `evaluated_at` after 120 s; p95 < 30 s | S | 3 | 7 |
+| VIG-30 | E8 Observability | As an evaluator I want a guided demo | `make demo` reproduces the Rímac scenario with both incidents acknowledged at level 2; README with video and screenshots | M | 3 | 7 |
+| VIG-31 | E9 Context | As an operator I want to see the discharge forecast as context on the map | Informational layer with Open-Meteo that takes no part in rules; license reviewed before commercial use | C | 3 | 7 |
+| VIG-32 | E9 Context | As an authority I want to receive incidents in CAP format | CAP 1.2 export of an incident; validated against the official schema | C | 3 | Post-MVP |
+| VIG-33 | E7 Dashboard | As an operator I want a coherent and accessible dashboard to read the status at a glance | Single catalog of visual statuses (color, icon and text) for incident, severity, zone risk and station, with no status colors defined per page; no status conveyed by color alone, contrast ≥ 4.5:1 on text and 3:1 on icons and borders; header according to permissions with the organization's name (returned by `/v1/me`) and the user's; loading, empty and error states with one shared component; local time, relative age and units with a common format; main views usable at 360 px without horizontal scrolling; axe-core in the tests of each view, with no serious or critical violations (contrast is measured by the catalog tests) | M | 5 | 5 |
+| VIG-34 | E7 Dashboard | As an operator I want an incident inbox | List with status, severity, cause, zone, station, opening time and current level, most recent first; filters by status (by default, open and acknowledged) and severity, kept in the URL; an exhausted escalation is highlighted in red with the label "Escalamiento agotado" (Escalation exhausted); updates via SSE and announcement of new incidents via `aria-live`; with no incidents it shows an empty state, not an error | M | 3 | 5 |
+| VIG-35 | E5 Incidents | As an operator I want to acknowledge, resolve and comment on an incident from the dashboard | Buttons according to permissions (acknowledge: responder or higher; resolve: operator or higher); resolving asks the user to choose resolved or false alarm and to confirm, because it is final; a 409 is explained and the status is reloaded; `POST /v1/incidents/{id}/comments` (1 to 2000 characters, responder or higher, also on resolved incidents) creates a `comment` event with its author; per-role and isolation tests | M | 3 | 5 |
+| VIG-36 | E10 Administration | As an admin I want to manage contacts and groups | CRUD of contacts and groups (members and optional zone): admin writes, admin and operator read, 403 for everyone else; changes audited; the `chat_id` never leaves the API, only whether Telegram is linked; deleting a contact with alerts or acknowledgements returns 409 (it is removed from its groups instead) and deleting a group used by a policy returns 409 indicating which one; generating the Telegram link (shown once, with Copy and its expiration) and unlinking it, audited; the screen flags contacts without any channel | M | 8 | 6 |
+| VIG-37 | E10 Administration | As an admin I want to edit escalation policies from the dashboard | Screen on top of the VIG-24 API with ordered levels, wait in minutes and groups per channel; validation errors next to each field; a notice that changes also apply to ongoing incidents; the 409 for a policy used by rules is explained | C | 3 | 7 |
+| VIG-38 | E10 Administration | As an admin I want to see the audit log | `GET /v1/audit` for admin only, with filters by entity type, entity, author and dates, cursor-paginated, most recent first; table with local time, author (or "el propio contacto", i.e. "the contact themselves", when the contact requested it from Telegram), action, and before and after per field; permission, isolation and stable pagination tests | S | 3 | 6 |
+| VIG-39 | E8 Observability | As an operator I want to see and reprocess the readings that could not be evaluated | List for operator and admin with station, measurement, attempts, failure date and last error; a notice with the count in the header while there is any; reprocessing returns the selected rows to the queue with `NOTIFY` and is audited; the runbook switches to using the dashboard; test: the reprocessed reading ends up evaluated | M | 3 | 6 |
 
-## Plan de sprints
+## Sprint plan
 
-Ocho sprints de dos semanas, del 28 de septiembre de 2026 al 17 de enero de 2027, pensados para avanzar fuera de tu jornada laboral. Cada sprint cierra con un objetivo demostrable. El sprint 7 se agregó el 30 de septiembre de 2026 junto con VIG-33 a VIG-39: se prefirió sumar un sprint antes que recortar historias "Must".
+Eight two-week sprints, from September 28, 2026 to January 17, 2027, designed to make progress outside your working hours. Each sprint closes with a demonstrable goal. Sprint 7 was added on September 30, 2026 together with VIG-33 to VIG-39: adding a sprint was preferred over cutting "Must" stories.
 
-| Sprint | Fechas | Objetivo | Historias | Pts |
+| Sprint | Dates | Goal | Stories | Pts |
 | --- | --- | --- | --- | --- |
-| 0 | 28 sep – 11 oct | Todo levanta con `make up`, migraciones automáticas, CI en verde, datos demo y ADR | VIG-01 a 05 | 18 |
-| 1 | 12 – 25 oct | Lecturas autenticadas se encolan de forma atómica por tenant | VIG-06 a 11 | 25 |
-| 2 | 26 oct – 8 nov | Zonas, estaciones, evaluador confiable y reglas de umbral y tasa de cambio | VIG-12 a 16 | 23 |
-| 3 | 9 – 22 nov | Silencio detectado, incidentes sin duplicados y primer correo | VIG-17 a 20 | 16 |
-| 4 | 23 nov – 6 dic | Telegram vinculado, confirmación y escalamiento automático | VIG-21 a 24 | 16 |
-| 5 | 7 – 20 dic | Panel en vivo accesible: mapa, bandeja y detalle de incidentes con sus acciones | VIG-33 (primero: el resto se construye sobre él), 25, 34, 26 y 35 | 24 |
-| 6 | 21 dic – 3 ene | Gestión desde el panel: contactos, lecturas fallidas, reglas y auditoría | VIG-36, 39, 27 y 38 | 22 |
-| 7 | 4 – 17 ene | Latencia medida, prueba de carga y demo Rímac grabada | VIG-28 a 30 (+ VIG-31 y VIG-37 si hay tiempo) | 9 (+6) |
+| 0 | Sep 28 – Oct 11 | Everything comes up with `make up`, automatic migrations, green CI, demo data and ADRs | VIG-01 to 05 | 18 |
+| 1 | Oct 12 – 25 | Authenticated readings are enqueued atomically per tenant | VIG-06 to 11 | 25 |
+| 2 | Oct 26 – Nov 8 | Zones, stations, reliable evaluator and threshold and rate-of-change rules | VIG-12 to 16 | 23 |
+| 3 | Nov 9 – 22 | Silence detected, incidents without duplicates and first email | VIG-17 to 20 | 16 |
+| 4 | Nov 23 – Dec 6 | Telegram linked, acknowledgement and automatic escalation | VIG-21 to 24 | 16 |
+| 5 | Dec 7 – 20 | Accessible live dashboard: map, inbox and incident detail with their actions | VIG-33 (first: the rest is built on it), 25, 34, 26 and 35 | 24 |
+| 6 | Dec 21 – Jan 3 | Management from the dashboard: contacts, failed readings, rules and audit | VIG-36, 39, 27 and 38 | 22 |
+| 7 | Jan 4 – 17 | Latency measured, load test and recorded Rímac demo | VIG-28 to 30 (+ VIG-31 and VIG-37 if there is time) | 9 (+6) |
 
-**Holgura.** El sprint 1 es el más cargado (25 puntos) y el sprint 6 cae en fiestas. Si un sprint no cierra, mueve primero las historias "Should" (VIG-27, VIG-29 y VIG-38) antes que recortar calidad en las historias "Must".
+**Buffer.** Sprint 1 is the most loaded (25 points) and sprint 6 falls during the holidays. If a sprint does not close, first move out the "Should" stories (VIG-27, VIG-29 and VIG-38) rather than cutting quality on the "Must" stories.
 
-**Validación.** El plan original pedía entrevistar, antes del sprint 4, al menos a 3 personas de gestión de riesgo (municipalidades en zonas de huaicos, COER regionales, ONGs de prevención): cómo se enteran hoy de un evento, quién avisa a quién, cuánto tarda y qué canal usan, y qué nombre comercial prefieren. El 30 de septiembre de 2026 se decidió no hacerlas durante el MVP. Riesgo aceptado: el panel (sprints 5 y 6) se construye sobre los supuestos de esta especificación, no sobre lo que piden operadores reales. Mitigación: pantallas pequeñas y centradas en lo que exige la demo, y la demo grabada (VIG-30) como material para validar después del MVP, junto con el nombre comercial. Cuando haya entrevistas, se registran en `docs/research/` y el backlog se ajusta con ellas.
+**Validation.** The original plan called for interviewing, before sprint 4, at least 3 people working in risk management (municipalities in huaico-prone areas, regional COERs, prevention NGOs): how they find out about an event today, who warns whom, how long it takes and which channel they use, and which commercial name they prefer. On September 30, 2026 it was decided not to conduct them during the MVP. Accepted risk: the dashboard (sprints 5 and 6) is built on the assumptions of this specification, not on what real operators ask for. Mitigation: small screens focused on what the demo requires, and the recorded demo (VIG-30) as material for validation after the MVP, together with the commercial name. When interviews take place, they are recorded in `docs/research/` and the backlog is adjusted accordingly.
 
-**Ceremonias mínimas.** Planificación de 30 min al inicio de cada sprint, demo grabada de 5 min al cierre y una retrospectiva de 3 líneas en `docs/sprints/sprint-N.md`.
+**Minimum ceremonies.** 30-min planning at the start of each sprint, a recorded 5-min demo at the close and a 3-line retrospective in `docs/sprints/sprint-N.md`.
 
-## Requisitos no funcionales y seguridad
+## Non-functional requirements and security
 
-En un sistema de alertas, una alerta perdida es peor que una duplicada: toda decisión de diseño prioriza entrega garantizada sobre eficiencia.
+In an alerting system, a lost alert is worse than a duplicate one: every design decision prioritizes guaranteed delivery over efficiency.
 
-| Categoría | Requisito | Cómo se verifica |
+| Category | Requirement | How it is verified |
 | --- | --- | --- |
-| Latencia | p95 `received_at` de la lectura → `sent_at` de la primera alerta < 30 s | Métrica `received_to_alert_seconds` en la prueba de carga |
-| Fiabilidad | Toda lectura `ok` aceptada queda evaluada: lectura y cola en la misma transacción; `evaluated_at` se marca al evaluar | Consulta: cero lecturas `ok` sin `evaluated_at` pasados 120 s (cubre un reintento tras el visibility timeout) |
-| Fiabilidad | Una fila que siempre falla no bloquea la cola: `attempts` se confirma antes de evaluar y a los 5 intentos se marca `failed_at` | Test con una lectura que hace fallar al evaluador |
-| Fiabilidad | Entrega al menos una vez de alertas, con 3 reintentos exponenciales y registro de fallos | Test con canal simulado que falla 2 veces |
-| Idempotencia | Reprocesar una lectura no duplica incidentes ni alertas | Test de doble evaluación de la misma fila |
-| Disponibilidad | La caída de un canal (SMTP o Telegram) no detiene a los demás workers | Test de integración con proveedor caído |
-| Despliegue | `docker compose up` aplica migraciones automáticamente antes de iniciar API y workers | Arranque desde una base vacía en CI |
-| Tiempo | Dominio y workers usan un `Clock` inyectado; todo en UTC en BD y en hora local de la organización en mensajes | Tests con FakeClock y zona America/Lima |
-| Multi-tenant | Ningún dato cruza organizaciones, ni por REST ni por SSE; tokens con cero o varias organizaciones se rechazan | Test automatizado con las 2 organizaciones del seed |
-| Autenticación | JWT de Keycloak en API, panel y SSE (en header, nunca en la URL); API keys de estación con hash Argon2id y rotables | Tests de 401 y 403; la clave solo se muestra al crearse |
-| Confirmaciones | Token aleatorio de 256 bits, guardado como hash, un solo uso, 24 h | Test de reuso y expiración |
-| Límite de uso | 60 lotes por minuto por estación, contados en Postgres, válido con varias réplicas | Test con 2 réplicas que recibe 429 |
-| Auditoría | `incident_events` y `audit_log` append-only a nivel de permisos de BD; permisos correctos también en tablas futuras | Tests con el rol `vigia_app` |
-| Evidencia | La línea de tiempo de un incidente sigue completa aunque las lecturas originales expiren | Test que borra lecturas y consulta el incidente |
-| Privacidad | El email de los contactos solo lo ven admin y operator; el `chat_id` nunca sale de la API (solo se informa si el contacto tiene Telegram vinculado); ninguno de los dos va a los logs | Test de serialización por rol y revisión de logs |
-| Observabilidad | Logs JSON con `correlation_id` de la lectura al incidente y la alerta; healthcheck en API y cada worker | Trazar un incidente de demo solo con logs |
-| Calidad | Cobertura ≥ 80 % en dominio; Ruff, Mypy strict y ESLint sin errores | GitHub Actions |
-| Accesibilidad | Panel con WCAG 2.1 AA en vistas principales; el estado nunca se comunica solo por color | axe-core en CI sobre cada vista, sin violaciones serias ni críticas (es el motor del puntaje de accesibilidad de Lighthouse), y tests que miden el contraste de cada color de estado y de aviso. Lighthouse no corre en CI: abre cada página en una pestaña nueva y las vistas con sesión exigirían guardar el token en `localStorage` o un acceso de prueba sin login |
-| Soporte de versiones | Ninguna dependencia principal sale de soporte durante el plan | Revisar calendarios de Python, Angular, PostgreSQL y Keycloak en el sprint 0 |
+| Latency | p95 of the reading's `received_at` → the first alert's `sent_at` < 30 s | Metric `received_to_alert_seconds` in the load test |
+| Reliability | Every accepted `ok` reading ends up evaluated: reading and queue in the same transaction; `evaluated_at` is set on evaluation | Query: zero `ok` readings without `evaluated_at` after 120 s (covers one retry after the visibility timeout) |
+| Reliability | A row that always fails does not block the queue: `attempts` is committed before evaluating and at 5 attempts `failed_at` is set | Test with a reading that makes the evaluator fail |
+| Reliability | At-least-once delivery of alerts, with 3 exponential retries and failure logging | Test with a simulated channel that fails 2 times |
+| Idempotency | Reprocessing a reading does not duplicate incidents or alerts | Test of double evaluation of the same row |
+| Availability | An outage of one channel (SMTP or Telegram) does not stop the other workers | Integration test with a provider down |
+| Deployment | `docker compose up` applies migrations automatically before starting the API and workers | Startup from an empty database in CI |
+| Time | Domain and workers use an injected `Clock`; everything in UTC in the DB and in the organization's local time in messages | Tests with FakeClock and the America/Lima time zone |
+| Multi-tenant | No data crosses organizations, neither via REST nor via SSE; tokens with zero or several organizations are rejected | Automated test with the 2 seed organizations |
+| Authentication | Keycloak JWT in the API, dashboard and SSE (in the header, never in the URL); station API keys hashed with Argon2id and rotatable | 401 and 403 tests; the key is shown only when it is created |
+| Acknowledgements | Random 256-bit token, stored as a hash, single use, 24 h | Reuse and expiration test |
+| Usage limit | 60 batches per minute per station, counted in Postgres, valid with several replicas | Test with 2 replicas that receives 429 |
+| Audit | `incident_events` and `audit_log` append-only at the DB permission level; correct permissions also on future tables | Tests with the `vigia_app` role |
+| Evidence | An incident's timeline stays complete even if the original readings expire | Test that deletes readings and queries the incident |
+| Privacy | Contacts' email is visible only to admin and operator; the `chat_id` never leaves the API (only whether the contact has Telegram linked is reported); neither of the two goes to the logs | Serialization test per role and log review |
+| Observability | JSON logs with `correlation_id` from the reading to the incident and the alert; healthcheck on the API and each worker | Trace a demo incident using only the logs |
+| Quality | Coverage ≥ 80 % in the domain; Ruff, Mypy strict and ESLint without errors | GitHub Actions |
+| Accessibility | Dashboard meeting WCAG 2.1 AA in the main views; status is never conveyed by color alone | axe-core in CI on each view, with no serious or critical violations (it is the engine behind Lighthouse's accessibility score), and tests that measure the contrast of each status and notice color. Lighthouse does not run in CI: it opens each page in a new tab and the logged-in views would require storing the token in `localStorage` or a test access without login |
+| Version support | No main dependency goes out of support during the plan | Review the Python, Angular, PostgreSQL and Keycloak release calendars in sprint 0 |
 
-**Permisos por rol.** Los roles salen de los realm roles del JWT (Keycloak es la única fuente). Cada endpoint declara el permiso que necesita, no una lista de roles; la matriz vive en `vigia/identity/domain/permissions.py` y esta tabla es su especificación. Varios roles suman sus permisos. Un usuario sin ninguno de los cuatro roles solo puede consultar `GET /v1/me`, para que el panel le explique por qué no ve nada.
+**Permissions by role.** Roles come from the JWT realm roles (Keycloak is the only source). Each endpoint declares the permission it needs, not a list of roles; the matrix lives in `vigia/identity/domain/permissions.py` and this table is its specification. Multiple roles add up their permissions. A user with none of the four roles can only call `GET /v1/me`, so that the dashboard can explain to them why they see nothing.
 
-| Permiso | viewer | responder | operator | admin |
+| Permission | viewer | responder | operator | admin |
 | --- | :-: | :-: | :-: | :-: |
-| Ver mapa, zonas, estaciones, reglas e incidentes | ✔ | ✔ | ✔ | ✔ |
-| Confirmar incidentes y comentar | | ✔ | ✔ | ✔ |
-| Resolver incidentes (resuelto o falsa alarma) | | | ✔ | ✔ |
-| Gestionar zonas y estaciones (incluye rotar API keys) | | | ✔ | ✔ |
-| Gestionar reglas | | | ✔ | ✔ |
-| Ver y reprocesar lecturas con evaluación fallida | | | ✔ | ✔ |
-| Ver datos de contacto (email y si tiene Telegram vinculado; el `chat_id` nunca se muestra) | | | ✔ | ✔ |
-| Gestionar contactos y grupos | | | | ✔ |
-| Gestionar políticas de escalamiento | | | | ✔ |
-| Ver auditoría | | | | ✔ |
+| See the map, zones, stations, rules and incidents | ✔ | ✔ | ✔ | ✔ |
+| Acknowledge incidents and comment | | ✔ | ✔ | ✔ |
+| Resolve incidents (resolved or false alarm) | | | ✔ | ✔ |
+| Manage zones and stations (includes rotating API keys) | | | ✔ | ✔ |
+| Manage rules | | | ✔ | ✔ |
+| See and reprocess readings whose evaluation failed | | | ✔ | ✔ |
+| See contact data (email and whether Telegram is linked; the `chat_id` is never shown) | | | ✔ | ✔ |
+| Manage contacts and groups | | | | ✔ |
+| Manage escalation policies | | | | ✔ |
+| See the audit log | | | | ✔ |
 
-**Riesgo ético explícito.** Una falsa alarma erosiona la confianza y una alerta perdida puede costar vidas. Vigía es una herramienta de apoyo para operadores y no reemplaza a los sistemas oficiales de alerta; así deben decirlo el producto, la documentación y la demo.
+**Explicit ethical risk.** A false alarm erodes trust and a lost alert can cost lives. Vigía is a support tool for operators and does not replace the official warning systems; the product, the documentation and the demo must say so.
 
-## Repositorio, convenciones y documentación viva
+## Repository, conventions and living documentation
 
-Un monorepo con un backend Python modular, el panel Angular y la documentación versionada junto al código, para que cada cambio de contrato se revise en el mismo pull request.
+A monorepo with a modular Python backend, the Angular dashboard and the documentation versioned alongside the code, so that each contract change is reviewed in the same pull request.
 
 ```text
 vigia/
@@ -396,50 +396,50 @@ vigia/
 │   ├── src/vigia/
 │   │   ├── shared/               # Clock, config, db, tenancy, logging
 │   │   ├── identity/
-│   │   ├── ingestion/            # API de lecturas, rate limit, simulador
-│   │   ├── territory/            # zonas y estaciones
+│   │   ├── ingestion/            # readings API, rate limit, simulator
+│   │   ├── territory/            # zones and stations
 │   │   ├── rules/
 │   │   ├── incidents/
-│   │   ├── alerts/               # canales, confirmación, escalamiento
+│   │   ├── alerts/               # channels, acknowledgement, escalation
 │   │   ├── realtime/             # LISTEN/NOTIFY → SSE
-│   │   ├── api/main.py           # app FastAPI
+│   │   ├── api/main.py           # FastAPI app
 │   │   └── workers/              # evaluator, silence, dispatcher, escalation, telegram
-│   ├── migrations/               # Alembic (esquemas ingest y core)
+│   ├── migrations/               # Alembic (ingest and core schemas)
 │   └── tests/{unit,integration}/
 ├── dashboard/                    # Angular
 ├── infra/
 │   ├── keycloak/realm-vigia.json
-│   └── postgres/init/            # creación de roles vigia_owner y vigia_app
+│   └── postgres/init/            # creation of the vigia_owner and vigia_app roles
 ├── docs/
-│   ├── SPEC.md                   # este documento
+│   ├── SPEC.md                   # this document
 │   ├── adr/
-│   ├── research/                 # entrevistas de validación
+│   ├── research/                 # validation interviews
 │   ├── sprints/
 │   └── runbooks/
-├── docker-compose.yml            # incluye el servicio migrate
+├── docker-compose.yml            # includes the migrate service
 ├── Makefile
-├── CLAUDE.md                     # prompt maestro (única copia)
+├── CLAUDE.md                     # master prompt (single copy)
 ├── CHANGELOG.md
 └── README.md
 ```
 
-Cada módulo de `src/vigia/` sigue las capas `domain`, `application`, `infrastructure` y `api`. El paquete se llama `vigia` aunque el nombre comercial cambie.
+Each module in `src/vigia/` follows the layers `domain`, `application`, `infrastructure` and `api`. The package is called `vigia` even if the commercial name changes.
 
-| Artefacto | Propósito | Cuándo se actualiza |
+| Artifact | Purpose | When it is updated |
 | --- | --- | --- |
-| `docs/SPEC.md` | Visión, alcance, arquitectura, esquema, backlog | Al cambiar alcance o contrato |
-| `CLAUDE.md` | Prompt maestro y reglas para el agente de código | Al cambiar convenciones o stack |
-| `docs/adr/NNNN-*.md` | Una decisión técnica: contexto, opciones, decisión, consecuencias | Cada decisión no trivial |
-| OpenAPI generado | Contrato de la API REST | En cada cambio de endpoint (CI falla si no está al día) |
-| `CHANGELOG.md` | Cambios visibles por versión (Keep a Changelog + SemVer) | Cada release |
-| `docs/runbooks/` | Operación: reprocesar filas con `failed_at`, rotar API keys, restaurar BD | Al añadir un proceso operativo |
-| `README.md` | Qué es, cómo levantarlo en 5 minutos, demo y capturas | Al cierre de cada sprint |
+| `docs/SPEC.md` | Vision, scope, architecture, schema, backlog | When the scope or a contract changes |
+| `CLAUDE.md` | Master prompt and rules for the coding agent | When conventions or the stack change |
+| `docs/adr/NNNN-*.md` | One technical decision: context, options, decision, consequences | Every non-trivial decision |
+| Generated OpenAPI | REST API contract | On every endpoint change (CI fails if it is not up to date) |
+| `CHANGELOG.md` | Visible changes per version (Keep a Changelog + SemVer) | Every release |
+| `docs/runbooks/` | Operations: reprocess rows with `failed_at`, rotate API keys, restore the DB | When an operational process is added |
+| `README.md` | What it is, how to bring it up in 5 minutes, demo and screenshots | At the close of each sprint |
 
-**ADR iniciales (sprint 0)**
+**Initial ADRs (sprint 0)**
 
-1. ADR-0001: Backend único en Python con módulos y workers separados; por qué no tres servicios (mantenimiento para una persona, fase predictiva futura).
-2. ADR-0002: PostgreSQL como cola (`SKIP LOCKED` + `LISTEN/NOTIFY`), canal de notificaciones y rate limit en lugar de Redis; manejo de filas envenenadas; criterios para migrar.
-3. ADR-0003: TimescaleDB para lecturas, con compresión, retención, `evaluated_at` y copia de evidencia en los incidentes. Condiciona el despliegue: Postgres autogestionado (contenedor o VM) o Timescale Cloud, porque AWS RDS no ofrece la extensión y la compresión y la retención están bajo la licencia TSL de Timescale, no Apache.
-4. ADR-0004: Keycloak 26 Organizations como fuente de tenant y roles; regla de una organización por usuario; el tenant se resuelve solo por el id de la organización incluido por el mapper.
+1. ADR-0001: Single Python backend with modules and separate workers; why not three services (maintenance by one person, future predictive phase).
+2. ADR-0002: PostgreSQL as queue (`SKIP LOCKED` + `LISTEN/NOTIFY`), notification channel and rate limit instead of Redis; handling of poison rows; criteria for migrating.
+3. ADR-0003: TimescaleDB for readings, with compression, retention, `evaluated_at` and an evidence copy in the incidents. It constrains deployment: self-managed Postgres (container or VM) or Timescale Cloud, because AWS RDS does not offer the extension, and compression and retention are under Timescale's TSL license, not Apache.
+4. ADR-0004: Keycloak 26 Organizations as the source of tenant and roles; one-organization-per-user rule; the tenant is resolved only by the organization id included by the mapper.
 
-**Convenciones.** Ramas `feat/VIG-NN-descripcion`; Conventional Commits; pull request con referencia a la historia y checklist de la definición de hecho; tablas y columnas en inglés `snake_case`; documentación en español.
+**Conventions.** Branches `feat/VIG-NN-description`; Conventional Commits; pull requests reference the story and include the definition-of-done checklist; tables and columns in English `snake_case`; documentation in English; user-facing product text (dashboard, emails, Telegram, confirmation page, API error messages) is in Spanish until the bilingual (i18n) story.
