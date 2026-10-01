@@ -11,6 +11,9 @@ export interface Me {
   full_name: string;
   organization_id: string;
   keycloak_org_id: string;
+  organization_name: string;
+  /** IANA (p. ej. America/Lima): el panel muestra las horas en la zona de la organización. */
+  organization_timezone: string;
   roles: string[];
   /** Solo para ocultar acciones en la UI: la API valida el permiso en cada endpoint. */
   permissions: string[];

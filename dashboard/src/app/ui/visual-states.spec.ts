@@ -19,7 +19,9 @@ describe('contrastRatio', () => {
 describe.each(catalogs)('visual states: %s', (_name, states) => {
   it('every label is readable on its color (≥ 4.5:1)', () => {
     for (const state of states) {
-      expect(contrastRatio(state.foreground, state.background), state.label).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(state.foreground, state.background), state.label).toBeGreaterThanOrEqual(
+        4.5,
+      );
     }
   });
 

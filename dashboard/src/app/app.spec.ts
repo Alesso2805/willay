@@ -15,9 +15,15 @@ const ME: Me = {
   full_name: 'Óscar Operador Rímac',
   organization_id: '01a0dc43-cd2d-7522-8430-867cee8f89ce',
   keycloak_org_id: '1d44f4b3-b1df-457f-b717-20926a20166e',
+  organization_name: 'Demo Rímac',
+  organization_timezone: 'America/Lima',
   roles: ['operator'],
   permissions: ['view', 'incidents:acknowledge', 'incidents:resolve', 'territory:manage'],
 };
+
+function navLabels(root: HTMLElement): string[] {
+  return [...root.querySelectorAll('nav[aria-label="Principal"] a')].map((a) => a.textContent?.trim() ?? '');
+}
 
 function setup(isAuthenticated: boolean) {
   const oidc = {
@@ -57,15 +63,42 @@ describe('App', () => {
     expect(oidc.authorize).toHaveBeenCalled();
   });
 
-  it('shows the user organization and roles after login', async () => {
+  it('shows the user organization by name and roles after login', async () => {
     const { fixture, http, text } = setup(true);
     http.expectOne(`${settings.apiUrl}/v1/me`).flush(ME);
     await TestBed.inject(Router).navigateByUrl('/');
     await fixture.whenStable();
-    expect(text()).toContain(ME.organization_id);
+    expect(text()).toContain('Demo Rímac');
+    expect(text()).not.toContain(ME.organization_id); // nunca el uuid
+    expect(text()).toContain('America/Lima');
     expect(text()).toContain('Operación');
     expect(text()).toContain('Cerrar sesión');
-    expect(text()).toContain('Zonas'); // navegación visible con sesión
+    expect(navLabels(fixture.nativeElement)).toEqual(['Inicio', 'Zonas', 'Estaciones']);
+  });
+
+  it('a user without roles only sees Inicio and why', async () => {
+    const { fixture, http, text } = setup(true);
+    http.expectOne(`${settings.apiUrl}/v1/me`).flush({ ...ME, roles: [], permissions: [] });
+    await TestBed.inject(Router).navigateByUrl('/');
+    await fixture.whenStable();
+    expect(navLabels(fixture.nativeElement)).toEqual(['Inicio']);
+    expect(text()).toContain('todavía no tiene un rol en Vigía');
+  });
+
+  it('folds the navigation behind a menu button on narrow screens', async () => {
+    const { fixture, http } = setup(true);
+    http.expectOne(`${settings.apiUrl}/v1/me`).flush(ME);
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    const button = root.querySelector<HTMLButtonElement>('button[aria-controls="menu-principal"]');
+    const menu = root.querySelector('#menu-principal');
+    expect(button?.getAttribute('aria-expanded')).toBe('false');
+    expect(menu?.classList).toContain('hidden'); // sm:flex la muestra desde 640 px
+
+    button?.click();
+    await fixture.whenStable();
+    expect(button?.getAttribute('aria-expanded')).toBe('true');
+    expect(menu?.classList).not.toContain('hidden');
   });
 
   it('explains a 403 from the API (zero or several organizations)', async () => {
