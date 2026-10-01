@@ -5,13 +5,13 @@ All notable changes are documented here. Format: [Keep a Changelog](https://keep
 ## [Unreleased]
 
 ### Changed
-- The product is now called **Willay** (Quechua for "to warn, to inform"): dashboard, alert emails and sender, Telegram messages, confirmation page and Keycloak realm. Vigía stays as the code name of the repository and the `vigia` package.
+- The product is now called **Willay** (Quechua for "to warn, to inform"): dashboard, alert emails and sender, Telegram messages, confirmation page and Keycloak realm. The code follows: repository, `willay` package, database and roles, `WILLAY_*` variables, notification channels and Docker images; story IDs keep the `VIG-` prefix. Existing local environments need `docker compose down -v` and the `.env` keys renamed.
 - Code, comments and documentation are in English; user-facing text stays in Spanish until VIG-40 (bilingual product).
 
 ### Added
-- Monorepo with a Python backend (`vigia`), an Angular 22 dashboard, a Makefile and CI on GitHub Actions (VIG-01).
-- Docker Compose stack: Postgres (TimescaleDB + PostGIS), Keycloak 26.7 with the `vigia` realm and 2 organizations, Mailpit, a `migrate` container, API, 5 workers and dashboard, with healthchecks (VIG-02).
-- Initial migrations: `core` and `ingest` schemas, 20 tables, readings hypertable with compression and retention, `vigia_owner` and `vigia_app` roles with append-only tables (VIG-03).
+- Monorepo with a Python backend (`willay`), an Angular 22 dashboard, a Makefile and CI on GitHub Actions (VIG-01).
+- Docker Compose stack: Postgres (TimescaleDB + PostGIS), Keycloak 26.7 with the `willay` realm and 2 organizations, Mailpit, a `migrate` container, API, 5 workers and dashboard, with healthchecks (VIG-02).
+- Initial migrations: `core` and `ingest` schemas, 20 tables, readings hypertable with compression and retention, `willay_owner` and `willay_app` roles with append-only tables (VIG-03).
 - `make seed`: Rímac demo data and an isolation organization, with Argon2id station API keys (VIG-04).
 - ADR-0001 to ADR-0006 (VIG-05).
 - OIDC login in the dashboard with Keycloak and `GET /v1/me`; tokens with zero or several organizations get 403 (VIG-06).

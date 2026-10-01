@@ -20,7 +20,7 @@ The schema uses DDL that Alembic cannot autogenerate: hypertables, columnstore a
 
 ### Integration tests
 
-- **testcontainers** starts, per pytest session, the **same image** as Docker Compose (`timescale/timescaledb-ha:pg16-ts2.30`) with the **same init script**, and applies the migrations as `vigia_owner`.
+- **testcontainers** starts, per pytest session, the **same image** as Docker Compose (`timescale/timescaledb-ha:pg16-ts2.30`) with the **same init script**, and applies the migrations as `willay_owner`.
 - There are `owner` and `app` fixtures (asyncpg connections with each role), so the permission tests use the API's real role.
 - Each test creates its own organization with new uuids. The database is shared and does not need cleaning (nor could it be cleaned in the append-only tables).
 - Alembic runs in its own thread, because `env.py` uses `asyncio.run()` and pytest-asyncio already has an event loop running.

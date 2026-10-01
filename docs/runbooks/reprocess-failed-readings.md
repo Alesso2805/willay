@@ -5,7 +5,7 @@ A reading ends up with `failed_at` when the evaluator failed 5 times to evaluate
 ## 1. See what failed and why
 
 ```bash
-docker compose exec postgres psql -U postgres -d vigia -c "
+docker compose exec postgres psql -U postgres -d willay -c "
   SELECT q.id, s.code, q.measured_at, q.attempts, q.failed_at, q.last_error
   FROM ingest.evaluation_queue q JOIN core.stations s ON s.id = q.station_id
   WHERE q.failed_at IS NOT NULL
@@ -26,13 +26,13 @@ Do not reprocess without fixing: it will fail 5 times again.
 This resets the attempts and makes the rows available immediately. The evaluator picks them up on its next poll (≤ 5 s):
 
 ```bash
-docker compose exec postgres psql -U postgres -d vigia -c "
+docker compose exec postgres psql -U postgres -d willay -c "
   UPDATE ingest.evaluation_queue
   SET failed_at = NULL, attempts = 0, available_at = now(),
       last_error = 'reprocesada a mano: ' || coalesce(last_error, '')
   WHERE failed_at IS NOT NULL
     AND id IN (/* ids from step 1 */);
-  NOTIFY vigia_evaluation_queue;"
+  NOTIFY willay_evaluation_queue;"
 ```
 
 `NOTIFY` wakes the evaluator without waiting for the periodic poll.
@@ -42,7 +42,7 @@ docker compose exec postgres psql -U postgres -d vigia -c "
 The row disappears from the queue and the reading has `evaluated_at`:
 
 ```bash
-docker compose exec postgres psql -U postgres -d vigia -c "
+docker compose exec postgres psql -U postgres -d willay -c "
   SELECT count(*) AS pendientes FROM ingest.evaluation_queue WHERE failed_at IS NULL;
   SELECT count(*) AS sin_evaluar_120s FROM ingest.readings
   WHERE quality = 'ok' AND evaluated_at IS NULL AND received_at < now() - interval '120 seconds';"

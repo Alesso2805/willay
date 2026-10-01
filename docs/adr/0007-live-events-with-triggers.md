@@ -6,7 +6,7 @@
 
 ## Context
 
-The live map (VIG-25) needs to learn, in less than 2 s, about every change to an incident and every station heartbeat. SPEC sets the path: `NOTIFY vigia_events` with the organization, a `LISTEN` connection in the API and SSE per organization to the dashboard.
+The live map (VIG-25) needs to learn, in less than 2 s, about every change to an incident and every station heartbeat. SPEC sets the path: `NOTIFY willay_events` with the organization, a `LISTEN` connection in the API and SSE per organization to the dashboard.
 
 Today incident events are inserted with SQL in ten places, spread across five files in two modules (incidents and alerts). Heartbeats are written by ingestion.
 
