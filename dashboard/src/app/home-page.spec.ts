@@ -5,6 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { HomePage } from './home-page';
 import { Incident } from './incidents/incidents.api';
+import { FakeLiveEvents, provideFakeLiveEvents } from './realtime/live-events.testing';
 import { Session } from './session';
 import { settings } from './settings';
 import { Station } from './stations/stations.api';
@@ -68,7 +69,12 @@ function zone(risk: Zone['risk_level']): Zone {
   };
 }
 
+const INCIDENTS_URL = `${settings.apiUrl}/v1/incidents?status=open&status=acknowledged&limit=500`;
+const STATIONS_URL = `${settings.apiUrl}/v1/stations?include_inactive=false`;
+const ZONES_URL = `${settings.apiUrl}/v1/zones?include_inactive=false`;
+
 function setup(permissions: string[]) {
+  const live = new FakeLiveEvents();
   TestBed.configureTestingModule({
     imports: [HomePage],
     providers: [
@@ -76,26 +82,28 @@ function setup(permissions: string[]) {
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: Session, useValue: { me: signal({ ...ME, permissions }) } },
+      provideFakeLiveEvents(live),
     ],
   });
   const fixture = TestBed.createComponent(HomePage);
   const http = TestBed.inject(HttpTestingController);
   const text = () => (fixture.nativeElement as HTMLElement).textContent?.replace(/\s+/g, ' ') ?? '';
-  return { fixture, http, text };
+  const loaded = (incidents: Incident[], stations: Station[], zones: Zone[]) => {
+    http.expectOne(INCIDENTS_URL).flush(incidents);
+    http.expectOne(STATIONS_URL).flush(stations);
+    http.expectOne(ZONES_URL).flush(zones);
+  };
+  return { fixture, http, text, loaded, live };
 }
 
 describe('HomePage', () => {
   it('sums up active incidents, reporting stations and zones by risk', async () => {
-    const { fixture, http, text } = setup(['view']);
-    http
-      .expectOne(`${settings.apiUrl}/v1/incidents?status=open&status=acknowledged&limit=500`)
-      .flush([incident('open', true), incident('acknowledged')]);
-    http
-      .expectOne(`${settings.apiUrl}/v1/stations?include_inactive=false`)
-      .flush([station(5, true), station(600, false)]);
-    http
-      .expectOne(`${settings.apiUrl}/v1/zones?include_inactive=false`)
-      .flush([zone('critical'), zone('high')]);
+    const { fixture, text, loaded } = setup(['view']);
+    loaded(
+      [incident('open', true), incident('acknowledged')],
+      [station(5, true), station(600, false)],
+      [zone('critical'), zone('high')],
+    );
     await fixture.whenStable();
 
     expect(text()).toContain('1 sin confirmar · 1 confirmados · 1 con escalamiento agotado');
@@ -103,6 +111,29 @@ describe('HomePage', () => {
     expect(text()).toContain('1 sin reportar · 1 sin zona');
     expect(text()).toContain('1 de riesgo crítico · 1 alto');
     expect(await seriousViolations(fixture.nativeElement)).toEqual([]);
+  });
+
+  it('follows live events: an incident reloads the summary, a heartbeat updates in place', async () => {
+    const { fixture, http, text, loaded, live } = setup(['view']);
+    const silent = station(600, true);
+    loaded([], [silent], [zone('high')]);
+    await fixture.whenStable();
+    expect(text()).toContain('0 de 1');
+
+    const now = new Date().toISOString();
+    live.heartbeats$.next({
+      stationId: silent.id,
+      heartbeat: { last_seen_at: now, last_measured_at: now, last_value: 81 },
+    });
+    await fixture.whenStable();
+    expect(text()).toContain('1 de 1');
+    http.verify(); // the heartbeat needed no request
+
+    live.incidents$.next({ incidentId: 'i1', event: 'opened' });
+    loaded([incident('open')], [silent], [zone('high')]);
+    await fixture.whenStable();
+    expect(text()).toContain('1 sin confirmar');
+    expect(text()).toContain('1 de 1'); // the older REST heartbeat did not undo the live one
   });
 
   it('a user without roles gets an explanation and no requests that would be refused', async () => {

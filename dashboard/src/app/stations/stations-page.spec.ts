@@ -2,13 +2,14 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component, input, output, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { FakeLiveEvents, provideFakeLiveEvents } from '../realtime/live-events.testing';
 import { Session } from '../session';
 import { settings } from '../settings';
 import { seriousViolations } from '../ui/axe';
 import { Zone } from '../zones/zones.api';
 import { LonLat, StationMap } from './station-map';
 import { StationsPage } from './stations-page';
-import { IssuedKey, Station } from './stations.api';
+import { Heartbeat, IssuedKey, Station } from './stations.api';
 
 // Leaflet does not work well in jsdom: a fake map with the same inputs and outputs.
 @Component({ selector: 'app-station-map', template: '' })
@@ -57,12 +58,14 @@ const URL = `${settings.apiUrl}/v1/stations`;
 const ZONES_URL = `${settings.apiUrl}/v1/zones?include_inactive=false`;
 
 function setup(permissions: string[]) {
+  const live = new FakeLiveEvents();
   TestBed.configureTestingModule({
     imports: [StationsPage],
     providers: [
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: Session, useValue: { me: signal({ permissions }) } },
+      provideFakeLiveEvents(live),
     ],
   });
   TestBed.overrideComponent(StationsPage, {
@@ -83,7 +86,7 @@ function setup(permissions: string[]) {
     http.expectOne(`${URL}?include_inactive=false`).flush(stations);
     http.expectOne(ZONES_URL).flush([ZONE]);
   };
-  return { fixture, http, element, button, type, loaded };
+  return { fixture, http, element, button, type, loaded, live };
 }
 
 describe('StationsPage', () => {
@@ -127,29 +130,39 @@ describe('StationsPage', () => {
     expect(age?.getAttribute('title')).toMatch(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/);
   });
 
-  it('refreshes heartbeats with the clock, so a reporting station never looks silent', async () => {
+  it('updates a station from its live heartbeat, without asking the API again', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
     try {
-      const { fixture, http, element, loaded } = setup(['view']);
-      const reporting = (iso: string): Station => ({
-        ...STATION,
-        has_zone: true,
-        heartbeat: { last_seen_at: iso, last_measured_at: iso, last_value: 1 },
-      });
-      loaded([reporting(new Date().toISOString())]);
+      const { fixture, http, element, loaded, live } = setup(['view']);
+      const heartbeat = (value: number): Heartbeat => {
+        const now = new Date().toISOString();
+        return { last_seen_at: now, last_measured_at: now, last_value: value };
+      };
+      loaded([{ ...STATION, has_zone: true, heartbeat: heartbeat(1) }]);
       await fixture.whenStable();
       expect(element.textContent).toContain('Reportando');
 
-      vi.advanceTimersByTime(45_000); // over 3 × 10 s: stale data would say "Sin reportar"
-      const refreshes = http.match(`${URL}?include_inactive=false`);
-      expect(refreshes).toHaveLength(3);
-      refreshes.forEach((request) => request.flush([reporting(new Date().toISOString())]));
+      vi.advanceTimersByTime(45_000); // the clock moves on its own: 45 s > 3 × 10 s
+      await fixture.whenStable();
+      expect(element.textContent).toContain('Sin reportar');
+
+      live.heartbeats$.next({ stationId: 's1', heartbeat: heartbeat(42.5) });
       await fixture.whenStable();
       expect(element.textContent).toContain('Reportando');
-      expect(element.textContent).not.toContain('Sin reportar');
+      expect(element.textContent).toContain('42.5 mm');
+      http.verify(); // no polling: the heartbeat came with the event
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('reloads when the live channel asks for it', async () => {
+    const { fixture, element, loaded, live } = setup(['view']);
+    loaded([]);
+    live.reload$.next(); // on (re)connection, after a possible loss, or polling while down
+    loaded([STATION]);
+    await fixture.whenStable();
+    expect(element.textContent).toContain('RIM-TMP-01');
   });
 
   it('marks stations without a zone with text, not only on the map', async () => {

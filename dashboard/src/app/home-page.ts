@@ -1,10 +1,13 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { EMPTY, Subject, catchError, forkJoin, switchMap } from 'rxjs';
 import { Incident, IncidentsApi } from './incidents/incidents.api';
+import { LiveEvents } from './realtime/live-events';
 import { Session, roleLabels } from './session';
-import { stationState } from './stations/station-presentation';
+import { keepNewerHeartbeats, stationState, withHeartbeat } from './stations/station-presentation';
 import { Station, StationsApi } from './stations/stations.api';
+import { clock } from './ui/clock';
 import { Icon } from './ui/icon';
 import { Notice } from './ui/notice';
 import { PageHeader } from './ui/page-header';
@@ -14,7 +17,6 @@ interface Summary {
   incidents: Incident[];
   stations: Station[];
   zones: Zone[];
-  at: number;
 }
 
 /** Home: what an operator wants to know on opening the dashboard, and who they are in Willay. */
@@ -132,6 +134,9 @@ export class HomePage {
   protected readonly roles = roleLabels;
   protected readonly summary = signal<Summary | null>(null);
   protected readonly failed = signal(false);
+  protected readonly now = clock(1_000);
+  /** switchMap: only the latest summary counts, even if an older request answers later. */
+  private readonly loads = new Subject<void>();
 
   protected readonly activeIncidents = computed(() => this.summary()?.incidents.length ?? 0);
   protected readonly incidentDetail = computed(() => {
@@ -146,7 +151,7 @@ export class HomePage {
   });
   protected readonly stationCounts = computed(() => {
     const summary = this.summary();
-    const states = (summary?.stations ?? []).map((s) => stationState(s, summary?.at ?? 0));
+    const states = (summary?.stations ?? []).map((s) => stationState(s, this.now()));
     return {
       total: states.length,
       reporting: states.filter((s) => s === 'reporting').length,
@@ -168,24 +173,43 @@ export class HomePage {
   });
 
   constructor() {
+    this.loads
+      .pipe(
+        switchMap(() =>
+          forkJoin({
+            incidents: this.incidentsApi.list(['open', 'acknowledged']),
+            stations: this.stationsApi.list(),
+            zones: this.zonesApi.list(),
+          }).pipe(
+            catchError(() => {
+              this.failed.set(true);
+              return EMPTY;
+            }),
+          ),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe((data) => {
+        const stations = keepNewerHeartbeats(data.stations, this.summary()?.stations ?? []);
+        this.summary.set({ ...data, stations });
+        this.failed.set(false);
+      });
     this.load();
-    // As on the stations page: the summary is polled until SSE arrives (VIG-25).
-    const timer = setInterval(() => this.load(), 15_000);
-    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+
+    // An incident event only says that something changed: the summary is fetched again, so
+    // the viewer's permissions apply. Heartbeats carry their values and update in place.
+    const live = inject(LiveEvents);
+    live.reload$.pipe(takeUntilDestroyed()).subscribe(() => this.load());
+    live.incidents$.pipe(takeUntilDestroyed()).subscribe(() => this.load());
+    live.heartbeats$.pipe(takeUntilDestroyed()).subscribe(({ stationId, heartbeat }) =>
+      this.summary.update(
+        (summary) =>
+          summary && { ...summary, stations: withHeartbeat(summary.stations, stationId, heartbeat) },
+      ),
+    );
   }
 
   protected load(): void {
-    if (!this.session.me()?.permissions.includes('view')) return;
-    forkJoin({
-      incidents: this.incidentsApi.list(['open', 'acknowledged']),
-      stations: this.stationsApi.list(),
-      zones: this.zonesApi.list(),
-    }).subscribe({
-      next: (data) => {
-        this.summary.set({ ...data, at: Date.now() });
-        this.failed.set(false);
-      },
-      error: () => this.failed.set(true),
-    });
+    if (this.session.me()?.permissions.includes('view')) this.loads.next();
   }
 }
