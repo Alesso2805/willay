@@ -1,4 +1,4 @@
-"""Privileges of the vigia_app role (VIG-03 acceptance criteria)."""
+"""Privileges of the willay_app role (VIG-03 acceptance criteria)."""
 
 import asyncpg
 import pytest
@@ -70,7 +70,7 @@ async def test_app_can_append_to_audit_log_but_not_rewrite_it(
 async def test_table_created_later_by_owner_is_granted_to_app(
     owner: asyncpg.Connection, app: asyncpg.Connection, schema: str
 ) -> None:
-    # What any future migration does: vigia_owner creates a table.
+    # What any future migration does: willay_owner creates a table.
     table = f"{schema}.future_{uuid7().hex[:8]}"
     await owner.execute(f"CREATE TABLE {table} (id bigint GENERATED ALWAYS AS IDENTITY, v int)")
     try:

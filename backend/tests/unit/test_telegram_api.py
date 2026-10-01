@@ -7,8 +7,8 @@ from collections.abc import Callable
 import httpx2
 import pytest
 
-from vigia.alerts.application.telegram_bot import Click, TelegramError, Update
-from vigia.alerts.infrastructure.telegram_api import TelegramBotApi
+from willay.alerts.application.telegram_bot import Click, TelegramError, Update
+from willay.alerts.infrastructure.telegram_api import TelegramBotApi
 
 TOKEN = "123456:SECRET-bot-token"
 

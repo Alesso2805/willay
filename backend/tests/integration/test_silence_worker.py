@@ -13,15 +13,15 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from tests.integration.conftest import Database
 from tests.integration.evaluation import incidents, opened_payload
 from tests.integration.factories import Graph, add_station, create_graph, create_rule, link_station
-from vigia.alerts.application.planning import AlertPlanner
-from vigia.alerts.infrastructure.sql_alerts import SqlAlertRepository
-from vigia.incidents.infrastructure.sql_incidents import SqlIncidentStore
-from vigia.rules.application.silence_check import SilenceChecker
-from vigia.rules.infrastructure.sql_silence import SqlSilenceRepository
-from vigia.shared.clock import FakeClock
-from vigia.shared.config import Settings
-from vigia.shared.db import create_engine
-from vigia.workers.silence import INTERVAL_S, run_silence
+from willay.alerts.application.planning import AlertPlanner
+from willay.alerts.infrastructure.sql_alerts import SqlAlertRepository
+from willay.incidents.infrastructure.sql_incidents import SqlIncidentStore
+from willay.rules.application.silence_check import SilenceChecker
+from willay.rules.infrastructure.sql_silence import SqlSilenceRepository
+from willay.shared.clock import FakeClock
+from willay.shared.config import Settings
+from willay.shared.db import create_engine
+from willay.workers.silence import INTERVAL_S, run_silence
 
 pytestmark = pytest.mark.integration
 

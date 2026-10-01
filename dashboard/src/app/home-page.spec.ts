@@ -12,7 +12,7 @@ import { seriousViolations } from './ui/axe';
 import { Zone } from './zones/zones.api';
 
 const ME = {
-  email: 'operador@rimac.vigia.test',
+  email: 'operador@rimac.willay.test',
   organization_name: 'Demo Rímac',
   organization_timezone: 'America/Lima',
   roles: ['operator'],

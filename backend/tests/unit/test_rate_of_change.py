@@ -3,8 +3,8 @@ from typing import Any
 
 import pytest
 
-from vigia.rules.domain.errors import InvalidRuleParamsError
-from vigia.rules.domain.rate_of_change import (
+from willay.rules.domain.errors import InvalidRuleParamsError
+from willay.rules.domain.rate_of_change import (
     Change,
     Direction,
     RateOfChangeParams,

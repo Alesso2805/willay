@@ -6,13 +6,13 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from vigia.incidents.application.lifecycle import (
+from willay.incidents.application.lifecycle import (
     Actor,
     EventActor,
     Incident,
     IncidentEvent,
 )
-from vigia.incidents.domain.lifecycle import IncidentStatus, Resolution
+from willay.incidents.domain.lifecycle import IncidentStatus, Resolution
 
 T0 = datetime(2026, 11, 20, 14, 0, tzinfo=UTC)
 OPEN, ACK, RESOLVED = IncidentStatus.OPEN, IncidentStatus.ACKNOWLEDGED, IncidentStatus.RESOLVED

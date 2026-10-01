@@ -18,8 +18,8 @@ from tests.support.tokens import (
     SUB_RIMAC_VIEWER,
     TokenFactory,
 )
-from vigia.seed import data
-from vigia.shared.clock import SystemClock
+from willay.seed import data
+from willay.shared.clock import SystemClock
 
 pytestmark = pytest.mark.integration
 

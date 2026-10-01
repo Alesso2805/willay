@@ -1,4 +1,4 @@
-"""Real-time notifications: NOTIFY vigia_events from the database (VIG-25, ADR-0007).
+"""Real-time notifications: NOTIFY willay_events from the database (VIG-25, ADR-0007).
 
 A trigger fires whenever an incident event is recorded or a station heartbeat changes, so no
 code path (current or future) can forget to notify the dashboard, and the notification shares
@@ -27,7 +27,7 @@ def upgrade() -> None:
         CREATE FUNCTION core.notify_incident_event() RETURNS trigger
         LANGUAGE plpgsql AS $$
         BEGIN
-            PERFORM pg_notify('vigia_events', json_build_object(
+            PERFORM pg_notify('willay_events', json_build_object(
                 'organization_id', NEW.organization_id,
                 'type', 'incident',
                 'incident_id', NEW.incident_id,
@@ -47,7 +47,7 @@ def upgrade() -> None:
         CREATE FUNCTION ingest.notify_heartbeat() RETURNS trigger
         LANGUAGE plpgsql AS $$
         BEGIN
-            PERFORM pg_notify('vigia_events', json_build_object(
+            PERFORM pg_notify('willay_events', json_build_object(
                 'organization_id', (SELECT s.organization_id FROM core.stations s
                                     WHERE s.id = NEW.station_id),
                 'type', 'station',

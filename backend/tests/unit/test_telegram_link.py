@@ -4,18 +4,18 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from vigia.alerts.application.policies import Actor
-from vigia.alerts.application.telegram_link import (
+from willay.alerts.application.policies import Actor
+from willay.alerts.application.telegram_link import (
     ContactLinkState,
     ContactNotFoundError,
     TelegramNotConfiguredError,
     create_telegram_link,
     handle_start,
 )
-from vigia.alerts.domain.delivery import hash_ack_token
-from vigia.alerts.domain.telegram import HOW_TO_LINK, INVALID_LINK, start_parameter
-from vigia.shared.audit import AuditEntry
-from vigia.shared.clock import FakeClock
+from willay.alerts.domain.delivery import hash_ack_token
+from willay.alerts.domain.telegram import HOW_TO_LINK, INVALID_LINK, start_parameter
+from willay.shared.audit import AuditEntry
+from willay.shared.clock import FakeClock
 
 T0 = datetime(2026, 12, 1, 15, 0, tzinfo=UTC)
 TOKEN = "a" * 43
@@ -25,7 +25,7 @@ TOKEN = "a" * 43
     ("text", "token"),
     [
         (f"/start {TOKEN}", TOKEN),
-        (f"/start@VigiaAlertasBot {TOKEN}", TOKEN),  # the form it takes in a group chat
+        (f"/start@WillayAlertsBot {TOKEN}", TOKEN),  # the form it takes in a group chat
         (f"  /start   {TOKEN}  ", TOKEN),
         ("/start", None),  # opened the bot without a link
         ("hello", None),
@@ -88,10 +88,10 @@ async def _link(contacts: Contacts, audit: Audit, clock: FakeClock) -> str:
         contacts=contacts,
         audit=audit,
         clock=clock,
-        bot_username="VigiaAlertasBot",
+        bot_username="WillayAlertsBot",
     )
     assert link.expires_at == clock.now() + timedelta(days=7)
-    assert link.url.startswith("https://t.me/VigiaAlertasBot?start=")
+    assert link.url.startswith("https://t.me/WillayAlertsBot?start=")
     return link.url.rsplit("=", 1)[1]
 
 
@@ -119,7 +119,7 @@ async def test_a_link_needs_the_bot_and_a_contact_of_the_organization() -> None:
             contacts=other,
             audit=audit,
             clock=FakeClock(T0),
-            bot_username="VigiaAlertasBot",
+            bot_username="WillayAlertsBot",
         )
 
 

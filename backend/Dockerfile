@@ -14,13 +14,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --no-editable
 
 FROM python:3.12-slim-bookworm AS runtime
-RUN useradd --create-home --uid 10001 vigia
+RUN useradd --create-home --uid 10001 willay
 WORKDIR /app
-COPY --from=build --chown=vigia:vigia /app/.venv /app/.venv
-COPY --chown=vigia:vigia alembic.ini ./
-COPY --chown=vigia:vigia migrations ./migrations
+COPY --from=build --chown=willay:willay /app/.venv /app/.venv
+COPY --chown=willay:willay alembic.ini ./
+COPY --chown=willay:willay migrations ./migrations
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1
-USER vigia
+USER willay
 EXPOSE 8000
-CMD ["uvicorn", "--factory", "vigia.api.main:create_app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "--factory", "willay.api.main:create_app", "--host", "0.0.0.0", "--port", "8000"]

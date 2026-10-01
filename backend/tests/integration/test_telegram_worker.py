@@ -13,16 +13,16 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from tests.integration.conftest import Database
 from tests.integration.factories import create_contact, create_graph
 from tests.integration.telegram import FakeTelegram, run_telegram_until
-from vigia.alerts.application.policies import Actor
-from vigia.alerts.application.telegram_bot import Update
-from vigia.alerts.application.telegram_link import create_telegram_link
-from vigia.alerts.domain.telegram import HOW_TO_LINK, INVALID_LINK
-from vigia.alerts.infrastructure.sql_contact_links import SqlContactLinkRepository
-from vigia.shared.audit import SqlAuditLog
-from vigia.shared.clock import FakeClock, SystemClock
-from vigia.shared.config import Settings
-from vigia.shared.db import create_engine
-from vigia.workers.telegram import run_telegram
+from willay.alerts.application.policies import Actor
+from willay.alerts.application.telegram_bot import Update
+from willay.alerts.application.telegram_link import create_telegram_link
+from willay.alerts.domain.telegram import HOW_TO_LINK, INVALID_LINK
+from willay.alerts.infrastructure.sql_contact_links import SqlContactLinkRepository
+from willay.shared.audit import SqlAuditLog
+from willay.shared.clock import FakeClock, SystemClock
+from willay.shared.config import Settings
+from willay.shared.db import create_engine
+from willay.workers.telegram import run_telegram
 
 pytestmark = pytest.mark.integration
 
@@ -47,7 +47,7 @@ async def _contact_with_link(
             contacts=SqlContactLinkRepository(tx),
             audit=SqlAuditLog(tx),
             clock=FakeClock(now),
-            bot_username="VigiaAlertasBot",
+            bot_username="WillayAlertsBot",
         )
     return contact, link.url.rsplit("=", 1)[1]
 
@@ -159,7 +159,7 @@ async def test_without_a_bot_token_the_worker_only_beats(
 def test_an_empty_token_in_the_environment_means_no_bot(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("VIGIA_TELEGRAM_BOT_TOKEN", "")
-    monkeypatch.setenv("VIGIA_TELEGRAM_BOT_USERNAME", "")
+    monkeypatch.setenv("WILLAY_TELEGRAM_BOT_TOKEN", "")
+    monkeypatch.setenv("WILLAY_TELEGRAM_BOT_USERNAME", "")
     settings = Settings(database_url="postgresql+asyncpg://x")
     assert (settings.telegram_bot_token, settings.telegram_bot_username) == (None, None)

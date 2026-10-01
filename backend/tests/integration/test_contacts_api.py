@@ -20,12 +20,12 @@ from tests.support.tokens import (
     SUB_RIMAC_OPERATOR,
     TokenFactory,
 )
-from vigia.seed import data
-from vigia.shared.clock import SystemClock
+from willay.seed import data
+from willay.shared.clock import SystemClock
 
 pytestmark = pytest.mark.integration
 
-BOT = "VigiaAlertasBot"
+BOT = "WillayAlertsBot"
 ROSA = data.C_BRIGADE  # Rosa Brigada, from the seed (Rímac)
 
 
@@ -92,6 +92,6 @@ async def test_only_admins_of_the_organization_can_create_links(
 
 
 async def test_without_a_bot_there_is_no_link(database: Database, tokens: TokenFactory) -> None:
-    async with api_client(database, tokens) as client:  # no VIGIA_TELEGRAM_BOT_USERNAME
+    async with api_client(database, tokens) as client:  # no WILLAY_TELEGRAM_BOT_USERNAME
         response = await _link(client, _as(tokens, SUB_RIMAC_ADMIN, "admin"))
     assert response.status_code == 503

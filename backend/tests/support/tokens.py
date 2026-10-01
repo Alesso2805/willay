@@ -12,13 +12,13 @@ from uuid import UUID
 import jwt
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from vigia.identity.infrastructure.jwt_verifier import JwtVerifier
-from vigia.shared.clock import Clock
+from willay.identity.infrastructure.jwt_verifier import JwtVerifier
+from willay.shared.clock import Clock
 
-ISSUER = "http://keycloak.test/realms/vigia"
-AUDIENCE = "vigia-api"
+ISSUER = "http://keycloak.test/realms/willay"
+AUDIENCE = "willay-api"
 
-# Realm users (infra/keycloak/realm-vigia.json).
+# Realm users (infra/keycloak/realm-willay.json).
 KC_RIMAC = UUID("1d44f4b3-b1df-457f-b717-20926a20166e")
 KC_ISOLATION = UUID("d32ffb77-666e-4986-8234-9f1db8437302")
 SUB_RIMAC_ADMIN = UUID("0cd6135c-8fd4-4a14-89f5-cfa4499a71ff")
@@ -70,9 +70,9 @@ class TokenFactory:
             "sub": str(sub),
             "iat": int(now.timestamp()),
             "exp": int((now + lifetime).timestamp()),
-            "email": email or f"{sub}@vigia.test",
+            "email": email or f"{sub}@willay.test",
             "name": f"Usuario {str(sub)[:8]}",
-            "realm_access": {"roles": [*roles, "default-roles-vigia"]},
+            "realm_access": {"roles": [*roles, "default-roles-willay"]},
         }
         if organization is not None:
             claims["organization"] = organization

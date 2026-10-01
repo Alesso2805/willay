@@ -4,9 +4,9 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from vigia.incidents.application.open_incident import OpenResult, OpenStatus, Trigger
-from vigia.incidents.application.station_recovery import Recovery
-from vigia.incidents.domain.incidents import EvidenceReading
+from willay.incidents.application.open_incident import OpenResult, OpenStatus, Trigger
+from willay.incidents.application.station_recovery import Recovery
+from willay.incidents.domain.incidents import EvidenceReading
 
 
 class FakeIncidentStore:

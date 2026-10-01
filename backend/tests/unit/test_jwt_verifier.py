@@ -10,8 +10,8 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from tests.support.tokens import KC_RIMAC, SUB_RIMAC_OPERATOR, TokenFactory, org_claim
-from vigia.identity.infrastructure.jwt_verifier import TokenInvalidError
-from vigia.shared.clock import FakeClock
+from willay.identity.infrastructure.jwt_verifier import TokenInvalidError
+from willay.shared.clock import FakeClock
 
 NOW = datetime(2026, 10, 12, 9, 0, tzinfo=UTC)
 

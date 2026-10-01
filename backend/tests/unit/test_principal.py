@@ -2,7 +2,7 @@ from uuid import UUID
 
 import pytest
 
-from vigia.identity.domain.principal import (
+from willay.identity.domain.principal import (
     MalformedOrganizationClaimError,
     MultipleOrganizationsError,
     NoOrganizationError,
@@ -56,5 +56,5 @@ def test_all_tenant_errors_share_a_base_class() -> None:
 
 
 def test_known_roles_ignores_keycloak_internal_roles() -> None:
-    roles = known_roles(["operator", "default-roles-vigia", "offline_access", 7, "viewer"])
+    roles = known_roles(["operator", "default-roles-willay", "offline_access", 7, "viewer"])
     assert roles == {Role.OPERATOR, Role.VIEWER}

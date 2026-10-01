@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta, timezone
 import pytest
 import time_machine
 
-from vigia.shared.clock import Clock, FakeClock, SystemClock
+from willay.shared.clock import Clock, FakeClock, SystemClock
 
 START = datetime(2026, 10, 1, 8, 40, tzinfo=UTC)
 

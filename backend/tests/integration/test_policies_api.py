@@ -20,7 +20,7 @@ from tests.support.tokens import (
     SUB_RIMAC_VIEWER,
     TokenFactory,
 )
-from vigia.seed import data
+from willay.seed import data
 
 pytestmark = pytest.mark.integration
 

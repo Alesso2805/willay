@@ -8,8 +8,8 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from vigia.rules.application.evaluate import process_batch
-from vigia.rules.application.queue import LostClaimError, QueuedReading
+from willay.rules.application.evaluate import process_batch
+from willay.rules.application.queue import LostClaimError, QueuedReading
 
 T0 = datetime(2026, 10, 28, 9, 0, tzinfo=UTC)
 

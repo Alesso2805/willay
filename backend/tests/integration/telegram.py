@@ -18,9 +18,9 @@ from tests.integration.factories import (
     create_rule,
     link_station,
 )
-from vigia.alerts.application.telegram_bot import TelegramError, Update
-from vigia.shared.config import Settings
-from vigia.workers.telegram import run_telegram
+from willay.alerts.application.telegram_bot import TelegramError, Update
+from willay.shared.config import Settings
+from willay.workers.telegram import run_telegram
 
 GT_35_ONCE = {"operator": "gt", "value": 3.5, "consecutive": 1}
 CHAT = 4242

@@ -2,21 +2,21 @@ import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from vigia.ingestion.api.simulator_cli import load_stations
-from vigia.ingestion.application.simulate import (
+from willay.ingestion.api.simulator_cli import load_stations
+from willay.ingestion.application.simulate import (
     SimulatedStation,
     Sleep,
     TickReport,
     run_simulation,
 )
-from vigia.ingestion.domain.simulation import (
+from willay.ingestion.domain.simulation import (
     RIMAC_DOWNSTREAM,
     RIMAC_UPSTREAM,
     Scenario,
     build_plan,
     value_at,
 )
-from vigia.shared.clock import FakeClock
+from willay.shared.clock import FakeClock
 
 T0 = datetime(2026, 10, 12, 9, 0, tzinfo=UTC)
 

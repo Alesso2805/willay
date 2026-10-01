@@ -9,11 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from tests.support.alerts import FakeAlerting
 from tests.support.incidents import FakeIncidentStore
-from vigia.incidents.application.station_recovery import Recovery
-from vigia.incidents.domain.incidents import EvidenceReading
-from vigia.rules.application.silence_check import SilenceChecker, SilenceCycle, WatchedStation
-from vigia.rules.domain.silence import is_silent, silence_threshold
-from vigia.shared.clock import FakeClock
+from willay.incidents.application.station_recovery import Recovery
+from willay.incidents.domain.incidents import EvidenceReading
+from willay.rules.application.silence_check import SilenceChecker, SilenceCycle, WatchedStation
+from willay.rules.domain.silence import is_silent, silence_threshold
+from willay.shared.clock import FakeClock
 
 T0 = datetime(2026, 11, 9, 8, 50, tzinfo=UTC)  # last heartbeat
 THIRTY_S = timedelta(seconds=30)  # K = 3 times a 10 s interval

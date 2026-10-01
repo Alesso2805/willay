@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from vigia.territory.domain.zones import (
+from willay.territory.domain.zones import (
     MAX_VERTICES,
     InvalidGeometryError,
     to_geojson,

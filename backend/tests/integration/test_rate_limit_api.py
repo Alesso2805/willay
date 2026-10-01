@@ -13,8 +13,8 @@ from tests.integration.api import api_client
 from tests.integration.conftest import Database
 from tests.integration.factories import Graph, create_station_with_key
 from tests.support.tokens import TokenFactory
-from vigia.ingestion.domain.rate_limit import MAX_BATCHES_PER_MINUTE
-from vigia.shared.clock import FakeClock, SystemClock
+from willay.ingestion.domain.rate_limit import MAX_BATCHES_PER_MINUTE
+from willay.shared.clock import FakeClock, SystemClock
 
 pytestmark = pytest.mark.integration
 

@@ -21,7 +21,7 @@ from tests.support.tokens import (
     SUB_RIMAC_OPERATOR,
     TokenFactory,
 )
-from vigia.seed import data
+from willay.seed import data
 
 pytestmark = pytest.mark.integration
 

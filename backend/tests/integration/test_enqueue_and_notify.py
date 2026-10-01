@@ -13,11 +13,11 @@ from tests.integration.api import api_client
 from tests.integration.conftest import Database
 from tests.integration.factories import Graph, create_station_with_key
 from tests.support.tokens import TokenFactory
-from vigia.ingestion.domain.readings import LATE_AFTER, ClassifiedReading, Quality
-from vigia.ingestion.infrastructure.repositories import SqlReadingWriter
-from vigia.shared import notifications
-from vigia.shared.clock import SystemClock
-from vigia.shared.db import create_engine
+from willay.ingestion.domain.readings import LATE_AFTER, ClassifiedReading, Quality
+from willay.ingestion.infrastructure.repositories import SqlReadingWriter
+from willay.shared import notifications
+from willay.shared.clock import SystemClock
+from willay.shared.db import create_engine
 
 pytestmark = pytest.mark.integration
 

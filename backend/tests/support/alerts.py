@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from vigia.alerts.application.planning import LevelAlerts
+from willay.alerts.application.planning import LevelAlerts
 
 
 class FakeAlerting:

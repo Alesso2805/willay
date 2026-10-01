@@ -13,19 +13,19 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 from tests.integration.conftest import Database
 from tests.integration.evaluation import Station, incidents
 from tests.integration.factories import create_graph, create_rule, link_station
-from vigia.alerts.application.planning import AlertPlanner
-from vigia.alerts.infrastructure.sql_alerts import SqlAlertRepository
-from vigia.incidents.application.open_incident import OpenResult, Trigger
-from vigia.incidents.infrastructure.sql_incidents import SqlIncidentStore
-from vigia.ingestion.domain.readings import ClassifiedReading, Quality
-from vigia.ingestion.infrastructure.repositories import SqlReadingWriter
-from vigia.rules.application.evaluate import process_batch
-from vigia.rules.application.queue import QueuedReading
-from vigia.rules.application.rule_evaluator import RuleEvaluator
-from vigia.rules.infrastructure.pg_queue import PostgresEvaluationQueue
-from vigia.rules.infrastructure.sql_rules import SqlReadingHistory, SqlRuleRepository
-from vigia.shared.clock import FakeClock, SystemClock
-from vigia.shared.db import create_engine
+from willay.alerts.application.planning import AlertPlanner
+from willay.alerts.infrastructure.sql_alerts import SqlAlertRepository
+from willay.incidents.application.open_incident import OpenResult, Trigger
+from willay.incidents.infrastructure.sql_incidents import SqlIncidentStore
+from willay.ingestion.domain.readings import ClassifiedReading, Quality
+from willay.ingestion.infrastructure.repositories import SqlReadingWriter
+from willay.rules.application.evaluate import process_batch
+from willay.rules.application.queue import QueuedReading
+from willay.rules.application.rule_evaluator import RuleEvaluator
+from willay.rules.infrastructure.pg_queue import PostgresEvaluationQueue
+from willay.rules.infrastructure.sql_rules import SqlReadingHistory, SqlRuleRepository
+from willay.shared.clock import FakeClock, SystemClock
+from willay.shared.db import create_engine
 
 pytestmark = pytest.mark.integration
 

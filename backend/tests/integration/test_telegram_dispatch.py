@@ -21,13 +21,13 @@ from tests.integration.telegram import (
     clear_pending_alerts,
     telegram_incident,
 )
-from vigia.alerts.application.dispatch import TelegramDispatcher
-from vigia.alerts.domain.email import EmailContent
-from vigia.alerts.infrastructure.sql_dispatch import SqlDispatchQueue
-from vigia.shared.clock import FakeClock, SystemClock
-from vigia.shared.config import Settings
-from vigia.shared.db import create_engine
-from vigia.workers.dispatcher import run_dispatcher
+from willay.alerts.application.dispatch import TelegramDispatcher
+from willay.alerts.domain.email import EmailContent
+from willay.alerts.infrastructure.sql_dispatch import SqlDispatchQueue
+from willay.shared.clock import FakeClock, SystemClock
+from willay.shared.config import Settings
+from willay.shared.db import create_engine
+from willay.workers.dispatcher import run_dispatcher
 
 pytestmark = pytest.mark.integration
 

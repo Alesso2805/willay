@@ -4,16 +4,16 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from vigia.ingestion.application.authenticate_station import (
+from willay.ingestion.application.authenticate_station import (
     AuthenticatedStation,
     InactiveStationError,
     InvalidApiKeyError,
     StationCredential,
     authenticate_station,
 )
-from vigia.ingestion.application.ingest_batch import StoreCounts, ingest_batch
-from vigia.ingestion.domain.api_keys import generate_api_key
-from vigia.ingestion.domain.readings import (
+from willay.ingestion.application.ingest_batch import StoreCounts, ingest_batch
+from willay.ingestion.domain.api_keys import generate_api_key
+from willay.ingestion.domain.readings import (
     LATE_AFTER,
     MAX_CLOCK_SKEW,
     ClassifiedReading,
@@ -25,7 +25,7 @@ from vigia.ingestion.domain.readings import (
     heartbeat_reading,
     quality_of,
 )
-from vigia.shared.clock import FakeClock
+from willay.shared.clock import FakeClock
 
 NOW = datetime(2026, 10, 12, 9, 0, tzinfo=UTC)
 STATION = uuid4()

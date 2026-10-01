@@ -327,7 +327,7 @@ def upgrade() -> None:
     # Append-only through privileges: the timeline and the audit log are never rewritten.
     # ALTER DEFAULT PRIVILEGES (0001) granted UPDATE and DELETE; revoke them here.
     op.execute(
-        "REVOKE UPDATE, DELETE, TRUNCATE ON core.incident_events, core.audit_log FROM vigia_app"
+        "REVOKE UPDATE, DELETE, TRUNCATE ON core.incident_events, core.audit_log FROM willay_app"
     )
 
 

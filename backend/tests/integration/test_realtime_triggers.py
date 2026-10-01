@@ -12,8 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from tests.integration.conftest import Database
 from tests.integration.evaluation import Station
 from tests.integration.factories import create_graph, create_rule, link_station
-from vigia.shared import notifications
-from vigia.shared.db import create_engine
+from willay.shared import notifications
+from willay.shared.db import create_engine
 
 pytestmark = pytest.mark.integration
 

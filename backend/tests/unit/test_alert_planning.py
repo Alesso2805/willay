@@ -8,12 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from tests.support.alerts import FakeAlerting
 from tests.support.incidents import FakeIncidentStore
-from vigia.alerts.application.planning import AlertPlanner, LevelAlerts
-from vigia.alerts.domain.alerts import AlertStatus, Channel, Target
-from vigia.incidents.domain.incidents import EvidenceReading
-from vigia.rules.application.queue import QueuedReading
-from vigia.rules.application.rule_evaluator import ApplicableRule, RuleEvaluator
-from vigia.shared.clock import FakeClock
+from willay.alerts.application.planning import AlertPlanner, LevelAlerts
+from willay.alerts.domain.alerts import AlertStatus, Channel, Target
+from willay.incidents.domain.incidents import EvidenceReading
+from willay.rules.application.queue import QueuedReading
+from willay.rules.application.rule_evaluator import ApplicableRule, RuleEvaluator
+from willay.shared.clock import FakeClock
 
 T0 = datetime(2026, 11, 20, 14, 0, tzinfo=UTC)
 INCIDENT = uuid4()
@@ -23,7 +23,7 @@ TX = cast(AsyncConnection, object())
 @pytest.mark.parametrize(
     ("destination", "status"),
     [
-        ("operador@rimac.vigia.test", AlertStatus.PENDING),
+        ("operador@rimac.willay.test", AlertStatus.PENDING),
         (None, AlertStatus.SKIPPED),
         ("   ", AlertStatus.SKIPPED),  # a blank email is not a destination
     ],
@@ -70,7 +70,7 @@ class Repository:
 
 
 async def test_every_target_gets_an_alert_and_the_unreachable_are_recorded() -> None:
-    email = Target(uuid4(), Channel.EMAIL, "operador@rimac.vigia.test")
+    email = Target(uuid4(), Channel.EMAIL, "operador@rimac.willay.test")
     no_email = Target(uuid4(), Channel.EMAIL, None)
     no_telegram = Target(uuid4(), Channel.TELEGRAM, None)
     repository = Repository(email, no_email, no_telegram)

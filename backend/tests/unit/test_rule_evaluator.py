@@ -6,10 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from tests.support.alerts import FakeAlerting
 from tests.support.incidents import FakeIncidentStore
-from vigia.incidents.domain.incidents import EvidenceReading, Worsening
-from vigia.rules.application.queue import QueuedReading
-from vigia.rules.application.rule_evaluator import ApplicableRule, RuleEvaluator
-from vigia.shared.clock import FakeClock
+from willay.incidents.domain.incidents import EvidenceReading, Worsening
+from willay.rules.application.queue import QueuedReading
+from willay.rules.application.rule_evaluator import ApplicableRule, RuleEvaluator
+from willay.shared.clock import FakeClock
 
 T0 = datetime(2026, 10, 29, 9, 0, tzinfo=UTC)
 TX = cast(AsyncConnection, object())

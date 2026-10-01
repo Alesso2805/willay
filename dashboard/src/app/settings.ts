@@ -5,7 +5,7 @@
 export const settings = {
   apiUrl: 'http://localhost:8000',
   oidc: {
-    authority: 'http://localhost:8080/realms/vigia',
-    clientId: 'vigia-dashboard',
+    authority: 'http://localhost:8080/realms/willay',
+    clientId: 'willay-dashboard',
   },
 } as const;
