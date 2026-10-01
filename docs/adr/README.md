@@ -10,5 +10,6 @@ Una decisión técnica por archivo: contexto, opciones, decisión y consecuencia
 | [0004](0004-keycloak-organizations-tenant.md) | Keycloak 26 Organizations como fuente de tenant y roles | Propuesto |
 | [0005](0005-extensiones-y-roles-en-init.md) | Extensiones y roles de BD en el init de Postgres | Propuesto |
 | [0006](0006-migraciones-sql-y-tests-con-testcontainers.md) | Migraciones en SQL explícito y tests con testcontainers | Propuesto |
+| [0007](0007-eventos-en-vivo-con-triggers.md) | Eventos en vivo emitidos por triggers de Postgres | Propuesto |
 
 Estados: Propuesto → Aceptado → (Reemplazado por ADR-NNNN | Obsoleto).
