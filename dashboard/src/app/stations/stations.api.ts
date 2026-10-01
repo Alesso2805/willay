@@ -10,7 +10,7 @@ export type ZonePosition = 'upstream' | 'in_zone' | 'downstream';
 
 export interface PointGeometry {
   type: 'Point';
-  /** [longitud, latitud] */
+  /** [longitude, latitude] */
   coordinates: [number, number];
 }
 
@@ -38,7 +38,7 @@ export interface Station {
   created_at: string;
 }
 
-/** docs/openapi.json › StationBodyIn (PUT). El código no se envía: no cambia. */
+/** docs/openapi.json › StationBodyIn (PUT). The code is not sent: it never changes. */
 export interface StationInput {
   name: string;
   variable: Variable;
@@ -50,7 +50,7 @@ export interface StationInput {
   zones: ZoneAssignment[];
 }
 
-/** Respuesta de crear o rotar: la única vez que la API devuelve la clave en claro. */
+/** Create or rotate response: the only time the API returns the key in plain text. */
 export interface IssuedKey {
   station: Station;
   api_key: string;

@@ -1,10 +1,9 @@
 /**
- * Formatos comunes del panel (VIG-33). Las horas van en la zona horaria de la organización,
- * no en la del navegador: un operador de viaje ve las mismas horas que los correos y los
- * mensajes de Telegram.
+ * Shared dashboard formats (VIG-33). Times use the organization's time zone, not the
+ * browser's: a travelling operator sees the same times as the emails and Telegram messages.
  */
 
-/** "hace 12 s", "hace 3 min"... a partir de una fecha ISO. */
+/** "hace 12 s", "hace 3 min"... from an ISO date. */
 export function ageText(iso: string, now: number): string {
   const seconds = Math.max(0, Math.round((now - Date.parse(iso)) / 1000));
   if (seconds < 60) return `hace ${seconds} s`;
@@ -13,7 +12,7 @@ export function ageText(iso: string, now: number): string {
   return `hace ${Math.floor(seconds / 86_400)} d`;
 }
 
-/** "30/09/2026 18:57", como en los correos y en Telegram. */
+/** "30/09/2026 18:57", as in the emails and on Telegram. */
 export function localTime(iso: string, timezone: string): string {
   const parts = new Intl.DateTimeFormat('es-PE', {
     timeZone: timezone,
@@ -31,7 +30,7 @@ export function localTime(iso: string, timezone: string): string {
 
 const COUNT = new Intl.NumberFormat('es-PE', { maximumFractionDigits: 0 });
 
-/** Cantidades enteras para leer de un vistazo, como una población: 45,000. */
+/** Whole quantities, readable at a glance, such as a population: 45,000. */
 export function wholeNumber(value: number): string {
   return COUNT.format(value);
 }
@@ -39,8 +38,8 @@ export function wholeNumber(value: number): string {
 const NUMBER = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 6, useGrouping: false });
 
 /**
- * "83.234": punto decimal (como en Perú) y hasta 6 cifras significativas, el mismo número
- * que muestran el correo y Telegram (formato `:g` de Python).
+ * "83.234": decimal point (as in Peru) and up to 6 significant digits, the same number the
+ * email and Telegram show (Python's `:g` format).
  */
 export function measurement(value: number): string {
   return NUMBER.format(value);

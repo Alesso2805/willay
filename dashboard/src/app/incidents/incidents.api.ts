@@ -5,7 +5,7 @@ import { settings } from '../settings';
 
 export type IncidentStatus = 'open' | 'acknowledged' | 'resolved';
 
-/** docs/openapi.json › IncidentOut. Lo justo para el resumen; VIG-34 suma la bandeja. */
+/** docs/openapi.json › IncidentOut. Just enough for the summary; VIG-34 adds the inbox. */
 export interface Incident {
   id: string;
   zone_name: string;
@@ -23,7 +23,7 @@ export class IncidentsApi {
   private readonly http = inject(HttpClient);
   private readonly url = `${settings.apiUrl}/v1/incidents`;
 
-  /** Los más recientes primero; `status` se repite en la URL por cada estado pedido. */
+  /** Newest first; `status` is repeated in the URL once per requested status. */
   list(statuses: readonly IncidentStatus[], limit = 500): Observable<Incident[]> {
     const params = new HttpParams({ fromObject: { status: [...statuses], limit } });
     return this.http.get<Incident[]>(this.url, { params });

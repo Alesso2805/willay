@@ -16,10 +16,10 @@ export class App {
   protected readonly navItems = computed(() =>
     visibleNavItems(this.session.me()?.permissions ?? []),
   );
-  /** Solo cuenta en pantallas angostas: desde `lg` la navegación es una barra lateral fija. */
+  /** Only matters on narrow screens: from `lg` up the navigation is a fixed sidebar. */
   protected readonly menuOpen = signal(false);
   protected readonly roles = roleLabels;
-  /** SPEC, riesgo ético: el producto debe decirlo en todas sus pantallas. */
+  /** SPEC, ethical risk: the product must say this on every screen. */
   protected readonly disclaimer =
     'Herramienta de apoyo para detectar, decidir y avisar. No reemplaza a los sistemas ' +
     'oficiales de alerta (INDECI, COER regionales, SISMATE).';

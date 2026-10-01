@@ -17,7 +17,7 @@ interface Summary {
   at: number;
 }
 
-/** Inicio: lo que un operador quiere saber al abrir el panel, y quién es en Vigía. */
+/** Home: what an operator wants to know on opening the dashboard, and who they are in Vigía. */
 @Component({
   selector: 'app-home-page',
   imports: [RouterLink, Icon, Notice, PageHeader],
@@ -29,7 +29,7 @@ interface Summary {
       />
 
       @if (me.permissions.length === 0) {
-        <!-- SPEC: sin roles solo se consulta /v1/me, para que el panel explique por qué no ve nada. -->
+        <!-- SPEC: without roles only /v1/me is allowed, so the dashboard explains why nothing shows. -->
         <app-notice tone="info" class="mb-6">
           <p class="font-semibold">Tu usuario todavía no tiene un rol en Vigía</p>
           <p class="mt-1">
@@ -169,7 +169,7 @@ export class HomePage {
 
   constructor() {
     this.load();
-    // Como en Estaciones: el resumen se refresca hasta que llegue el SSE (VIG-25).
+    // As on the stations page: the summary is polled until SSE arrives (VIG-25).
     const timer = setInterval(() => this.load(), 15_000);
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }

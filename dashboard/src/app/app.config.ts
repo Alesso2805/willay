@@ -9,7 +9,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    // El interceptor añade "Authorization: Bearer" solo a las URLs de secureRoutes.
+    // The interceptor adds "Authorization: Bearer" only to the secureRoutes URLs.
     provideHttpClient(withInterceptors([authInterceptor()])),
     provideAuth({
       config: {
@@ -17,9 +17,9 @@ export const appConfig: ApplicationConfig = {
         clientId: settings.oidc.clientId,
         redirectUrl: window.location.origin,
         postLogoutRedirectUri: window.location.origin,
-        responseType: 'code', // Authorization Code + PKCE (el cliente es público)
-        // organization:* trae todas las membresías: la API rechaza con 403 a quien tenga
-        // cero o varias. Con "organization" a secas el usuario elegiría una (ADR-0004).
+        responseType: 'code', // Authorization Code + PKCE (public client)
+        // organization:* brings every membership, so the API can reject (403) anyone with
+        // zero or several. With plain "organization" the user would pick one (ADR-0004).
         scope: 'openid profile email organization:*',
         silentRenew: true,
         useRefreshToken: true,

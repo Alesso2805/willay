@@ -4,7 +4,7 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { Observable, catchError, map, of, switchMap } from 'rxjs';
 import { settings } from './settings';
 
-/** Respuesta de GET /v1/me. */
+/** GET /v1/me response. */
 export interface Me {
   user_id: string;
   email: string;
@@ -12,10 +12,10 @@ export interface Me {
   organization_id: string;
   keycloak_org_id: string;
   organization_name: string;
-  /** IANA (p. ej. America/Lima): el panel muestra las horas en la zona de la organización. */
+  /** IANA (e.g. America/Lima): the dashboard shows times in the organization's time zone. */
   organization_timezone: string;
   roles: string[];
-  /** Solo para ocultar acciones en la UI: la API valida el permiso en cada endpoint. */
+  /** Only for hiding actions in the UI: the API checks the permission on every endpoint. */
   permissions: string[];
 }
 
@@ -34,7 +34,7 @@ export type SessionState =
   | { status: 'loading' }
   | { status: 'anonymous' }
   | { status: 'ready'; me: Me }
-  | { status: 'forbidden' } // token válido, pero sin exactamente una organización
+  | { status: 'forbidden' } // valid token, but not exactly one organization
   | { status: 'error' };
 
 @Injectable({ providedIn: 'root' })
@@ -49,7 +49,7 @@ export class Session {
     return state.status === 'ready' ? state.me : null;
   });
 
-  /** Procesa el retorno de Keycloak (si lo hay) y carga /v1/me. */
+  /** Handles the return from Keycloak (if any) and loads /v1/me. */
   start(): void {
     this.oidc
       .checkAuth()

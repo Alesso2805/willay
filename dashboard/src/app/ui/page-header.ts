@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
-/** Título de la página, un resumen corto y sus acciones a la derecha (VIG-33). */
+/** Page title, a short summary and its actions on the right (VIG-33). */
 @Component({
   selector: 'app-page-header',
   changeDetection: ChangeDetectionStrategy.OnPush,

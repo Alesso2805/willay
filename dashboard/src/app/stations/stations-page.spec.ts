@@ -10,7 +10,7 @@ import { LonLat, StationMap } from './station-map';
 import { StationsPage } from './stations-page';
 import { IssuedKey, Station } from './stations.api';
 
-// Leaflet no funciona bien en jsdom: mapa falso con las mismas entradas y salidas.
+// Leaflet does not work well in jsdom: a fake map with the same inputs and outputs.
 @Component({ selector: 'app-station-map', template: '' })
 class FakeStationMap {
   readonly stations = input<Station[]>([]);
@@ -140,7 +140,7 @@ describe('StationsPage', () => {
       await fixture.whenStable();
       expect(element.textContent).toContain('Reportando');
 
-      vi.advanceTimersByTime(45_000); // más que 3 × 10 s: con datos viejos diría "Sin reportar"
+      vi.advanceTimersByTime(45_000); // over 3 × 10 s: stale data would say "Sin reportar"
       const refreshes = http.match(`${URL}?include_inactive=false`);
       expect(refreshes).toHaveLength(3);
       refreshes.forEach((request) => request.flush([reporting(new Date().toISOString())]));

@@ -1,9 +1,9 @@
 @import 'tailwindcss';
 
 /*
- * Identidad "centro de monitoreo" (VIG-33): azul noche para la navegación y azul agua como
- * color de marca. Es provisional: la identidad final espera el nombre comercial (SPEC).
- * Contraste comprobado: blanco sobre brand-700 5.4:1; night-300 sobre night-900 7.9:1.
+ * "Monitoring center" identity (VIG-33): night blue for navigation and water blue as the
+ * brand color. Provisional: the final identity waits for the commercial name (SPEC).
+ * Checked contrast: white on brand-700 5.4:1; night-300 on night-900 7.9:1.
  */
 @theme {
   --color-night-950: #07121d;
@@ -34,7 +34,6 @@
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-300 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:opacity-50;
   }
-  /* Acciones dentro de una tarjeta: texto con color, sin subrayado hasta el hover. */
   .link-action {
     @apply font-medium text-brand-700 hover:text-brand-800 hover:underline;
   }
@@ -47,17 +46,17 @@
 }
 
 /*
- * El mapa base de OpenStreetMap trae muchos colores que compiten con zonas y estaciones:
- * se atenúa para que lo que importa (los estados) destaque.
+ * The OpenStreetMap base map has many colors that compete with zones and stations: it is
+ * muted so that what matters (the states) stands out.
  */
 .leaflet-tile-pane {
   filter: saturate(0.35) brightness(1.04);
 }
 
 /*
- * Leaflet: al hacer clic en una zona, el navegador dibuja un rectángulo de foco negro sobre
- * el polígono SVG. Se oculta solo cuando el foco viene del ratón; con teclado
- * (:focus-visible) el contorno se mantiene, porque indica dónde está el foco (WCAG 2.4.7).
+ * Leaflet: clicking a zone makes the browser draw a black focus rectangle over the SVG
+ * polygon. It is hidden only when focus comes from the mouse; with the keyboard
+ * (:focus-visible) the outline stays, because it shows where focus is (WCAG 2.4.7).
  */
 .leaflet-interactive:focus:not(:focus-visible) {
   outline: none;
