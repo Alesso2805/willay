@@ -37,7 +37,7 @@ Vigía (nombre de código provisional; el producto aún no tiene nombre comercia
 | Sensor silencioso → incidente | < K × intervalo + 30 s | `incidents.opened_at − station_heartbeats.last_seen_at` |
 | Incidentes confirmados antes de agotar el último nivel | 100 % en la demo (el nivel 2 confirma los dos incidentes) | Por incidente, no por alerta |
 | Lecturas procesadas sin pérdida | 100 % con 50 estaciones a 1 lectura/10 s durante 30 min | Cero lecturas con quality = ok y sin evaluated\_at pasados 120 s de recibidas |
-| Entrevistas de validación | ≥ 3 antes del sprint 4 | Notas en `docs/research/` |
+| Entrevistas de validación | Pospuestas fuera del MVP (decisión del 30 de septiembre de 2026; ver "Validación" en el plan de sprints) | — |
 
 ## Prompt maestro para el agente de desarrollo
 
@@ -339,7 +339,7 @@ Ocho sprints de dos semanas, del 28 de septiembre de 2026 al 17 de enero de 2027
 
 **Holgura.** El sprint 1 es el más cargado (25 puntos) y el sprint 6 cae en fiestas. Si un sprint no cierra, mueve primero las historias "Should" (VIG-27, VIG-29 y VIG-38) antes que recortar calidad en las historias "Must".
 
-**Validación en paralelo.** Antes del sprint 4, entrevista al menos a 3 personas de gestión de riesgo (municipalidades en zonas de huaicos, COER regionales, ONGs de prevención). Pregunta cómo se enteran hoy de un evento, quién avisa a quién, cuánto tarda y qué canal usan. Prueba también las opciones de nombre comercial. Registra cada entrevista en `docs/research/` y ajusta el backlog antes del sprint 5.
+**Validación.** El plan original pedía entrevistar, antes del sprint 4, al menos a 3 personas de gestión de riesgo (municipalidades en zonas de huaicos, COER regionales, ONGs de prevención): cómo se enteran hoy de un evento, quién avisa a quién, cuánto tarda y qué canal usan, y qué nombre comercial prefieren. El 30 de septiembre de 2026 se decidió no hacerlas durante el MVP. Riesgo aceptado: el panel (sprints 5 y 6) se construye sobre los supuestos de esta especificación, no sobre lo que piden operadores reales. Mitigación: pantallas pequeñas y centradas en lo que exige la demo, y la demo grabada (VIG-30) como material para validar después del MVP, junto con el nombre comercial. Cuando haya entrevistas, se registran en `docs/research/` y el backlog se ajusta con ellas.
 
 **Ceremonias mínimas.** Planificación de 30 min al inicio de cada sprint, demo grabada de 5 min al cierre y una retrospectiva de 3 líneas en `docs/sprints/sprint-N.md`.
 
