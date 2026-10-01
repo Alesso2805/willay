@@ -26,7 +26,7 @@ from vigia.alerts.application.confirmation import (
 )
 from vigia.alerts.application.telegram_link import ContactLinkRepository, handle_start
 from vigia.alerts.domain.confirmation import ConfirmOutcome
-from vigia.alerts.domain.telegram import CLICK_ANSWER, closing_note
+from vigia.alerts.domain.telegram import CLICK_ANSWER, closed_text, closing_note
 from vigia.incidents.application.lifecycle import IncidentRepository
 from vigia.rules.application.evaluate import Transaction
 from vigia.shared.audit import AuditLog
@@ -151,7 +151,7 @@ class TelegramPoller:
         if note is None or click.message_text is None:
             return
         try:
-            text = f"{click.message_text}\n\n{note}"
+            text = closed_text(click.message_text, note)
             await self._api.edit_message(click.chat_id, click.message_id, text)
         except TelegramError as exc:
             log.warning("telegram_edit_failed", update_id=update_id, error=str(exc))

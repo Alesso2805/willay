@@ -9,7 +9,9 @@ from vigia.alerts.application.telegram_bot import TelegramError
 from vigia.alerts.domain.confirmation import ConfirmOutcome
 from vigia.alerts.domain.telegram import (
     CLICK_ANSWER,
+    ESCALATION_NOTE,
     MAX_CLICK_ANSWER,
+    closed_text,
     closing_note,
     compose_alert_text,
 )
@@ -74,3 +76,14 @@ def test_the_button_is_replaced_by_who_confirmed_and_when(
     outcome: ConfirmOutcome, by: str | None, note: str | None
 ) -> None:
     assert closing_note(outcome, by, ACK_AT, "America/Lima") == note
+
+
+def test_a_handled_alert_drops_the_escalation_warning() -> None:
+    sent = compose_alert_text(MESSAGE)
+    closed = closed_text(sent, "Confirmado por Ana.")
+
+    assert ESCALATION_NOTE in sent
+    assert ESCALATION_NOTE not in closed  # ya no escala: el aviso dejaría de ser cierto
+    assert closed.startswith("Vigía · CRÍTICO: Cambio brusco en Chosica")
+    assert "no reemplaza los avisos oficiales" in closed  # el descargo se queda
+    assert closed.endswith("\n\nConfirmado por Ana.")

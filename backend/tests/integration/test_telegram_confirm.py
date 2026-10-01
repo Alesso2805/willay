@@ -20,7 +20,7 @@ from tests.integration.telegram import (
 from vigia.alerts.application.dispatch import TelegramDispatcher
 from vigia.alerts.application.telegram_bot import Click, Update
 from vigia.alerts.domain.confirmation import ConfirmOutcome
-from vigia.alerts.domain.telegram import CLICK_ANSWER
+from vigia.alerts.domain.telegram import CLICK_ANSWER, ESCALATION_NOTE
 from vigia.alerts.infrastructure.sql_dispatch import SqlDispatchQueue
 from vigia.shared.clock import SystemClock
 from vigia.shared.db import create_engine
@@ -95,8 +95,10 @@ async def test_the_recipient_confirms_with_the_button(
     ]
     chat, message_id, edited = api.edits[0]
     assert (chat, message_id) == (CHAT, MESSAGE_ID)
-    original, note = edited.rsplit("\n\n", 1)
-    assert original == text  # lo que Ana vio no cambia; solo se quita el botón
+    kept, note = edited.rsplit("\n\n", 1)
+    # Lo que Ana vio se conserva, salvo el aviso de escalamiento: ya no va a pasar.
+    assert ESCALATION_NOTE in text
+    assert kept.split("\n") == [line for line in text.split("\n") if line != ESCALATION_NOTE]
     assert note.startswith("Confirmado por Ana el ")
 
 

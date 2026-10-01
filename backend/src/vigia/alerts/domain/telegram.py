@@ -49,6 +49,7 @@ def is_start(text: str) -> bool:
 
 
 CONFIRM_BUTTON = "Confirmar que lo vi"
+ESCALATION_NOTE = "Si nadie lo confirma, Vigía avisará al siguiente nivel."
 
 
 def compose_alert_text(message: AlertMessage) -> str:
@@ -63,7 +64,7 @@ def compose_alert_text(message: AlertMessage) -> str:
             "",
             *details,
             "",
-            "Si nadie lo confirma, Vigía avisará al siguiente nivel.",
+            ESCALATION_NOTE,
             "Herramienta de apoyo: no reemplaza los avisos oficiales (INDECI, COER, SISMATE).",
         ]
     )
@@ -106,3 +107,10 @@ def closing_note(
     who = acknowledged_by or "otra persona"
     when = f" el {local_time(acknowledged_at, timezone)}" if acknowledged_at is not None else ""
     return f"Confirmado por {who}{when}."
+
+
+def closed_text(original: str, note: str) -> str:
+    """El mensaje ya atendido: lo que la persona vio, sin el aviso de escalamiento (dejó de
+    ser cierto) y con la nota que reemplaza al botón."""
+    lines = [line for line in original.split("\n") if line != ESCALATION_NOTE]
+    return "\n".join(lines) + f"\n\n{note}"
