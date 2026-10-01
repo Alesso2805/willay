@@ -1,15 +1,15 @@
 # Architecture Decision Records
 
-Una decisión técnica por archivo: contexto, opciones, decisión y consecuencias. Toda decisión no cubierta por [SPEC.md](../SPEC.md) se registra aquí con el siguiente número libre (`NNNN-titulo.md`).
+One technical decision per file: context, options, decision and consequences. Any decision not covered by [SPEC.md](../SPEC.md) is recorded here with the next free number (`NNNN-title.md`).
 
-| ADR | Decisión | Estado |
+| ADR | Decision | Status |
 | --- | --- | --- |
-| [0001](0001-backend-unico-python.md) | Backend único en Python con módulos y workers separados | Propuesto |
-| [0002](0002-postgres-como-cola.md) | PostgreSQL como cola, canal de notificaciones y rate limit | Propuesto |
-| [0003](0003-timescaledb-lecturas.md) | TimescaleDB para las lecturas | Propuesto |
-| [0004](0004-keycloak-organizations-tenant.md) | Keycloak 26 Organizations como fuente de tenant y roles | Propuesto |
-| [0005](0005-extensiones-y-roles-en-init.md) | Extensiones y roles de BD en el init de Postgres | Propuesto |
-| [0006](0006-migraciones-sql-y-tests-con-testcontainers.md) | Migraciones en SQL explícito y tests con testcontainers | Propuesto |
-| [0007](0007-eventos-en-vivo-con-triggers.md) | Eventos en vivo emitidos por triggers de Postgres | Propuesto |
+| [0001](0001-single-python-backend.md) | Single Python backend with separate modules and workers | Proposed |
+| [0002](0002-postgres-as-queue.md) | PostgreSQL as queue, notification channel and rate limit | Proposed |
+| [0003](0003-timescaledb-for-readings.md) | TimescaleDB for readings | Proposed |
+| [0004](0004-keycloak-organizations-tenant.md) | Keycloak 26 Organizations as the source of tenant and roles | Proposed |
+| [0005](0005-extensions-and-roles-in-init.md) | DB extensions and roles in the Postgres init | Proposed |
+| [0006](0006-sql-migrations-and-testcontainers.md) | Migrations in explicit SQL and tests with testcontainers | Proposed |
+| [0007](0007-live-events-with-triggers.md) | Live events emitted by Postgres triggers | Proposed |
 
-Estados: Propuesto → Aceptado → (Reemplazado por ADR-NNNN | Obsoleto).
+Statuses: Proposed → Accepted → (Superseded by ADR-NNNN | Deprecated).
