@@ -4,6 +4,7 @@ import { Component, input, output, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Session } from '../session';
 import { settings } from '../settings';
+import { seriousViolations } from '../ui/axe';
 import { DrawnGeometry, MapMode, ZoneMap } from './zone-map';
 import { ZonesPage } from './zones-page';
 import { Position, Zone } from './zones.api';
@@ -71,6 +72,27 @@ describe('ZonesPage', () => {
     expect(element.textContent).toContain('Chosica');
     expect(element.textContent?.replace(/\s+/g, ' ')).toContain('Riesgo: Crítico');
     expect(FakeZoneMap.last?.zones()).toEqual([ZONE]);
+  });
+
+  it('has no serious accessibility violations in the list, the form or an error', async () => {
+    const { fixture, http, button } = setup(['view', 'territory:manage']);
+    http.expectOne(`${URL}?include_inactive=false`).flush([ZONE]);
+    await fixture.whenStable();
+    expect(await seriousViolations(fixture.nativeElement)).toEqual([]);
+
+    button('Nueva zona')?.click();
+    await fixture.whenStable();
+    expect(await seriousViolations(fixture.nativeElement)).toEqual([]);
+
+    button('Cancelar')?.click();
+    // Una recarga que falla: el aviso de error también tiene que ser accesible.
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('input[type="checkbox"]')?.click();
+    http
+      .expectOne(`${URL}?include_inactive=true`)
+      .flush({ detail: 'x' }, { status: 500, statusText: 'Server Error' });
+    await fixture.whenStable();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('No se pudieron cargar las zonas.');
+    expect(await seriousViolations(fixture.nativeElement)).toEqual([]);
   });
 
   it('hides management actions from users without territory:manage', async () => {

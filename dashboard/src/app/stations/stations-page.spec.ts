@@ -4,6 +4,7 @@ import { Component, input, output, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Session } from '../session';
 import { settings } from '../settings';
+import { seriousViolations } from '../ui/axe';
 import { Zone } from '../zones/zones.api';
 import { LonLat, StationMap } from './station-map';
 import { StationsPage } from './stations-page';
@@ -86,6 +87,17 @@ function setup(permissions: string[]) {
 }
 
 describe('StationsPage', () => {
+  it('has no serious accessibility violations in the list or the form', async () => {
+    const { fixture, button, loaded } = setup(['view', 'territory:manage']);
+    loaded([STATION]);
+    await fixture.whenStable();
+    expect(await seriousViolations(fixture.nativeElement)).toEqual([]);
+
+    button('Nueva estación')?.click();
+    await fixture.whenStable();
+    expect(await seriousViolations(fixture.nativeElement)).toEqual([]);
+  });
+
   it('says it is loading, not that there are no stations, until the list arrives', async () => {
     const { fixture, element, loaded } = setup(['view']);
     await fixture.whenStable();
