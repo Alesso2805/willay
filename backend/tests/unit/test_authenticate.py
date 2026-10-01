@@ -3,7 +3,12 @@ from uuid import UUID
 
 import pytest
 
-from vigia.identity.application.authenticate import InvalidClaimsError, UserProfile, authenticate
+from vigia.identity.application.authenticate import (
+    InvalidClaimsError,
+    Organization,
+    UserProfile,
+    authenticate,
+)
 from vigia.identity.domain.principal import (
     MultipleOrganizationsError,
     Role,
@@ -12,14 +17,15 @@ from vigia.identity.domain.principal import (
 
 KC_RIMAC = UUID("1d44f4b3-b1df-457f-b717-20926a20166e")
 ORG_RIMAC = UUID("01a0dc43-cd2d-7522-8430-867cee8f89ce")
+RIMAC = Organization(ORG_RIMAC, "Demo Rímac", "America/Lima")
 SUB = UUID("c144b510-2abd-4844-ad5e-13e700b29fba")
 
 
 class FakeOrganizations:
-    def __init__(self, known: dict[UUID, UUID]) -> None:
+    def __init__(self, known: dict[UUID, Organization]) -> None:
         self.known = known
 
-    async def id_by_keycloak_id(self, keycloak_org_id: UUID) -> UUID | None:
+    async def by_keycloak_id(self, keycloak_org_id: UUID) -> Organization | None:
         return self.known.get(keycloak_org_id)
 
 
@@ -45,9 +51,13 @@ def _claims(**overrides: Any) -> dict[str, Any]:
 
 async def test_resolves_tenant_roles_and_upserts_user() -> None:
     users = FakeUsers()
-    principal = await authenticate(_claims(), FakeOrganizations({KC_RIMAC: ORG_RIMAC}), users)
+    principal = await authenticate(_claims(), FakeOrganizations({KC_RIMAC: RIMAC}), users)
 
     assert principal.organization_id == ORG_RIMAC
+    assert (principal.organization_name, principal.organization_timezone) == (
+        "Demo Rímac",
+        "America/Lima",
+    )
     assert principal.user_id == SUB
     assert principal.roles == {Role.OPERATOR}
     assert users.upserted == [
@@ -73,11 +83,11 @@ async def test_missing_identity_claims_are_invalid(missing: str) -> None:
     claims = _claims()
     del claims[missing]
     with pytest.raises(InvalidClaimsError):
-        await authenticate(claims, FakeOrganizations({KC_RIMAC: ORG_RIMAC}), FakeUsers())
+        await authenticate(claims, FakeOrganizations({KC_RIMAC: RIMAC}), FakeUsers())
 
 
 async def test_missing_realm_roles_means_no_roles() -> None:
     principal = await authenticate(
-        _claims(realm_access=None), FakeOrganizations({KC_RIMAC: ORG_RIMAC}), FakeUsers()
+        _claims(realm_access=None), FakeOrganizations({KC_RIMAC: RIMAC}), FakeUsers()
     )
     assert principal.roles == frozenset()

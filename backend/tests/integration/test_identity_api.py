@@ -45,9 +45,12 @@ async def test_each_seed_organization_sees_itself(
 
     assert rimac.status_code == 200, rimac.text
     assert rimac.json()["organization_id"] == str(data.RIMAC.id)
+    assert rimac.json()["organization_name"] == "Demo Rímac"
+    assert rimac.json()["organization_timezone"] == "America/Lima"
     assert rimac.json()["roles"] == ["operator"]
     assert aislamiento.status_code == 200, aislamiento.text
     assert aislamiento.json()["organization_id"] == str(data.AISLAMIENTO.id)
+    assert aislamiento.json()["organization_name"] == "Prueba de aislamiento"
     assert aislamiento.json()["roles"] == ["admin"]
 
 

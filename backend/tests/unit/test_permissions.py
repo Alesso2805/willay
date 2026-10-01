@@ -8,7 +8,16 @@ from vigia.identity.domain.principal import Principal, Role
 
 
 def _principal(*roles: Role) -> Principal:
-    return Principal(uuid4(), uuid4(), uuid4(), "x@vigia.test", "X", frozenset(roles))
+    return Principal(
+        user_id=uuid4(),
+        organization_id=uuid4(),
+        keycloak_org_id=uuid4(),
+        organization_name="Org",
+        organization_timezone="America/Lima",
+        email="x@vigia.test",
+        full_name="X",
+        roles=frozenset(roles),
+    )
 
 
 @pytest.mark.parametrize("role", list(Role))

@@ -5,19 +5,24 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from vigia.identity.application.authenticate import UserProfile
+from vigia.identity.application.authenticate import Organization, UserProfile
 
 
 class SqlOrganizationRepository:
     def __init__(self, conn: AsyncConnection) -> None:
         self._conn = conn
 
-    async def id_by_keycloak_id(self, keycloak_org_id: UUID) -> UUID | None:
-        result = await self._conn.scalar(
-            text("SELECT id FROM core.organizations WHERE keycloak_org_id = :kc_id"),
-            {"kc_id": keycloak_org_id},
-        )
-        return result if isinstance(result, UUID) else None
+    async def by_keycloak_id(self, keycloak_org_id: UUID) -> Organization | None:
+        row = (
+            await self._conn.execute(
+                text(
+                    "SELECT id, name, timezone FROM core.organizations"
+                    " WHERE keycloak_org_id = :kc_id"
+                ),
+                {"kc_id": keycloak_org_id},
+            )
+        ).first()
+        return Organization(row.id, row.name, row.timezone) if row is not None else None
 
 
 class SqlUserRepository:

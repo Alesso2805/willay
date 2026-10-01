@@ -51,6 +51,8 @@ class Principal:
     user_id: UUID  # = sub de Keycloak = core.users.id
     organization_id: UUID  # core.organizations.id: el tenant de todas las consultas
     keycloak_org_id: UUID
+    organization_name: str
+    organization_timezone: str  # IANA, p. ej. America/Lima
     email: str
     full_name: str
     roles: frozenset[Role]
