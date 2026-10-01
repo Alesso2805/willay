@@ -26,7 +26,12 @@ async def test_loop_exits_promptly_when_stopped_during_wait(tmp_path: Path) -> N
     stop = asyncio.Event()
     # Long interval: if stopping did not interrupt the wait, the test would hang.
     task = asyncio.create_task(run_loop("silence", 60.0, heartbeat, stop))
-    await asyncio.sleep(0.05)
+    # The heartbeat is written from a thread: wait for it (up to 2 s) instead of a fixed
+    # pause, which was flaky on slow CI runners.
+    for _ in range(200):
+        if heartbeat.exists():
+            break
+        await asyncio.sleep(0.01)
     assert heartbeat.exists()
     stop.set()
     await asyncio.wait_for(task, timeout=1.0)
