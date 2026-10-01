@@ -8,6 +8,7 @@ import { App } from './app';
 import { routes } from './app.routes';
 import { Me } from './session';
 import { settings } from './settings';
+import { seriousViolations } from './ui/axe';
 
 const ME: Me = {
   user_id: 'c144b510-2abd-4844-ad5e-13e700b29fba',
@@ -99,6 +100,19 @@ describe('App', () => {
     await fixture.whenStable();
     expect(button?.getAttribute('aria-expanded')).toBe('true');
     expect(menu?.classList).not.toContain('hidden');
+  });
+
+  it('has no serious accessibility violations, with or without a session', async () => {
+    const anonymous = setup(false);
+    await anonymous.fixture.whenStable();
+    expect(await seriousViolations(anonymous.fixture.nativeElement)).toEqual([]);
+    TestBed.resetTestingModule();
+
+    const { fixture, http } = setup(true);
+    http.expectOne(`${settings.apiUrl}/v1/me`).flush(ME);
+    await TestBed.inject(Router).navigateByUrl('/');
+    await fixture.whenStable();
+    expect(await seriousViolations(fixture.nativeElement)).toEqual([]);
   });
 
   it('explains a 403 from the API (zero or several organizations)', async () => {
