@@ -1,6 +1,10 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { EMPTY, Subject, catchError, switchMap } from 'rxjs';
+import { LiveEvents } from '../realtime/live-events';
 import { Session } from '../session';
+import { clock } from '../ui/clock';
 import { ageText, localTime, measurement } from '../ui/formats';
 import { Icon } from '../ui/icon';
 import { LoadState, loadStatus } from '../ui/load-state';
@@ -15,8 +19,10 @@ import {
   UNITS,
   VARIABLE_LABELS,
   VARIABLES,
+  keepNewerHeartbeats,
   stationProblem,
   stationState,
+  withHeartbeat,
 } from './station-presentation';
 import {
   IssuedKey,
@@ -63,8 +69,10 @@ export class StationsPage {
   protected readonly status = signal('');
   protected readonly issued = signal<{ code: string; key: string } | null>(null);
   protected readonly copied = signal(false);
-  /** View clock for the relative ages ("hace N s"); refreshed every 15 s. */
-  protected readonly now = signal(Date.now());
+  /** View clock for the relative ages ("hace N s"). */
+  protected readonly now = clock(1_000);
+  /** switchMap: only the latest list counts, even if an older request answers later. */
+  private readonly stationLoads = new Subject<void>();
 
   protected readonly canManage = computed(
     () => this.session.me()?.permissions.includes('territory:manage') ?? false,
@@ -107,31 +115,39 @@ export class StationsPage {
   });
 
   constructor() {
+    this.stationLoads
+      .pipe(
+        switchMap(() =>
+          this.api.list(this.includeInactive()).pipe(
+            catchError(() => {
+              this.loadFailed.set(true);
+              return EMPTY;
+            }),
+          ),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe((stations) => {
+        this.stations.set(keepNewerHeartbeats(stations, this.stations()));
+        this.loaded.set(true);
+        this.loadFailed.set(false);
+      });
     this.load();
-    // The clock and the heartbeats advance together: if only the clock advanced, a station
-    // that keeps reporting would show "Sin reportar" K × interval after opening the page.
-    // VIG-25 replaces this polling with SSE events.
-    const timer = setInterval(() => {
-      this.now.set(Date.now());
-      this.loadStations();
-    }, 15_000);
-    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+
+    // The clock moves every second, so the heartbeats must keep up with it: each one arrives
+    // as a live event. If the channel drops, LiveEvents asks for a reload every 15 s instead.
+    const live = inject(LiveEvents);
+    live.reload$.pipe(takeUntilDestroyed()).subscribe(() => this.load());
+    live.heartbeats$
+      .pipe(takeUntilDestroyed())
+      .subscribe(({ stationId, heartbeat }) =>
+        this.stations.update((stations) => withHeartbeat(stations, stationId, heartbeat)),
+      );
   }
 
   protected load(): void {
-    this.loadStations();
+    this.stationLoads.next();
     this.zonesApi.list().subscribe({ next: (zones) => this.zones.set(zones) });
-  }
-
-  private loadStations(): void {
-    this.api.list(this.includeInactive()).subscribe({
-      next: (stations) => {
-        this.stations.set(stations);
-        this.loaded.set(true);
-        this.loadFailed.set(false);
-      },
-      error: () => this.loadFailed.set(true),
-    });
   }
 
   protected toggleInactive(checked: boolean): void {

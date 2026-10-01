@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { StationState } from '../ui/visual-states';
-import { Station, Variable, ZonePosition } from './stations.api';
+import { Heartbeat, Station, Variable, ZonePosition } from './stations.api';
 
 export const VARIABLES: readonly Variable[] = ['discharge', 'water_level', 'rainfall'];
 
@@ -34,6 +34,37 @@ export function stationState(station: Station, now: number): StationState | null
   if (station.heartbeat === null) return null;
   const silentAfterMs = station.expected_interval_s * station.silence_multiplier * 1000;
   return now - Date.parse(station.heartbeat.last_seen_at) > silentAfterMs ? 'silent' : 'reporting';
+}
+
+/**
+ * The stations with a live heartbeat applied. Like `station_heartbeats` in the database, a
+ * heartbeat never goes backwards: an older one (an event overtaken by a REST response) is
+ * ignored, and so is a station that is not in the list.
+ */
+export function withHeartbeat(stations: Station[], stationId: string, heartbeat: Heartbeat): Station[] {
+  return stations.map((station) =>
+    station.id === stationId && notOlder(heartbeat, station.heartbeat)
+      ? { ...station, heartbeat }
+      : station,
+  );
+}
+
+/**
+ * A fresh REST list, keeping any heartbeat the page already has that is newer: an event can
+ * arrive while the request is in flight, and the response must not undo it.
+ */
+export function keepNewerHeartbeats(fresh: Station[], current: Station[]): Station[] {
+  const known = new Map(current.map((station) => [station.id, station.heartbeat]));
+  return fresh.map((station) => {
+    const heartbeat = known.get(station.id);
+    return heartbeat && notOlder(heartbeat, station.heartbeat)
+      ? { ...station, heartbeat }
+      : station;
+  });
+}
+
+function notOlder(candidate: Heartbeat, current: Heartbeat | null): boolean {
+  return current === null || Date.parse(candidate.last_seen_at) >= Date.parse(current.last_seen_at);
 }
 
 /** Turns an error from saving a station into a message for the operator. */
