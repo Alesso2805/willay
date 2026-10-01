@@ -93,11 +93,22 @@ export class StationsPage {
 
   constructor() {
     this.load();
-    const timer = setInterval(() => this.now.set(Date.now()), 15_000);
+    // El reloj y los latidos avanzan juntos: si solo avanzara el reloj, una estación que
+    // sigue reportando aparecería "Sin reportar" a los K × intervalo de abrir la página.
+    // VIG-25 reemplaza este sondeo por eventos SSE.
+    const timer = setInterval(() => {
+      this.now.set(Date.now());
+      this.loadStations();
+    }, 15_000);
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }
 
   protected load(): void {
+    this.loadStations();
+    this.zonesApi.list().subscribe({ next: (zones) => this.zones.set(zones) });
+  }
+
+  private loadStations(): void {
     this.api.list(this.includeInactive()).subscribe({
       next: (stations) => {
         this.stations.set(stations);
@@ -106,7 +117,6 @@ export class StationsPage {
       },
       error: () => this.loadFailed.set(true),
     });
-    this.zonesApi.list().subscribe({ next: (zones) => this.zones.set(zones) });
   }
 
   protected toggleInactive(checked: boolean): void {
