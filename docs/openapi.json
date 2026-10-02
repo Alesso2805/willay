@@ -219,6 +219,34 @@
         "title": "FailedReadingOut",
         "type": "object"
       },
+      "FiringOut": {
+        "properties": {
+          "at": {
+            "description": "When the incident would have opened",
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The reading that fired it; None for silence",
+            "title": "Value"
+          }
+        },
+        "required": [
+          "at",
+          "value"
+        ],
+        "title": "FiringOut",
+        "type": "object"
+      },
       "GeoJsonGeometry": {
         "description": "Polygon (what the map draws) or MultiPolygon. Coordinates [longitude, latitude].",
         "properties": {
@@ -1166,6 +1194,25 @@
         "title": "Permission",
         "type": "string"
       },
+      "PointOut": {
+        "properties": {
+          "measured_at": {
+            "format": "date-time",
+            "title": "Measured At",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "measured_at",
+          "value"
+        ],
+        "title": "PointOut",
+        "type": "object"
+      },
       "PolicyIn": {
         "additionalProperties": false,
         "properties": {
@@ -1221,6 +1268,34 @@
         "title": "PolicyOut",
         "type": "object"
       },
+      "PreviewOut": {
+        "properties": {
+          "since": {
+            "format": "date-time",
+            "title": "Since",
+            "type": "string"
+          },
+          "stations": {
+            "items": {
+              "$ref": "#/components/schemas/StationPreviewOut"
+            },
+            "title": "Stations",
+            "type": "array"
+          },
+          "until": {
+            "format": "date-time",
+            "title": "Until",
+            "type": "string"
+          }
+        },
+        "required": [
+          "since",
+          "until",
+          "stations"
+        ],
+        "title": "PreviewOut",
+        "type": "object"
+      },
       "RateOfChangeParamsIn": {
         "additionalProperties": false,
         "properties": {
@@ -1245,6 +1320,43 @@
           "window_minutes"
         ],
         "title": "RateOfChangeParamsIn",
+        "type": "object"
+      },
+      "RateOfChangePreviewIn": {
+        "additionalProperties": false,
+        "properties": {
+          "params": {
+            "$ref": "#/components/schemas/RateOfChangeParamsIn"
+          },
+          "station_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Station Id"
+          },
+          "type": {
+            "const": "rate_of_change",
+            "title": "Type",
+            "type": "string"
+          },
+          "zone_id": {
+            "format": "uuid",
+            "title": "Zone Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "zone_id",
+          "type",
+          "params"
+        ],
+        "title": "RateOfChangePreviewIn",
         "type": "object"
       },
       "RateOfChangeRuleIn": {
@@ -1582,6 +1694,43 @@
         "title": "SilenceParamsIn",
         "type": "object"
       },
+      "SilencePreviewIn": {
+        "additionalProperties": false,
+        "properties": {
+          "params": {
+            "$ref": "#/components/schemas/SilenceParamsIn",
+            "default": {}
+          },
+          "station_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Station Id"
+          },
+          "type": {
+            "const": "silence",
+            "title": "Type",
+            "type": "string"
+          },
+          "zone_id": {
+            "format": "uuid",
+            "title": "Zone Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "zone_id",
+          "type"
+        ],
+        "title": "SilencePreviewIn",
+        "type": "object"
+      },
       "SilenceRuleIn": {
         "additionalProperties": false,
         "properties": {
@@ -1867,6 +2016,41 @@
         "title": "StationOut",
         "type": "object"
       },
+      "StationPreviewOut": {
+        "properties": {
+          "firings": {
+            "items": {
+              "$ref": "#/components/schemas/FiringOut"
+            },
+            "title": "Firings",
+            "type": "array"
+          },
+          "readings": {
+            "description": "The period's `ok` readings, oldest first",
+            "items": {
+              "$ref": "#/components/schemas/PointOut"
+            },
+            "title": "Readings",
+            "type": "array"
+          },
+          "station": {
+            "$ref": "#/components/schemas/StationRefOut"
+          },
+          "truncated": {
+            "description": "More readings than the limit: the oldest were left out",
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "station",
+          "readings",
+          "firings",
+          "truncated"
+        ],
+        "title": "StationPreviewOut",
+        "type": "object"
+      },
       "StationRefOut": {
         "properties": {
           "code": {
@@ -2008,6 +2192,43 @@
           "consecutive"
         ],
         "title": "ThresholdParamsIn",
+        "type": "object"
+      },
+      "ThresholdPreviewIn": {
+        "additionalProperties": false,
+        "properties": {
+          "params": {
+            "$ref": "#/components/schemas/ThresholdParamsIn"
+          },
+          "station_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Station Id"
+          },
+          "type": {
+            "const": "threshold",
+            "title": "Type",
+            "type": "string"
+          },
+          "zone_id": {
+            "format": "uuid",
+            "title": "Zone Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "zone_id",
+          "type",
+          "params"
+        ],
+        "title": "ThresholdPreviewIn",
         "type": "object"
       },
       "ThresholdRuleIn": {
@@ -4004,6 +4225,64 @@
           }
         ],
         "summary": "Create a rule",
+        "tags": [
+          "rules"
+        ]
+      }
+    },
+    "/v1/rules/preview": {
+      "post": {
+        "operationId": "post_preview_v1_rules_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "discriminator": {
+                  "mapping": {
+                    "rate_of_change": "#/components/schemas/RateOfChangePreviewIn",
+                    "silence": "#/components/schemas/SilencePreviewIn",
+                    "threshold": "#/components/schemas/ThresholdPreviewIn"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ThresholdPreviewIn"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RateOfChangePreviewIn"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SilencePreviewIn"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Invalid params, or a zone or station outside the organization"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "When a draft rule would have opened incidents over the last 24 h",
         "tags": [
           "rules"
         ]

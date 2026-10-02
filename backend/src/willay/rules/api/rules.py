@@ -18,6 +18,7 @@ from willay.identity.domain.permissions import Permission
 from willay.identity.domain.principal import Principal
 from willay.incidents.domain.severity import Severity
 from willay.rules.application.actor import Actor
+from willay.rules.application.preview import Preview, preview_rule
 from willay.rules.application.rules import (
     Rule,
     RuleNotFoundError,
@@ -29,6 +30,7 @@ from willay.rules.domain.rate_of_change import MAX_WINDOW_MINUTES, Direction
 from willay.rules.domain.rules import MAX_COOLDOWN_S, InvalidRuleError, RuleData, RuleType
 from willay.rules.domain.threshold import MAX_CONSECUTIVE, Operator
 from willay.rules.infrastructure.rules_repository import SqlRuleAdminRepository
+from willay.rules.infrastructure.sql_preview import SqlPreviewRepository
 from willay.shared.audit import SqlAuditLog
 from willay.shared.web import ClockDep, DbConnection
 
@@ -101,6 +103,34 @@ RuleIn = Annotated[
 ]
 
 
+class _PreviewBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    zone_id: UUID
+    station_id: UUID | None = None
+
+
+class ThresholdPreviewIn(_PreviewBody):
+    type: Literal[RuleType.THRESHOLD]
+    params: ThresholdParamsIn
+
+
+class RateOfChangePreviewIn(_PreviewBody):
+    type: Literal[RuleType.RATE_OF_CHANGE]
+    params: RateOfChangeParamsIn
+
+
+class SilencePreviewIn(_PreviewBody):
+    type: Literal[RuleType.SILENCE]
+    params: SilenceParamsIn = SilenceParamsIn()
+
+
+PreviewIn = Annotated[
+    ThresholdPreviewIn | RateOfChangePreviewIn | SilencePreviewIn,
+    Body(discriminator="type"),
+]
+
+
 class RefOut(BaseModel):
     id: UUID
     name: str
@@ -127,6 +157,29 @@ class RuleOut(BaseModel):
     updated_at: datetime
 
 
+class PointOut(BaseModel):
+    measured_at: datetime
+    value: float
+
+
+class FiringOut(BaseModel):
+    at: datetime = Field(description="When the incident would have opened")
+    value: float | None = Field(description="The reading that fired it; None for silence")
+
+
+class StationPreviewOut(BaseModel):
+    station: StationRefOut
+    readings: list[PointOut] = Field(description="The period's `ok` readings, oldest first")
+    firings: list[FiringOut]
+    truncated: bool = Field(description="More readings than the limit: the oldest were left out")
+
+
+class PreviewOut(BaseModel):
+    since: datetime
+    until: datetime
+    stations: list[StationPreviewOut]
+
+
 @router.get("", summary="The organization's rules, by zone")
 async def list_rules(
     principal: CanView,
@@ -137,6 +190,26 @@ async def list_rules(
         principal.organization_id, include_inactive=include_inactive
     )
     return [_out(rule) for rule in rules]
+
+
+@router.post(
+    "/preview",
+    summary="When a draft rule would have opened incidents over the last 24 h",
+    responses={
+        422: {"description": "Invalid params, or a zone or station outside the organization"}
+    },
+)
+async def post_preview(
+    body: PreviewIn, principal: CanManage, conn: DbConnection, clock: ClockDep
+) -> PreviewOut:
+    try:
+        preview = await preview_rule(
+            principal.organization_id, body.type, body.zone_id, body.station_id,
+            body.params.model_dump(mode="json"), repository=SqlPreviewRepository(conn), clock=clock,
+        )  # fmt: skip
+    except InvalidRuleError as exc:
+        raise _invalid(exc) from exc
+    return _preview_out(preview)
 
 
 @router.get("/{rule_id}", summary="A rule", responses={404: {"description": "Not found"}})
@@ -224,6 +297,24 @@ def _invalid(exc: InvalidRuleError) -> HTTPException:
     return HTTPException(
         status.HTTP_422_UNPROCESSABLE_CONTENT,
         detail=[{"loc": ["body", exc.field], "msg": str(exc), "type": "value_error"}],
+    )
+
+
+def _preview_out(preview: Preview) -> PreviewOut:
+    return PreviewOut(
+        since=preview.since,
+        until=preview.until,
+        stations=[
+            StationPreviewOut(
+                station=StationRefOut(
+                    id=p.station.id, code=p.station.code, name=p.station.name, unit=p.station.unit
+                ),
+                readings=[PointOut(measured_at=r.at, value=r.value) for r in p.readings],
+                firings=[FiringOut(at=f.at, value=f.value) for f in p.firings],
+                truncated=p.truncated,
+            )
+            for p in preview.stations
+        ],
     )
 
 
