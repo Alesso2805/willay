@@ -42,12 +42,17 @@ function zone(id: string, name: string): Zone {
   };
 }
 
-function incident(zone_id: string, status: Incident['status'], rule_type = 'silence'): Incident {
+function incident(
+  zone_id: string,
+  status: Incident['status'],
+  rule_type = 'silence',
+  station_id = 's1',
+): Incident {
   return {
     id: crypto.randomUUID(),
     zone_id,
     zone_name: 'Z',
-    station_id: 's1',
+    station_id,
     station_code: 'RIM-SEU-01',
     rule_type,
     severity: 'critical',
@@ -174,6 +179,29 @@ describe('LiveMapPage', () => {
     await fixture.whenStable();
     expect(FakeLiveMap.last?.zones()[0]).toMatchObject({ zone: { name: 'Chaclacayo' }, state: 'open' });
     expect(text()).toContain('91.5 m3/s'); // the older REST heartbeat did not undo the live one
+  });
+
+  it('shows an acknowledged incident on its station even when the zone stays exhausted', async () => {
+    const { fixture, element, loaded } = setup();
+    const exhausted = { ...incident('z1', 'open', 'silence', 's2'), escalation_exhausted_at: new Date().toISOString() };
+    loaded(
+      [exhausted, incident('z1', 'acknowledged', 'threshold', 's1')],
+      [station('s1', 'RIM-CHO-01', 600), station('s2', 'RIM-SEU-01', 600)],
+      ZONES,
+    );
+    await fixture.whenStable();
+
+    const chosica = FakeLiveMap.last?.zones().find((v) => v.zone.name === 'Chosica');
+    expect(chosica?.state).toBe('exhausted');
+    expect(chosica?.summary).toBe('1 con escalamiento agotado · 1 confirmado');
+    const badges = Object.fromEntries(
+      FakeLiveMap.last?.stations().map((v) => [v.station.code, v.incident]) ?? [],
+    );
+    expect(badges).toEqual({ 'RIM-CHO-01': 'acknowledged', 'RIM-SEU-01': 'exhausted' });
+    const item = [...element.querySelectorAll('#live-stations-title + ul > li')].find((li) =>
+      li.textContent?.includes('RIM-CHO-01'),
+    );
+    expect(item?.textContent).toContain('Incidente confirmado');
   });
 
   it('says it is loading, not that there is nothing, and has no serious accessibility violations', async () => {

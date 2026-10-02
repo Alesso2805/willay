@@ -1,16 +1,28 @@
 import { causeLabel, incidentState } from '../incidents/incident-presentation';
 import { Incident } from '../incidents/incidents.api';
 import { Station } from '../stations/stations.api';
-import { byStationUrgency, stationView, zoneStates } from './live-map-presentation';
+import {
+  byStationUrgency,
+  incidentSummary,
+  markerHtml,
+  stationIncidentStates,
+  stationView,
+  zoneStates,
+} from './live-map-presentation';
 
 const NOW = Date.parse('2026-10-02T09:00:00Z');
 
-function incident(zone_id: string, status: Incident['status'], exhausted = false): Incident {
+function incident(
+  zone_id: string,
+  status: Incident['status'],
+  exhausted = false,
+  station_id: string | null = null,
+): Incident {
   return {
     id: crypto.randomUUID(),
     zone_id,
     zone_name: 'Z',
-    station_id: null,
+    station_id,
     station_code: null,
     rule_type: 'threshold',
     severity: 'critical',
@@ -92,6 +104,51 @@ describe('live map presentation', () => {
     const view = stationView(station('A', 600), NOW - 590_000, NOW); // data complete only up to 10 min ago
     expect(view.marker).toBe('reporting');
     expect(view.label).toContain('hace 10 min');
+  });
+
+  it('a station badge shows its most urgent active incident, whatever its zone shows', () => {
+    const incidents = [
+      incident('chosica', 'open', true, 'SEU'), // keeps Chosica exhausted
+      incident('chosica', 'acknowledged', false, 'CHO-1'),
+      incident('chosica', 'acknowledged', true, 'CHO-2'), // acknowledged after exhausting
+      incident('chosica', 'resolved', false, 'CHO-3'),
+      incident('chosica', 'open'), // without a station: no badge anywhere
+    ];
+    const badges = stationIncidentStates(incidents);
+    expect(zoneStates(incidents).get('chosica')).toBe('exhausted');
+    expect(badges.get('SEU')).toBe('exhausted');
+    expect(badges.get('CHO-1')).toBe('acknowledged');
+    expect(badges.get('CHO-2')).toBe('acknowledged');
+    expect(badges.has('CHO-3')).toBe(false);
+    expect(badges.size).toBe(3);
+  });
+
+  it('counts a zone\'s incidents by state, most urgent first', () => {
+    expect(
+      incidentSummary([
+        incident('z', 'acknowledged'),
+        incident('z', 'open', true),
+        incident('z', 'acknowledged'),
+        incident('z', 'resolved'),
+      ]),
+    ).toBe('1 con escalamiento agotado · 2 confirmados');
+    expect(incidentSummary([incident('z', 'open')])).toBe('1 abierto');
+    expect(incidentSummary([])).toBe('Sin incidentes');
+  });
+
+  it('the tooltip also says the station\'s incident', () => {
+    expect(stationView(station('A', 600), NOW, NOW, 'acknowledged').label).toContain(
+      'Sin reportar · Incidente confirmado',
+    );
+  });
+
+  it('a marker carries a corner badge only when its station has an incident', () => {
+    const plain = markerHtml('silent', null);
+    const badged = markerHtml('silent', 'acknowledged');
+    expect(plain.match(/<svg/g)).toHaveLength(1);
+    expect(badged.match(/<svg/g)).toHaveLength(2);
+    expect(badged).toContain('#1d4ed8'); // the acknowledged color
+    expect(badged).toContain('M5 12l5 5L20 7'); // and its check icon, readable without color
   });
 
   it('lists the most urgent stations first', () => {
