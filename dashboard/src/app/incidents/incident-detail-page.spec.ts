@@ -9,9 +9,27 @@ import { Session } from '../session';
 import { settings } from '../settings';
 import { seriousViolations } from '../ui/axe';
 import { IncidentDetailPage } from './incident-detail-page';
-import { IncidentDetail } from './incidents.api';
+import { IncidentAlert, IncidentDetail } from './incidents.api';
 
 const URL = `${settings.apiUrl}/v1/incidents/i1`;
+const ALERTS_URL = `${URL}/alerts`;
+
+function alert(overrides: Partial<IncidentAlert>): IncidentAlert {
+  return {
+    id: crypto.randomUUID(),
+    level_order: 1,
+    contact_id: 'c1',
+    contact_name: 'Óscar Operador',
+    channel: 'email',
+    status: 'sent',
+    attempts: 1,
+    sent_at: '2026-10-02T03:31:04Z',
+    acknowledged_at: null,
+    skipped_reason: null,
+    email: null,
+    ...overrides,
+  };
+}
 
 const DETAIL: IncidentDetail = {
   id: 'i1',
@@ -80,15 +98,20 @@ async function setup(id = 'i1') {
   const element = harness.routeNativeElement as HTMLElement;
   const text = () => element.textContent?.replace(/\s+/g, ' ') ?? '';
   const stable = () => harness.fixture.whenStable();
-  return { http, element, text, stable, live };
+  /** Answers the detail and its alerts, which the page asks for together. */
+  const respond = async (detail: IncidentDetail = DETAIL, alerts: IncidentAlert[] = []) => {
+    http.expectOne(URL).flush(detail);
+    http.expectOne(ALERTS_URL).flush(alerts);
+    await stable();
+  };
+  return { http, element, text, stable, live, respond };
 }
 
 describe('IncidentDetailPage', () => {
   it('shows the summary and the timeline in words, in the organization\'s time', async () => {
-    const { http, element, text, stable } = await setup();
+    const { element, text, respond } = await setup();
     expect(text()).toContain('Cargando incidente…');
-    http.expectOne(URL).flush(DETAIL);
-    await stable();
+    await respond();
 
     expect(element.querySelector('h1')?.textContent).toContain('Valor fuera de límite · RIM-CHO-01');
     expect(text()).toContain('Chosica · abierto el 01/10/2026 22:31');
@@ -109,19 +132,45 @@ describe('IncidentDetailPage', () => {
   });
 
   it('reloads with its own live events and reconnections, not with other incidents', async () => {
-    const { http, stable, live } = await setup();
-    http.expectOne(URL).flush({ ...DETAIL, timeline: [] });
-    await stable();
+    const { http, live, respond } = await setup();
+    await respond({ ...DETAIL, timeline: [] });
 
     live.incidents$.next({ incidentId: 'other', event: 'opened' });
     http.expectNone(URL);
 
     live.incidents$.next({ incidentId: 'i1', event: 'resolved' });
-    http.expectOne(URL).flush({ ...DETAIL, status: 'resolved', resolved_at: '2026-10-02T06:00:00Z', resolution: 'false_alarm' });
-    await stable();
+    await respond({ ...DETAIL, status: 'resolved', resolved_at: '2026-10-02T06:00:00Z', resolution: 'false_alarm' });
 
     live.reload$.next();
-    http.expectOne(URL).flush(DETAIL);
+    await respond();
+  });
+
+  it('lists the alerts by level, with the email only when the API sends it', async () => {
+    const { element, respond } = await setup();
+    await respond(DETAIL, [
+      alert({ email: 'operador@rimac.willay.test' }),
+      alert({ level_order: 2, contact_name: 'Rosa Brigada', channel: 'telegram', status: 'skipped', sent_at: null, skipped_reason: 'el contacto no vinculó Telegram' }),
+      alert({ level_order: 3, contact_name: 'Carmen Jefatura COE', status: 'acknowledged', acknowledged_at: '2026-10-02T05:30:01Z' }),
+    ]);
+
+    const section = element.querySelector('section[aria-labelledby="alerts-title"]') as HTMLElement;
+    const levels = [...section.querySelectorAll('h3')].map((h) => h.textContent?.trim());
+    expect(levels).toEqual(['Nivel 1', 'Nivel 2', 'Nivel 3']);
+    const items = [...section.querySelectorAll('li')].map((li) => li.textContent?.replace(/\s+/g, ' ').trim());
+    expect(items[0]).toContain('Óscar Operador · Correo');
+    expect(items[0]).toContain('Enviada');
+    expect(items[0]).toContain('operador@rimac.willay.test');
+    expect(items[1]).toContain('Rosa Brigada · Telegram');
+    expect(items[1]).toContain('Omitida');
+    expect(items[1]).toContain('el contacto no vinculó Telegram');
+    expect(items[1]).not.toContain('@');
+    expect(items[2]).toContain('Confirmó el 02/10/2026 00:30');
+  });
+
+  it('says when an incident raised no alerts', async () => {
+    const { text, respond } = await setup();
+    await respond(DETAIL, []);
+    expect(text()).toContain('Este incidente no generó alertas.');
   });
 
   it('says when the incident does not exist, or is another organization\'s', async () => {
@@ -132,9 +181,8 @@ describe('IncidentDetailPage', () => {
   });
 
   it('keeps what it shows when a reload fails', async () => {
-    const { http, text, stable, live } = await setup();
-    http.expectOne(URL).flush(DETAIL);
-    await stable();
+    const { http, text, stable, live, respond } = await setup();
+    await respond();
     live.reload$.next();
     http.expectOne(URL).flush(null, { status: 503, statusText: 'Unavailable' });
     await stable();

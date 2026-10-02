@@ -2,27 +2,29 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { EMPTY, Subject, catchError, filter, map, merge, switchMap } from 'rxjs';
+import { EMPTY, Subject, catchError, filter, forkJoin, map, merge, switchMap } from 'rxjs';
 import { LiveEvents } from '../realtime/live-events';
 import { Session } from '../session';
 import { localTime } from '../ui/formats';
 import { Notice } from '../ui/notice';
 import { PageHeader } from '../ui/page-header';
 import { StateBadge } from '../ui/state-badge';
-import { INCIDENT_STATES, SEVERITIES } from '../ui/visual-states';
+import { ALERT_STATES, INCIDENT_STATES, SEVERITIES } from '../ui/visual-states';
 import { causeLabel, incidentState } from './incident-presentation';
-import { IncidentDetail, IncidentsApi } from './incidents.api';
+import { IncidentAlert, IncidentDetail, IncidentsApi } from './incidents.api';
 import { eventText } from './timeline-presentation';
 
 type DetailState =
   | { status: 'loading' }
-  | { status: 'ready'; incident: IncidentDetail }
+  | { status: 'ready'; incident: IncidentDetail; alerts: IncidentAlert[] }
   | { status: 'not-found' }
   | { status: 'error' };
 
+const CHANNELS: Record<IncidentAlert['channel'], string> = { email: 'Correo', telegram: 'Telegram' };
+
 /**
- * An incident's detail (VIG-26): summary and timeline. It reloads when one of its own events
- * arrives on the live channel and after every reconnection.
+ * An incident's detail (VIG-26): summary, alerts by recipient and timeline. It reloads when
+ * one of its own events arrives on the live channel and after every reconnection.
  */
 @Component({
   selector: 'app-incident-detail-page',
@@ -34,6 +36,8 @@ export class IncidentDetailPage {
   private readonly session = inject(Session);
 
   protected readonly incidentStates = INCIDENT_STATES;
+  protected readonly alertStates = ALERT_STATES;
+  protected readonly channels = CHANNELS;
   protected readonly severities = SEVERITIES;
   protected readonly stateOf = incidentState;
   protected readonly text = eventText;
@@ -42,6 +46,16 @@ export class IncidentDetailPage {
   protected readonly incident = computed(() => {
     const state = this.state();
     return state.status === 'ready' ? state.incident : null;
+  });
+  /** Alerts grouped by escalation level, in order. */
+  protected readonly alertLevels = computed(() => {
+    const state = this.state();
+    if (state.status !== 'ready') return [];
+    const levels = new Map<number, IncidentAlert[]>();
+    for (const alert of state.alerts) {
+      levels.set(alert.level_order, [...(levels.get(alert.level_order) ?? []), alert]);
+    }
+    return [...levels].map(([level, alerts]) => ({ level, alerts }));
   });
   /** "Estación sin reportar · RIM-SEU-01". */
   protected readonly title = computed(() => {
@@ -73,7 +87,7 @@ export class IncidentDetailPage {
           );
           return merge([undefined], changes).pipe(
             switchMap(() =>
-              this.api.get(id).pipe(
+              forkJoin({ incident: this.api.get(id), alerts: this.api.alerts(id) }).pipe(
                 catchError((error: unknown) => {
                   this.failed(error);
                   return EMPTY;
@@ -84,7 +98,7 @@ export class IncidentDetailPage {
         }),
         takeUntilDestroyed(),
       )
-      .subscribe((incident) => this.state.set({ status: 'ready', incident }));
+      .subscribe(({ incident, alerts }) => this.state.set({ status: 'ready', incident, alerts }));
   }
 
   protected retry(): void {

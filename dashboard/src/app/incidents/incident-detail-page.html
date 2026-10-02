@@ -33,59 +33,96 @@
   </p>
 
   <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:items-start">
-    <section class="card p-5" aria-labelledby="summary-title">
-      <h2 id="summary-title" class="font-semibold text-slate-900">Resumen</h2>
-      <dl class="mt-4 grid gap-y-3 text-sm">
-        <div>
-          <dt class="text-slate-500">Zona</dt>
-          <dd class="font-medium text-slate-900">{{ incident.zone_name }}</dd>
-        </div>
-        @if (incident.station_code) {
+    <div class="flex flex-col gap-6">
+      <section class="card p-5" aria-labelledby="summary-title">
+        <h2 id="summary-title" class="font-semibold text-slate-900">Resumen</h2>
+        <dl class="mt-4 grid gap-y-3 text-sm">
           <div>
-            <dt class="text-slate-500">Estación</dt>
-            <dd class="font-mono font-medium text-slate-900">{{ incident.station_code }}</dd>
+            <dt class="text-slate-500">Zona</dt>
+            <dd class="font-medium text-slate-900">{{ incident.zone_name }}</dd>
           </div>
-        }
-        <div>
-          <dt class="text-slate-500">Abierto</dt>
-          <dd class="font-medium text-slate-900">
-            <time [attr.datetime]="incident.opened_at">{{ time(incident.opened_at) }}</time>
-          </dd>
-        </div>
-        <div>
-          <dt class="text-slate-500">Nivel de escalamiento</dt>
-          <dd class="font-medium text-slate-900">
-            {{ incident.current_level }}
-            @if (incident.escalation_exhausted_at) {
-              · agotado
-            }
-          </dd>
-        </div>
-        <div>
-          <dt class="text-slate-500">Confirmado</dt>
-          <dd class="font-medium text-slate-900">
-            @if (incident.acknowledged_at) {
-              {{ time(incident.acknowledged_at) }}
-              @if (acknowledgedBy(); as name) {
-                por {{ name }}
-              }
-            } @else {
-              No
-            }
-          </dd>
-        </div>
-        @if (incident.resolved_at) {
+          @if (incident.station_code) {
+            <div>
+              <dt class="text-slate-500">Estación</dt>
+              <dd class="font-mono font-medium text-slate-900">{{ incident.station_code }}</dd>
+            </div>
+          }
           <div>
-            <dt class="text-slate-500">
-              {{ incident.resolution === 'false_alarm' ? 'Falsa alarma' : 'Resuelto' }}
-            </dt>
+            <dt class="text-slate-500">Abierto</dt>
             <dd class="font-medium text-slate-900">
-              <time [attr.datetime]="incident.resolved_at">{{ time(incident.resolved_at) }}</time>
+              <time [attr.datetime]="incident.opened_at">{{ time(incident.opened_at) }}</time>
             </dd>
           </div>
+          <div>
+            <dt class="text-slate-500">Nivel de escalamiento</dt>
+            <dd class="font-medium text-slate-900">
+              {{ incident.current_level }}
+              @if (incident.escalation_exhausted_at) {
+                · agotado
+              }
+            </dd>
+          </div>
+          <div>
+            <dt class="text-slate-500">Confirmado</dt>
+            <dd class="font-medium text-slate-900">
+              @if (incident.acknowledged_at) {
+                {{ time(incident.acknowledged_at) }}
+                @if (acknowledgedBy(); as name) {
+                  por {{ name }}
+                }
+              } @else {
+                No
+              }
+            </dd>
+          </div>
+          @if (incident.resolved_at) {
+            <div>
+              <dt class="text-slate-500">
+                {{ incident.resolution === 'false_alarm' ? 'Falsa alarma' : 'Resuelto' }}
+              </dt>
+              <dd class="font-medium text-slate-900">
+                <time [attr.datetime]="incident.resolved_at">{{ time(incident.resolved_at) }}</time>
+              </dd>
+            </div>
+          }
+        </dl>
+      </section>
+
+      <section class="card p-5" aria-labelledby="alerts-title">
+        <h2 id="alerts-title" class="font-semibold text-slate-900">Alertas</h2>
+        @for (group of alertLevels(); track group.level) {
+          <h3 class="mt-4 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            Nivel {{ group.level }}
+          </h3>
+          <ul class="mt-2 flex flex-col divide-y divide-slate-100">
+            @for (alert of group.alerts; track alert.id) {
+              <li class="py-2 text-sm">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <p class="font-medium text-slate-900">
+                    {{ alert.contact_name }}
+                    <span class="font-normal text-slate-500">· {{ channels[alert.channel] }}</span>
+                  </p>
+                  <app-state-badge [state]="alertStates[alert.status]" />
+                </div>
+                @if (alert.email) {
+                  <p class="text-xs break-all text-slate-600">{{ alert.email }}</p>
+                }
+                @if (alert.skipped_reason) {
+                  <p class="text-xs text-slate-600">{{ alert.skipped_reason }}</p>
+                }
+                @if (alert.acknowledged_at) {
+                  <p class="text-xs text-slate-500">Confirmó el {{ time(alert.acknowledged_at) }}</p>
+                } @else if (alert.sent_at) {
+                  <p class="text-xs text-slate-500">Enviada el {{ time(alert.sent_at) }}</p>
+                }
+              </li>
+            }
+          </ul>
+        } @empty {
+          <p class="mt-3 text-sm text-slate-600">Este incidente no generó alertas.</p>
         }
-      </dl>
-    </section>
+      </section>
+    </div>
 
     <section class="card p-5" aria-labelledby="timeline-title">
       <h2 id="timeline-title" class="font-semibold text-slate-900">Línea de tiempo</h2>
