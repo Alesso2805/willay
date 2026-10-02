@@ -628,6 +628,80 @@
         "title": "IncidentOut",
         "type": "object"
       },
+      "IncidentReadingsOut": {
+        "properties": {
+          "readings": {
+            "items": {
+              "$ref": "#/components/schemas/ReadingOut"
+            },
+            "title": "Readings",
+            "type": "array"
+          },
+          "source": {
+            "description": "evidence: the readings expired, so these are the copy kept in the opened event (the ones that fired the rule)",
+            "enum": [
+              "readings",
+              "evidence"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "station_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Station Code"
+          },
+          "threshold": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThresholdOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A threshold rule's boundary, to draw"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "window_end": {
+            "format": "date-time",
+            "title": "Window End",
+            "type": "string"
+          },
+          "window_start": {
+            "format": "date-time",
+            "title": "Window Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "station_code",
+          "unit",
+          "window_start",
+          "window_end",
+          "source",
+          "readings",
+          "threshold"
+        ],
+        "title": "IncidentReadingsOut",
+        "type": "object"
+      },
       "IncidentStatus": {
         "enum": [
           "open",
@@ -904,6 +978,25 @@
           "value"
         ],
         "title": "ReadingIn",
+        "type": "object"
+      },
+      "ReadingOut": {
+        "properties": {
+          "measured_at": {
+            "format": "date-time",
+            "title": "Measured At",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "measured_at",
+          "value"
+        ],
+        "title": "ReadingOut",
         "type": "object"
       },
       "Resolution": {
@@ -1248,6 +1341,25 @@
           "expires_at"
         ],
         "title": "TelegramLinkOut",
+        "type": "object"
+      },
+      "ThresholdOut": {
+        "properties": {
+          "operator": {
+            "description": "gt, ge, lt or le",
+            "title": "Operator",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "operator",
+          "value"
+        ],
+        "title": "ThresholdOut",
         "type": "object"
       },
       "ValidationError": {
@@ -2165,6 +2277,57 @@
         "summary": "An incident's alerts, by level and recipient",
         "tags": [
           "alerts"
+        ]
+      }
+    },
+    "/v1/incidents/{incident_id}/readings": {
+      "get": {
+        "operationId": "get_incident_readings_v1_incidents__incident_id__readings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "incident_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Incident Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentReadingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The readings around an incident's opening, for its chart",
+        "tags": [
+          "incidents"
         ]
       }
     },
