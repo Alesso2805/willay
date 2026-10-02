@@ -17,6 +17,7 @@ SPEC_MATRIX: dict[Role, frozenset[Permission]] = {
             Permission.RESOLVE_INCIDENTS,
             Permission.MANAGE_TERRITORY,
             Permission.MANAGE_RULES,
+            Permission.REPROCESS_READINGS,
             Permission.VIEW_CONTACT_DETAILS,
         }
     ),

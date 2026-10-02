@@ -12,7 +12,8 @@ EVALUATION_QUEUE = "willay_evaluation_queue"
 # reason: the dispatcher claims them with SKIP LOCKED.
 ALERTS = "willay_alerts"
 
-# Database -> API: every incident event and station heartbeat (VIG-25). Emitted by triggers
-# (migration 0008, ADR-0007) with a JSON payload: organization_id for routing plus the minimum
+# Database -> API: every incident event and station heartbeat (VIG-25), and every reading that
+# fails evaluation or is reprocessed (VIG-39). Emitted by triggers (migrations 0008 and 0009,
+# ADR-0007) with a JSON payload: organization_id for routing plus the minimum
 # the dashboard needs to know what to refresh. The API relays it over SSE.
 EVENTS = "willay_events"

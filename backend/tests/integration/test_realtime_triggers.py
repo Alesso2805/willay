@@ -54,3 +54,40 @@ async def test_a_reading_that_opens_an_incident_announces_both_changes(
     opened = [n for n in mine if n["type"] == "incident" and n["event"] == "opened"]
     assert len(opened) == 1
     assert set(opened[0]) == {"organization_id", "type", "incident_id", "event"}  # no personal data
+
+
+async def test_a_reading_that_fails_evaluation_is_announced_but_a_claim_is_not(
+    owner: asyncpg.Connection, database: Database
+) -> None:
+    graph = await create_graph(owner)
+    queue_id = await owner.fetchval(
+        "INSERT INTO ingest.evaluation_queue (station_id, measured_at, organization_id,"
+        " enqueued_at, available_at) VALUES ($1, now(), $2, now(), now()) RETURNING id",
+        graph.station_id, graph.organization_id,
+    )  # fmt: skip
+    notice = {"organization_id": str(graph.organization_id), "type": "failed_readings"}
+    heard: list[dict[str, Any]] = []
+    failed = asyncio.Event()
+
+    def on_notice(*args: Any) -> None:
+        heard.append(json.loads(args[3]))
+        if heard[-1] == notice:
+            failed.set()
+
+    listener = await asyncpg.connect(database.app_dsn)
+    await listener.add_listener(notifications.EVENTS, on_notice)
+    try:
+        # The evaluator's claim touches attempts and available_at: no notice.
+        await owner.execute(
+            "UPDATE ingest.evaluation_queue SET attempts = 5, available_at = now() WHERE id = $1",
+            queue_id,
+        )
+        await owner.execute(
+            "UPDATE ingest.evaluation_queue SET failed_at = now() WHERE id = $1", queue_id
+        )
+        async with asyncio.timeout(5):
+            await failed.wait()
+        # Notices arrive in commit order: a notice from the claim would already be here.
+        assert heard.count(notice) == 1
+    finally:
+        await listener.close()

@@ -123,6 +123,89 @@
         "title": "ContactOut",
         "type": "object"
       },
+      "FailedCountOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "title": "FailedCountOut",
+        "type": "object"
+      },
+      "FailedReadingOut": {
+        "properties": {
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "failed_at": {
+            "format": "date-time",
+            "title": "Failed At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "measured_at": {
+            "format": "date-time",
+            "title": "Measured At",
+            "type": "string"
+          },
+          "station_code": {
+            "title": "Station Code",
+            "type": "string"
+          },
+          "station_id": {
+            "format": "uuid",
+            "title": "Station Id",
+            "type": "string"
+          },
+          "station_name": {
+            "title": "Station Name",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "id",
+          "station_id",
+          "station_code",
+          "station_name",
+          "measured_at",
+          "value",
+          "attempts",
+          "failed_at",
+          "last_error"
+        ],
+        "title": "FailedReadingOut",
+        "type": "object"
+      },
       "GeoJsonGeometry": {
         "description": "Polygon (what the map draws) or MultiPolygon. Coordinates [longitude, latitude].",
         "properties": {
@@ -1051,6 +1134,7 @@
           "incidents:resolve",
           "territory:manage",
           "rules:manage",
+          "readings:reprocess",
           "contacts:view_details",
           "contacts:manage",
           "policies:manage",
@@ -1219,6 +1303,38 @@
           "name"
         ],
         "title": "RefOut",
+        "type": "object"
+      },
+      "ReprocessIn": {
+        "additionalProperties": false,
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "title": "ReprocessIn",
+        "type": "object"
+      },
+      "ReprocessOut": {
+        "properties": {
+          "reprocessed": {
+            "title": "Reprocessed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "reprocessed"
+        ],
+        "title": "ReprocessOut",
         "type": "object"
       },
       "Resolution": {
@@ -2795,6 +2911,108 @@
         "summary": "The organization's live events (SSE)",
         "tags": [
           "realtime"
+        ]
+      }
+    },
+    "/v1/failed-readings": {
+      "get": {
+        "operationId": "list_failed_v1_failed_readings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FailedReadingOut"
+                  },
+                  "title": "Response List Failed V1 Failed Readings Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Readings whose evaluation failed, most recent first (up to 500)",
+        "tags": [
+          "rules"
+        ]
+      }
+    },
+    "/v1/failed-readings/count": {
+      "get": {
+        "operationId": "count_failed_v1_failed_readings_count_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FailedCountOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "How many readings failed evaluation",
+        "tags": [
+          "rules"
+        ]
+      }
+    },
+    "/v1/failed-readings/reprocess": {
+      "post": {
+        "operationId": "post_reprocess_v1_failed_readings_reprocess_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReprocessIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReprocessOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Send failed readings back to the evaluation queue",
+        "tags": [
+          "rules"
         ]
       }
     },

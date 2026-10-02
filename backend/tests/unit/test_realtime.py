@@ -15,6 +15,11 @@ def test_a_notification_becomes_an_event_without_its_organization() -> None:
     assert event == RealtimeEvent(ORG_A, "incident", {"incident_id": "i1", "event": "opened"})
 
 
+def test_a_failed_readings_notice_carries_nothing_but_its_type() -> None:
+    payload = json.dumps({"organization_id": str(ORG_A), "type": "failed_readings"})
+    assert parse_notification(payload) == RealtimeEvent(ORG_A, "failed_readings", {})
+
+
 def test_unreadable_or_unknown_notifications_are_dropped() -> None:
     assert parse_notification("not json") is None
     assert parse_notification(json.dumps({"type": "incident"})) is None  # no organization

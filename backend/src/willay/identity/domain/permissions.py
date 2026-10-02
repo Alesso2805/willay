@@ -17,6 +17,7 @@ class Permission(StrEnum):
     RESOLVE_INCIDENTS = "incidents:resolve"  # resolved or false alarm
     MANAGE_TERRITORY = "territory:manage"  # zones, stations, API key rotation
     MANAGE_RULES = "rules:manage"
+    REPROCESS_READINGS = "readings:reprocess"  # see and reprocess readings that failed evaluation
     VIEW_CONTACT_DETAILS = "contacts:view_details"  # email and chat_id (personal data)
     MANAGE_CONTACTS = "contacts:manage"  # contacts and groups
     MANAGE_POLICIES = "policies:manage"
@@ -35,6 +36,7 @@ GRANTS: Mapping[Permission, frozenset[Role]] = MappingProxyType(
         Permission.RESOLVE_INCIDENTS: _OPERATORS,
         Permission.MANAGE_TERRITORY: _OPERATORS,
         Permission.MANAGE_RULES: _OPERATORS,
+        Permission.REPROCESS_READINGS: _OPERATORS,
         Permission.VIEW_CONTACT_DETAILS: _OPERATORS,
         Permission.MANAGE_CONTACTS: _ADMINS,
         Permission.MANAGE_POLICIES: _ADMINS,
