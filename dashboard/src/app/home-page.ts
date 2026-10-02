@@ -1,23 +1,11 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { EMPTY, Subject, catchError, forkJoin, switchMap } from 'rxjs';
-import { Incident, IncidentsApi } from './incidents/incidents.api';
-import { LiveEvents, dataTime } from './realtime/live-events';
+import { liveSnapshot } from './realtime/live-snapshot';
 import { Session, roleLabels } from './session';
-import { keepNewerHeartbeats, stationState, withHeartbeat } from './stations/station-presentation';
-import { Station, StationsApi } from './stations/stations.api';
-import { clock } from './ui/clock';
+import { stationState } from './stations/station-presentation';
 import { Icon } from './ui/icon';
 import { Notice } from './ui/notice';
 import { PageHeader } from './ui/page-header';
-import { Zone, ZonesApi } from './zones/zones.api';
-
-interface Summary {
-  incidents: Incident[];
-  stations: Station[];
-  zones: Zone[];
-}
 
 /** Home: what an operator wants to know on opening the dashboard, and who they are in Willay. */
 @Component({
@@ -127,19 +115,10 @@ interface Summary {
 })
 export class HomePage {
   protected readonly session = inject(Session);
-  private readonly incidentsApi = inject(IncidentsApi);
-  private readonly stationsApi = inject(StationsApi);
-  private readonly zonesApi = inject(ZonesApi);
-  private readonly live = inject(LiveEvents);
-
   protected readonly roles = roleLabels;
-  protected readonly summary = signal<Summary | null>(null);
-  protected readonly failed = signal(false);
-  private readonly now = clock(1_000);
-  /** Last successful load: while the channel is down, silence is judged up to here. */
-  private readonly syncedAt = signal(Date.now());
-  /** switchMap: only the latest summary counts, even if an older request answers later. */
-  private readonly loads = new Subject<void>();
+  private readonly snapshot = liveSnapshot();
+  protected readonly summary = this.snapshot.data;
+  protected readonly failed = this.snapshot.failed;
 
   protected readonly activeIncidents = computed(() => this.summary()?.incidents.length ?? 0);
   protected readonly incidentDetail = computed(() => {
@@ -154,7 +133,7 @@ export class HomePage {
   });
   protected readonly stationCounts = computed(() => {
     const summary = this.summary();
-    const asOf = dataTime(this.live.status(), this.now(), this.syncedAt(), this.live.lostAt());
+    const asOf = this.snapshot.asOf();
     const states = (summary?.stations ?? []).map((s) => stationState(s, asOf));
     return {
       total: states.length,
@@ -176,44 +155,7 @@ export class HomePage {
     return `${critical} de riesgo crítico · ${high} alto ·`;
   });
 
-  constructor() {
-    this.loads
-      .pipe(
-        switchMap(() =>
-          forkJoin({
-            incidents: this.incidentsApi.list(['open', 'acknowledged']),
-            stations: this.stationsApi.list(),
-            zones: this.zonesApi.list(),
-          }).pipe(
-            catchError(() => {
-              this.failed.set(true);
-              return EMPTY;
-            }),
-          ),
-        ),
-        takeUntilDestroyed(),
-      )
-      .subscribe((data) => {
-        const stations = keepNewerHeartbeats(data.stations, this.summary()?.stations ?? []);
-        this.summary.set({ ...data, stations });
-        this.syncedAt.set(Date.now());
-        this.failed.set(false);
-      });
-    this.load();
-
-    // An incident event only says that something changed: the summary is fetched again, so
-    // the viewer's permissions apply. Heartbeats carry their values and update in place.
-    this.live.reload$.pipe(takeUntilDestroyed()).subscribe(() => this.load());
-    this.live.incidents$.pipe(takeUntilDestroyed()).subscribe(() => this.load());
-    this.live.heartbeats$.pipe(takeUntilDestroyed()).subscribe(({ stationId, heartbeat }) =>
-      this.summary.update(
-        (summary) =>
-          summary && { ...summary, stations: withHeartbeat(summary.stations, stationId, heartbeat) },
-      ),
-    );
-  }
-
   protected load(): void {
-    if (this.session.me()?.permissions.includes('view')) this.loads.next();
+    this.snapshot.load();
   }
 }
