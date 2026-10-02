@@ -20,6 +20,7 @@ def _failed(queue_id: int, station_id: UUID, minute: int) -> FailedReading:
         station_name="X",
         measured_at=T0 - timedelta(minutes=minute),
         value=1.0,
+        unit="m3/s",
         attempts=5,
         failed_at=T0,
         last_error=f"error {queue_id}",

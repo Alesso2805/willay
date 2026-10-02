@@ -180,6 +180,10 @@
             "title": "Station Name",
             "type": "string"
           },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
           "value": {
             "anyOf": [
               {
@@ -199,6 +203,7 @@
           "station_name",
           "measured_at",
           "value",
+          "unit",
           "attempts",
           "failed_at",
           "last_error"

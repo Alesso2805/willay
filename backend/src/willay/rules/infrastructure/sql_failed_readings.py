@@ -13,7 +13,7 @@ from willay.shared import notifications
 # The reading's value comes from the hypertable when it is still there (no FK: ADR-0003).
 _COLUMNS = """
     q.id, q.station_id, s.code AS station_code, s.name AS station_name, q.measured_at,
-    r.value, q.attempts, q.failed_at, q.last_error
+    r.value, s.unit, q.attempts, q.failed_at, q.last_error
 """
 _JOINS = """
     JOIN core.stations s ON s.id = q.station_id
@@ -93,6 +93,7 @@ def _failed(r: Row[Any]) -> FailedReading:
         station_name=r.station_name,
         measured_at=r.measured_at,
         value=r.value,
+        unit=r.unit,
         attempts=r.attempts,
         failed_at=r.failed_at,
         last_error=r.last_error,

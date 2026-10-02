@@ -118,6 +118,7 @@ async def test_a_failed_reading_is_listed_with_its_station_value_and_error(
         "station_name": mine["station_name"],
         "measured_at": None,
         "value": 12.5,
+        "unit": "mm",
         "attempts": 5,
         "failed_at": None,
         "last_error": "regla con parámetros inválidos",
