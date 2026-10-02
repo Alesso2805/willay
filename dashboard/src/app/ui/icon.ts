@@ -40,6 +40,8 @@ export const ICONS = {
   'pin-off': [PIN, SLASH],
   broadcast: WAVES,
   refresh: ['M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8', 'M21 3v5h-5'],
+  clock: [CIRCLE, 'M12 7v5l3 2'],
+  radar: [CIRCLE, 'M16 12a4 4 0 1 1-4-4', 'M12 12l6.5-6.5'],
   pause: ['M8 5v14', 'M16 5v14'],
   menu: ['M4 6h16', 'M4 12h16', 'M4 18h16'],
   x: ['M18 6 6 18', 'M6 6l12 12'],
@@ -53,6 +55,16 @@ export const ICONS = {
 } as const satisfies Record<string, readonly string[]>;
 
 export type IconName = keyof typeof ICONS;
+
+/** The same icon as markup, for HTML built outside Angular (Leaflet markers). */
+export function iconSvg(name: IconName, size: number): string {
+  const paths = ICONS[name].map((d) => `<path d="${d}"/>`).join('');
+  return (
+    `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" ` +
+    `stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ` +
+    `focusable="false">${paths}</svg>`
+  );
+}
 
 @Component({
   selector: 'app-icon',

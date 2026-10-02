@@ -23,7 +23,9 @@ const ME = {
 function incident(status: Incident['status'], exhausted = false): Incident {
   return {
     id: crypto.randomUUID(),
+    zone_id: 'z1',
     zone_name: 'Chosica',
+    station_id: 's1',
     station_code: 'RIM-SEU-01',
     rule_type: 'silence',
     severity: 'critical',
