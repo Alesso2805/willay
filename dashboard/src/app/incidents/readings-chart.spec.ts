@@ -36,12 +36,29 @@ describe('ReadingsChart', () => {
     expect(element.textContent).toContain('Apertura');
     expect(element.querySelector('svg')?.getAttribute('role')).toBe('img');
     expect(element.querySelector('desc')?.textContent).toBe(
-      '3 lecturas de RIM-CHO-01 entre 21:31 y 00:31; mínimo 2 y máximo 4.6 m; umbral más de 3.5 m.',
+      '3 lecturas de RIM-CHO-01 a las 22:30; mínimo 2 y máximo 4.6 m; umbral más de 3.5 m.',
     );
     // The time axis is in the organization's time zone.
     const times = [...element.querySelectorAll('svg text')].map((t) => t.textContent?.trim());
-    expect(times).toContain('22:00');
+    expect(times).toContain('22:30');
     expect(await seriousViolations(element)).toEqual([]);
+  });
+
+  it('fits the time axis to the readings, not to the whole three-hour window', async () => {
+    const minute = (m: number) => new Date(Date.parse('2026-10-02T03:20:00Z') + m * 60_000).toISOString();
+    const { element } = await render({
+      ...DATA,
+      readings: [0, 5, 10].map((m) => ({ measured_at: minute(m), value: 2 + m / 10 })),
+    });
+    const x = [...element.querySelectorAll('svg circle')].map((c) => Number(c.getAttribute('cx')));
+    // Ten minutes of readings in a three-hour window still spread across most of the plot.
+    expect(x[x.length - 1] - x[0]).toBeGreaterThan(300);
+  });
+
+  it('keeps an hour label on the axis for a burst of a few seconds', async () => {
+    const { element } = await render(); // three readings within 20 s
+    const labels = [...element.querySelectorAll('svg text')].map((t) => t.textContent?.trim() ?? '');
+    expect(labels.filter((l) => /^\d{2}:\d{2}$/.test(l)).length).toBeGreaterThan(0);
   });
 
   it('breaks the line where the station stopped reporting', async () => {

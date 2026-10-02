@@ -26,6 +26,11 @@ const M = { top: 34, right: 16, bottom: 26, left: 52 };
 const OPERATORS: Record<string, string> = { gt: 'más de', ge: 'desde', lt: 'menos de', le: 'hasta' };
 /** Few points (such as the evidence copy) are drawn as dots too, or a short line is easy to miss. */
 const MAX_DOTS = 60;
+/** The time axis spans at least two minutes, so it always shows an HH:MM label. */
+const MIN_SPAN = 2 * 60_000;
+/** Room around the data on the time axis: 5 % of its span, at least 30 s. */
+const MARGIN_SHARE = 0.05;
+const MIN_MARGIN = 30_000;
 
 let nextId = 0;
 
@@ -75,9 +80,23 @@ export class ReadingsChart {
     const data = this.data();
     const points = this.points();
     const unit = data.unit ?? '';
-    // The window, widened if the evidence copy falls outside it.
-    const t0 = Math.min(Date.parse(data.window_start), ...points.map((p) => p.t));
-    const t1 = Math.max(Date.parse(data.window_end), ...points.map((p) => p.t));
+    const windowStart = Date.parse(data.window_start);
+    const windowEnd = Date.parse(data.window_end);
+    const markTimes = this.marks()
+      .map((mark) => Date.parse(mark.at))
+      .filter((t) => t >= windowStart && t <= windowEnd);
+    // The time axis fits the readings and the marks, not the whole window: a station that
+    // reported for one minute of a three-hour window would shrink into a sliver.
+    const times = [...points.map((p) => p.t), ...markTimes];
+    let first = times.length > 0 ? Math.min(...times) : windowStart;
+    let last = times.length > 0 ? Math.max(...times) : windowEnd;
+    if (last - first < MIN_SPAN) {
+      const middle = (first + last) / 2;
+      [first, last] = [middle - MIN_SPAN / 2, middle + MIN_SPAN / 2];
+    }
+    const margin = Math.max((last - first) * MARGIN_SHARE, MIN_MARGIN);
+    const t0 = first - margin;
+    const t1 = last + margin;
     const readings = points.map((p) => p.value);
     // The threshold line must fit in the axis too, even if no reading reached it.
     const values = data.threshold ? [...readings, data.threshold.value] : readings;
@@ -89,7 +108,7 @@ export class ReadingsChart {
     let lastX = -Infinity;
     const marks = this.marks()
       .map((mark) => ({ ...mark, t: Date.parse(mark.at) }))
-      .filter((mark) => mark.t >= t0 && mark.t <= t1)
+      .filter((mark) => mark.t >= windowStart && mark.t <= windowEnd)
       .sort((a, b) => a.t - b.t)
       .map((mark) => {
         const mx = x(mark.t);
@@ -114,7 +133,7 @@ export class ReadingsChart {
           }
         : null,
       marks,
-      summary: this.summary(readings, t0, t1, unit),
+      summary: this.summary(points, windowStart, windowEnd, unit),
     };
   });
 
@@ -141,12 +160,18 @@ export class ReadingsChart {
   }
 
   /** What the chart shows, in words: the accessible description of the image. */
-  private summary(values: number[], t0: number, t1: number, unit: string): string {
+  private summary(points: ChartPoint[], windowStart: number, windowEnd: number, unit: string): string {
     const station = this.data().station_code ?? 'la estación';
-    if (values.length === 0) return `Sin lecturas de ${station} entre ${this.clock(t0)} y ${this.clock(t1)}.`;
+    if (points.length === 0) {
+      return `Sin lecturas de ${station} entre ${this.clock(windowStart)} y ${this.clock(windowEnd)}.`;
+    }
+    const values = points.map((p) => p.value);
+    const from = this.clock(points[0].t);
+    const to = this.clock(points[points.length - 1].t);
+    const when = from === to ? `a las ${from}` : `entre ${from} y ${to}`;
     const range = `mínimo ${measurement(Math.min(...values))} y máximo ${measurement(Math.max(...values))} ${unit}`.trim();
     const parts = [
-      `${values.length} ${values.length === 1 ? 'lectura' : 'lecturas'} de ${station} entre ${this.clock(t0)} y ${this.clock(t1)}`,
+      `${values.length} ${values.length === 1 ? 'lectura' : 'lecturas'} de ${station} ${when}`,
       range,
     ];
     const threshold = this.data().threshold;
