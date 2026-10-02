@@ -46,6 +46,7 @@ export const POLL_MS = 15_000;
  * happened while disconnected is never lost), when the server may have dropped a notification
  * (`resync`), and every 15 s while the channel is down. Incident events only say what changed:
  * pages refetch it over REST, so the viewer's permissions apply. Heartbeats carry their values.
+ * `failedReadings$` only says that the set of readings that failed evaluation changed (VIG-39).
  */
 @Injectable({ providedIn: 'root' })
 export class LiveEvents {
@@ -61,9 +62,11 @@ export class LiveEvents {
   private readonly reloads = new Subject<void>();
   private readonly incidentChanges = new Subject<IncidentChange>();
   private readonly heartbeatChanges = new Subject<HeartbeatChange>();
+  private readonly failedReadingChanges = new Subject<void>();
   readonly reload$ = this.reloads.asObservable();
   readonly incidents$ = this.incidentChanges.asObservable();
   readonly heartbeats$ = this.heartbeatChanges.asObservable();
+  readonly failedReadings$ = this.failedReadingChanges.asObservable();
 
   private source?: LiveSource;
   private retryDelay = RETRY_FIRST_MS;
@@ -116,6 +119,7 @@ export class LiveEvents {
       const change = heartbeatChange(event);
       if (change) this.heartbeatChanges.next(change);
     });
+    on('failed_readings', () => this.failedReadingChanges.next());
     on('error', () => this.failed(source));
     this.source = source;
   }

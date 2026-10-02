@@ -1,0 +1,135 @@
+<app-page-header title="Lecturas fallidas" [subtitle]="subtitle()" />
+
+@if (!canReprocess()) {
+  <app-notice tone="info">
+    Tu rol no permite ver las lecturas fallidas: las ven operadores y administradores.
+  </app-notice>
+} @else {
+  <app-notice tone="info" class="mb-4">
+    El evaluador no pudo procesar estas lecturas tras 5 intentos. Cada una puede ser una alerta que
+    no salió: revisa el error, corrige la causa y reprocésalas.
+  </app-notice>
+
+  <p class="mb-3 text-sm text-slate-600" aria-live="polite">{{ status() }}</p>
+
+  <app-load-state
+    class="block"
+    [status]="listStatus()"
+    loading="Cargando lecturas fallidas…"
+    empty="No hay lecturas fallidas: todas se evaluaron."
+    error="No se pudieron cargar las lecturas fallidas."
+    (retry)="load()"
+  />
+
+  @if (readings().length > 0) {
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <label class="flex items-center gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          class="size-4 rounded border-slate-300 accent-brand-700"
+          [checked]="allSelected()"
+          (change)="toggleAll($any($event.target).checked)"
+        />
+        Seleccionar todas
+      </label>
+      <button
+        type="button"
+        class="btn-primary"
+        [disabled]="selected().size === 0 || working()"
+        (click)="reprocess()"
+      >
+        {{ working() ? 'Reprocesando…' : 'Reprocesar seleccionadas (' + selected().size + ')' }}
+      </button>
+    </div>
+
+    <!-- One layout at a time: a table from md up, cards below. -->
+    <div class="card hidden overflow-x-auto md:block">
+      <table class="w-full text-left text-sm">
+        <caption class="sr-only">
+          Lecturas que el evaluador no pudo procesar
+        </caption>
+        <thead class="border-b border-slate-200 text-xs text-slate-500 uppercase">
+          <tr>
+            <th scope="col" class="w-10 px-4 py-3"><span class="sr-only">Seleccionar</span></th>
+            <th scope="col" class="px-4 py-3 font-medium">Estación</th>
+            <th scope="col" class="px-4 py-3 font-medium">Medición</th>
+            <th scope="col" class="px-4 py-3 font-medium">Intentos</th>
+            <th scope="col" class="px-4 py-3 font-medium">Falló</th>
+            <th scope="col" class="px-4 py-3 font-medium">Último error</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (reading of readings(); track reading.id) {
+            <tr class="align-top">
+              <td class="px-4 py-3">
+                <input
+                  type="checkbox"
+                  class="size-4 rounded border-slate-300 accent-brand-700"
+                  [attr.aria-label]="
+                    'Seleccionar ' + reading.station_code + ' ' + time(reading.measured_at)
+                  "
+                  [checked]="selected().has(reading.id)"
+                  (change)="toggle(reading.id, $any($event.target).checked)"
+                />
+              </td>
+              <td class="px-4 py-3">
+                <p class="font-mono text-xs font-medium text-slate-500">
+                  {{ reading.station_code }}
+                </p>
+                <p class="text-slate-900">{{ reading.station_name }}</p>
+              </td>
+              <td class="px-4 py-3">
+                <p class="text-slate-900 tabular-nums">{{ value(reading) }}</p>
+                <p class="text-xs text-slate-500">{{ time(reading.measured_at) }}</p>
+              </td>
+              <td class="px-4 py-3 tabular-nums">{{ reading.attempts }}</td>
+              <td class="px-4 py-3">
+                <time [attr.datetime]="reading.failed_at" [title]="time(reading.failed_at)">{{
+                  age(reading.failed_at)
+                }}</time>
+              </td>
+              <td class="px-4 py-3">
+                <code class="text-xs break-words text-slate-700">{{
+                  reading.last_error ?? 'sin detalle'
+                }}</code>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <ul class="flex flex-col gap-3 md:hidden">
+      @for (reading of readings(); track reading.id) {
+        <li class="card p-4">
+          <label class="flex items-start gap-3">
+            <input
+              type="checkbox"
+              class="mt-1 size-4 rounded border-slate-300 accent-brand-700"
+              [checked]="selected().has(reading.id)"
+              (change)="toggle(reading.id, $any($event.target).checked)"
+            />
+            <span class="min-w-0">
+              <span class="block font-mono text-xs font-medium text-slate-500">{{
+                reading.station_code
+              }}</span>
+              <span class="block text-slate-900">{{ reading.station_name }}</span>
+              <span class="mt-1 block text-sm text-slate-700 tabular-nums">
+                {{ value(reading) }} · {{ time(reading.measured_at) }}
+              </span>
+            </span>
+          </label>
+          <p class="mt-2 text-xs text-slate-500">
+            {{ reading.attempts }} intentos · falló
+            <time [attr.datetime]="reading.failed_at" [title]="time(reading.failed_at)">{{
+              age(reading.failed_at)
+            }}</time>
+          </p>
+          <code class="mt-1 block text-xs break-words text-slate-700">{{
+            reading.last_error ?? 'sin detalle'
+          }}</code>
+        </li>
+      }
+    </ul>
+  }
+}

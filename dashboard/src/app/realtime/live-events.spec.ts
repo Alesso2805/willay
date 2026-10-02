@@ -146,6 +146,16 @@ describe('LiveEvents', () => {
     ]);
   });
 
+  it('passes on that the failed readings changed', () => {
+    const { live, source } = setup();
+    const changes = vi.fn();
+    live.failedReadings$.subscribe(changes);
+    live.connect();
+    source().emit('ready');
+    source().emit('failed_readings');
+    expect(changes).toHaveBeenCalledTimes(1);
+  });
+
   it('stays live through a short reconnect, such as the one at token expiry', () => {
     const { live, source } = setup();
     live.connect();

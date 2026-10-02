@@ -9,6 +9,7 @@ export class FakeLiveEvents {
   readonly reload$ = new Subject<void>();
   readonly incidents$ = new Subject<IncidentChange>();
   readonly heartbeats$ = new Subject<HeartbeatChange>();
+  readonly failedReadings$ = new Subject<void>();
   readonly connect = () => this.status.set('connecting');
   readonly disconnect = () => this.status.set('off');
 }

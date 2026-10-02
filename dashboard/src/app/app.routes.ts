@@ -40,5 +40,11 @@ export const routes: Routes = [
     title: 'Grupos de contactos · Willay',
     loadComponent: () => import('./contacts/groups-page').then((m) => m.GroupsPage),
   },
+  {
+    path: 'lecturas-fallidas',
+    title: 'Lecturas fallidas · Willay',
+    loadComponent: () =>
+      import('./failed/failed-readings-page').then((m) => m.FailedReadingsPage),
+  },
   { path: '**', redirectTo: '' },
 ];

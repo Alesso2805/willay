@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { FailedReadingsNotice } from './failed/failed-readings-notice';
 import { NewIncidents } from './incidents/new-incidents';
 import { visibleNavItems } from './navigation';
 import { LiveEvents } from './realtime/live-events';
@@ -10,7 +11,16 @@ import { StateBadge } from './ui/state-badge';
 import { CONNECTION_STATES } from './ui/visual-states';
 
 @Component({
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, Notice, StateBadge, NewIncidents],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    Icon,
+    Notice,
+    StateBadge,
+    NewIncidents,
+    FailedReadingsNotice,
+  ],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',
