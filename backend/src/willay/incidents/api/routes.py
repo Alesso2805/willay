@@ -24,6 +24,7 @@ from willay.incidents.domain.lifecycle import (
     Resolution,
     Transition,
 )
+from willay.incidents.domain.severity import Severity
 from willay.incidents.infrastructure.incidents_repository import SqlIncidentRepository
 from willay.shared.web import ClockDep, DbConnection
 
@@ -95,10 +96,13 @@ async def list_incidents(
         list[IncidentStatus] | None,
         Query(alias="status", description="filter by status (repeatable)"),
     ] = None,
+    severity: Annotated[
+        list[Severity] | None, Query(description="filter by severity (repeatable)")
+    ] = None,
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ) -> list[IncidentOut]:
     incidents = await SqlIncidentRepository(conn).recent(
-        principal.organization_id, status_ or [], limit
+        principal.organization_id, status_ or [], severity or [], limit
     )
     return [_out(incident) for incident in incidents]
 

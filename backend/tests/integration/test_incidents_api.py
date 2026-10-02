@@ -55,7 +55,9 @@ def viewer(tokens: TokenFactory) -> dict[str, str]:
     return _as(tokens, SUB_RIMAC_VIEWER, "viewer")
 
 
-async def _incident(owner: asyncpg.Connection, opened_at: datetime | None = None) -> str:
+async def _incident(
+    owner: asyncpg.Connection, opened_at: datetime | None = None, severity: str = "critical"
+) -> str:
     """An open incident in the seed's Rímac organization, with its `opened` event.
 
     By default it was opened an hour ago, so the events the API adds (at the real time)
@@ -68,10 +70,10 @@ async def _incident(owner: asyncpg.Connection, opened_at: datetime | None = None
         INSERT INTO core.incidents (id, organization_id, zone_id, rule_id, station_id,
                                     severity, trigger_value, dedup_key, opened_at,
                                     level_started_at)
-        VALUES ($1, $2, $3, $4, $5, 'critical', 34.2, $6, $7, $7)
+        VALUES ($1, $2, $3, $4, $5, $8, 34.2, $6, $7, $7)
         """,
         incident_id, data.RIMAC.id, DROP_RULE.zone_id, DROP_RULE.id, DROP_RULE.station_id,
-        f"test:{uuid4()}", opened_at,
+        f"test:{uuid4()}", opened_at, severity,
     )  # fmt: skip
     await owner.execute(
         "INSERT INTO core.incident_events (incident_id, organization_id, occurred_at,"
@@ -202,6 +204,36 @@ async def test_the_list_filters_by_status_and_shows_the_newest_first(
     ids = [i["id"] for i in active.json()]
     assert newest not in ids
     assert ids.index(middle) < ids.index(oldest)
+
+
+async def test_the_list_filters_by_severity_together_with_status(
+    client: httpx2.AsyncClient, owner: asyncpg.Connection, operator: dict[str, str]
+) -> None:
+    base = datetime(2090, 1, 1, tzinfo=UTC) + timedelta(minutes=uuid4().int % 100_000)
+    critical = await _incident(owner, base, severity="critical")
+    warning = await _incident(owner, base + timedelta(minutes=1), severity="warning")
+    info = await _incident(owner, base + timedelta(minutes=2), severity="info")
+    await _post(client, info, "resolve", operator, resolution="false_alarm")
+
+    urgent = await client.get(
+        "/v1/incidents",
+        params=[("severity", "critical"), ("severity", "warning"), ("limit", "500")],
+        headers=operator,
+    )
+    ids = [i["id"] for i in urgent.json()]
+    assert ids.index(warning) < ids.index(critical)
+    assert info not in ids
+    assert {i["severity"] for i in urgent.json()} <= {"critical", "warning"}
+
+    resolved_info = await client.get(
+        "/v1/incidents",
+        params=[("severity", "info"), ("status", "resolved"), ("limit", "500")],
+        headers=operator,
+    )
+    assert info in [i["id"] for i in resolved_info.json()]
+
+    unknown = await client.get("/v1/incidents", params={"severity": "urgent"}, headers=operator)
+    assert unknown.status_code == 422
 
 
 async def test_an_unknown_resolution_gets_422(

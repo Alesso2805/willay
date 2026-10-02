@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from willay.incidents.application.lifecycle import EventActor, Incident, IncidentEvent
 from willay.incidents.domain.lifecycle import IncidentStatus, Resolution
+from willay.incidents.domain.severity import Severity
 
 # Zone and rule always exist (they are deactivated, never deleted); the station may be
 # missing if a future rule type has none.
@@ -32,6 +33,8 @@ _LIST = text(
     WHERE i.organization_id = :organization_id
       AND (cardinality(CAST(:statuses AS text[])) = 0
            OR i.status = ANY(CAST(:statuses AS text[])))
+      AND (cardinality(CAST(:severities AS text[])) = 0
+           OR i.severity = ANY(CAST(:severities AS text[])))
     ORDER BY i.opened_at DESC, i.id DESC
     LIMIT :limit
 """
@@ -79,13 +82,20 @@ class SqlIncidentRepository:
         self._conn = conn
 
     async def recent(
-        self, organization_id: UUID, statuses: Sequence[IncidentStatus], limit: int
+        self,
+        organization_id: UUID,
+        statuses: Sequence[IncidentStatus],
+        severities: Sequence[Severity],
+        limit: int,
     ) -> list[Incident]:
+        """Newest first; an empty filter does not filter. Filtering here, not in the client,
+        keeps `limit` meaningful: it applies to the incidents that match."""
         rows = await self._conn.execute(
             _LIST,
             {
                 "organization_id": organization_id,
                 "statuses": [s.value for s in statuses],
+                "severities": [s.value for s in severities],
                 "limit": limit,
             },
         )

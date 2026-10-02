@@ -815,6 +815,15 @@
         "title": "Role",
         "type": "string"
       },
+      "Severity": {
+        "enum": [
+          "info",
+          "warning",
+          "critical"
+        ],
+        "title": "Severity",
+        "type": "string"
+      },
       "Source": {
         "enum": [
           "sensor",
@@ -1794,6 +1803,27 @@
               ],
               "description": "filter by status (repeatable)",
               "title": "Status"
+            }
+          },
+          {
+            "description": "filter by severity (repeatable)",
+            "in": "query",
+            "name": "severity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/Severity"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "filter by severity (repeatable)",
+              "title": "Severity"
             }
           },
           {
