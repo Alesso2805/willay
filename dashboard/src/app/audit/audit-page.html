@@ -1,0 +1,149 @@
+<app-page-header title="Auditoría" subtitle="Quién cambió qué, del más reciente al más antiguo" />
+
+@if (!canView()) {
+  <app-notice tone="info"
+    >Tu rol no permite ver la auditoría: la ven los administradores.</app-notice
+  >
+} @else {
+  <form
+    class="card mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5"
+    (submit)="$event.preventDefault()"
+  >
+    <div class="flex flex-col gap-1.5">
+      <label for="audit-type" class="text-sm font-medium text-slate-700">Qué</label>
+      <select
+        id="audit-type"
+        class="field"
+        [value]="filters().tipo"
+        (change)="setFilter('tipo', $any($event.target).value)"
+      >
+        <option value="">Todo</option>
+        @for (type of entityTypes; track type[0]) {
+          <option [value]="type[0]">{{ type[1] }}</option>
+        }
+      </select>
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <label for="audit-author" class="text-sm font-medium text-slate-700">Autor</label>
+      <select
+        id="audit-author"
+        class="field"
+        [value]="filters().autor"
+        (change)="setFilter('autor', $any($event.target).value)"
+      >
+        <option value="">Cualquiera</option>
+        @for (author of authors(); track author.id) {
+          <option [value]="author.id">{{ author.name }}</option>
+        }
+      </select>
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <label for="audit-since" class="text-sm font-medium text-slate-700">Desde</label>
+      <input
+        id="audit-since"
+        type="date"
+        class="field"
+        [value]="filters().desde"
+        (change)="setFilter('desde', $any($event.target).value)"
+      />
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <label for="audit-until" class="text-sm font-medium text-slate-700">Hasta</label>
+      <input
+        id="audit-until"
+        type="date"
+        class="field"
+        [value]="filters().hasta"
+        (change)="setFilter('hasta', $any($event.target).value)"
+      />
+    </div>
+    <div class="flex items-end">
+      <button
+        type="button"
+        class="btn-secondary w-full"
+        [disabled]="!filtered()"
+        (click)="clearFilters()"
+      >
+        Quitar filtros
+      </button>
+    </div>
+    @if (filters().entidad) {
+      <p class="text-sm text-slate-600 sm:col-span-2 lg:col-span-5">
+        Solo el historial de una entidad.
+        <button type="button" class="link-action" (click)="setFilter('entidad', '')">
+          Ver todo
+        </button>
+      </p>
+    }
+  </form>
+
+  <section aria-labelledby="audit-list-title">
+    <h2 id="audit-list-title" class="sr-only">Registros de auditoría</h2>
+    <app-load-state
+      class="block"
+      [status]="listStatus()"
+      loading="Cargando auditoría…"
+      [empty]="filtered() ? 'No hay registros con estos filtros.' : 'Todavía no hay registros.'"
+      error="No se pudo cargar la auditoría."
+      (retry)="load()"
+    />
+
+    @if (entries().length > 0) {
+      <!-- One layout at a time: a table from md up, cards below. -->
+      <div class="card hidden overflow-x-auto md:block">
+        <table class="w-full text-left text-sm">
+          <caption class="sr-only">
+            Cambios con su autor y fecha
+          </caption>
+          <thead class="border-b border-slate-200 text-xs text-slate-500 uppercase">
+            <tr>
+              <th scope="col" class="px-4 py-3 font-medium">Fecha</th>
+              <th scope="col" class="px-4 py-3 font-medium">Autor</th>
+              <th scope="col" class="px-4 py-3 font-medium">Acción</th>
+              <th scope="col" class="px-4 py-3 font-medium">Cambios</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (entry of entries(); track entry.id) {
+              <tr class="align-top">
+                <td class="px-4 py-3 whitespace-nowrap text-slate-700 tabular-nums">
+                  <time [attr.datetime]="entry.at">{{ time(entry.at) }}</time>
+                </td>
+                <td class="px-4 py-3 text-slate-900">{{ actor(entry) }}</td>
+                <td class="px-4 py-3 text-slate-900">{{ action(entry) }}</td>
+                <td class="px-4 py-3">
+                  <app-field-changes [changes]="changes(entry)" />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <ul class="flex flex-col gap-3 md:hidden">
+        @for (entry of entries(); track entry.id) {
+          <li class="card p-4 text-sm">
+            <p class="text-xs text-slate-500 tabular-nums">
+              <time [attr.datetime]="entry.at">{{ time(entry.at) }}</time> · {{ actor(entry) }}
+            </p>
+            <p class="mt-1 font-medium text-slate-900">{{ action(entry) }}</p>
+            <app-field-changes class="mt-2 block" [changes]="changes(entry)" />
+          </li>
+        }
+      </ul>
+
+      @if (cursor()) {
+        <div class="mt-4 flex justify-center">
+          <button
+            type="button"
+            class="btn-secondary"
+            [disabled]="loadingMore()"
+            (click)="loadMore()"
+          >
+            {{ loadingMore() ? 'Cargando…' : 'Cargar más' }}
+          </button>
+        </div>
+      }
+    }
+  </section>
+}

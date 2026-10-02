@@ -51,5 +51,10 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./failed/failed-readings-page').then((m) => m.FailedReadingsPage),
   },
+  {
+    path: 'auditoria',
+    title: 'Auditoría · Willay',
+    loadComponent: () => import('./audit/audit-page').then((m) => m.AuditPage),
+  },
   { path: '**', redirectTo: '' },
 ];
