@@ -34,3 +34,12 @@ All notable changes are documented here. Format: [Keep a Changelog](https://keep
 - Telegram alerts with a confirmation button that only works for whoever received the alert; after the click, the button is replaced by who confirmed and when (VIG-22).
 - Alert confirmation page without login: opening the link only shows the incident, and the button confirms. Pending alerts of an incident that is already acknowledged or resolved are not sent (VIG-23).
 - Automatic escalation by levels with the `escalation` worker, and an escalation policies API for admin (VIG-24).
+- Visual system: a single catalog of states (color, icon and text) with contrast tests, navigation by permission, shared loading/empty/error states and formats, and axe-core in every view's tests (VIG-33).
+- Live dashboard over SSE (`GET /v1/events`, filtered by organization, the JWT in the header via `eventsource`), with an "En vivo" indicator and 15 s reloads while offline; "Mapa en vivo" with zones by their most urgent incident and stations by state with an incident badge; new incidents announced on every page (VIG-25).
+- Incident inbox with status and severity filters kept in the URL; `GET /v1/incidents` filters by severity (VIG-34).
+- Incident detail: timeline with who acted, alerts by recipient (`GET /v1/incidents/{id}/alerts`; the email only for operator and admin) and a readings chart (`GET /v1/incidents/{id}/readings`, with the opening evidence once readings expire) (VIG-26).
+- Acknowledge, resolve and comment from the incident detail; `POST /v1/incidents/{id}/comments` (VIG-35).
+- `make` works from PowerShell and Git Bash on Windows, without WSL.
+
+### Fixed
+- The evaluator and dispatcher workers listen again after a database restart, instead of waking only by their 5 s polling until restarted.
