@@ -18,6 +18,7 @@ from willay.incidents.domain.lifecycle import (
     Transition,
     ensure_allowed,
 )
+from willay.incidents.domain.severity import Severity
 from willay.shared.clock import Clock
 
 
@@ -94,9 +95,13 @@ class IncidentEvent:
 
 class IncidentRepository(Protocol):
     async def recent(
-        self, organization_id: UUID, statuses: Sequence[IncidentStatus], limit: int
+        self,
+        organization_id: UUID,
+        statuses: Sequence[IncidentStatus],
+        severities: Sequence[Severity],
+        limit: int,
     ) -> list[Incident]:
-        """Most recent first; an empty `statuses` means all."""
+        """Most recent first; an empty `statuses` or `severities` means all."""
         ...
 
     async def get(self, organization_id: UUID, incident_id: UUID) -> Incident | None: ...

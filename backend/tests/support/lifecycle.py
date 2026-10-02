@@ -13,6 +13,7 @@ from willay.incidents.application.lifecycle import (
     IncidentEvent,
 )
 from willay.incidents.domain.lifecycle import IncidentStatus, Resolution
+from willay.incidents.domain.severity import Severity
 
 T0 = datetime(2026, 11, 20, 14, 0, tzinfo=UTC)
 OPEN, ACK, RESOLVED = IncidentStatus.OPEN, IncidentStatus.ACKNOWLEDGED, IncidentStatus.RESOLVED
@@ -47,7 +48,11 @@ class FakeIncidentRepository:
         return organization_id == self.organization_id and incident_id == self.incident.id
 
     async def recent(
-        self, organization_id: UUID, statuses: Sequence[IncidentStatus], limit: int
+        self,
+        organization_id: UUID,
+        statuses: Sequence[IncidentStatus],
+        severities: Sequence[Severity],
+        limit: int,
     ) -> list[Incident]:
         return [self.incident]
 
