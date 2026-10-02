@@ -14,10 +14,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from willay.identity.api.dependencies import require
 from willay.identity.domain.permissions import Permission
 from willay.identity.domain.principal import Principal
+from willay.rules.application.actor import Actor
 from willay.rules.application.failed_readings import (
     MAX_LISTED,
     MAX_REPROCESSED,
-    Actor,
     FailedReading,
     reprocess,
 )
