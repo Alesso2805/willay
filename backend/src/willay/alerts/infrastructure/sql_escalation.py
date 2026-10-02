@@ -34,7 +34,19 @@ _DUE = text(f"""
 
 # SKIP LOCKED: if another worker is escalating it, or someone is acknowledging it, it is
 # left for the next cycle. Only the incident is locked; levels are read as they are.
-_LOCK = text(f"""
+#
+# Locking and reading are two statements on purpose. If another worker escalated the
+# incident and committed just after this statement's snapshot, FOR UPDATE re-checks the
+# incident row at its new level, but the subqueries would still read the old snapshot,
+# without that level's alerts: "nobody alerted" would escalate it a second time. Reading in
+# a new statement once the lock is held sees everything the other worker committed.
+_LOCK = text("""
+    SELECT i.id FROM core.incidents i
+    WHERE i.id = :id AND i.status = 'open' AND i.escalation_exhausted_at IS NULL
+    FOR UPDATE SKIP LOCKED
+""")
+
+_STATE = text(f"""
     SELECT i.current_level, i.level_started_at, cur.wait_s,
            (SELECT min(n.level_order) FROM core.escalation_levels n
             WHERE n.policy_id = r.escalation_policy_id
@@ -44,8 +56,7 @@ _LOCK = text(f"""
     JOIN core.rules r ON r.id = i.rule_id
     LEFT JOIN core.escalation_levels cur ON cur.policy_id = r.escalation_policy_id
                                         AND cur.level_order = i.current_level
-    WHERE i.id = :id AND i.status = 'open' AND i.escalation_exhausted_at IS NULL
-    FOR UPDATE OF i SKIP LOCKED
+    WHERE i.id = :id
 """)
 
 _MOVE = text("""
@@ -68,9 +79,9 @@ class SqlEscalationRepository:
         return [r.id for r in rows]
 
     async def lock(self, tx: AsyncConnection, incident_id: UUID) -> LevelState | None:
-        row = (await tx.execute(_LOCK, {"id": incident_id})).first()
-        if row is None:
+        if await tx.scalar(_LOCK, {"id": incident_id}) is None:
             return None
+        row = (await tx.execute(_STATE, {"id": incident_id})).one()
         return LevelState(
             current_level=row.current_level,
             level_started_at=row.level_started_at,
