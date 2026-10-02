@@ -102,7 +102,10 @@ async function setup(id = 'i1') {
       provideRouter([{ path: 'incidentes/:id', component: IncidentDetailPage }]),
       provideHttpClient(),
       provideHttpClientTesting(),
-      { provide: Session, useValue: { me: signal({ organization_timezone: 'America/Lima' }) } },
+      {
+        provide: Session,
+        useValue: { me: signal({ organization_timezone: 'America/Lima', permissions: ['view'] }) },
+      },
       provideFakeLiveEvents(live),
     ],
   });

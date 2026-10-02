@@ -32,6 +32,11 @@
     <app-state-badge [state]="severities[incident.severity]" />
   </p>
 
+  <section class="card mb-6 p-5" aria-labelledby="actions-title">
+    <h2 id="actions-title" class="font-semibold text-slate-900">Acciones</h2>
+    <app-incident-actions class="mt-3 block" [incident]="incident" (changed)="retry()" />
+  </section>
+
   @if (readings(); as chart) {
     <section class="card mb-6 p-5" aria-labelledby="chart-title">
       <h2 id="chart-title" class="font-semibold text-slate-900">Lecturas</h2>
@@ -172,6 +177,7 @@
 
     <section class="card p-5" aria-labelledby="timeline-title">
       <h2 id="timeline-title" class="font-semibold text-slate-900">Línea de tiempo</h2>
+      <app-incident-comment class="mt-4 block" [incidentId]="incident.id" (changed)="retry()" />
       <ol class="mt-4 flex flex-col gap-4 border-l-2 border-slate-200 pl-4">
         @for (event of incident.timeline; track event.id) {
           @let line = text(event);

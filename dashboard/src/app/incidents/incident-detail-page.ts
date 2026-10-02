@@ -12,6 +12,8 @@ import { StateBadge } from '../ui/state-badge';
 import { ALERT_STATES, INCIDENT_STATES, SEVERITIES } from '../ui/visual-states';
 import { causeLabel, incidentState } from './incident-presentation';
 import { IncidentAlert, IncidentDetail, IncidentReadings, IncidentsApi } from './incidents.api';
+import { IncidentActions } from './incident-actions';
+import { IncidentComment } from './incident-comment';
 import { ChartMark, ReadingsChart } from './readings-chart';
 import { eventText } from './timeline-presentation';
 
@@ -29,7 +31,7 @@ const CHANNELS: Record<IncidentAlert['channel'], string> = { email: 'Correo', te
  */
 @Component({
   selector: 'app-incident-detail-page',
-  imports: [RouterLink, Notice, PageHeader, StateBadge, ReadingsChart],
+  imports: [RouterLink, Notice, PageHeader, StateBadge, ReadingsChart, IncidentActions, IncidentComment],
   templateUrl: './incident-detail-page.html',
 })
 export class IncidentDetailPage {
