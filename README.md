@@ -8,15 +8,15 @@ Multi-tenant early warning system: it ingests sensor readings, evaluates rules p
 
 ## Requirements
 
-- Windows with **WSL2 (Ubuntu)** or Linux. All commands run inside WSL.
-- Docker Desktop with the WSL integration enabled (or Docker Engine on Linux).
+- Linux, or Windows: the commands run in WSL2 (Ubuntu), PowerShell or Git Bash.
+- Docker Engine on Linux, or Docker Desktop on Windows (with the WSL integration enabled if you use WSL).
 - [uv](https://docs.astral.sh/uv/) for the backend (it installs Python 3.12 if missing).
 - Node.js 24 LTS for the dashboard (`nvm install` reads `dashboard/.nvmrc`).
-- `make`.
+- GNU `make`. On Windows without WSL: `winget install ezwinports.make`.
 
-Before the first `make up`, check inside WSL that `docker info` and `make --version` respond. The ports in `.env` must also be free: 5433 (Postgres), 8080 (Keycloak), 8000 (API), 4200 (dashboard) and 8025 (Mailpit). If another project is using any of them, Willay's containers stay in `Created` and `make up` fails.
+Before the first `make up`, check that `docker info` and `make --version` respond in the shell you will use. The ports in `.env` must also be free: 5433 (Postgres), 8080 (Keycloak), 8000 (API), 4200 (dashboard) and 8025 (Mailpit). If another project is using any of them, Willay's containers stay in `Created` and `make up` fails.
 
-Recommendation: clone the repo inside the WSL file system (for example `~/code/willay`), not in `/mnt/c`. Bind mounts and `node_modules` on `/mnt/c` are slow.
+With WSL, clone the repo inside the WSL file system (for example `~/code/willay`), not in `/mnt/c`. Bind mounts and `node_modules` on `/mnt/c` are slow.
 
 ## Starting it
 
