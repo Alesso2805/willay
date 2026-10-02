@@ -33,6 +33,7 @@ export type StationState = 'reporting' | 'silent' | 'unzoned' | 'inactive' | 'wa
 export type ZoneState = 'calm' | 'acknowledged' | 'open' | 'exhausted';
 export type AlertState = 'pending' | 'sent' | 'failed' | 'skipped' | 'acknowledged';
 export type ContactChannelState = 'email' | 'telegram' | 'pending' | 'none';
+export type GroupState = 'empty' | 'unused';
 
 /** `exhausted`: open with nobody acknowledging at any level (SPEC: shown in red). */
 export const INCIDENT_STATES: Readonly<Record<IncidentState, VisualState>> = {
@@ -90,6 +91,12 @@ export const CONTACT_CHANNEL_STATES: Readonly<Record<ContactChannelState, Visual
   none: { label: 'Sin canal', icon: 'triangle-alert', ...AMBER },
 };
 
+/** A group whose alerts reach nobody (VIG-36): no members, or no policy notifies it. */
+export const GROUP_STATES: Readonly<Record<GroupState, VisualState>> = {
+  empty: { label: 'Sin miembros', icon: 'triangle-alert', ...AMBER },
+  unused: { label: 'Ninguna política lo usa', icon: 'pause', ...SLATE },
+};
+
 export type ConnectionState = 'connecting' | 'live' | 'reconnecting';
 
 /** The live channel (VIG-25): while it is down, what the dashboard shows may be stale. */
@@ -118,5 +125,6 @@ export const ALL_CATALOGS = {
   zone: ZONE_STATES,
   alert: ALERT_STATES,
   contactChannel: CONTACT_CHANNEL_STATES,
+  group: GROUP_STATES,
   connection: CONNECTION_STATES,
 } as const;

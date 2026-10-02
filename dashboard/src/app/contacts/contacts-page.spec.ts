@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { Session } from '../session';
 import { settings } from '../settings';
 import { seriousViolations } from '../ui/axe';
@@ -26,6 +27,7 @@ function setup(permissions: string[]) {
     providers: [
       provideHttpClient(),
       provideHttpClientTesting(),
+      provideRouter([]),
       {
         provide: Session,
         useValue: { me: signal({ permissions, organization_timezone: 'America/Lima' }) },
