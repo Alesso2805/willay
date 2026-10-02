@@ -54,6 +54,9 @@ export class LiveEvents {
 
   private readonly _status = signal<LiveStatus>('off');
   readonly status = this._status.asReadonly();
+  /** When the channel last stopped delivering changes; null if it never was live. */
+  private readonly _lostAt = signal<number | null>(null);
+  readonly lostAt = this._lostAt.asReadonly();
 
   private readonly reloads = new Subject<void>();
   private readonly incidentChanges = new Subject<IncidentChange>();
@@ -119,7 +122,10 @@ export class LiveEvents {
 
   private failed(source: LiveSource): void {
     if (this._status() === 'live') {
-      this.graceTimer ??= setTimeout(() => this.setStatus('reconnecting'), GRACE_MS);
+      if (this.graceTimer === undefined) {
+        this._lostAt.set(Date.now());
+        this.graceTimer = setTimeout(() => this.setStatus('reconnecting'), GRACE_MS);
+      }
     } else {
       this.setStatus('reconnecting');
     }
@@ -143,6 +149,20 @@ export class LiveEvents {
       this.pollTimer = undefined;
     }
   }
+}
+
+/**
+ * The moment a page's data is complete up to, to judge whether a station went silent: now while
+ * the channel is live; otherwise the newest of its last REST reload and the moment the channel
+ * was lost. A dashboard that lost contact must not report every station as silent.
+ */
+export function dataTime(
+  status: LiveStatus,
+  now: number,
+  syncedAt: number,
+  lostAt: number | null,
+): number {
+  return status === 'live' ? now : Math.max(syncedAt, lostAt ?? 0);
 }
 
 /** The event's JSON data, or null: an odd event is dropped, as the server drops odd notifications. */

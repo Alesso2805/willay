@@ -12,6 +12,7 @@ import {
   LiveSource,
   POLL_MS,
   RETRY_FIRST_MS,
+  dataTime,
 } from './live-events';
 
 const CONNECTING = 0;
@@ -207,6 +208,22 @@ describe('LiveEvents', () => {
     expect(reloads).not.toHaveBeenCalled();
   });
 
+  it('remembers when the channel stopped delivering changes', () => {
+    const { live, source } = setup();
+    live.connect();
+    source().fail(CLOSED);
+    expect(live.lostAt()).toBeNull(); // never live: nothing was lost
+
+    vi.advanceTimersByTime(RETRY_FIRST_MS);
+    source().emit('ready');
+    const lost = Date.now();
+    source().fail(CONNECTING);
+    vi.advanceTimersByTime(GRACE_MS);
+    source().fail(CONNECTING); // the retries that follow do not move it
+    expect(live.status()).toBe('reconnecting');
+    expect(live.lostAt()).toBe(lost);
+  });
+
   it('asks for a reload every 15 s while the channel is down, and stops once live', () => {
     const { live, reloads, source } = setup();
     live.connect();
@@ -230,5 +247,14 @@ describe('LiveEvents', () => {
     expect(FakeSource.all).toHaveLength(1);
     expect(source().closed).toBe(true);
     expect(reloads).not.toHaveBeenCalled();
+  });
+});
+
+describe('dataTime', () => {
+  it('is now while live; otherwise the newest of the last reload and the moment it was lost', () => {
+    expect(dataTime('live', 1_000, 100, 500)).toBe(1_000);
+    expect(dataTime('reconnecting', 1_000, 100, 500)).toBe(500);
+    expect(dataTime('reconnecting', 1_000, 800, 500)).toBe(800);
+    expect(dataTime('connecting', 1_000, 100, null)).toBe(100);
   });
 });
