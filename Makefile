@@ -3,17 +3,35 @@ SHELL := /bin/bash
 
 COMPOSE := docker compose
 
+# Windows: from PowerShell make runs the recipes with cmd.exe, from Git Bash with sh.exe. The
+# recipes avoid shell-specific commands; what differs is decided here, by make itself.
+ifeq ($(OS),Windows_NT)
+# Docker Desktop does not map file ownership on bind mounts, and Windows has no `id`.
+SEED_USER := 0
+else
+# Your uid, so that .secrets/station-keys.json belongs to you and not to the container user.
+SEED_USER := $(shell id -u):$(shell id -g)
+endif
+# Git Bash would rewrite container paths such as /secrets as Windows paths; elsewhere it is unused.
+export MSYS_NO_PATHCONV := 1
+
 .PHONY: help up down lint lint-backend lint-dashboard test test-backend test-dashboard openapi migrate seed simulate demo
 
 help: ## List the available commands
+ifeq ($(OS),Windows_NT)
+	@findstr /R /C:"^[a-z-]*:.*## " $(MAKEFILE_LIST)
+else
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "} {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
+endif
 
 up: .env ## Start the whole stack (migrate runs before api and workers)
 	$(COMPOSE) up -d --build --wait
 
+# make's own file function instead of cp, which cmd.exe does not have. On Windows it writes CRLF
+# line endings, which Docker Compose and python-dotenv both read correctly.
 .env:
-	cp .env.example .env
-	@echo "Created .env from .env.example (development-only credentials)."
+	$(file > .env,$(file < .env.example))
+	@echo Created .env from .env.example, with development-only credentials.
 
 down: ## Stop the stack (keeps the volumes)
 	$(COMPOSE) down
@@ -40,11 +58,9 @@ openapi: ## Regenerate docs/openapi.json (a test fails if it is out of date)
 migrate: .env ## Apply the Alembic migrations as willay_owner
 	$(COMPOSE) run --rm migrate
 
-# Runs with your uid so that .secrets/station-keys.json belongs to you and not to the container user.
+# .secrets/ is in the repository (only its .gitkeep), so no shell has to create it.
 seed: .env ## Load the demo data and print the API keys (ARGS=--rotate-keys to rotate them)
-	@mkdir -p .secrets
-	$(COMPOSE) run --rm --user "$$(id -u):$$(id -g)" -v "$(CURDIR)/.secrets:/secrets" \
-		migrate python -m willay.seed --keys-file /secrets/station-keys.json $(ARGS)
+	$(COMPOSE) run --rm --user "$(SEED_USER)" -v "$(CURDIR)/.secrets:/secrets" migrate python -m willay.seed --keys-file /secrets/station-keys.json $(ARGS)
 
 simulate: ## Station simulator against the local API (ARGS="--scenario rimac --seed 42")
 	cd backend && uv run simulate --keys-file ../.secrets/station-keys.json $(ARGS)
