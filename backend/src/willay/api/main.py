@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from willay.alerts.api.confirm_page import router as confirmation_router
 from willay.alerts.api.contacts import router as contacts_router
+from willay.alerts.api.groups import router as groups_router
 from willay.alerts.api.incident_alerts import router as incident_alerts_router
 from willay.alerts.api.policies import router as policies_router
 from willay.identity.api.routes import router as identity_router
@@ -86,5 +87,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(confirmation_router)
     app.include_router(policies_router)
     app.include_router(contacts_router)
+    app.include_router(groups_router)
     app.include_router(realtime_router)
     return app
