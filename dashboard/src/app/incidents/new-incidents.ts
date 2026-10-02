@@ -51,7 +51,7 @@ interface Announcement {
             @if (item.incident; as incident) {
               <app-state-badge [state]="severities[incident.severity]" />
             }
-            <a routerLink="/mapa" class="font-medium underline">Ver en el mapa</a>
+            <a [routerLink]="['/incidentes', item.id]" class="font-medium underline">Ver incidente</a>
             <button
               type="button"
               class="font-medium underline"

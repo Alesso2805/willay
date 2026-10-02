@@ -60,7 +60,7 @@ describe('NewIncidents', () => {
       'Nuevo incidente en Chosica: Estación sin reportar · RIM-SEU-01 · 01/10/2026 21:40',
     );
     expect(text()).toContain('Crítico');
-    expect(element.querySelector('a')?.getAttribute('href')).toBe('/mapa');
+    expect(element.querySelector('a')?.getAttribute('href')).toBe('/incidentes/i1');
     expect(await seriousViolations(element)).toEqual([]);
   });
 
