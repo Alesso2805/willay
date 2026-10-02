@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from willay.alerts.api.confirm_page import router as confirmation_router
 from willay.alerts.api.contacts import router as contacts_router
+from willay.alerts.api.incident_alerts import router as incident_alerts_router
 from willay.alerts.api.policies import router as policies_router
 from willay.identity.api.routes import router as identity_router
 from willay.identity.infrastructure.jwt_verifier import JwtVerifier, jwks_key_resolver
@@ -81,6 +82,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(zones_router)
     app.include_router(stations_router)
     app.include_router(incidents_router)
+    app.include_router(incident_alerts_router)
     app.include_router(confirmation_router)
     app.include_router(policies_router)
     app.include_router(contacts_router)
