@@ -132,6 +132,24 @@ describe('App', () => {
     expect(text()).toContain('Cambio brusco');
   });
 
+  it('warns on every page while any reading failed evaluation, for whoever can reprocess', async () => {
+    const { fixture, http, text, live } = setup(true);
+    http
+      .expectOne(`${settings.apiUrl}/v1/me`)
+      .flush({ ...ME, permissions: [...ME.permissions, 'readings:reprocess'] });
+    await fixture.whenStable();
+    http.expectOne(`${settings.apiUrl}/v1/failed-readings/count`).flush({ count: 2 });
+    await fixture.whenStable();
+    expect(text()).toContain('2 lecturas no se pudieron evaluar');
+    const link = (fixture.nativeElement as HTMLElement).querySelector('a[href="/lecturas-fallidas"]');
+    expect(link?.textContent).toContain('Ver lecturas fallidas');
+
+    live.failedReadings$.next(); // reprocessed: the count changed
+    http.expectOne(`${settings.apiUrl}/v1/failed-readings/count`).flush({ count: 0 });
+    await fixture.whenStable();
+    expect(text()).not.toContain('no se pudieron evaluar');
+  });
+
   it('opens no live channel for a user who may not see the data', async () => {
     const { fixture, http, text, live } = setup(true);
     http.expectOne(`${settings.apiUrl}/v1/me`).flush({ ...ME, roles: [], permissions: [] });
