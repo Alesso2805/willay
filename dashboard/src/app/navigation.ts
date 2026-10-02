@@ -16,6 +16,7 @@ export interface NavItem {
 export const NAV_ITEMS: readonly NavItem[] = [
   { path: '/', label: 'Inicio', icon: 'home', permission: null, exact: true },
   { path: '/mapa', label: 'Mapa en vivo', icon: 'radar', permission: 'view', exact: false },
+  { path: '/incidentes', label: 'Incidentes', icon: 'bell', permission: 'view', exact: false },
   { path: '/zonas', label: 'Zonas', icon: 'map', permission: 'view', exact: false },
   { path: '/estaciones', label: 'Estaciones', icon: 'antenna', permission: 'view', exact: false },
 ];

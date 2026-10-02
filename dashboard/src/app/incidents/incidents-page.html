@@ -1,0 +1,84 @@
+<app-page-header title="Incidentes" subtitle="Más recientes primero" />
+
+<form class="card mb-4 flex flex-wrap gap-x-8 gap-y-3 p-4 text-sm" aria-label="Filtros">
+  <fieldset class="flex flex-wrap items-center gap-x-4 gap-y-2">
+    <legend class="mb-1.5 font-medium text-slate-700">Estado (al menos uno)</legend>
+    @for (option of statusOptions; track option) {
+      <label class="flex items-center gap-2 text-slate-700">
+        <input
+          type="checkbox"
+          class="size-4 rounded border-slate-300 accent-brand-700"
+          [checked]="filter().statuses.includes(option)"
+          [disabled]="isLastStatus(option)"
+          (change)="toggleStatus(option, $any($event.target).checked)"
+        />
+        {{ incidentStates[option].label }}
+      </label>
+    }
+  </fieldset>
+  <fieldset class="flex flex-wrap items-center gap-x-4 gap-y-2">
+    <legend class="mb-1.5 font-medium text-slate-700">Gravedad (ninguna marcada: todas)</legend>
+    @for (option of severityOptions; track option) {
+      <label class="flex items-center gap-2 text-slate-700">
+        <input
+          type="checkbox"
+          class="size-4 rounded border-slate-300 accent-brand-700"
+          [checked]="filter().severities.includes(option)"
+          (change)="toggleSeverity(option, $any($event.target).checked)"
+        />
+        {{ severities[option].label }}
+      </label>
+    }
+  </fieldset>
+</form>
+
+<!-- Always present: screen readers hear how many results there are after each filter change. -->
+<p class="sr-only" role="status">{{ announcement() }}</p>
+
+<app-load-state
+  class="mb-4 block"
+  [status]="status()"
+  loading="Cargando incidentes…"
+  empty="No hay incidentes con estos filtros."
+  error="No se pudieron cargar los incidentes."
+  (retry)="retry()"
+/>
+
+@if (incidents(); as list) {
+  @if (list.length > 0) {
+    <p class="mb-3 text-sm text-slate-600">
+      {{ summary() }}
+      @if (list.length === limit) {
+        · se muestran los {{ limit }} más recientes
+      }
+    </p>
+  }
+  <ul class="flex flex-col gap-3">
+    @for (incident of list; track incident.id) {
+      @let state = stateOf(incident);
+      <li
+        class="card p-4"
+        [class.border-l-4]="state === 'exhausted'"
+        [style.border-left-color]="state === 'exhausted' ? exhaustedColor : null"
+      >
+        <div class="flex flex-wrap items-center gap-2">
+          <app-state-badge [state]="incidentStates[state]" />
+          <app-state-badge [state]="severities[incident.severity]" />
+          <span class="ml-auto text-xs text-slate-500">Nivel {{ incident.current_level }}</span>
+        </div>
+        <p class="mt-2 font-semibold text-slate-900">
+          {{ cause(incident.rule_type) }}
+          @if (incident.station_code) {
+            · <span class="font-mono text-sm font-medium">{{ incident.station_code }}</span>
+          }
+        </p>
+        <p class="text-sm text-slate-600">{{ incident.zone_name }}</p>
+        <p class="mt-1 text-xs text-slate-500">
+          Abierto el
+          <time [attr.datetime]="incident.opened_at">{{ time(incident.opened_at) }}</time>
+          ({{ age(incident.opened_at) }})
+        </p>
+      </li>
+    }
+  </ul>
+}
