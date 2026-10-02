@@ -19,6 +19,8 @@ export interface AuditEntry {
   actor: Author | null;
   entity_type: string;
   entity_id: string;
+  /** Its current name, for entries whose snapshot has none; null once it was deleted. */
+  entity_name: string | null;
   action: string;
   before: Record<string, unknown> | null;
   after: Record<string, unknown> | null;

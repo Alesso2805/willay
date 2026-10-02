@@ -1,5 +1,6 @@
 import { causeLabel } from '../incidents/incident-presentation';
 import { VARIABLE_LABELS } from '../stations/station-presentation';
+import { localTime } from '../ui/formats';
 import { RISK_LEVEL_STATES, SEVERITIES } from '../ui/visual-states';
 import { AuditEntry, EntityType } from './audit.api';
 
@@ -53,6 +54,7 @@ const FIELD_LABELS: Readonly<Record<string, string>> = {
   status: 'Estado',
   zones: 'Zonas',
   api_key_rotated_at: 'Clave rotada',
+  telegram_link_expires_at: 'Enlace de Telegram válido hasta',
   email: 'Correo',
   telegram_linked: 'Telegram vinculado',
   groups: 'Grupos',
@@ -111,11 +113,13 @@ export function entityName(entry: AuditEntry): string {
   for (const key of ['code', 'name', 'full_name']) {
     if (typeof snapshot[key] === 'string') return snapshot[key];
   }
-  return entry.entity_id.slice(0, 8);
+  // A snapshot without a name (a Telegram link records only its expiry): its current name.
+  return entry.entity_name ?? entry.entity_id.slice(0, 8);
 }
 
 /** Only the fields that changed; on creation, what it was created with; on deletion, what it had. */
-export function fieldChanges(entry: AuditEntry): FieldChange[] {
+export function fieldChanges(entry: AuditEntry, timezone = 'UTC'): FieldChange[] {
+  const valueText = (key: string, value: unknown) => readable(key, value, timezone);
   const before = entry.before ?? {};
   const after = entry.after ?? {};
   const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])];
@@ -137,18 +141,22 @@ export function fieldChanges(entry: AuditEntry): FieldChange[] {
   );
 }
 
-function valueText(key: string, value: unknown): string {
+/** An instant stored as ISO text ("2026-10-09T18:17:56.28+00:00"): shown in local time. */
+const INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+
+function readable(key: string, value: unknown, timezone: string): string {
   if (value === null || value === undefined || value === '') return '—';
   if (key === 'geometry') return 'polígono'; // its coordinates say nothing at a glance
   if (typeof value === 'boolean') return value ? 'Sí' : 'No';
   if (typeof value === 'string' && VALUE_LABELS[key]) return VALUE_LABELS[key](value) ?? value;
+  if (typeof value === 'string' && INSTANT.test(value)) return localTime(value, timezone);
   if (Array.isArray(value)) {
     if (value.length === 0) return 'ninguno';
     return value
-      .map((item) => (typeof item === 'object' ? compact(item) : String(item)))
+      .map((item) => (typeof item === 'object' ? compact(item, timezone) : String(item)))
       .join(', ');
   }
-  if (typeof value === 'object') return compact(value);
+  if (typeof value === 'object') return compact(value, timezone);
   return String(value);
 }
 
@@ -178,12 +186,15 @@ const NESTED_VALUES: Readonly<Record<string, string>> = {
   downstream: 'aguas abajo',
 };
 
-function compact(value: unknown): string {
+function compact(value: unknown, timezone: string): string {
   if (value === null || typeof value !== 'object') return String(value);
   return Object.entries(value as Record<string, unknown>)
     .map(([k, v]) => {
       const text = typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v);
-      return `${NESTED_LABELS[k] ?? k}: ${NESTED_VALUES[text] ?? text}`;
+      const shown = INSTANT.test(text)
+        ? localTime(text, timezone, true)
+        : (NESTED_VALUES[text] ?? text);
+      return `${NESTED_LABELS[k] ?? k}: ${shown}`;
     })
     .join(', ');
 }
