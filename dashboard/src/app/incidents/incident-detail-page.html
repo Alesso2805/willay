@@ -32,6 +32,19 @@
     <app-state-badge [state]="severities[incident.severity]" />
   </p>
 
+  @if (readings(); as chart) {
+    <section class="card mb-6 p-5" aria-labelledby="chart-title">
+      <h2 id="chart-title" class="font-semibold text-slate-900">Lecturas</h2>
+      @if (chart.source === 'evidence') {
+        <app-notice tone="info" class="mt-3">
+          Las lecturas de este periodo ya expiraron: se muestran las que dispararon la regla,
+          copiadas al abrirse el incidente.
+        </app-notice>
+      }
+      <app-readings-chart class="mt-4 block" [data]="chart" [marks]="marks()" [timezone]="timezone()" />
+    </section>
+  }
+
   <section class="card mb-6 p-5" aria-labelledby="alerts-title">
     <h2 id="alerts-title" class="font-semibold text-slate-900">Alertas</h2>
     @if (alerts().length === 0) {

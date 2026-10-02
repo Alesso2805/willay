@@ -11,12 +11,13 @@ import { PageHeader } from '../ui/page-header';
 import { StateBadge } from '../ui/state-badge';
 import { ALERT_STATES, INCIDENT_STATES, SEVERITIES } from '../ui/visual-states';
 import { causeLabel, incidentState } from './incident-presentation';
-import { IncidentAlert, IncidentDetail, IncidentsApi } from './incidents.api';
+import { IncidentAlert, IncidentDetail, IncidentReadings, IncidentsApi } from './incidents.api';
+import { ChartMark, ReadingsChart } from './readings-chart';
 import { eventText } from './timeline-presentation';
 
 type DetailState =
   | { status: 'loading' }
-  | { status: 'ready'; incident: IncidentDetail; alerts: IncidentAlert[] }
+  | { status: 'ready'; incident: IncidentDetail; alerts: IncidentAlert[]; readings: IncidentReadings }
   | { status: 'not-found' }
   | { status: 'error' };
 
@@ -28,7 +29,7 @@ const CHANNELS: Record<IncidentAlert['channel'], string> = { email: 'Correo', te
  */
 @Component({
   selector: 'app-incident-detail-page',
-  imports: [RouterLink, Notice, PageHeader, StateBadge],
+  imports: [RouterLink, Notice, PageHeader, StateBadge, ReadingsChart],
   templateUrl: './incident-detail-page.html',
 })
 export class IncidentDetailPage {
@@ -50,6 +51,20 @@ export class IncidentDetailPage {
   protected readonly alerts = computed(() => {
     const state = this.state();
     return state.status === 'ready' ? state.alerts : [];
+  });
+  protected readonly readings = computed(() => {
+    const state = this.state();
+    return state.status === 'ready' ? state.readings : null;
+  });
+  protected readonly timezone = computed(() => this.session.me()?.organization_timezone ?? 'UTC');
+  /** The moments that tell the incident's story on the chart. */
+  protected readonly marks = computed<ChartMark[]>(() => {
+    const incident = this.incident();
+    if (!incident) return [];
+    const marks = [{ at: incident.opened_at, label: 'Apertura' }];
+    if (incident.acknowledged_at) marks.push({ at: incident.acknowledged_at, label: 'Confirmación' });
+    if (incident.resolved_at) marks.push({ at: incident.resolved_at, label: 'Resolución' });
+    return marks;
   });
   /** Alerts grouped by escalation level, in order (the cards on narrow screens). */
   protected readonly alertLevels = computed(() => {
@@ -91,7 +106,11 @@ export class IncidentDetailPage {
           );
           return merge([undefined], changes).pipe(
             switchMap(() =>
-              forkJoin({ incident: this.api.get(id), alerts: this.api.alerts(id) }).pipe(
+              forkJoin({
+                incident: this.api.get(id),
+                alerts: this.api.alerts(id),
+                readings: this.api.readings(id),
+              }).pipe(
                 catchError((error: unknown) => {
                   this.failed(error);
                   return EMPTY;
@@ -102,7 +121,7 @@ export class IncidentDetailPage {
         }),
         takeUntilDestroyed(),
       )
-      .subscribe(({ incident, alerts }) => this.state.set({ status: 'ready', incident, alerts }));
+      .subscribe((loaded) => this.state.set({ status: 'ready', ...loaded }));
   }
 
   /** "Confirmó el 02/10/2026 00:30" or "Enviada el …"; null if it never went out. */

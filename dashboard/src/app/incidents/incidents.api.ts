@@ -51,6 +51,20 @@ export interface IncidentAlert {
   email: string | null;
 }
 
+/**
+ * docs/openapi.json › IncidentReadingsOut: the readings around the opening. `evidence` means
+ * they expired and these are the ones copied into the opened event.
+ */
+export interface IncidentReadings {
+  station_code: string | null;
+  unit: string | null;
+  window_start: string;
+  window_end: string;
+  source: 'readings' | 'evidence';
+  readings: { measured_at: string; value: number }[];
+  threshold: { operator: string; value: number } | null;
+}
+
 /** docs/openapi.json › IncidentDetailOut: the incident with its timeline, oldest first. */
 export interface IncidentDetail extends Incident {
   trigger_value: number | null;
@@ -80,6 +94,11 @@ export class IncidentsApi {
   /** The incident with its timeline. */
   get(id: string): Observable<IncidentDetail> {
     return this.http.get<IncidentDetail>(`${this.url}/${id}`);
+  }
+
+  /** The readings around its opening, for the chart. */
+  readings(id: string): Observable<IncidentReadings> {
+    return this.http.get<IncidentReadings>(`${this.url}/${id}/readings`);
   }
 
   /** Its alerts by level, recipient and channel. */

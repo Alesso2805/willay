@@ -9,10 +9,24 @@ import { Session } from '../session';
 import { settings } from '../settings';
 import { seriousViolations } from '../ui/axe';
 import { IncidentDetailPage } from './incident-detail-page';
-import { IncidentAlert, IncidentDetail } from './incidents.api';
+import { IncidentAlert, IncidentDetail, IncidentReadings } from './incidents.api';
 
 const URL = `${settings.apiUrl}/v1/incidents/i1`;
 const ALERTS_URL = `${URL}/alerts`;
+const READINGS_URL = `${URL}/readings`;
+
+const READINGS: IncidentReadings = {
+  station_code: 'RIM-CHO-01',
+  unit: 'm',
+  window_start: '2026-10-02T02:31:03Z',
+  window_end: '2026-10-02T05:31:03Z',
+  source: 'readings',
+  readings: [
+    { measured_at: '2026-10-02T03:30:53Z', value: 4.2 },
+    { measured_at: '2026-10-02T03:31:03Z', value: 4.6 },
+  ],
+  threshold: { operator: 'gt', value: 3.5 },
+};
 
 function alert(overrides: Partial<IncidentAlert>): IncidentAlert {
   return {
@@ -98,10 +112,15 @@ async function setup(id = 'i1') {
   const element = harness.routeNativeElement as HTMLElement;
   const text = () => element.textContent?.replace(/\s+/g, ' ') ?? '';
   const stable = () => harness.fixture.whenStable();
-  /** Answers the detail and its alerts, which the page asks for together. */
-  const respond = async (detail: IncidentDetail = DETAIL, alerts: IncidentAlert[] = []) => {
+  /** Answers the detail, its alerts and its readings, which the page asks for together. */
+  const respond = async (
+    detail: IncidentDetail = DETAIL,
+    alerts: IncidentAlert[] = [],
+    readings: IncidentReadings = READINGS,
+  ) => {
     http.expectOne(URL).flush(detail);
     http.expectOne(ALERTS_URL).flush(alerts);
+    http.expectOne(READINGS_URL).flush(readings);
     await stable();
   };
   return { http, element, text, stable, live, respond };
@@ -190,6 +209,17 @@ describe('IncidentDetailPage', () => {
     expect(cards[1]).toContain('Rosa Brigada · Telegram');
     expect(cards[1]).toContain('el contacto no vinculó Telegram');
     expect(cards[1]).not.toContain('@');
+  });
+
+  it('draws the readings with the threshold and the opening, and says when they are the copy', async () => {
+    const { element, respond } = await setup();
+    await respond(DETAIL, [], { ...READINGS, source: 'evidence' });
+    const chart = element.querySelector('section[aria-labelledby="chart-title"]') as HTMLElement;
+    expect(chart.textContent).toContain('Las lecturas de este periodo ya expiraron');
+    expect(chart.querySelector('svg desc')?.textContent).toContain('2 lecturas de RIM-CHO-01');
+    expect(chart.textContent).toContain('Umbral: más de 3.5 m');
+    expect(chart.textContent).toContain('Apertura');
+    expect(chart.textContent).toContain('Confirmación');
   });
 
   it('says when an incident raised no alerts', async () => {
