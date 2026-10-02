@@ -9,11 +9,10 @@ import {
   viewChild,
 } from '@angular/core';
 import * as L from 'leaflet';
-import { iconSvg } from '../ui/icon';
-import { STATION_STATES, StationState, ZONE_STATES } from '../ui/visual-states';
+import { ZONE_STATES } from '../ui/visual-states';
 import { RISK_LABELS } from '../zones/zone-presentation';
 import { createBaseMap } from './base-map';
-import { StationView, ZONE_STYLES, ZoneView } from './live-map-presentation';
+import { StationView, ZONE_STYLES, ZoneView, markerHtml } from './live-map-presentation';
 
 /**
  * The live map (VIG-25). A "dumb" component: it draws the zones by state and the stations by
@@ -37,7 +36,8 @@ export class LiveMap {
   private map?: L.Map;
   private readonly zoneLayer = L.featureGroup();
   private readonly stationLayer = L.featureGroup();
-  private readonly markers = new Map<string, { marker: L.Marker; state: StationState }>();
+  /** By station id, with the HTML it shows, to replace the icon only when it changes. */
+  private readonly markers = new Map<string, { marker: L.Marker; html: string }>();
   private drawnZones?: ZoneView[];
   private fitted = false;
 
@@ -68,34 +68,34 @@ export class LiveMap {
 
   private drawZones(views: ZoneView[]): void {
     this.zoneLayer.clearLayers();
-    for (const { zone, state } of views) {
-      const look = ZONE_STATES[state];
+    for (const { zone, state, summary } of views) {
       const risk = RISK_LABELS[zone.risk_level].toLowerCase();
-      L.geoJSON(zone.geometry, { style: { color: look.map, ...ZONE_STYLES[state] } })
-        .bindTooltip(`${zone.name} · ${look.label} · riesgo ${risk}`, { sticky: true })
+      L.geoJSON(zone.geometry, { style: { color: ZONE_STATES[state].map, ...ZONE_STYLES[state] } })
+        .bindTooltip(`${zone.name} · ${summary} · riesgo ${risk}`, { sticky: true })
         .addTo(this.zoneLayer);
     }
   }
 
   private drawStations(views: StationView[]): void {
     const present = new Set<string>();
-    for (const { station, marker: state, label } of views) {
+    for (const { station, marker: state, incident, label } of views) {
       present.add(station.id);
       const [lon, lat] = station.location.coordinates; // GeoJSON is [lon, lat]
+      const html = markerHtml(state, incident);
       const known = this.markers.get(station.id);
       if (known) {
         known.marker.setLatLng([lat, lon]).setTooltipContent(label);
-        if (known.state !== state) {
-          known.marker.setIcon(markerIcon(state));
-          known.state = state;
+        if (known.html !== html) {
+          known.marker.setIcon(markerIcon(html));
+          known.html = html;
         }
       } else {
         // keyboard: false, the list next to the map is the keyboard and screen reader version.
         // Above and centered: a long label to one side gets clipped by the edge of the map.
-        const marker = L.marker([lat, lon], { icon: markerIcon(state), keyboard: false })
+        const marker = L.marker([lat, lon], { icon: markerIcon(html), keyboard: false })
           .bindTooltip(label, { direction: 'top' })
           .addTo(this.stationLayer);
-        this.markers.set(station.id, { marker, state });
+        this.markers.set(station.id, { marker, html });
       }
     }
     for (const [id, { marker }] of this.markers) {
@@ -120,14 +120,10 @@ export class LiveMap {
   }
 }
 
-/** A round marker in the state's color with its icon in white: the icon tells the state apart without color. */
-function markerIcon(state: StationState): L.DivIcon {
-  const look = STATION_STATES[state];
+function markerIcon(html: string): L.DivIcon {
   return L.divIcon({
     className: '', // no Leaflet default white square
-    html:
-      `<span class="grid size-7 place-items-center rounded-full border-2 border-white text-white shadow-md" ` +
-      `style="background-color:${look.map}">${iconSvg(look.icon, 16)}</span>`,
+    html,
     iconSize: [28, 28],
     iconAnchor: [14, 14],
     tooltipAnchor: [0, -14],

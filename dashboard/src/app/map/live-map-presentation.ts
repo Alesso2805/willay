@@ -3,8 +3,12 @@ import { Incident } from '../incidents/incidents.api';
 import { stationState } from '../stations/station-presentation';
 import { Station } from '../stations/stations.api';
 import { ageText, valueWithUnit } from '../ui/formats';
-import { STATION_STATES, StationState, ZoneState } from '../ui/visual-states';
+import { iconSvg } from '../ui/icon';
+import { STATION_STATES, StationState, ZONE_STATES, ZoneState } from '../ui/visual-states';
 import { Zone } from '../zones/zones.api';
+
+/** An active incident as the map shows it: acknowledged, open or with its escalation exhausted. */
+export type ActiveIncidentState = Exclude<ZoneState, 'calm'>;
 
 /** From least to most urgent: a zone shows its most urgent active incident. */
 export const ZONE_URGENCY: readonly ZoneState[] = ['calm', 'acknowledged', 'open', 'exhausted'];
@@ -12,20 +16,61 @@ export const ZONE_URGENCY: readonly ZoneState[] = ['calm', 'acknowledged', 'open
 export interface ZoneView {
   zone: Zone;
   state: ZoneState;
+  /** Its active incidents by state: "1 con escalamiento agotado · 2 confirmados". */
+  summary: string;
+}
+
+/** The most urgent active incident per key (zone or station); without any, the key is missing. */
+function mostUrgent(
+  incidents: readonly Incident[],
+  keyOf: (incident: Incident) => string | null,
+): Map<string, ActiveIncidentState> {
+  const states = new Map<string, ActiveIncidentState>();
+  for (const incident of incidents) {
+    const key = keyOf(incident);
+    const state = incidentState(incident);
+    if (key === null || state === 'resolved') continue;
+    const current = states.get(key);
+    if (!current || ZONE_URGENCY.indexOf(state) > ZONE_URGENCY.indexOf(current)) {
+      states.set(key, state);
+    }
+  }
+  return states;
 }
 
 /** By zone id; a zone with no active incident is missing from the result: it is calm. */
 export function zoneStates(incidents: readonly Incident[]): Map<string, ZoneState> {
-  const states = new Map<string, ZoneState>();
+  return mostUrgent(incidents, (incident) => incident.zone_id);
+}
+
+/**
+ * By station id: the badge on its marker. A zone keeps the color of its most urgent incident,
+ * so acknowledging one incident may not change the zone; the badge shows it on that station.
+ */
+export function stationIncidentStates(
+  incidents: readonly Incident[],
+): Map<string, ActiveIncidentState> {
+  return mostUrgent(incidents, (incident) => incident.station_id);
+}
+
+const COUNT_WORDS: Readonly<Record<ActiveIncidentState, readonly [string, string]>> = {
+  exhausted: ['con escalamiento agotado', 'con escalamiento agotado'],
+  open: ['abierto', 'abiertos'],
+  acknowledged: ['confirmado', 'confirmados'],
+};
+
+/** A zone's active incidents counted by state, most urgent first, or "Sin incidentes". */
+export function incidentSummary(incidents: readonly Incident[]): string {
+  const counts = new Map<ActiveIncidentState, number>();
   for (const incident of incidents) {
     const state = incidentState(incident);
-    if (state === 'resolved') continue;
-    const current = states.get(incident.zone_id) ?? 'calm';
-    if (ZONE_URGENCY.indexOf(state) > ZONE_URGENCY.indexOf(current)) {
-      states.set(incident.zone_id, state);
-    }
+    if (state !== 'resolved') counts.set(state, (counts.get(state) ?? 0) + 1);
   }
-  return states;
+  const parts = (['exhausted', 'open', 'acknowledged'] as const).flatMap((state) => {
+    const count = counts.get(state) ?? 0;
+    return count === 0 ? [] : [`${count} ${COUNT_WORDS[state][count === 1 ? 0 : 1]}`];
+  });
+  return parts.length > 0 ? parts.join(' · ') : ZONE_STATES.calm.label;
 }
 
 /**
@@ -50,7 +95,9 @@ export interface StationView {
   marker: StationState;
   /** For a station without a zone (what its marker shows), whether it reports. */
   secondary: StationState | null;
-  /** Tooltip text: code, name, last value and age, state. */
+  /** Its most urgent active incident: the badge on the marker. */
+  incident: ActiveIncidentState | null;
+  /** Tooltip text: code, name, last value and age, state, incident. */
   label: string;
 }
 
@@ -58,7 +105,12 @@ export interface StationView {
  * A station on the live map. Without a zone it cannot raise alerts, which matters more here than
  * whether it reports; one that never reported is waiting, not silent (SPEC).
  */
-export function stationView(station: Station, asOf: number, now: number): StationView {
+export function stationView(
+  station: Station,
+  asOf: number,
+  now: number,
+  incident: ActiveIncidentState | null = null,
+): StationView {
   const reporting = stationState(station, asOf);
   const marker: StationState = !station.has_zone ? 'unzoned' : (reporting ?? 'waiting');
   const parts = [station.code, station.name];
@@ -70,10 +122,30 @@ export function stationView(station: Station, asOf: number, now: number): Statio
   parts.push(STATION_STATES[marker].label);
   const secondary = marker === 'unzoned' ? reporting : null;
   if (secondary) parts.push(STATION_STATES[secondary].label);
-  return { station, marker, secondary, label: parts.join(' · ') };
+  if (incident) parts.push(ZONE_STATES[incident].label);
+  return { station, marker, secondary, incident, label: parts.join(' · ') };
 }
 
 export function byStationUrgency(a: StationView, b: StationView): number {
   const urgency = STATION_URGENCY.indexOf(a.marker) - STATION_URGENCY.indexOf(b.marker);
   return urgency || a.station.code.localeCompare(b.station.code);
+}
+
+/**
+ * A station marker: a circle in its state's color with that state's icon in white and, if the
+ * station has an active incident, a badge in the corner with the incident's icon. Icons tell the
+ * states apart without color; Leaflet renders this HTML as the marker.
+ */
+export function markerHtml(state: StationState, incident: ActiveIncidentState | null): string {
+  const look = STATION_STATES[state];
+  const badge = incident
+    ? `<span class="absolute -top-2 -right-2 grid size-[18px] place-items-center rounded-full ` +
+      `border-2 border-white" style="background-color:${ZONE_STATES[incident].map}">` +
+      `${iconSvg(ZONE_STATES[incident].icon, 10)}</span>`
+    : '';
+  return (
+    `<span class="relative grid size-7 place-items-center rounded-full border-2 border-white ` +
+    `text-white shadow-md" style="background-color:${look.map}">` +
+    `${iconSvg(look.icon, 16)}${badge}</span>`
+  );
 }

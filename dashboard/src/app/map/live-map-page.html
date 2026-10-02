@@ -14,13 +14,15 @@
     <app-live-map [zones]="zones()" [stations]="stations()" />
     <div class="flex flex-col gap-2 border-t border-slate-100 p-3 text-xs">
       <p class="flex flex-wrap items-center gap-1.5">
-        <span class="mr-1 font-medium text-slate-700">Zonas:</span>
+        <span class="mr-1 font-medium text-slate-700">
+          Incidentes (color de la zona y esquina del marcador):
+        </span>
         @for (state of zoneLegend; track state) {
           <app-state-badge [state]="zoneStates[state]" />
         }
       </p>
       <p class="flex flex-wrap items-center gap-1.5">
-        <span class="mr-1 font-medium text-slate-700">Estaciones:</span>
+        <span class="mr-1 font-medium text-slate-700">Estaciones (ícono del marcador):</span>
         @for (state of stationLegend; track state) {
           <app-state-badge [state]="stationStates[state]" />
         }
@@ -73,6 +75,9 @@
                 <app-state-badge [state]="stationStates[view.marker]" />
                 @if (view.secondary) {
                   <app-state-badge [state]="stationStates[view.secondary]" />
+                }
+                @if (view.incident) {
+                  <app-state-badge [state]="zoneStates[view.incident]" />
                 }
               </p>
             </div>

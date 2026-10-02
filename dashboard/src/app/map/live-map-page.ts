@@ -16,6 +16,8 @@ import {
   ZONE_URGENCY,
   ZoneView,
   byStationUrgency,
+  incidentSummary,
+  stationIncidentStates,
   stationView,
   zoneStates,
 } from './live-map-presentation';
@@ -58,18 +60,6 @@ export class LiveMapPage {
   private readonly incidents = computed(() => this.snapshot.data()?.incidents);
   private readonly zoneList = computed(() => this.snapshot.data()?.zones);
 
-  /** Most urgent first. */
-  protected readonly zones = computed<ZoneView[]>(() => {
-    const states = zoneStates(this.incidents() ?? []);
-    return (this.zoneList() ?? [])
-      .map((zone) => ({ zone, state: states.get(zone.id) ?? 'calm' }))
-      .sort(
-        (a, b) =>
-          ZONE_URGENCY.indexOf(b.state) - ZONE_URGENCY.indexOf(a.state) ||
-          a.zone.name.localeCompare(b.zone.name),
-      );
-  });
-
   protected readonly incidentsByZone = computed(() => {
     const byZone = new Map<string, Incident[]>();
     for (const incident of this.incidents() ?? []) {
@@ -78,12 +68,32 @@ export class LiveMapPage {
     return byZone;
   });
 
+  /** Most urgent first. */
+  protected readonly zones = computed<ZoneView[]>(() => {
+    const states = zoneStates(this.incidents() ?? []);
+    const byZone = this.incidentsByZone();
+    return (this.zoneList() ?? [])
+      .map((zone) => ({
+        zone,
+        state: states.get(zone.id) ?? 'calm',
+        summary: incidentSummary(byZone.get(zone.id) ?? []),
+      }))
+      .sort(
+        (a, b) =>
+          ZONE_URGENCY.indexOf(b.state) - ZONE_URGENCY.indexOf(a.state) ||
+          a.zone.name.localeCompare(b.zone.name),
+      );
+  });
+
+  private readonly stationIncidents = computed(() => stationIncidentStates(this.incidents() ?? []));
+
   /** Most urgent first: silent, without a zone, waiting, reporting. */
   protected readonly stations = computed<StationView[]>(() => {
     const asOf = this.snapshot.asOf();
     const now = this.snapshot.now();
+    const incidents = this.stationIncidents();
     return (this.snapshot.data()?.stations ?? [])
-      .map((station) => stationView(station, asOf, now))
+      .map((station) => stationView(station, asOf, now, incidents.get(station.id) ?? null))
       .sort(byStationUrgency);
   });
 
