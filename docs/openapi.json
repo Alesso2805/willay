@@ -63,6 +63,18 @@
             "title": "Entity Id",
             "type": "string"
           },
+          "entity_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its current name, for entries whose snapshot has none; None once deleted",
+            "title": "Entity Name"
+          },
           "entity_type": {
             "title": "Entity Type",
             "type": "string"
@@ -78,6 +90,7 @@
           "actor",
           "entity_type",
           "entity_id",
+          "entity_name",
           "action",
           "before",
           "after"

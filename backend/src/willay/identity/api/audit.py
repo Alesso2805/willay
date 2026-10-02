@@ -39,6 +39,9 @@ class AuditEntryOut(BaseModel):
     )
     entity_type: str
     entity_id: UUID
+    entity_name: str | None = Field(
+        description="Its current name, for entries whose snapshot has none; None once deleted"
+    )
     action: str
     before: dict[str, Any] | None
     after: dict[str, Any] | None
@@ -109,6 +112,7 @@ def _out(record: AuditRecord) -> AuditEntryOut:
         actor=actor,
         entity_type=record.entity_type,
         entity_id=record.entity_id,
+        entity_name=record.entity_name,
         action=record.action,
         before=dict(record.before) if record.before is not None else None,
         after=dict(record.after) if record.after is not None else None,
