@@ -154,17 +154,42 @@ describe('IncidentDetailPage', () => {
     ]);
 
     const section = element.querySelector('section[aria-labelledby="alerts-title"]') as HTMLElement;
+    // From md up, a table: one row per alert, each fact in its column.
+    const table = section.querySelector('table') as HTMLTableElement;
+    expect([...table.querySelectorAll('th')].map((th) => th.textContent?.trim())).toEqual([
+      'Nivel',
+      'Destinatario',
+      'Canal',
+      'Estado',
+      'Cuándo',
+      'Motivo',
+    ]);
+    // A cell with paragraphs (name and email) shows them one below the other.
+    const cell = (td: Element) => {
+      const parts = [...td.querySelectorAll('p')].map((p) => p.textContent?.trim());
+      return parts.length > 0 ? parts.join(' / ') : td.textContent?.replace(/\s+/g, ' ').trim();
+    };
+    const rows = [...table.querySelectorAll('tbody tr')].map((tr) =>
+      [...tr.querySelectorAll('td')].map(cell),
+    );
+    expect(rows[0]).toEqual([
+      '1',
+      'Óscar Operador / operador@rimac.willay.test',
+      'Correo',
+      'Enviada',
+      'Enviada el 01/10/2026 22:31',
+      '—',
+    ]);
+    expect(rows[1]).toEqual(['2', 'Rosa Brigada', 'Telegram', 'Omitida', '—', 'el contacto no vinculó Telegram']);
+    expect(rows[2][4]).toBe('Confirmó el 02/10/2026 00:30');
+
+    // Narrower, the same alerts as cards grouped by level.
     const levels = [...section.querySelectorAll('h3')].map((h) => h.textContent?.trim());
     expect(levels).toEqual(['Nivel 1', 'Nivel 2', 'Nivel 3']);
-    const items = [...section.querySelectorAll('li')].map((li) => li.textContent?.replace(/\s+/g, ' ').trim());
-    expect(items[0]).toContain('Óscar Operador · Correo');
-    expect(items[0]).toContain('Enviada');
-    expect(items[0]).toContain('operador@rimac.willay.test');
-    expect(items[1]).toContain('Rosa Brigada · Telegram');
-    expect(items[1]).toContain('Omitida');
-    expect(items[1]).toContain('el contacto no vinculó Telegram');
-    expect(items[1]).not.toContain('@');
-    expect(items[2]).toContain('Confirmó el 02/10/2026 00:30');
+    const cards = [...section.querySelectorAll('li')].map((li) => li.textContent?.replace(/\s+/g, ' ').trim());
+    expect(cards[1]).toContain('Rosa Brigada · Telegram');
+    expect(cards[1]).toContain('el contacto no vinculó Telegram');
+    expect(cards[1]).not.toContain('@');
   });
 
   it('says when an incident raised no alerts', async () => {

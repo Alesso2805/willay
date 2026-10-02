@@ -47,7 +47,11 @@ export class IncidentDetailPage {
     const state = this.state();
     return state.status === 'ready' ? state.incident : null;
   });
-  /** Alerts grouped by escalation level, in order. */
+  protected readonly alerts = computed(() => {
+    const state = this.state();
+    return state.status === 'ready' ? state.alerts : [];
+  });
+  /** Alerts grouped by escalation level, in order (the cards on narrow screens). */
   protected readonly alertLevels = computed(() => {
     const state = this.state();
     if (state.status !== 'ready') return [];
@@ -99,6 +103,13 @@ export class IncidentDetailPage {
         takeUntilDestroyed(),
       )
       .subscribe(({ incident, alerts }) => this.state.set({ status: 'ready', incident, alerts }));
+  }
+
+  /** "Confirmó el 02/10/2026 00:30" or "Enviada el …"; null if it never went out. */
+  protected when(alert: IncidentAlert): string | null {
+    if (alert.acknowledged_at) return `Confirmó el ${this.time(alert.acknowledged_at)}`;
+    if (alert.sent_at) return `Enviada el ${this.time(alert.sent_at)}`;
+    return null;
   }
 
   protected retry(): void {
