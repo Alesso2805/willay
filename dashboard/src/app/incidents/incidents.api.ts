@@ -101,6 +101,21 @@ export class IncidentsApi {
     return this.http.get<IncidentReadings>(`${this.url}/${id}/readings`);
   }
 
+  /** Responder and above; only an open incident (409 otherwise). */
+  acknowledge(id: string): Observable<Incident> {
+    return this.http.post<Incident>(`${this.url}/${id}/acknowledge`, null);
+  }
+
+  /** Operator and above; final (409 if already resolved). */
+  resolve(id: string, resolution: 'resolved' | 'false_alarm'): Observable<Incident> {
+    return this.http.post<Incident>(`${this.url}/${id}/resolve`, { resolution });
+  }
+
+  /** Responder and above, in any status; the API trims it and requires 1 to 2000 characters. */
+  comment(id: string, text: string): Observable<IncidentEvent> {
+    return this.http.post<IncidentEvent>(`${this.url}/${id}/comments`, { text });
+  }
+
   /** Its alerts by level, recipient and channel. */
   alerts(id: string): Observable<IncidentAlert[]> {
     return this.http.get<IncidentAlert[]>(`${this.url}/${id}/alerts`);
