@@ -214,6 +214,20 @@ async def test_two_workers_escalate_an_incident_once(
     assert await _alerted(owner, case) == [(1, "Ana"), (2, "Beto")]
 
 
+async def test_many_workers_escalate_each_of_many_incidents_once(
+    engine: AsyncEngine, owner: asyncpg.Connection
+) -> None:
+    # More interleavings than two workers on one incident: a worker locking an incident right
+    # after another escalated it must see that level's alerts and wait, not escalate again.
+    cases = [await _incident(engine, owner) for _ in range(8)]
+    clock = FakeClock(max(case.opened_at for case in cases) + timedelta(seconds=120))
+    await asyncio.gather(*(_escalator(engine, clock).run() for _ in range(4)))
+
+    for case in cases:
+        assert (await _level(owner, case))["current_level"] == 2
+        assert len(await _escalations(owner, case)) == 1
+
+
 async def test_the_worker_process_escalates(
     engine: AsyncEngine, owner: asyncpg.Connection, database: Database, tmp_path: Path
 ) -> None:
