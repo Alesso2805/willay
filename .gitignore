@@ -1,6 +1,7 @@
 # Local secrets: never in the repository
 .env
-.secrets/
+.secrets/*
+!.secrets/.gitkeep
 
 # Python
 .venv/
