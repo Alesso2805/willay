@@ -27,6 +27,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     permission: 'contacts:view_details',
     exact: false,
   },
+  { path: '/auditoria', label: 'Auditoría', icon: 'history', permission: 'audit:view', exact: false },
 ];
 
 export function visibleNavItems(permissions: readonly string[]): NavItem[] {
