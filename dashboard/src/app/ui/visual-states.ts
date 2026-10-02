@@ -34,6 +34,7 @@ export type ZoneState = 'calm' | 'acknowledged' | 'open' | 'exhausted';
 export type AlertState = 'pending' | 'sent' | 'failed' | 'skipped' | 'acknowledged';
 export type ContactChannelState = 'email' | 'telegram' | 'pending' | 'none';
 export type GroupState = 'empty' | 'unused';
+export type RuleState = 'inactive';
 
 /** `exhausted`: open with nobody acknowledging at any level (SPEC: shown in red). */
 export const INCIDENT_STATES: Readonly<Record<IncidentState, VisualState>> = {
@@ -97,6 +98,11 @@ export const GROUP_STATES: Readonly<Record<GroupState, VisualState>> = {
   unused: { label: 'Ninguna política lo usa', icon: 'pause', ...SLATE },
 };
 
+/** A deactivated rule (VIG-27): kept because incidents point to it, but it no longer fires. */
+export const RULE_STATES: Readonly<Record<RuleState, VisualState>> = {
+  inactive: { label: 'Desactivada', icon: 'pause', ...SLATE },
+};
+
 export type ConnectionState = 'connecting' | 'live' | 'reconnecting';
 
 /** The live channel (VIG-25): while it is down, what the dashboard shows may be stale. */
@@ -126,5 +132,6 @@ export const ALL_CATALOGS = {
   alert: ALERT_STATES,
   contactChannel: CONTACT_CHANNEL_STATES,
   group: GROUP_STATES,
+  rule: RULE_STATES,
   connection: CONNECTION_STATES,
 } as const;

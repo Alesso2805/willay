@@ -1,0 +1,360 @@
+<app-page-header title="Reglas" [subtitle]="subtitle()">
+  <label class="flex items-center gap-2 text-sm text-slate-600">
+    <input
+      type="checkbox"
+      class="size-4 rounded border-slate-300 accent-brand-700"
+      [checked]="includeInactive()"
+      (change)="toggleInactive($any($event.target).checked)"
+    />
+    Mostrar desactivadas
+  </label>
+  @if (canManage() && !editing()) {
+    <button type="button" class="btn-primary" (click)="startCreate()">
+      <app-icon name="plus" />
+      Nueva regla
+    </button>
+  }
+</app-page-header>
+
+<p class="-mt-3 mb-3 text-sm text-slate-600" aria-live="polite">{{ status() }}</p>
+
+@if (editing(); as current) {
+  <form class="card mb-6 flex flex-col gap-5 p-5" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <h2 class="font-semibold text-slate-900">
+      {{ current.kind === 'new' ? 'Nueva regla' : 'Editar regla' }}
+    </h2>
+
+    <div class="grid gap-4 md:grid-cols-3">
+      <div class="flex flex-col gap-1.5">
+        <label for="rule-type" class="text-sm font-medium text-slate-700">Tipo</label>
+        <select id="rule-type" formControlName="type" class="field">
+          @for (type of ruleTypes; track type) {
+            <option [value]="type">{{ typeLabel(type) }}</option>
+          }
+        </select>
+        @if (current.kind === 'edit') {
+          <p class="text-xs text-slate-500">
+            El tipo no se cambia: desactiva la regla y crea otra.
+          </p>
+        }
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label for="rule-zone" class="text-sm font-medium text-slate-700">Zona</label>
+        <select
+          id="rule-zone"
+          formControlName="zone_id"
+          class="field"
+          [attr.aria-invalid]="!!error('zone_id')"
+          [attr.aria-describedby]="error('zone_id') ? 'rule-zone-error' : null"
+        >
+          <option value="">Elige una zona</option>
+          @for (zone of zoneOptions(); track zone.id) {
+            <option [value]="zone.id">{{ zone.name }}</option>
+          }
+        </select>
+        @if (error('zone_id'); as e) {
+          <p id="rule-zone-error" class="text-xs text-red-700">{{ e }}</p>
+        }
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label for="rule-station" class="text-sm font-medium text-slate-700">Estación</label>
+        <select
+          id="rule-station"
+          formControlName="station_id"
+          class="field"
+          [attr.aria-invalid]="!!error('station_id')"
+          [attr.aria-describedby]="error('station_id') ? 'rule-station-error' : null"
+        >
+          <option value="">
+            {{ draftType() === 'silence' ? 'Toda la zona' : 'Elige una estación' }}
+          </option>
+          @for (station of zoneStations(); track station.id) {
+            <option [value]="station.id">
+              {{ station.code }} · {{ station.name }} ({{ station.unit }})
+            </option>
+          }
+        </select>
+        @if (error('station_id'); as e) {
+          <p id="rule-station-error" class="text-xs text-red-700">{{ e }}</p>
+        }
+      </div>
+    </div>
+
+    @switch (draftType()) {
+      @case ('threshold') {
+        <fieldset class="grid gap-4 md:grid-cols-3">
+          <legend class="mb-2 text-sm font-medium text-slate-700">Condición</legend>
+          <div class="flex flex-col gap-1.5">
+            <label for="rule-operator" class="text-sm text-slate-700">Valor</label>
+            <select id="rule-operator" formControlName="operator" class="field">
+              @for (operator of operators; track operator) {
+                <option [value]="operator">{{ operatorLabels[operator] }}</option>
+              }
+            </select>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label for="rule-value" class="text-sm text-slate-700">
+              Límite {{ draftStation() ? '(' + draftStation()!.unit + ')' : '' }}
+            </label>
+            <input
+              id="rule-value"
+              type="number"
+              step="any"
+              formControlName="value"
+              class="field"
+              [attr.aria-invalid]="!!error('value')"
+              [attr.aria-describedby]="error('value') ? 'rule-value-error' : null"
+            />
+            @if (error('value'); as e) {
+              <p id="rule-value-error" class="text-xs text-red-700">{{ e }}</p>
+            }
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label for="rule-consecutive" class="text-sm text-slate-700"
+              >Lecturas seguidas (1 a 60)</label
+            >
+            <input
+              id="rule-consecutive"
+              type="number"
+              min="1"
+              max="60"
+              formControlName="consecutive"
+              class="field"
+              [attr.aria-invalid]="!!error('consecutive')"
+              [attr.aria-describedby]="error('consecutive') ? 'rule-consecutive-error' : null"
+            />
+            @if (error('consecutive'); as e) {
+              <p id="rule-consecutive-error" class="text-xs text-red-700">{{ e }}</p>
+            }
+          </div>
+        </fieldset>
+      }
+      @case ('rate_of_change') {
+        <fieldset class="grid gap-4 md:grid-cols-3">
+          <legend class="mb-2 text-sm font-medium text-slate-700">Condición</legend>
+          <div class="flex flex-col gap-1.5">
+            <label for="rule-direction" class="text-sm text-slate-700">El valor</label>
+            <select id="rule-direction" formControlName="direction" class="field">
+              <option value="down">Baja</option>
+              <option value="up">Sube</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label for="rule-delta" class="text-sm text-slate-700">
+              Más de {{ draftStation() ? '(' + draftStation()!.unit + ')' : '' }}
+            </label>
+            <input
+              id="rule-delta"
+              type="number"
+              step="any"
+              min="0"
+              formControlName="delta"
+              class="field"
+              [attr.aria-invalid]="!!error('delta')"
+              [attr.aria-describedby]="error('delta') ? 'rule-delta-error' : null"
+            />
+            @if (error('delta'); as e) {
+              <p id="rule-delta-error" class="text-xs text-red-700">{{ e }}</p>
+            }
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label for="rule-window" class="text-sm text-slate-700"
+              >En una ventana de (minutos, 1 a 60)</label
+            >
+            <input
+              id="rule-window"
+              type="number"
+              min="1"
+              max="60"
+              formControlName="window_minutes"
+              class="field"
+              [attr.aria-invalid]="!!error('window_minutes')"
+              [attr.aria-describedby]="error('window_minutes') ? 'rule-window-error' : null"
+            />
+            @if (error('window_minutes'); as e) {
+              <p id="rule-window-error" class="text-xs text-red-700">{{ e }}</p>
+            }
+          </div>
+        </fieldset>
+      }
+      @case ('silence') {
+        <p class="rounded-md bg-slate-50 p-3 text-sm text-slate-700">
+          @if (draftStation(); as station) {
+            {{ station.code }} se considera sin reportar tras {{ station.silence_multiplier }} ×
+            {{ station.expected_interval_s }} s ({{ silenceOf(station) }}). Se ajusta en la
+            estación.
+          } @else {
+            Cada estación de la zona se considera sin reportar tras K veces su intervalo esperado,
+            según lo configurado en cada estación.
+          }
+        </p>
+      }
+    }
+
+    <div class="grid gap-4 md:grid-cols-3">
+      <div class="flex flex-col gap-1.5">
+        <label for="rule-severity" class="text-sm font-medium text-slate-700">Severidad</label>
+        <select id="rule-severity" formControlName="severity" class="field">
+          @for (severity of severityOrder; track severity) {
+            <option [value]="severity">{{ severities[severity].label }}</option>
+          }
+        </select>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label for="rule-policy" class="text-sm font-medium text-slate-700"
+          >Política de escalamiento</label
+        >
+        <select
+          id="rule-policy"
+          formControlName="escalation_policy_id"
+          class="field"
+          [attr.aria-invalid]="!!error('escalation_policy_id')"
+          [attr.aria-describedby]="error('escalation_policy_id') ? 'rule-policy-error' : null"
+        >
+          <option value="">Elige una política</option>
+          @for (policy of policies(); track policy.id) {
+            <option [value]="policy.id">{{ policy.name }}</option>
+          }
+        </select>
+        @if (error('escalation_policy_id'); as e) {
+          <p id="rule-policy-error" class="text-xs text-red-700">{{ e }}</p>
+        }
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label for="rule-cooldown" class="text-sm font-medium text-slate-700"
+          >Espera tras resolver (min)</label
+        >
+        <input
+          id="rule-cooldown"
+          type="number"
+          min="0"
+          max="1440"
+          formControlName="cooldown_min"
+          class="field"
+          [attr.aria-invalid]="!!error('cooldown_min')"
+          [attr.aria-describedby]="
+            error('cooldown_min') ? 'rule-cooldown-error' : 'rule-cooldown-hint'
+          "
+        />
+        @if (error('cooldown_min'); as e) {
+          <p id="rule-cooldown-error" class="text-xs text-red-700">{{ e }}</p>
+        } @else {
+          <p id="rule-cooldown-hint" class="text-xs text-slate-500">
+            Tiempo en que la misma causa no abre otro incidente.
+          </p>
+        }
+      </div>
+    </div>
+
+    @if (problem(); as p) {
+      <app-notice>{{ p }}</app-notice>
+    }
+
+    <div class="flex flex-wrap gap-2">
+      <button type="submit" class="btn-primary" [disabled]="saving()">
+        {{ saving() ? 'Guardando…' : 'Guardar' }}
+      </button>
+      <button type="button" class="btn-secondary" [disabled]="previewing()" (click)="showPreview()">
+        {{ previewing() ? 'Calculando…' : 'Vista previa (24 h)' }}
+      </button>
+      <button type="button" class="btn-secondary" (click)="cancel()">Cancelar</button>
+    </div>
+
+    @if (preview(); as result) {
+      <section
+        aria-labelledby="rule-preview-title"
+        class="flex flex-col gap-4 border-t border-slate-100 pt-4"
+      >
+        <div>
+          <h3 id="rule-preview-title" class="font-semibold text-slate-900">
+            Vista previa: últimas 24 h
+          </h3>
+          <p class="text-xs text-slate-500">
+            Marca cuándo la regla habría abierto un incidente con las lecturas reales. No simula la
+            espera tras resolver: depende de cuándo alguien resuelve.
+          </p>
+        </div>
+        @for (station of result.stations; track station.station.id) {
+          <div>
+            <p class="text-sm text-slate-900" role="status">
+              <span class="font-medium">{{ station.station.code }}</span
+              >: {{ previewText(station) }}
+            </p>
+            @if (station.readings.length > 0) {
+              <app-readings-chart
+                class="mt-2 block"
+                [data]="chartOf(station, result)"
+                [marks]="marksOf(station)"
+                [timezone]="timezone()"
+              />
+            }
+            @if (station.truncated) {
+              <p class="mt-1 text-xs text-slate-500">
+                Demasiadas lecturas: se muestran las más recientes.
+              </p>
+            }
+          </div>
+        } @empty {
+          <p class="text-sm text-slate-600">La zona no tiene estaciones activas.</p>
+        }
+      </section>
+    }
+  </form>
+}
+
+<section aria-labelledby="rule-list-title">
+  <h2 id="rule-list-title" class="sr-only">Listado de reglas</h2>
+  <app-load-state
+    class="block"
+    [status]="listStatus()"
+    loading="Cargando reglas…"
+    empty="Todavía no hay reglas."
+    error="No se pudieron cargar las reglas."
+    (retry)="load()"
+  />
+  @for (group of byZone(); track group.zone.id) {
+    <h3 class="mt-6 mb-3 text-sm font-semibold text-slate-600 first:mt-0">
+      Zona {{ group.zone.name }}
+    </h3>
+    <ul class="grid gap-3 md:grid-cols-2">
+      @for (rule of group.rules; track rule.id) {
+        <li class="card flex flex-col p-4">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="font-semibold text-slate-900">{{ typeLabel(rule.type) }}</p>
+              <p class="text-sm text-slate-600">
+                {{ rule.station ? rule.station.code + ' · ' + rule.station.name : 'Toda la zona' }}
+              </p>
+            </div>
+            <div class="flex flex-wrap justify-end gap-1">
+              <app-state-badge [state]="severities[rule.severity]" />
+              @if (!rule.is_active) {
+                <app-state-badge [state]="ruleStates.inactive" />
+              }
+            </div>
+          </div>
+          <p class="mt-3 text-sm text-slate-900">{{ summary(rule) }}</p>
+          <p class="mt-1 mb-3 text-xs text-slate-500">
+            Política: {{ rule.escalation_policy.name }} · {{ cooldown(rule.cooldown_s) }}
+          </p>
+          @if (canManage() && !editing()) {
+            <div
+              class="mt-auto flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-sm"
+            >
+              @if (rule.is_active) {
+                <button type="button" class="link-action" (click)="startEdit(rule)">Editar</button>
+                <button type="button" class="link-danger" (click)="deactivate(rule)">
+                  Desactivar
+                </button>
+              } @else {
+                <button type="button" class="link-action" (click)="reactivate(rule)">
+                  Reactivar
+                </button>
+              }
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>
