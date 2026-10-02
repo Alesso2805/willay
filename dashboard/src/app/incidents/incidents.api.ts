@@ -21,6 +21,27 @@ export interface Incident {
   escalation_exhausted_at: string | null;
 }
 
+/** docs/openapi.json › IncidentEventOut. Names are resolved by the API; payloads hold ids. */
+export interface IncidentEvent {
+  id: number;
+  occurred_at: string;
+  event_type: string;
+  actor_type: 'system' | 'user' | 'contact';
+  actor_id: string | null;
+  actor_name: string | null;
+  contact_name: string | null;
+  payload: Record<string, unknown>;
+}
+
+/** docs/openapi.json › IncidentDetailOut: the incident with its timeline, oldest first. */
+export interface IncidentDetail extends Incident {
+  trigger_value: number | null;
+  acknowledged_at: string | null;
+  resolved_at: string | null;
+  resolution: 'resolved' | 'false_alarm' | null;
+  timeline: IncidentEvent[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class IncidentsApi {
   private readonly http = inject(HttpClient);
@@ -38,8 +59,8 @@ export class IncidentsApi {
     return this.http.get<Incident[]>(this.url, { params: new HttpParams({ fromObject: query }) });
   }
 
-  /** The API also returns its timeline (IncidentDetailOut); the dashboard does not use it yet. */
-  get(id: string): Observable<Incident> {
-    return this.http.get<Incident>(`${this.url}/${id}`);
+  /** The incident with its timeline. */
+  get(id: string): Observable<IncidentDetail> {
+    return this.http.get<IncidentDetail>(`${this.url}/${id}`);
   }
 }

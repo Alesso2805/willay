@@ -14,6 +14,12 @@ export const routes: Routes = [
     loadComponent: () => import('./incidents/incidents-page').then((m) => m.IncidentsPage),
   },
   {
+    path: 'incidentes/:id',
+    title: 'Incidente · Willay',
+    loadComponent: () =>
+      import('./incidents/incident-detail-page').then((m) => m.IncidentDetailPage),
+  },
+  {
     path: 'zonas',
     title: 'Zonas de riesgo · Willay',
     // Lazy loaded: Leaflet and Geoman are only downloaded when the map is opened.
