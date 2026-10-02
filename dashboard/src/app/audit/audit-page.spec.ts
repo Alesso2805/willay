@@ -20,6 +20,7 @@ const entry = (id: number, changes: Partial<AuditEntry> = {}): AuditEntry => ({
   actor: { id: 'u1', name: 'Óscar Operador Rímac' },
   entity_type: 'rule',
   entity_id: `r${id}`,
+  entity_name: null,
   action: 'update',
   before: { zone: 'Chosica', station: 'RIM-CHO-02', cooldown_s: 300 },
   after: { zone: 'Chosica', station: 'RIM-CHO-02', cooldown_s: 600 },
@@ -136,6 +137,23 @@ describe('AuditPage', () => {
     await fixture.whenStable();
     expect(TestBed.inject(Router).url).toBe('/auditoria?tipo=station');
     http.expectOne((r) => r.url === URL && r.params.get('entity_type') === 'station');
+  });
+
+  it('explains an inverted date range by the dates instead of asking the API', async () => {
+    const { fixture, http, element, text, authors } = await setup(
+      ['audit:view'],
+      '?desde=2026-09-27&hasta=2026-09-01',
+    );
+    authors();
+    await fixture.whenStable();
+    http.expectNone((r) => r.url === URL);
+    expect(element.querySelector('#audit-until-error')?.textContent).toContain(
+      '«Hasta» no puede ser anterior a «Desde».',
+    );
+    expect(element.querySelector('#audit-until')?.getAttribute('min')).toBe('2026-09-27');
+    expect(element.querySelector('#audit-since')?.getAttribute('max')).toBe('2026-09-01');
+    expect(text()).toContain('Corrige las fechas para ver los registros.');
+    expect(text()).not.toContain('No se pudo cargar');
   });
 
   it('explains to a role without access why it sees nothing, without asking the API', async () => {

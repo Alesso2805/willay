@@ -60,9 +60,14 @@ export class AuditPage {
   protected readonly filtered = computed(() =>
     Object.values(this.filters()).some((value) => value !== ''),
   );
+  /** An inverted range would get a 422: it is explained by the date fields instead. */
+  protected readonly dateProblem = computed(() => {
+    const { desde, hasta } = this.filters();
+    // Both are YYYY-MM-DD, so comparing the text compares the days.
+    return desde && hasta && hasta < desde ? '«Hasta» no puede ser anterior a «Desde».' : null;
+  });
   protected readonly actor = actorLabel;
   protected readonly action = actionText;
-  protected readonly changes = fieldChanges;
   /** Each request numbered: an answer for older filters is ignored. */
   private request = 0;
 
@@ -85,6 +90,7 @@ export class AuditPage {
     const request = ++this.request;
     this.loaded.set(false);
     this.loadFailed.set(false);
+    if (this.dateProblem()) return; // also when the URL comes with the range inverted
     this.api.page(this.query(), null).subscribe({
       next: (page) => {
         if (request !== this.request) return;
@@ -127,6 +133,10 @@ export class AuditPage {
 
   protected time(iso: string): string {
     return localTime(iso, this.timezone(), true);
+  }
+
+  protected changes(entry: AuditEntry) {
+    return fieldChanges(entry, this.timezone());
   }
 
   private timezone(): string {

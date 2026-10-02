@@ -44,6 +44,7 @@
         type="date"
         class="field"
         [value]="filters().desde"
+        [attr.max]="filters().hasta || null"
         (change)="setFilter('desde', $any($event.target).value)"
       />
     </div>
@@ -54,8 +55,14 @@
         type="date"
         class="field"
         [value]="filters().hasta"
+        [attr.min]="filters().desde || null"
+        [attr.aria-invalid]="!!dateProblem()"
+        [attr.aria-describedby]="dateProblem() ? 'audit-until-error' : null"
         (change)="setFilter('hasta', $any($event.target).value)"
       />
+      @if (dateProblem(); as problem) {
+        <p id="audit-until-error" class="text-xs text-red-700">{{ problem }}</p>
+      }
     </div>
     <div class="flex items-end">
       <button
@@ -77,73 +84,77 @@
     }
   </form>
 
-  <section aria-labelledby="audit-list-title">
-    <h2 id="audit-list-title" class="sr-only">Registros de auditoría</h2>
-    <app-load-state
-      class="block"
-      [status]="listStatus()"
-      loading="Cargando auditoría…"
-      [empty]="filtered() ? 'No hay registros con estos filtros.' : 'Todavía no hay registros.'"
-      error="No se pudo cargar la auditoría."
-      (retry)="load()"
-    />
+  @if (dateProblem()) {
+    <app-notice tone="info">Corrige las fechas para ver los registros.</app-notice>
+  } @else {
+    <section aria-labelledby="audit-list-title">
+      <h2 id="audit-list-title" class="sr-only">Registros de auditoría</h2>
+      <app-load-state
+        class="block"
+        [status]="listStatus()"
+        loading="Cargando auditoría…"
+        [empty]="filtered() ? 'No hay registros con estos filtros.' : 'Todavía no hay registros.'"
+        error="No se pudo cargar la auditoría."
+        (retry)="load()"
+      />
 
-    @if (entries().length > 0) {
-      <!-- One layout at a time: a table from md up, cards below. -->
-      <div class="card hidden overflow-x-auto md:block">
-        <table class="w-full text-left text-sm">
-          <caption class="sr-only">
-            Cambios con su autor y fecha
-          </caption>
-          <thead class="border-b border-slate-200 text-xs text-slate-500 uppercase">
-            <tr>
-              <th scope="col" class="px-4 py-3 font-medium">Fecha</th>
-              <th scope="col" class="px-4 py-3 font-medium">Autor</th>
-              <th scope="col" class="px-4 py-3 font-medium">Acción</th>
-              <th scope="col" class="px-4 py-3 font-medium">Cambios</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100">
-            @for (entry of entries(); track entry.id) {
-              <tr class="align-top">
-                <td class="px-4 py-3 whitespace-nowrap text-slate-700 tabular-nums">
-                  <time [attr.datetime]="entry.at">{{ time(entry.at) }}</time>
-                </td>
-                <td class="px-4 py-3 text-slate-900">{{ actor(entry) }}</td>
-                <td class="px-4 py-3 text-slate-900">{{ action(entry) }}</td>
-                <td class="px-4 py-3">
-                  <app-field-changes [changes]="changes(entry)" />
-                </td>
+      @if (entries().length > 0) {
+        <!-- One layout at a time: a table from md up, cards below. -->
+        <div class="card hidden overflow-x-auto md:block">
+          <table class="w-full text-left text-sm">
+            <caption class="sr-only">
+              Cambios con su autor y fecha
+            </caption>
+            <thead class="border-b border-slate-200 text-xs text-slate-500 uppercase">
+              <tr>
+                <th scope="col" class="px-4 py-3 font-medium">Fecha</th>
+                <th scope="col" class="px-4 py-3 font-medium">Autor</th>
+                <th scope="col" class="px-4 py-3 font-medium">Acción</th>
+                <th scope="col" class="px-4 py-3 font-medium">Cambios</th>
               </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-
-      <ul class="flex flex-col gap-3 md:hidden">
-        @for (entry of entries(); track entry.id) {
-          <li class="card p-4 text-sm">
-            <p class="text-xs text-slate-500 tabular-nums">
-              <time [attr.datetime]="entry.at">{{ time(entry.at) }}</time> · {{ actor(entry) }}
-            </p>
-            <p class="mt-1 font-medium text-slate-900">{{ action(entry) }}</p>
-            <app-field-changes class="mt-2 block" [changes]="changes(entry)" />
-          </li>
-        }
-      </ul>
-
-      @if (cursor()) {
-        <div class="mt-4 flex justify-center">
-          <button
-            type="button"
-            class="btn-secondary"
-            [disabled]="loadingMore()"
-            (click)="loadMore()"
-          >
-            {{ loadingMore() ? 'Cargando…' : 'Cargar más' }}
-          </button>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              @for (entry of entries(); track entry.id) {
+                <tr class="align-top">
+                  <td class="px-4 py-3 whitespace-nowrap text-slate-700 tabular-nums">
+                    <time [attr.datetime]="entry.at">{{ time(entry.at) }}</time>
+                  </td>
+                  <td class="px-4 py-3 text-slate-900">{{ actor(entry) }}</td>
+                  <td class="px-4 py-3 text-slate-900">{{ action(entry) }}</td>
+                  <td class="px-4 py-3">
+                    <app-field-changes [changes]="changes(entry)" />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
+
+        <ul class="flex flex-col gap-3 md:hidden">
+          @for (entry of entries(); track entry.id) {
+            <li class="card p-4 text-sm">
+              <p class="text-xs text-slate-500 tabular-nums">
+                <time [attr.datetime]="entry.at">{{ time(entry.at) }}</time> · {{ actor(entry) }}
+              </p>
+              <p class="mt-1 font-medium text-slate-900">{{ action(entry) }}</p>
+              <app-field-changes class="mt-2 block" [changes]="changes(entry)" />
+            </li>
+          }
+        </ul>
+
+        @if (cursor()) {
+          <div class="mt-4 flex justify-center">
+            <button
+              type="button"
+              class="btn-secondary"
+              [disabled]="loadingMore()"
+              (click)="loadMore()"
+            >
+              {{ loadingMore() ? 'Cargando…' : 'Cargar más' }}
+            </button>
+          </div>
+        }
       }
-    }
-  </section>
+    </section>
+  }
 }

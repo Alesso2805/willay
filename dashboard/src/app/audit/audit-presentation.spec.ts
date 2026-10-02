@@ -7,6 +7,7 @@ const ENTRY: AuditEntry = {
   actor: { id: 'u1', name: 'Óscar Operador Rímac' },
   entity_type: 'rule',
   entity_id: 'r1',
+  entity_name: null,
   action: 'update',
   before: {
     type: 'threshold',
@@ -102,6 +103,30 @@ describe('fieldChanges', () => {
     expect(fieldChanges(zone)).toEqual([
       { field: 'Nombre', before: '—', after: 'Chosica' },
       { field: 'Polígono', before: '—', after: 'polígono' },
+    ]);
+  });
+});
+
+describe('an entry whose snapshot has no name', () => {
+  const link: AuditEntry = {
+    ...ENTRY,
+    entity_type: 'contact',
+    entity_id: '01a0fdd6-0000-7000-8000-000000000000',
+    action: 'telegram_link_created',
+    before: { telegram_link_expires_at: null },
+    after: { telegram_link_expires_at: '2026-10-09T18:17:56.284061+00:00' },
+  };
+
+  it('uses the entity current name, or a short id once it is gone', () => {
+    expect(actionText({ ...link, entity_name: 'Rosa Brigada' })).toBe(
+      'Generó el enlace de Telegram del contacto Rosa Brigada',
+    );
+    expect(actionText(link)).toBe('Generó el enlace de Telegram del contacto 01a0fdd6');
+  });
+
+  it('shows instants in the organization time', () => {
+    expect(fieldChanges(link, 'America/Lima')).toEqual([
+      { field: 'Enlace de Telegram válido hasta', before: '—', after: '09/10/2026 13:17' },
     ]);
   });
 });
