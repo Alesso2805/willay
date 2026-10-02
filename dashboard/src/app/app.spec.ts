@@ -77,7 +77,7 @@ describe('App', () => {
     expect(text()).toContain('America/Lima');
     expect(text()).toContain('Operación');
     expect(text()).toContain('Cerrar sesión');
-    expect(navLabels(fixture.nativeElement)).toEqual(['Inicio', 'Zonas', 'Estaciones']);
+    expect(navLabels(fixture.nativeElement)).toEqual(['Inicio', 'Mapa en vivo', 'Zonas', 'Estaciones']);
   });
 
   it('a user without roles only sees Inicio and why', async () => {

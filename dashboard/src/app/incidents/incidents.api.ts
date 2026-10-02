@@ -5,10 +5,12 @@ import { settings } from '../settings';
 
 export type IncidentStatus = 'open' | 'acknowledged' | 'resolved';
 
-/** docs/openapi.json › IncidentOut. Just enough for the summary; VIG-34 adds the inbox. */
+/** docs/openapi.json › IncidentOut. Just enough for the summary and the live map; VIG-34 adds the inbox. */
 export interface Incident {
   id: string;
+  zone_id: string;
   zone_name: string;
+  station_id: string | null;
   station_code: string | null;
   rule_type: string;
   severity: 'info' | 'warning' | 'critical';

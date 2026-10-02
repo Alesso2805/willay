@@ -29,7 +29,8 @@ const ALARM = { foreground: '#ffffff', background: '#991b1b', map: '#7f1d1d' };
 export type IncidentState = 'open' | 'acknowledged' | 'resolved' | 'exhausted';
 export type Severity = 'info' | 'warning' | 'critical';
 export type RiskLevelKey = 'low' | 'medium' | 'high' | 'critical';
-export type StationState = 'reporting' | 'silent' | 'unzoned' | 'inactive';
+export type StationState = 'reporting' | 'silent' | 'unzoned' | 'inactive' | 'waiting';
+export type ZoneState = 'calm' | 'acknowledged' | 'open' | 'exhausted';
 
 /** `exhausted`: open with nobody acknowledging at any level (SPEC: shown in red). */
 export const INCIDENT_STATES: Readonly<Record<IncidentState, VisualState>> = {
@@ -58,6 +59,16 @@ export const STATION_STATES: Readonly<Record<StationState, VisualState>> = {
   silent: { label: 'Sin reportar', icon: 'signal-off', ...RED },
   unzoned: { label: 'Sin zona', icon: 'pin-off', ...AMBER },
   inactive: { label: 'Inactiva', icon: 'pause', ...SLATE },
+  /** Never reported: it has not started transmitting yet, so it is not silent (SPEC). */
+  waiting: { label: 'Sin lecturas', icon: 'clock', ...SLATE },
+};
+
+/** A zone on the live map (VIG-25) shows its most urgent active incident. */
+export const ZONE_STATES: Readonly<Record<ZoneState, VisualState>> = {
+  calm: { label: 'Sin incidentes', icon: 'check-circle', ...GREEN },
+  acknowledged: { label: 'Incidente confirmado', icon: 'check', ...BLUE },
+  open: { label: 'Incidente abierto', icon: 'bell', ...ORANGE },
+  exhausted: { label: 'Escalamiento agotado', icon: 'octagon-x', ...ALARM },
 };
 
 export type ConnectionState = 'connecting' | 'live' | 'reconnecting';
@@ -85,5 +96,6 @@ export const ALL_CATALOGS = {
   severity: SEVERITIES,
   risk: RISK_LEVEL_STATES,
   station: STATION_STATES,
+  zone: ZONE_STATES,
   connection: CONNECTION_STATES,
 } as const;
