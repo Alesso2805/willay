@@ -19,6 +19,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { path: '/incidentes', label: 'Incidentes', icon: 'bell', permission: 'view', exact: false },
   { path: '/zonas', label: 'Zonas', icon: 'map', permission: 'view', exact: false },
   { path: '/estaciones', label: 'Estaciones', icon: 'antenna', permission: 'view', exact: false },
+  { path: '/reglas', label: 'Reglas', icon: 'sliders', permission: 'view', exact: false },
   {
     path: '/contactos',
     label: 'Contactos',

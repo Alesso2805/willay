@@ -31,6 +31,11 @@ export const routes: Routes = [
     loadComponent: () => import('./stations/stations-page').then((m) => m.StationsPage),
   },
   {
+    path: 'reglas',
+    title: 'Reglas · Willay',
+    loadComponent: () => import('./rules/rules-page').then((m) => m.RulesPage),
+  },
+  {
     path: 'contactos',
     title: 'Contactos · Willay',
     loadComponent: () => import('./contacts/contacts-page').then((m) => m.ContactsPage),
