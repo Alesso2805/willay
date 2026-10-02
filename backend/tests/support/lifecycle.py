@@ -87,5 +87,6 @@ class FakeIncidentRepository:
         event_type: str,
         payload: Mapping[str, Any],
         now: datetime,
-    ) -> None:
+    ) -> int:
         self.events.append((event_type, actor.actor_id, payload))
+        return len(self.events)

@@ -10,6 +10,7 @@ from willay.incidents.application.lifecycle import (
     IncidentNotFoundError,
     acknowledge_as_contact,
     acknowledge_incident,
+    comment_on_incident,
     resolve_incident,
 )
 from willay.incidents.domain.lifecycle import (
@@ -113,3 +114,23 @@ async def test_a_contact_acknowledges_only_an_open_incident_and_never_fails(
         assert repository.events == [("acknowledged", contact.contact_id, {})]
     else:
         assert (repository.incident.status, repository.events) == (before, [])
+
+
+async def test_a_comment_is_recorded_with_its_author_even_on_a_resolved_incident() -> None:
+    repository = Repository(ACTOR.organization_id, status=RESOLVED)
+    event_id = await comment_on_incident(
+        ACTOR, repository.incident.id, "Bajamos a revisar el cauce", incidents=repository,
+        clock=FakeClock(T0),
+    )  # fmt: skip
+    assert event_id == 1
+    assert repository.events == [("comment", ACTOR.user_id, {"text": "Bajamos a revisar el cauce"})]
+    assert repository.incident.status is RESOLVED  # a comment changes no status
+
+
+async def test_commenting_on_another_organizations_incident_is_not_found() -> None:
+    repository = Repository(uuid4())
+    with pytest.raises(IncidentNotFoundError):
+        await comment_on_incident(
+            ACTOR, repository.incident.id, "x", incidents=repository, clock=FakeClock(T0)
+        )
+    assert repository.events == []

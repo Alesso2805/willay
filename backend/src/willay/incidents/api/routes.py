@@ -5,7 +5,7 @@ from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from willay.identity.api.dependencies import require
 from willay.identity.domain.permissions import Permission
@@ -16,9 +16,11 @@ from willay.incidents.application.lifecycle import (
     IncidentEvent,
     IncidentNotFoundError,
     acknowledge_incident,
+    comment_on_incident,
     resolve_incident,
 )
 from willay.incidents.domain import chart
+from willay.incidents.domain.comments import MAX_COMMENT_LENGTH
 from willay.incidents.domain.lifecycle import (
     IncidentStatus,
     InvalidTransitionError,
@@ -109,6 +111,16 @@ class IncidentReadingsOut(BaseModel):
     )
     readings: list[ReadingOut]
     threshold: ThresholdOut | None = Field(description="A threshold rule's boundary, to draw")
+
+
+class CommentIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # Surrounding spaces do not count: a comment of only spaces is empty (422).
+    text: Annotated[
+        str,
+        StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_COMMENT_LENGTH),
+    ]
 
 
 class ResolveIn(BaseModel):
@@ -229,6 +241,31 @@ async def post_resolve(
     return _out(incident)
 
 
+@router.post(
+    "/{incident_id}/comments",
+    status_code=status.HTTP_201_CREATED,
+    summary="Comment on an incident (also once resolved)",
+    responses={404: {"description": "Not found"}},
+)
+async def comment_incident(
+    incident_id: UUID,
+    body: CommentIn,
+    principal: CanAcknowledge,
+    conn: DbConnection,
+    clock: ClockDep,
+) -> IncidentEventOut:
+    incidents = SqlIncidentRepository(conn)
+    try:
+        event_id = await comment_on_incident(
+            _actor(principal), incident_id, body.text, incidents=incidents, clock=clock
+        )
+    except IncidentNotFoundError as exc:
+        raise _NOT_FOUND from exc
+    # Read back through the timeline, so the answer carries the author's name like the rest.
+    created = next(e for e in await incidents.timeline(incident_id) if e.id == event_id)
+    return _event_out(created)
+
+
 def _actor(principal: Principal) -> Actor:
     return Actor(principal.organization_id, principal.user_id)
 
@@ -269,17 +306,18 @@ def _out(incident: Incident) -> IncidentOut:
 def _detail(incident: Incident, timeline: list[IncidentEvent]) -> IncidentDetailOut:
     return IncidentDetailOut(
         **_out(incident).model_dump(),
-        timeline=[
-            IncidentEventOut(
-                id=e.id,
-                occurred_at=e.occurred_at,
-                event_type=e.event_type,
-                actor_type=e.actor_type,
-                actor_id=e.actor_id,
-                actor_name=e.actor_name,
-                contact_name=e.contact_name,
-                payload=dict(e.payload),
-            )
-            for e in timeline
-        ],
+        timeline=[_event_out(e) for e in timeline],
+    )
+
+
+def _event_out(e: IncidentEvent) -> IncidentEventOut:
+    return IncidentEventOut(
+        id=e.id,
+        occurred_at=e.occurred_at,
+        event_type=e.event_type,
+        actor_type=e.actor_type,
+        actor_id=e.actor_id,
+        actor_name=e.actor_name,
+        contact_name=e.contact_name,
+        payload=dict(e.payload),
     )
