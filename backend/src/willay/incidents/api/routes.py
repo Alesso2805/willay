@@ -5,7 +5,7 @@ from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from willay.identity.api.dependencies import require
 from willay.identity.domain.permissions import Permission
@@ -75,6 +75,10 @@ class IncidentEventOut(BaseModel):
     event_type: str
     actor_type: str
     actor_id: UUID | None
+    actor_name: str | None = Field(description="The user or contact who acted; null for the system")
+    contact_name: str | None = Field(
+        description="For alert events, the recipient's name (never their email or chat)"
+    )
     payload: dict[str, Any]
 
 
@@ -215,6 +219,8 @@ def _detail(incident: Incident, timeline: list[IncidentEvent]) -> IncidentDetail
                 event_type=e.event_type,
                 actor_type=e.actor_type,
                 actor_id=e.actor_id,
+                actor_name=e.actor_name,
+                contact_name=e.contact_name,
                 payload=dict(e.payload),
             )
             for e in timeline
