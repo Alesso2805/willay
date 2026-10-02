@@ -29,6 +29,7 @@ class FailedReading:
     station_name: str
     measured_at: datetime
     value: float | None  # None once the reading itself expired (retention)
+    unit: str
     attempts: int
     failed_at: datetime
     last_error: str | None

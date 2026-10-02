@@ -37,6 +37,7 @@ class FailedReadingOut(BaseModel):
     station_name: str
     measured_at: datetime
     value: float | None
+    unit: str
     attempts: int
     failed_at: datetime
     last_error: str | None
@@ -93,6 +94,7 @@ def _out(reading: FailedReading) -> FailedReadingOut:
         station_name=reading.station_name,
         measured_at=reading.measured_at,
         value=reading.value,
+        unit=reading.unit,
         attempts=reading.attempts,
         failed_at=reading.failed_at,
         last_error=reading.last_error,
