@@ -9,11 +9,30 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from willay.identity.application.audit_trail import AuditFilters, AuditRecord, Author
 from willay.identity.domain.audit_trail import Cursor
 
+# The entity's current name, for entries whose snapshot does not carry one (e.g. a Telegram
+# link only records its expiry). None once the entity is gone; rules are named by their
+# snapshot (zone and station), so they are not looked up.
+_CURRENT_NAME = """
+    CASE a.entity_type
+        WHEN 'risk_zone' THEN (SELECT name FROM core.risk_zones
+                               WHERE id = a.entity_id AND organization_id = a.organization_id)
+        WHEN 'station' THEN (SELECT code FROM core.stations
+                             WHERE id = a.entity_id AND organization_id = a.organization_id)
+        WHEN 'contact' THEN (SELECT full_name FROM core.contacts
+                             WHERE id = a.entity_id AND organization_id = a.organization_id)
+        WHEN 'contact_group' THEN (SELECT name FROM core.contact_groups
+                                   WHERE id = a.entity_id AND organization_id = a.organization_id)
+        WHEN 'escalation_policy' THEN (
+            SELECT name FROM core.escalation_policies
+            WHERE id = a.entity_id AND organization_id = a.organization_id)
+    END
+"""
+
 # Each filter applies only when given. The (at, id) row comparison resumes after the cursor
 # and walks the (organization_id, at) index backwards.
-_PAGE = text("""
+_PAGE = text(f"""
     SELECT a.id, a.at, a.actor_id, u.full_name AS actor_name, a.entity_type, a.entity_id,
-           a.action, a.before, a.after
+           {_CURRENT_NAME} AS entity_name, a.action, a.before, a.after
     FROM core.audit_log a
     LEFT JOIN core.users u ON u.id = a.actor_id AND u.organization_id = a.organization_id
     WHERE a.organization_id = :organization_id
@@ -73,6 +92,7 @@ def _record(r: Row[Any]) -> AuditRecord:
         actor_name=r.actor_name,
         entity_type=r.entity_type,
         entity_id=r.entity_id,
+        entity_name=r.entity_name,
         action=r.action,
         before=r.before,
         after=r.after,

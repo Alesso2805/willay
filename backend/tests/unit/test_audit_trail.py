@@ -39,7 +39,16 @@ class FakeTrail:
     def __init__(self, count: int) -> None:
         self.records = [
             AuditRecord(
-                i, T0 - timedelta(minutes=i), None, None, "rule", uuid4(), "update", None, None
+                i,
+                T0 - timedelta(minutes=i),
+                None,
+                None,
+                "rule",
+                uuid4(),
+                None,
+                "update",
+                None,
+                None,
             )
             for i in range(1, count + 1)
         ]

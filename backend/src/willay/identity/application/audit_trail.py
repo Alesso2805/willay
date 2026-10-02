@@ -27,6 +27,7 @@ class AuditRecord:
     actor_name: str | None
     entity_type: str
     entity_id: UUID
+    entity_name: str | None  # its current name; None if it no longer exists
     action: str
     before: Mapping[str, Any] | None
     after: Mapping[str, Any] | None

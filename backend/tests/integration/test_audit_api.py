@@ -120,6 +120,26 @@ async def test_the_contact_themselves_has_no_author(
     assert entry["actor"] is None
 
 
+async def test_an_entry_carries_its_entity_current_name_while_it_exists(
+    client: httpx2.AsyncClient, owner: asyncpg.Connection, admin: dict[str, str]
+) -> None:
+    # A Telegram link entry only records its expiry: the name comes from the contact itself.
+    await _record(
+        owner, data.C_BRIGADE, SystemClock().now(), action="telegram_link_created",
+        entity_type="contact",
+    )  # fmt: skip
+    gone = uuid4()
+    await _record(owner, gone, SystemClock().now(), entity_type="contact")
+
+    async def name(entity: UUID) -> str | None:
+        response = await client.get(URL, params={"entity_id": str(entity)}, headers=admin)
+        named: str | None = response.json()["items"][0]["entity_name"]
+        return named
+
+    assert await name(data.C_BRIGADE) == "Rosa Brigada"
+    assert await name(gone) is None
+
+
 async def test_pages_neither_repeat_nor_skip_while_new_entries_arrive(
     client: httpx2.AsyncClient, owner: asyncpg.Connection, admin: dict[str, str]
 ) -> None:
