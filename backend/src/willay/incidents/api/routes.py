@@ -1,7 +1,7 @@
 """Incidents REST API (VIG-19): list, view, acknowledge and resolve."""
 
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -18,6 +18,7 @@ from willay.incidents.application.lifecycle import (
     acknowledge_incident,
     resolve_incident,
 )
+from willay.incidents.domain import chart
 from willay.incidents.domain.lifecycle import (
     IncidentStatus,
     InvalidTransitionError,
@@ -25,6 +26,7 @@ from willay.incidents.domain.lifecycle import (
     Transition,
 )
 from willay.incidents.domain.severity import Severity
+from willay.incidents.infrastructure.incident_readings import SqlIncidentReadings
 from willay.incidents.infrastructure.incidents_repository import SqlIncidentRepository
 from willay.shared.web import ClockDep, DbConnection
 
@@ -86,6 +88,29 @@ class IncidentDetailOut(IncidentOut):
     timeline: list[IncidentEventOut]
 
 
+class ReadingOut(BaseModel):
+    measured_at: datetime
+    value: float
+
+
+class ThresholdOut(BaseModel):
+    operator: str = Field(description="gt, ge, lt or le")
+    value: float
+
+
+class IncidentReadingsOut(BaseModel):
+    station_code: str | None
+    unit: str | None
+    window_start: datetime
+    window_end: datetime
+    source: Literal["readings", "evidence"] = Field(
+        description="evidence: the readings expired, so these are the copy kept in the opened "
+        "event (the ones that fired the rule)"
+    )
+    readings: list[ReadingOut]
+    threshold: ThresholdOut | None = Field(description="A threshold rule's boundary, to draw")
+
+
 class ResolveIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -124,6 +149,38 @@ async def get_incident(
     if incident is None:
         raise _NOT_FOUND
     return _detail(incident, await repository.timeline(incident_id))
+
+
+@router.get(
+    "/{incident_id}/readings",
+    summary="The readings around an incident's opening, for its chart",
+    responses={404: {"description": "Not found"}},
+)
+async def get_incident_readings(
+    incident_id: UUID, principal: CanView, conn: DbConnection, clock: ClockDep
+) -> IncidentReadingsOut:
+    incident = await SqlIncidentRepository(conn).get(principal.organization_id, incident_id)
+    if incident is None:
+        raise _NOT_FOUND
+    readings = SqlIncidentReadings(conn)
+    start, end = chart.readings_window(incident.opened_at, clock.now())
+    opened = await readings.opened_payload(incident_id)
+    station = None
+    stored: list[chart.Point] = []
+    if incident.station_id is not None:
+        station = await readings.station(principal.organization_id, incident.station_id)
+        stored = await readings.window(principal.organization_id, incident.station_id, start, end)
+    source, points = chart.series(stored, chart.evidence(opened))
+    line = chart.threshold(opened)
+    return IncidentReadingsOut(
+        station_code=station[0] if station else None,
+        unit=station[1] if station else None,
+        window_start=start,
+        window_end=end,
+        source=source,
+        readings=[ReadingOut(measured_at=p.measured_at, value=p.value) for p in points],
+        threshold=ThresholdOut(operator=line.operator, value=line.value) if line else None,
+    )
 
 
 @router.post(
