@@ -1,6 +1,7 @@
 """VIG-19: reading, acknowledging and resolving incidents against the real app and Postgres."""
 
 import asyncio
+import json
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -109,6 +110,39 @@ async def test_a_responder_acknowledges_and_the_timeline_says_who(
         ("opened", "system", None),
         ("acknowledged", "user", str(SUB_RIMAC_RESPONDER)),
     ]
+    # The name the token carried when the user signed in (core.users, kept up to date).
+    assert detail["timeline"][1]["actor_name"] == f"Usuario {str(SUB_RIMAC_RESPONDER)[:8]}"
+
+
+async def test_the_timeline_names_who_acted_and_who_was_alerted(
+    client: httpx2.AsyncClient, owner: asyncpg.Connection, viewer: dict[str, str]
+) -> None:
+    incident_id = await _incident(owner)
+    later = SystemClock().now() - timedelta(minutes=30)
+    events: list[tuple[str, str, UUID | None, dict[str, Any]]] = [
+        ("alert_sent", "system", None, {"channel": "email", "contact_id": str(data.C_BRIGADE)}),
+        # A contact id from another organization never brings its name along.
+        ("alert_sent", "system", None, {"channel": "email", "contact_id": str(data.C_AIS)}),
+        ("acknowledged", "contact", data.C_OPERATOR, {}),
+    ]
+    for event_type, actor_type, actor_id, payload in events:
+        await owner.execute(
+            "INSERT INTO core.incident_events (incident_id, organization_id, occurred_at,"
+            " event_type, actor_type, actor_id, payload)"
+            " VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)",
+            UUID(incident_id), data.RIMAC.id, later, event_type, actor_type, actor_id,
+            json.dumps(payload),
+        )  # fmt: skip
+
+    detail = (await client.get(f"/v1/incidents/{incident_id}", headers=viewer)).json()
+    assert [(e["event_type"], e["actor_name"], e["contact_name"]) for e in detail["timeline"]] == [
+        ("opened", None, None),
+        ("alert_sent", None, "Rosa Brigada"),
+        ("alert_sent", None, None),
+        ("acknowledged", "Óscar Operador", None),
+    ]
+    # Names only: the recipient's email is not in the timeline, whoever reads it.
+    assert "@" not in json.dumps(detail["timeline"])
 
 
 async def test_an_operator_resolves_an_open_incident_as_a_false_alarm(

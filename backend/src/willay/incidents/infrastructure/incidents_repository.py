@@ -42,11 +42,24 @@ _LIST = text(
 
 _GET = text(_SELECT + " WHERE i.organization_id = :organization_id AND i.id = :id")
 
+# Names are joined within the event's own organization; alert events carry the recipient in
+# payload.contact_id (compared as text, so an odd payload cannot break the query with a cast).
 _TIMELINE = text("""
-    SELECT id, occurred_at, event_type, actor_type, actor_id, payload
-    FROM core.incident_events
-    WHERE incident_id = :id
-    ORDER BY occurred_at, id
+    SELECT e.id, e.occurred_at, e.event_type, e.actor_type, e.actor_id, e.payload,
+           COALESCE(u.full_name, ac.full_name) AS actor_name,
+           rc.full_name AS contact_name
+    FROM core.incident_events e
+    LEFT JOIN core.users u
+           ON e.actor_type = 'user' AND u.id = e.actor_id
+          AND u.organization_id = e.organization_id
+    LEFT JOIN core.contacts ac
+           ON e.actor_type = 'contact' AND ac.id = e.actor_id
+          AND ac.organization_id = e.organization_id
+    LEFT JOIN core.contacts rc
+           ON CAST(rc.id AS text) = e.payload->>'contact_id'
+          AND rc.organization_id = e.organization_id
+    WHERE e.incident_id = :id
+    ORDER BY e.occurred_at, e.id
 """)
 
 _LOCK = text("""
@@ -111,7 +124,16 @@ class SqlIncidentRepository:
     async def timeline(self, incident_id: UUID) -> list[IncidentEvent]:
         rows = await self._conn.execute(_TIMELINE, {"id": incident_id})
         return [
-            IncidentEvent(r.id, r.occurred_at, r.event_type, r.actor_type, r.actor_id, r.payload)
+            IncidentEvent(
+                r.id,
+                r.occurred_at,
+                r.event_type,
+                r.actor_type,
+                r.actor_id,
+                r.payload,
+                actor_name=r.actor_name,
+                contact_name=r.contact_name,
+            )
             for r in rows
         ]
 

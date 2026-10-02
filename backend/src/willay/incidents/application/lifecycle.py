@@ -91,6 +91,9 @@ class IncidentEvent:
     actor_type: str
     actor_id: UUID | None
     payload: Mapping[str, Any]
+    # Names for the timeline, resolved when reading it: events store ids, never names.
+    actor_name: str | None = None  # the user or contact who acted; None for the system
+    contact_name: str | None = None  # the alert's recipient, for alert events
 
 
 class IncidentRepository(Protocol):

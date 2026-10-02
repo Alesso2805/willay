@@ -293,9 +293,33 @@
             ],
             "title": "Actor Id"
           },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The user or contact who acted; null for the system",
+            "title": "Actor Name"
+          },
           "actor_type": {
             "title": "Actor Type",
             "type": "string"
+          },
+          "contact_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For alert events, the recipient's name (never their email or chat)",
+            "title": "Contact Name"
           },
           "event_type": {
             "title": "Event Type",
@@ -322,6 +346,8 @@
           "event_type",
           "actor_type",
           "actor_id",
+          "actor_name",
+          "contact_name",
           "payload"
         ],
         "title": "IncidentEventOut",
