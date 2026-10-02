@@ -108,6 +108,30 @@ describe('App', () => {
     expect(alert?.textContent).toContain('cada 15 s');
   });
 
+  it('announces a new incident whatever the page', async () => {
+    const { fixture, http, text, live } = setup(true);
+    http.expectOne(`${settings.apiUrl}/v1/me`).flush(ME);
+    await fixture.whenStable();
+
+    live.incidents$.next({ incidentId: 'i1', event: 'opened' });
+    http.expectOne(`${settings.apiUrl}/v1/incidents/i1`).flush({
+      id: 'i1',
+      zone_id: 'z1',
+      zone_name: 'Chosica',
+      station_id: null,
+      station_code: null,
+      rule_type: 'rate_of_change',
+      severity: 'critical',
+      status: 'open',
+      current_level: 1,
+      opened_at: '2026-10-02T02:40:39Z',
+      escalation_exhausted_at: null,
+    });
+    await fixture.whenStable();
+    expect(text()).toContain('Nuevo incidente en Chosica:');
+    expect(text()).toContain('Cambio brusco');
+  });
+
   it('opens no live channel for a user who may not see the data', async () => {
     const { fixture, http, text, live } = setup(true);
     http.expectOne(`${settings.apiUrl}/v1/me`).flush({ ...ME, roles: [], permissions: [] });
