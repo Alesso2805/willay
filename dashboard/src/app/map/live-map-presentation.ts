@@ -139,9 +139,9 @@ export function byStationUrgency(a: StationView, b: StationView): number {
 export function markerHtml(state: StationState, incident: ActiveIncidentState | null): string {
   const look = STATION_STATES[state];
   const badge = incident
-    ? `<span class="absolute -top-2 -right-2 grid size-[18px] place-items-center rounded-full ` +
+    ? `<span class="absolute -top-2.5 -right-2.5 grid size-5 place-items-center rounded-full ` +
       `border-2 border-white" style="background-color:${ZONE_STATES[incident].map}">` +
-      `${iconSvg(ZONE_STATES[incident].icon, 10)}</span>`
+      `${iconSvg(ZONE_STATES[incident].icon, 12)}</span>`
     : '';
   return (
     `<span class="relative grid size-7 place-items-center rounded-full border-2 border-white ` +
