@@ -12,8 +12,11 @@ export function ageText(iso: string, now: number): string {
   return `hace ${Math.floor(seconds / 86_400)} d`;
 }
 
-/** "30/09/2026 18:57", as in the emails and on Telegram. */
-export function localTime(iso: string, timezone: string): string {
+/**
+ * "30/09/2026 18:57", as in the emails and on Telegram. With `seconds`, "30/09/2026 18:57:04":
+ * a timeline has several events within the same minute.
+ */
+export function localTime(iso: string, timezone: string, seconds = false): string {
   const parts = new Intl.DateTimeFormat('es-PE', {
     timeZone: timezone,
     day: '2-digit',
@@ -21,11 +24,13 @@ export function localTime(iso: string, timezone: string): string {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    second: seconds ? '2-digit' : undefined,
     hourCycle: 'h23',
   }).formatToParts(new Date(iso));
   const part = (type: Intl.DateTimeFormatPartTypes) =>
     parts.find((p) => p.type === type)?.value ?? '';
-  return `${part('day')}/${part('month')}/${part('year')} ${part('hour')}:${part('minute')}`;
+  const time = `${part('day')}/${part('month')}/${part('year')} ${part('hour')}:${part('minute')}`;
+  return seconds ? `${time}:${part('second')}` : time;
 }
 
 const COUNT = new Intl.NumberFormat('es-PE', { maximumFractionDigits: 0 });

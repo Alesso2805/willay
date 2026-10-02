@@ -27,6 +27,7 @@ describe('localTime', () => {
 
   it('uses a 24-hour clock', () => {
     expect(localTime('2026-10-01T05:05:00Z', 'America/Lima')).toBe('01/10/2026 00:05');
+    expect(localTime('2026-09-30T23:57:04Z', 'America/Lima', true)).toBe('30/09/2026 18:57:04');
   });
 });
 
