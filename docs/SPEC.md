@@ -253,7 +253,7 @@ erDiagram
 
 - An **organization** is the tenant and corresponds to a Keycloak Organization; each user belongs to only one and all queries filter by `organization_id`.
 - **Zones and stations** are N:M through `zone_stations`; `position` enables rules such as "drop downstream". A station without a zone is shown flagged in the dashboard and does not generate alerts.
-- A **rule** belongs to a zone, optionally to a station (if null, it applies to all the stations in the zone), and points to an **escalation policy**.
+- A **rule** belongs to a zone, optionally to a station (if null, it applies to all the stations in the zone), and points to an **escalation policy**. Only silence rules can leave the station empty: threshold and rate-of-change rules compare values in one station's unit, so they name their station (a zone-wide threshold would compare m3/s, m and mm alike). A rule is never deleted, because incidents point to it: it is deactivated, and its type never changes.
 - A **policy** has ordered levels; each level notifies contact groups through a channel. **Contacts** can be people without an account or platform users.
 - An **incident** is born from a rule in a zone. `dedup_key` prevents two active incidents for the same cause: `rule_id:zone_id` for threshold and rate of change, and `rule_id:zone_id:station_id` for silence, so each silenced station has its own incident. `cooldown_s` prevents reopening one that was just resolved.
 - `current_level` indicates the escalation level and `level_started_at` when that level was notified (its `wait_s` counts from there); there is no "escalated" status. If the last level is exhausted, `escalation_exhausted_at` is filled in.
