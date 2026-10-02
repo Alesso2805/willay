@@ -26,6 +26,21 @@ make up                 # postgres, keycloak, mailpit, migrate, api, 5 workers, 
 make seed               # demo data; prints the simulator's API keys
 ```
 
+## The dashboard
+
+http://localhost:4200, with the demo users `rimac-admin`, `rimac-operator`, `rimac-responder` and `rimac-viewer` (password: `WILLAY_DEV_USER_PASSWORD` in `.env`). Each sees what their role allows.
+
+- **Mapa en vivo:** zones by their most urgent incident, stations with their last value, whether they report and a badge with their incident's state.
+- **Incidentes:** the inbox, filtered by status and severity in the URL.
+- **Incident detail:** readings chart, alerts by recipient and timeline; acknowledge, resolve and comment according to the role.
+- New incidents are announced on every page, and everything updates live.
+
+![Live map](docs/images/live-map.png)
+
+![Incident inbox](docs/images/incident-inbox.png)
+
+![Incident detail](docs/images/incident-detail.png)
+
 ## Development
 
 ```bash
