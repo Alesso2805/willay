@@ -1,6 +1,17 @@
 {
   "components": {
     "schemas": {
+      "AlertStatus": {
+        "enum": [
+          "pending",
+          "sent",
+          "failed",
+          "skipped",
+          "acknowledged"
+        ],
+        "title": "AlertStatus",
+        "type": "string"
+      },
       "Channel": {
         "enum": [
           "email",
@@ -100,6 +111,101 @@
           "last_value"
         ],
         "title": "HeartbeatOut",
+        "type": "object"
+      },
+      "IncidentAlertOut": {
+        "properties": {
+          "acknowledged_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acknowledged At"
+          },
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "contact_id": {
+            "format": "uuid",
+            "title": "Contact Id",
+            "type": "string"
+          },
+          "contact_name": {
+            "title": "Contact Name",
+            "type": "string"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only for email alerts and only for users who may see contact details (operator, admin); a Telegram chat is never returned",
+            "title": "Email"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "level_order": {
+            "title": "Level Order",
+            "type": "integer"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At"
+          },
+          "skipped_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why it was not sent, for skipped alerts",
+            "title": "Skipped Reason"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AlertStatus"
+          }
+        },
+        "required": [
+          "id",
+          "level_order",
+          "contact_id",
+          "contact_name",
+          "channel",
+          "status",
+          "attempts",
+          "sent_at",
+          "acknowledged_at",
+          "skipped_reason",
+          "email"
+        ],
+        "title": "IncidentAlertOut",
         "type": "object"
       },
       "IncidentDetailOut": {
@@ -2004,6 +2110,61 @@
         "summary": "Acknowledge an open incident",
         "tags": [
           "incidents"
+        ]
+      }
+    },
+    "/v1/incidents/{incident_id}/alerts": {
+      "get": {
+        "operationId": "incident_alerts_v1_incidents__incident_id__alerts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "incident_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Incident Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/IncidentAlertOut"
+                  },
+                  "title": "Response Incident Alerts V1 Incidents  Incident Id  Alerts Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "An incident's alerts, by level and recipient",
+        "tags": [
+          "alerts"
         ]
       }
     },
