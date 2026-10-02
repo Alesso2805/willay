@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { EMPTY, Subject, catchError, map, merge, switchMap } from 'rxjs';
 import { LiveEvents } from '../realtime/live-events';
 import { Session } from '../session';
@@ -30,7 +30,7 @@ export const INBOX_LIMIT = 200;
  */
 @Component({
   selector: 'app-incidents-page',
-  imports: [PageHeader, LoadState, StateBadge],
+  imports: [PageHeader, LoadState, StateBadge, RouterLink],
   templateUrl: './incidents-page.html',
 })
 export class IncidentsPage {

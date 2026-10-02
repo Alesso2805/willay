@@ -92,6 +92,7 @@ describe('IncidentsPage', () => {
     expect(cards[1].textContent).toContain('Confirmado');
     expect(cards[1].textContent).toContain('Advertencia');
     expect(cards[1].classList).not.toContain('border-l-4');
+    expect(cards[0].querySelector('a')?.getAttribute('href')).toMatch(/^\/incidentes\/[\w-]+$/);
     expect(await seriousViolations(element)).toEqual([]);
   });
 

@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component, input, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { Incident } from '../incidents/incidents.api';
 import { FakeLiveEvents, provideFakeLiveEvents } from '../realtime/live-events.testing';
 import { Session } from '../session';
@@ -89,6 +90,7 @@ function setup() {
   TestBed.configureTestingModule({
     imports: [LiveMapPage],
     providers: [
+      provideRouter([]),
       provideHttpClient(),
       provideHttpClientTesting(),
       {

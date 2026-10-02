@@ -1,4 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { causeLabel, incidentState } from '../incidents/incident-presentation';
 import { Incident } from '../incidents/incidents.api';
 import { liveSnapshot } from '../realtime/live-snapshot';
@@ -29,7 +30,7 @@ import {
  */
 @Component({
   selector: 'app-live-map-page',
-  imports: [LiveMap, LoadState, PageHeader, StateBadge],
+  imports: [LiveMap, LoadState, PageHeader, StateBadge, RouterLink],
   templateUrl: './live-map-page.html',
 })
 export class LiveMapPage {

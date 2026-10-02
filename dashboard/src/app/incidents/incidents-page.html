@@ -67,10 +67,12 @@
           <span class="ml-auto text-xs text-slate-500">Nivel {{ incident.current_level }}</span>
         </div>
         <p class="mt-2 font-semibold text-slate-900">
-          {{ cause(incident.rule_type) }}
-          @if (incident.station_code) {
-            · <span class="font-mono text-sm font-medium">{{ incident.station_code }}</span>
-          }
+          <a [routerLink]="['/incidentes', incident.id]" class="hover:underline">
+            {{ cause(incident.rule_type) }}
+            @if (incident.station_code) {
+              · <span class="font-mono text-sm font-medium">{{ incident.station_code }}</span>
+            }
+          </a>
         </p>
         <p class="text-sm text-slate-600">{{ incident.zone_name }}</p>
         <p class="mt-1 text-xs text-slate-500">
