@@ -9,6 +9,7 @@ import { PageHeader } from '../ui/page-header';
 import { StateBadge } from '../ui/state-badge';
 import { CONTACT_CHANNEL_STATES } from '../ui/visual-states';
 import { channelStates, contactProblem } from './contact-presentation';
+import { ContactTabs } from './contact-tabs';
 import { Contact, ContactInput, ContactsApi } from './contacts.api';
 
 type Editing = { kind: 'new' } | { kind: 'edit'; contact: Contact };
@@ -16,7 +17,7 @@ type Editing = { kind: 'new' } | { kind: 'edit'; contact: Contact };
 /** VIG-36: who Willay alerts and how. Admin and operator read; only admin changes anything. */
 @Component({
   selector: 'app-contacts-page',
-  imports: [ReactiveFormsModule, LoadState, Notice, StateBadge, PageHeader, Icon],
+  imports: [ReactiveFormsModule, LoadState, Notice, StateBadge, PageHeader, Icon, ContactTabs],
   templateUrl: './contacts-page.html',
 })
 export class ContactsPage {

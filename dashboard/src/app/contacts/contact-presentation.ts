@@ -12,16 +12,16 @@ export function channelStates(contact: Contact): ContactChannelState[] {
   return states;
 }
 
-/** Why an action on a contact failed, for the admin. The API explains a 409 and a 503. */
-export function contactProblem(error: unknown): string {
+/** Why an action on a contact or group failed, for the admin. The API explains a 409 and a 503. */
+export function contactProblem(error: unknown, what: 'contacto' | 'grupo' = 'contacto'): string {
   if (!(error instanceof HttpErrorResponse)) return 'No se pudo completar. Intenta de nuevo.';
   const detail = error.error?.detail;
   if ((error.status === 409 || error.status === 503) && typeof detail === 'string') return detail;
   if (error.status === 403) return 'Tu rol no permite gestionar contactos.';
-  if (error.status === 404) return 'El contacto ya no existe.';
+  if (error.status === 404) return `El ${what} ya no existe.`;
   if (error.status === 422) {
     const first = Array.isArray(detail) ? detail[0] : null;
-    return typeof first?.msg === 'string' ? first.msg : 'Revisa los datos del contacto.';
+    return typeof first?.msg === 'string' ? first.msg : `Revisa los datos del ${what}.`;
   }
   return 'No se pudo completar. Intenta de nuevo.';
 }

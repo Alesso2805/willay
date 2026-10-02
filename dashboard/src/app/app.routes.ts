@@ -35,5 +35,10 @@ export const routes: Routes = [
     title: 'Contactos · Willay',
     loadComponent: () => import('./contacts/contacts-page').then((m) => m.ContactsPage),
   },
+  {
+    path: 'contactos/grupos',
+    title: 'Grupos de contactos · Willay',
+    loadComponent: () => import('./contacts/groups-page').then((m) => m.GroupsPage),
+  },
   { path: '**', redirectTo: '' },
 ];
