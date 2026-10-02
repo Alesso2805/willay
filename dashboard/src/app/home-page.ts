@@ -1,5 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { incidentState } from './incidents/incident-presentation';
 import { liveSnapshot } from './realtime/live-snapshot';
 import { Session, roleLabels } from './session';
 import { stationState } from './stations/station-presentation';
@@ -35,7 +36,7 @@ import { PageHeader } from './ui/page-header';
           </app-notice>
         }
         <section aria-label="Resumen" class="mb-6 grid gap-4 md:grid-cols-3">
-          <div class="card p-5">
+          <a routerLink="/incidentes" class="card group p-5 transition hover:ring-brand-600">
             <div class="flex items-center gap-3">
               <span
                 class="grid size-10 place-items-center rounded-lg"
@@ -52,8 +53,11 @@ import { PageHeader } from './ui/page-header';
             <p class="mt-4 text-3xl font-semibold tabular-nums text-slate-900">
               {{ summary() ? activeIncidents() : '—' }}
             </p>
-            <p class="mt-1 text-sm text-slate-500">{{ incidentDetail() }}</p>
-          </div>
+            <p class="mt-1 text-sm text-slate-500">
+              {{ incidentDetail() }}
+              <span class="text-brand-700 group-hover:underline">Ver incidentes →</span>
+            </p>
+          </a>
 
           <a routerLink="/estaciones" class="card group p-5 transition hover:ring-brand-600">
             <div class="flex items-center gap-3">
@@ -126,10 +130,11 @@ export class HomePage {
     if (!incidents) return 'Cargando…';
     if (incidents.length === 0) return 'Nada que atender ahora.';
     const open = incidents.filter((i) => i.status === 'open').length;
-    const exhausted = incidents.filter((i) => i.escalation_exhausted_at !== null).length;
+    // The same rule as the map and the inbox: exhausted only while nobody has acknowledged.
+    const exhausted = incidents.filter((i) => incidentState(i) === 'exhausted').length;
     const parts = [`${open} sin confirmar`, `${incidents.length - open} confirmados`];
     if (exhausted > 0) parts.push(`${exhausted} con escalamiento agotado`);
-    return parts.join(' · ');
+    return `${parts.join(' · ')} ·`;
   });
   protected readonly stationCounts = computed(() => {
     const summary = this.summary();
