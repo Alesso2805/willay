@@ -4,8 +4,9 @@ import { Observable } from 'rxjs';
 import { settings } from '../settings';
 
 export type IncidentStatus = 'open' | 'acknowledged' | 'resolved';
+export type IncidentSeverity = 'info' | 'warning' | 'critical';
 
-/** docs/openapi.json › IncidentOut. Just enough for the summary and the live map; VIG-34 adds the inbox. */
+/** docs/openapi.json › IncidentOut: what the summary, the live map and the inbox show. */
 export interface Incident {
   id: string;
   zone_id: string;
@@ -13,7 +14,7 @@ export interface Incident {
   station_id: string | null;
   station_code: string | null;
   rule_type: string;
-  severity: 'info' | 'warning' | 'critical';
+  severity: IncidentSeverity;
   status: IncidentStatus;
   current_level: number;
   opened_at: string;
@@ -25,10 +26,16 @@ export class IncidentsApi {
   private readonly http = inject(HttpClient);
   private readonly url = `${settings.apiUrl}/v1/incidents`;
 
-  /** Newest first; `status` is repeated in the URL once per requested status. */
-  list(statuses: readonly IncidentStatus[], limit = 500): Observable<Incident[]> {
-    const params = new HttpParams({ fromObject: { status: [...statuses], limit } });
-    return this.http.get<Incident[]>(this.url, { params });
+  /** Newest first; each filter is repeated in the URL once per value, and an empty one means all. */
+  list(
+    statuses: readonly IncidentStatus[],
+    severities: readonly IncidentSeverity[] = [],
+    limit = 500,
+  ): Observable<Incident[]> {
+    const query: Record<string, number | readonly string[]> = { status: statuses };
+    if (severities.length > 0) query['severity'] = severities;
+    query['limit'] = limit;
+    return this.http.get<Incident[]>(this.url, { params: new HttpParams({ fromObject: query }) });
   }
 
   /** The API also returns its timeline (IncidentDetailOut); the dashboard does not use it yet. */
