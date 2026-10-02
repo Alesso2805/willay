@@ -28,6 +28,7 @@ from willay.realtime.api.routes import router as realtime_router
 from willay.realtime.application.broadcaster import Broadcaster
 from willay.realtime.infrastructure.pg_events import PgEventListener
 from willay.rules.api.failed_readings import router as failed_readings_router
+from willay.rules.api.rules import router as rules_router
 from willay.shared.clock import SystemClock
 from willay.shared.config import Settings, get_settings
 from willay.shared.db import create_engine
@@ -90,5 +91,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(contacts_router)
     app.include_router(groups_router)
     app.include_router(failed_readings_router)
+    app.include_router(rules_router)
     app.include_router(realtime_router)
     return app

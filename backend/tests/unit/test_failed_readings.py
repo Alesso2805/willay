@@ -3,7 +3,8 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
-from willay.rules.application.failed_readings import Actor, FailedReading, reprocess
+from willay.rules.application.actor import Actor
+from willay.rules.application.failed_readings import FailedReading, reprocess
 from willay.shared.audit import AuditEntry
 from willay.shared.clock import FakeClock
 

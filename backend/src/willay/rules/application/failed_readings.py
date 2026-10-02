@@ -12,6 +12,7 @@ from itertools import groupby
 from typing import Protocol
 from uuid import UUID
 
+from willay.rules.application.actor import Actor
 from willay.shared.audit import AuditEntry, AuditLog
 from willay.shared.clock import Clock
 
@@ -49,12 +50,6 @@ class FailedReadingRepository(Protocol):
         attempts from zero) and wakes the evaluator. Returns them as they were before; ids
         that are not failed or not the organization's are ignored."""
         ...
-
-
-@dataclass(frozen=True)
-class Actor:
-    organization_id: UUID  # the tenant: never taken from the request body
-    user_id: UUID
 
 
 async def reprocess(

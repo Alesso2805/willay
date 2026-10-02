@@ -123,6 +123,14 @@
         "title": "ContactOut",
         "type": "object"
       },
+      "Direction": {
+        "enum": [
+          "up",
+          "down"
+        ],
+        "title": "Direction",
+        "type": "string"
+      },
       "FailedCountOut": {
         "properties": {
           "count": {
@@ -1132,6 +1140,16 @@
         "title": "MeResponse",
         "type": "object"
       },
+      "Operator": {
+        "enum": [
+          "gt",
+          "ge",
+          "lt",
+          "le"
+        ],
+        "title": "Operator",
+        "type": "string"
+      },
       "Permission": {
         "enum": [
           "view",
@@ -1201,6 +1219,92 @@
           "created_at"
         ],
         "title": "PolicyOut",
+        "type": "object"
+      },
+      "RateOfChangeParamsIn": {
+        "additionalProperties": false,
+        "properties": {
+          "delta": {
+            "exclusiveMinimum": 0.0,
+            "title": "Delta",
+            "type": "number"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "window_minutes": {
+            "maximum": 60.0,
+            "minimum": 1.0,
+            "title": "Window Minutes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "direction",
+          "delta",
+          "window_minutes"
+        ],
+        "title": "RateOfChangeParamsIn",
+        "type": "object"
+      },
+      "RateOfChangeRuleIn": {
+        "additionalProperties": false,
+        "properties": {
+          "cooldown_s": {
+            "maximum": 86400.0,
+            "minimum": 0.0,
+            "title": "Cooldown S",
+            "type": "integer"
+          },
+          "escalation_policy_id": {
+            "format": "uuid",
+            "title": "Escalation Policy Id",
+            "type": "string"
+          },
+          "is_active": {
+            "default": true,
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "params": {
+            "$ref": "#/components/schemas/RateOfChangeParamsIn"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "station_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "None: every station of the zone (silence rules only)",
+            "title": "Station Id"
+          },
+          "type": {
+            "const": "rate_of_change",
+            "title": "Type",
+            "type": "string"
+          },
+          "zone_id": {
+            "format": "uuid",
+            "title": "Zone Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "zone_id",
+          "severity",
+          "escalation_policy_id",
+          "cooldown_s",
+          "type",
+          "params"
+        ],
+        "title": "RateOfChangeRuleIn",
         "type": "object"
       },
       "ReadingBatchIn": {
@@ -1383,6 +1487,85 @@
         "title": "Role",
         "type": "string"
       },
+      "RuleOut": {
+        "properties": {
+          "cooldown_s": {
+            "title": "Cooldown S",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "escalation_policy": {
+            "$ref": "#/components/schemas/RefOut"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "params": {
+            "additionalProperties": true,
+            "description": "Per type, as in the request",
+            "title": "Params",
+            "type": "object"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "station": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StationRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "$ref": "#/components/schemas/RuleType"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "zone": {
+            "$ref": "#/components/schemas/RefOut"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "zone",
+          "station",
+          "params",
+          "severity",
+          "escalation_policy",
+          "cooldown_s",
+          "is_active",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "RuleOut",
+        "type": "object"
+      },
+      "RuleType": {
+        "enum": [
+          "threshold",
+          "rate_of_change",
+          "silence"
+        ],
+        "title": "RuleType",
+        "type": "string"
+      },
       "Severity": {
         "enum": [
           "info",
@@ -1391,6 +1574,73 @@
         ],
         "title": "Severity",
         "type": "string"
+      },
+      "SilenceParamsIn": {
+        "additionalProperties": false,
+        "description": "K lives in each station's silence_multiplier (SPEC): a silence rule has no params.",
+        "properties": {},
+        "title": "SilenceParamsIn",
+        "type": "object"
+      },
+      "SilenceRuleIn": {
+        "additionalProperties": false,
+        "properties": {
+          "cooldown_s": {
+            "maximum": 86400.0,
+            "minimum": 0.0,
+            "title": "Cooldown S",
+            "type": "integer"
+          },
+          "escalation_policy_id": {
+            "format": "uuid",
+            "title": "Escalation Policy Id",
+            "type": "string"
+          },
+          "is_active": {
+            "default": true,
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "params": {
+            "$ref": "#/components/schemas/SilenceParamsIn",
+            "default": {}
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "station_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "None: every station of the zone (silence rules only)",
+            "title": "Station Id"
+          },
+          "type": {
+            "const": "silence",
+            "title": "Type",
+            "type": "string"
+          },
+          "zone_id": {
+            "format": "uuid",
+            "title": "Zone Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "zone_id",
+          "severity",
+          "escalation_policy_id",
+          "cooldown_s",
+          "type"
+        ],
+        "title": "SilenceRuleIn",
+        "type": "object"
       },
       "Source": {
         "enum": [
@@ -1617,6 +1867,36 @@
         "title": "StationOut",
         "type": "object"
       },
+      "StationRefOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "unit": {
+            "description": "The unit of the params' value and delta",
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "unit"
+        ],
+        "title": "StationRefOut",
+        "type": "object"
+      },
       "StationStatus": {
         "enum": [
           "active",
@@ -1703,6 +1983,91 @@
           "value"
         ],
         "title": "ThresholdOut",
+        "type": "object"
+      },
+      "ThresholdParamsIn": {
+        "additionalProperties": false,
+        "properties": {
+          "consecutive": {
+            "maximum": 60.0,
+            "minimum": 1.0,
+            "title": "Consecutive",
+            "type": "integer"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/Operator"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "operator",
+          "value",
+          "consecutive"
+        ],
+        "title": "ThresholdParamsIn",
+        "type": "object"
+      },
+      "ThresholdRuleIn": {
+        "additionalProperties": false,
+        "properties": {
+          "cooldown_s": {
+            "maximum": 86400.0,
+            "minimum": 0.0,
+            "title": "Cooldown S",
+            "type": "integer"
+          },
+          "escalation_policy_id": {
+            "format": "uuid",
+            "title": "Escalation Policy Id",
+            "type": "string"
+          },
+          "is_active": {
+            "default": true,
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "params": {
+            "$ref": "#/components/schemas/ThresholdParamsIn"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "station_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "None: every station of the zone (silence rules only)",
+            "title": "Station Id"
+          },
+          "type": {
+            "const": "threshold",
+            "title": "Type",
+            "type": "string"
+          },
+          "zone_id": {
+            "format": "uuid",
+            "title": "Zone Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "zone_id",
+          "severity",
+          "escalation_policy_id",
+          "cooldown_s",
+          "type",
+          "params"
+        ],
+        "title": "ThresholdRuleIn",
         "type": "object"
       },
       "ValidationError": {
@@ -3531,6 +3896,280 @@
         "summary": "A batch of readings from the station that owns the API key",
         "tags": [
           "ingestion"
+        ]
+      }
+    },
+    "/v1/rules": {
+      "get": {
+        "operationId": "list_rules_v1_rules_get",
+        "parameters": [
+          {
+            "description": "include deactivated ones",
+            "in": "query",
+            "name": "include_inactive",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "include deactivated ones",
+              "title": "Include Inactive",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RuleOut"
+                  },
+                  "title": "Response List Rules V1 Rules Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The organization's rules, by zone",
+        "tags": [
+          "rules"
+        ]
+      },
+      "post": {
+        "operationId": "post_rule_v1_rules_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "discriminator": {
+                  "mapping": {
+                    "rate_of_change": "#/components/schemas/RateOfChangeRuleIn",
+                    "silence": "#/components/schemas/SilenceRuleIn",
+                    "threshold": "#/components/schemas/ThresholdRuleIn"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ThresholdRuleIn"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RateOfChangeRuleIn"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SilenceRuleIn"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Invalid params for the type, or a zone, station or policy outside the organization"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create a rule",
+        "tags": [
+          "rules"
+        ]
+      }
+    },
+    "/v1/rules/{rule_id}": {
+      "delete": {
+        "operationId": "delete_rule_v1_rules__rule_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Deactivate a rule (incidents keep pointing to it)",
+        "tags": [
+          "rules"
+        ]
+      },
+      "get": {
+        "operationId": "get_rule_v1_rules__rule_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "A rule",
+        "tags": [
+          "rules"
+        ]
+      },
+      "put": {
+        "operationId": "put_rule_v1_rules__rule_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "discriminator": {
+                  "mapping": {
+                    "rate_of_change": "#/components/schemas/RateOfChangeRuleIn",
+                    "silence": "#/components/schemas/SilenceRuleIn",
+                    "threshold": "#/components/schemas/ThresholdRuleIn"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ThresholdRuleIn"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RateOfChangeRuleIn"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SilenceRuleIn"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Invalid params for the type, or a zone, station or policy outside the organization"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Replace a rule (its type never changes); applies from the next reading",
+        "tags": [
+          "rules"
         ]
       }
     },
