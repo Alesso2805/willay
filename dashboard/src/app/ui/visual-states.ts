@@ -32,6 +32,7 @@ export type RiskLevelKey = 'low' | 'medium' | 'high' | 'critical';
 export type StationState = 'reporting' | 'silent' | 'unzoned' | 'inactive' | 'waiting';
 export type ZoneState = 'calm' | 'acknowledged' | 'open' | 'exhausted';
 export type AlertState = 'pending' | 'sent' | 'failed' | 'skipped' | 'acknowledged';
+export type ContactChannelState = 'email' | 'telegram' | 'pending' | 'none';
 
 /** `exhausted`: open with nobody acknowledging at any level (SPEC: shown in red). */
 export const INCIDENT_STATES: Readonly<Record<IncidentState, VisualState>> = {
@@ -81,6 +82,14 @@ export const ALERT_STATES: Readonly<Record<AlertState, VisualState>> = {
   acknowledged: { label: 'Confirmó', icon: 'check-circle', ...GREEN },
 };
 
+/** How a contact can be reached (VIG-36); one that cannot is flagged, since no alert reaches it. */
+export const CONTACT_CHANNEL_STATES: Readonly<Record<ContactChannelState, VisualState>> = {
+  email: { label: 'Correo', icon: 'mail', ...BLUE },
+  telegram: { label: 'Telegram', icon: 'send', ...BLUE },
+  pending: { label: 'Enlace de Telegram pendiente', icon: 'clock', ...SLATE },
+  none: { label: 'Sin canal', icon: 'triangle-alert', ...AMBER },
+};
+
 export type ConnectionState = 'connecting' | 'live' | 'reconnecting';
 
 /** The live channel (VIG-25): while it is down, what the dashboard shows may be stale. */
@@ -108,5 +117,6 @@ export const ALL_CATALOGS = {
   station: STATION_STATES,
   zone: ZONE_STATES,
   alert: ALERT_STATES,
+  contactChannel: CONTACT_CHANNEL_STATES,
   connection: CONNECTION_STATES,
 } as const;

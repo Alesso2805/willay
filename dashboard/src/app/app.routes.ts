@@ -30,5 +30,10 @@ export const routes: Routes = [
     title: 'Estaciones · Willay',
     loadComponent: () => import('./stations/stations-page').then((m) => m.StationsPage),
   },
+  {
+    path: 'contactos',
+    title: 'Contactos · Willay',
+    loadComponent: () => import('./contacts/contacts-page').then((m) => m.ContactsPage),
+  },
   { path: '**', redirectTo: '' },
 ];
