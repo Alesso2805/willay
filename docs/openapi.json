@@ -20,6 +20,22 @@
         "title": "Channel",
         "type": "string"
       },
+      "CommentIn": {
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "CommentIn",
+        "type": "object"
+      },
       "GeoJsonGeometry": {
         "description": "Polygon (what the map draws) or MultiPolygon. Coordinates [longitude, latitude].",
         "properties": {
@@ -2277,6 +2293,67 @@
         "summary": "An incident's alerts, by level and recipient",
         "tags": [
           "alerts"
+        ]
+      }
+    },
+    "/v1/incidents/{incident_id}/comments": {
+      "post": {
+        "operationId": "comment_incident_v1_incidents__incident_id__comments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "incident_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Incident Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentEventOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Comment on an incident (also once resolved)",
+        "tags": [
+          "incidents"
         ]
       }
     },

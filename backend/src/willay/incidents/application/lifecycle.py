@@ -128,7 +128,9 @@ class IncidentRepository(Protocol):
         event_type: str,
         payload: Mapping[str, Any],
         now: datetime,
-    ) -> None: ...
+    ) -> int:
+        """Appends a timeline event and returns its id."""
+        ...
 
 
 async def acknowledge_incident(
@@ -173,6 +175,19 @@ async def resolve_incident(
     payload = {"resolution": resolution.value, "previous_status": current.value}
     await incidents.add_event(incident_id, actor, "resolved", payload, now)
     return await _reload(actor, incident_id, incidents)
+
+
+async def comment_on_incident(
+    actor: Actor, incident_id: UUID, text: str, *, incidents: IncidentRepository, clock: Clock
+) -> int:
+    """Adds a `comment` event with its author and returns its id.
+
+    A comment changes no status, so it needs no lock and is allowed in any status, resolved
+    included: what happened afterwards (a field visit, the cause) is also worth recording.
+    """
+    if await incidents.get(actor.organization_id, incident_id) is None:
+        raise IncidentNotFoundError(incident_id)
+    return await incidents.add_event(incident_id, actor, "comment", {"text": text}, clock.now())
 
 
 async def _lock(

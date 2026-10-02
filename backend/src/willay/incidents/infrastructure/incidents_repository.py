@@ -87,6 +87,7 @@ _EVENT = text("""
                                       actor_type, actor_id, payload)
     VALUES (:incident_id, :organization_id, :now, :event_type, :actor_type, :actor_id,
             CAST(:payload AS jsonb))
+    RETURNING id
 """)
 
 
@@ -167,8 +168,8 @@ class SqlIncidentRepository:
         event_type: str,
         payload: Mapping[str, Any],
         now: datetime,
-    ) -> None:
-        await self._conn.execute(
+    ) -> int:
+        event_id: int = await self._conn.scalar(
             _EVENT,
             {
                 "incident_id": incident_id,
@@ -180,6 +181,7 @@ class SqlIncidentRepository:
                 "payload": json.dumps(dict(payload)),
             },
         )
+        return event_id
 
 
 def _incident(r: Row[Any]) -> Incident:

@@ -270,6 +270,74 @@ async def test_the_list_filters_by_severity_together_with_status(
     assert unknown.status_code == 422
 
 
+@pytest.mark.parametrize(
+    ("sub", "role", "expected"),
+    [
+        (SUB_RIMAC_VIEWER, "viewer", 403),
+        (SUB_RIMAC_RESPONDER, "responder", 201),
+        (SUB_RIMAC_OPERATOR, "operator", 201),
+    ],
+)
+async def test_responder_and_above_can_comment(
+    client: httpx2.AsyncClient,
+    owner: asyncpg.Connection,
+    tokens: TokenFactory,
+    sub: UUID,
+    role: str,
+    expected: int,
+) -> None:
+    incident_id = await _incident(owner)
+    response = await _post(
+        client, incident_id, "comments", _as(tokens, sub, role), text="  Bajamos a revisar  "
+    )
+    assert response.status_code == expected, response.text
+    if expected == 201:
+        comment = response.json()
+        assert comment["event_type"] == "comment"
+        assert comment["payload"] == {"text": "Bajamos a revisar"}  # without surrounding spaces
+        assert comment["actor_name"] == f"Usuario {str(sub)[:8]}"
+
+
+async def test_a_resolved_incident_can_still_be_commented_and_its_timeline_shows_it(
+    client: httpx2.AsyncClient, owner: asyncpg.Connection, operator: dict[str, str]
+) -> None:
+    incident_id = await _incident(owner)
+    await _post(client, incident_id, "resolve", operator, resolution="resolved")
+    response = await _post(client, incident_id, "comments", operator, text="Causa: deslizamiento")
+    assert response.status_code == 201, response.text
+
+    detail = (await client.get(f"/v1/incidents/{incident_id}", headers=operator)).json()
+    assert detail["status"] == "resolved"
+    assert [e["event_type"] for e in detail["timeline"]][-1] == "comment"
+    assert detail["timeline"][-1]["payload"]["text"] == "Causa: deslizamiento"
+
+
+@pytest.mark.parametrize("text", ["", "   ", "x" * 2001])
+async def test_an_empty_or_too_long_comment_gets_422(
+    client: httpx2.AsyncClient, owner: asyncpg.Connection, operator: dict[str, str], text: str
+) -> None:
+    incident_id = await _incident(owner)
+    response = await _post(client, incident_id, "comments", operator, text=text)
+    assert response.status_code == 422
+
+
+async def test_a_comment_of_exactly_2000_characters_is_accepted(
+    client: httpx2.AsyncClient, owner: asyncpg.Connection, operator: dict[str, str]
+) -> None:
+    incident_id = await _incident(owner)
+    response = await _post(client, incident_id, "comments", operator, text="x" * 2000)
+    assert response.status_code == 201
+
+
+async def test_another_organization_cannot_comment(
+    client: httpx2.AsyncClient, owner: asyncpg.Connection, tokens: TokenFactory
+) -> None:
+    incident_id = await _incident(owner)
+    other = _as(tokens, SUB_ISOLATION_ADMIN, "admin", organization=ISOLATION)
+    response = await _post(client, incident_id, "comments", other, text="hola")
+    assert response.status_code == 404
+
+
 async def test_an_unknown_resolution_gets_422(
     client: httpx2.AsyncClient, owner: asyncpg.Connection, operator: dict[str, str]
 ) -> None:
