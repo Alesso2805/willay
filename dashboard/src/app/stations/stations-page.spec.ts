@@ -156,6 +156,34 @@ describe('StationsPage', () => {
     }
   });
 
+  it('does not report stations as silent when it is the dashboard that lost contact', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+    try {
+      const { fixture, element, loaded, live } = setup(['view']);
+      const seen = new Date().toISOString();
+      const reporting: Station = {
+        ...STATION,
+        has_zone: true,
+        heartbeat: { last_seen_at: seen, last_measured_at: seen, last_value: 1 },
+      };
+      loaded([reporting]);
+      await fixture.whenStable();
+
+      live.lostAt.set(Date.now());
+      live.status.set('reconnecting');
+      vi.advanceTimersByTime(45_000); // no heartbeats, but none could have arrived either
+      await fixture.whenStable();
+      expect(element.textContent).toContain('Reportando');
+
+      live.reload$.next(); // a fallback reload confirms there is no newer heartbeat
+      loaded([reporting]);
+      await fixture.whenStable();
+      expect(element.textContent).toContain('Sin reportar');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('reloads when the live channel asks for it', async () => {
     const { fixture, element, loaded, live } = setup(['view']);
     loaded([]);

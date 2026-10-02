@@ -5,6 +5,7 @@ import { HeartbeatChange, IncidentChange, LiveEvents, LiveStatus } from './live-
 /** Stand-in for the live channel in page tests: the test pushes the events itself. */
 export class FakeLiveEvents {
   readonly status = signal<LiveStatus>('live');
+  readonly lostAt = signal<number | null>(null);
   readonly reload$ = new Subject<void>();
   readonly incidents$ = new Subject<IncidentChange>();
   readonly heartbeats$ = new Subject<HeartbeatChange>();

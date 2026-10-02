@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EMPTY, Subject, catchError, switchMap } from 'rxjs';
-import { LiveEvents } from '../realtime/live-events';
+import { LiveEvents, dataTime } from '../realtime/live-events';
 import { Session } from '../session';
 import { clock } from '../ui/clock';
 import { ageText, localTime, measurement } from '../ui/formats';
@@ -45,6 +45,7 @@ export class StationsPage {
   private readonly api = inject(StationsApi);
   private readonly zonesApi = inject(ZonesApi);
   private readonly session = inject(Session);
+  private readonly live = inject(LiveEvents);
 
   protected readonly stationStates = STATION_STATES;
   protected readonly variables = VARIABLES;
@@ -71,6 +72,11 @@ export class StationsPage {
   protected readonly copied = signal(false);
   /** View clock for the relative ages ("hace N s"). */
   protected readonly now = clock(1_000);
+  /** Last successful REST load: while the channel is down, silence is judged up to here. */
+  private readonly syncedAt = signal(Date.now());
+  private readonly asOf = computed(() =>
+    dataTime(this.live.status(), this.now(), this.syncedAt(), this.live.lostAt()),
+  );
   /** switchMap: only the latest list counts, even if an older request answers later. */
   private readonly stationLoads = new Subject<void>();
 
@@ -84,7 +90,7 @@ export class StationsPage {
   protected readonly subtitle = computed(() => {
     if (!this.loaded()) return '';
     const active = this.stations().filter((station) => station.status === 'active');
-    const states = active.map((station) => stationState(station, this.now()));
+    const states = active.map((station) => stationState(station, this.asOf()));
     const parts = [`${active.length} ${active.length === 1 ? 'estación' : 'estaciones'}`];
     parts.push(`${states.filter((s) => s === 'reporting').length} reportando`);
     const silent = states.filter((s) => s === 'silent').length;
@@ -129,16 +135,16 @@ export class StationsPage {
       )
       .subscribe((stations) => {
         this.stations.set(keepNewerHeartbeats(stations, this.stations()));
+        this.syncedAt.set(Date.now());
         this.loaded.set(true);
         this.loadFailed.set(false);
       });
     this.load();
 
-    // The clock moves every second, so the heartbeats must keep up with it: each one arrives
-    // as a live event. If the channel drops, LiveEvents asks for a reload every 15 s instead.
-    const live = inject(LiveEvents);
-    live.reload$.pipe(takeUntilDestroyed()).subscribe(() => this.load());
-    live.heartbeats$
+    // Heartbeats arrive as live events. If the channel drops, LiveEvents asks for a reload
+    // every 15 s instead, and silence is judged against `asOf`, not the clock.
+    this.live.reload$.pipe(takeUntilDestroyed()).subscribe(() => this.load());
+    this.live.heartbeats$
       .pipe(takeUntilDestroyed())
       .subscribe(({ stationId, heartbeat }) =>
         this.stations.update((stations) => withHeartbeat(stations, stationId, heartbeat)),
@@ -156,7 +162,7 @@ export class StationsPage {
   }
 
   protected stateOf(station: Station) {
-    return stationState(station, this.now());
+    return stationState(station, this.asOf());
   }
 
   protected age(iso: string): string {

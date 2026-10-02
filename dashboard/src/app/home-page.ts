@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { EMPTY, Subject, catchError, forkJoin, switchMap } from 'rxjs';
 import { Incident, IncidentsApi } from './incidents/incidents.api';
-import { LiveEvents } from './realtime/live-events';
+import { LiveEvents, dataTime } from './realtime/live-events';
 import { Session, roleLabels } from './session';
 import { keepNewerHeartbeats, stationState, withHeartbeat } from './stations/station-presentation';
 import { Station, StationsApi } from './stations/stations.api';
@@ -130,11 +130,14 @@ export class HomePage {
   private readonly incidentsApi = inject(IncidentsApi);
   private readonly stationsApi = inject(StationsApi);
   private readonly zonesApi = inject(ZonesApi);
+  private readonly live = inject(LiveEvents);
 
   protected readonly roles = roleLabels;
   protected readonly summary = signal<Summary | null>(null);
   protected readonly failed = signal(false);
-  protected readonly now = clock(1_000);
+  private readonly now = clock(1_000);
+  /** Last successful load: while the channel is down, silence is judged up to here. */
+  private readonly syncedAt = signal(Date.now());
   /** switchMap: only the latest summary counts, even if an older request answers later. */
   private readonly loads = new Subject<void>();
 
@@ -151,7 +154,8 @@ export class HomePage {
   });
   protected readonly stationCounts = computed(() => {
     const summary = this.summary();
-    const states = (summary?.stations ?? []).map((s) => stationState(s, this.now()));
+    const asOf = dataTime(this.live.status(), this.now(), this.syncedAt(), this.live.lostAt());
+    const states = (summary?.stations ?? []).map((s) => stationState(s, asOf));
     return {
       total: states.length,
       reporting: states.filter((s) => s === 'reporting').length,
@@ -192,16 +196,16 @@ export class HomePage {
       .subscribe((data) => {
         const stations = keepNewerHeartbeats(data.stations, this.summary()?.stations ?? []);
         this.summary.set({ ...data, stations });
+        this.syncedAt.set(Date.now());
         this.failed.set(false);
       });
     this.load();
 
     // An incident event only says that something changed: the summary is fetched again, so
     // the viewer's permissions apply. Heartbeats carry their values and update in place.
-    const live = inject(LiveEvents);
-    live.reload$.pipe(takeUntilDestroyed()).subscribe(() => this.load());
-    live.incidents$.pipe(takeUntilDestroyed()).subscribe(() => this.load());
-    live.heartbeats$.pipe(takeUntilDestroyed()).subscribe(({ stationId, heartbeat }) =>
+    this.live.reload$.pipe(takeUntilDestroyed()).subscribe(() => this.load());
+    this.live.incidents$.pipe(takeUntilDestroyed()).subscribe(() => this.load());
+    this.live.heartbeats$.pipe(takeUntilDestroyed()).subscribe(({ stationId, heartbeat }) =>
       this.summary.update(
         (summary) =>
           summary && { ...summary, stations: withHeartbeat(summary.stations, stationId, heartbeat) },
