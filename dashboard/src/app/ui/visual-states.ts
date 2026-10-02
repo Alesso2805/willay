@@ -31,6 +31,7 @@ export type Severity = 'info' | 'warning' | 'critical';
 export type RiskLevelKey = 'low' | 'medium' | 'high' | 'critical';
 export type StationState = 'reporting' | 'silent' | 'unzoned' | 'inactive' | 'waiting';
 export type ZoneState = 'calm' | 'acknowledged' | 'open' | 'exhausted';
+export type AlertState = 'pending' | 'sent' | 'failed' | 'skipped' | 'acknowledged';
 
 /** `exhausted`: open with nobody acknowledging at any level (SPEC: shown in red). */
 export const INCIDENT_STATES: Readonly<Record<IncidentState, VisualState>> = {
@@ -71,6 +72,15 @@ export const ZONE_STATES: Readonly<Record<ZoneState, VisualState>> = {
   exhausted: { label: 'Escalamiento agotado', icon: 'octagon-x', ...ALARM },
 };
 
+/** One alert to one recipient through one channel (VIG-26). */
+export const ALERT_STATES: Readonly<Record<AlertState, VisualState>> = {
+  pending: { label: 'Pendiente', icon: 'clock', ...SLATE },
+  sent: { label: 'Enviada', icon: 'check', ...BLUE },
+  failed: { label: 'Falló', icon: 'octagon-x', ...RED },
+  skipped: { label: 'Omitida', icon: 'pause', ...AMBER },
+  acknowledged: { label: 'Confirmó', icon: 'check-circle', ...GREEN },
+};
+
 export type ConnectionState = 'connecting' | 'live' | 'reconnecting';
 
 /** The live channel (VIG-25): while it is down, what the dashboard shows may be stale. */
@@ -97,5 +107,6 @@ export const ALL_CATALOGS = {
   risk: RISK_LEVEL_STATES,
   station: STATION_STATES,
   zone: ZONE_STATES,
+  alert: ALERT_STATES,
   connection: CONNECTION_STATES,
 } as const;

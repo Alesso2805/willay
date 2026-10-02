@@ -33,6 +33,24 @@ export interface IncidentEvent {
   payload: Record<string, unknown>;
 }
 
+/**
+ * docs/openapi.json › IncidentAlertOut. `email` only comes to users who may see contact
+ * details (operator, admin); a Telegram chat never leaves the API.
+ */
+export interface IncidentAlert {
+  id: string;
+  level_order: number;
+  contact_id: string;
+  contact_name: string;
+  channel: 'email' | 'telegram';
+  status: 'pending' | 'sent' | 'failed' | 'skipped' | 'acknowledged';
+  attempts: number;
+  sent_at: string | null;
+  acknowledged_at: string | null;
+  skipped_reason: string | null;
+  email: string | null;
+}
+
 /** docs/openapi.json › IncidentDetailOut: the incident with its timeline, oldest first. */
 export interface IncidentDetail extends Incident {
   trigger_value: number | null;
@@ -62,5 +80,10 @@ export class IncidentsApi {
   /** The incident with its timeline. */
   get(id: string): Observable<IncidentDetail> {
     return this.http.get<IncidentDetail>(`${this.url}/${id}`);
+  }
+
+  /** Its alerts by level, recipient and channel. */
+  alerts(id: string): Observable<IncidentAlert[]> {
+    return this.http.get<IncidentAlert[]>(`${this.url}/${id}/alerts`);
   }
 }
