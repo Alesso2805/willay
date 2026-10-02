@@ -30,4 +30,9 @@ export class IncidentsApi {
     const params = new HttpParams({ fromObject: { status: [...statuses], limit } });
     return this.http.get<Incident[]>(this.url, { params });
   }
+
+  /** The API also returns its timeline (IncidentDetailOut); the dashboard does not use it yet. */
+  get(id: string): Observable<Incident> {
+    return this.http.get<Incident>(`${this.url}/${id}`);
+  }
 }
