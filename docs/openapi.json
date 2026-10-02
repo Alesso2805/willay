@@ -36,6 +36,93 @@
         "title": "CommentIn",
         "type": "object"
       },
+      "ContactIn": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "full_name"
+        ],
+        "title": "ContactIn",
+        "type": "object"
+      },
+      "ContactOut": {
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/GroupRefOut"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "has_history": {
+            "title": "Has History",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "telegram_link_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telegram Link Expires At"
+          },
+          "telegram_linked": {
+            "title": "Telegram Linked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "full_name",
+          "email",
+          "telegram_linked",
+          "telegram_link_expires_at",
+          "groups",
+          "has_history"
+        ],
+        "title": "ContactOut",
+        "type": "object"
+      },
       "GeoJsonGeometry": {
         "description": "Polygon (what the map draws) or MultiPolygon. Coordinates [longitude, latitude].",
         "properties": {
@@ -82,6 +169,25 @@
           "coordinates"
         ],
         "title": "GeoJsonPoint",
+        "type": "object"
+      },
+      "GroupRefOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "GroupRefOut",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -1715,6 +1821,337 @@
         "summary": "Health",
         "tags": [
           "ops"
+        ]
+      }
+    },
+    "/v1/contacts": {
+      "get": {
+        "operationId": "list_contacts_v1_contacts_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ContactOut"
+                  },
+                  "title": "Response List Contacts V1 Contacts Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The organization's contacts, by name",
+        "tags": [
+          "alerts"
+        ]
+      },
+      "post": {
+        "operationId": "post_contact_v1_contacts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create a contact",
+        "tags": [
+          "alerts"
+        ]
+      }
+    },
+    "/v1/contacts/{contact_id}": {
+      "delete": {
+        "operationId": "remove_contact_v1_contacts__contact_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contact_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Contact Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "It has alerts or acknowledgements: remove it from its groups"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete a contact without history",
+        "tags": [
+          "alerts"
+        ]
+      },
+      "get": {
+        "operationId": "get_contact_v1_contacts__contact_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contact_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Contact Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "A contact",
+        "tags": [
+          "alerts"
+        ]
+      },
+      "put": {
+        "operationId": "put_contact_v1_contacts__contact_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contact_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Contact Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Edit a contact's name and email",
+        "tags": [
+          "alerts"
+        ]
+      }
+    },
+    "/v1/contacts/{contact_id}/remove-from-groups": {
+      "post": {
+        "operationId": "post_remove_from_groups_v1_contacts__contact_id__remove_from_groups_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contact_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Contact Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove a contact from all its groups, so it stops receiving alerts",
+        "tags": [
+          "alerts"
+        ]
+      }
+    },
+    "/v1/contacts/{contact_id}/telegram": {
+      "delete": {
+        "operationId": "delete_telegram_v1_contacts__contact_id__telegram_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contact_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Contact Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Unlink the contact's Telegram (and void any pending link)",
+        "tags": [
+          "alerts"
         ]
       }
     },
