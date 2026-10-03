@@ -25,6 +25,7 @@ class QueuedReading:
     measured_at: datetime
     attempt: int  # this attempt's number, 1..MAX_ATTEMPTS
     correlation_id: UUID | None = None  # None for rows enqueued before VIG-28
+    received_at: datetime | None = None  # when the reading arrived: its row's enqueued_at
 
 
 class LostClaimError(Exception):

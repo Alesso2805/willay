@@ -40,7 +40,7 @@ _CLAIM = text("""
     FROM picked
     WHERE q.id = picked.id
     RETURNING q.id, q.station_id, q.organization_id, q.measured_at, q.attempts,
-              q.correlation_id
+              q.correlation_id, q.enqueued_at
 """)
 
 
@@ -70,6 +70,7 @@ class PostgresEvaluationQueue:
                     r.measured_at,
                     r.attempts,
                     r.correlation_id,
+                    r.enqueued_at,
                 )
                 for r in rows
             ]

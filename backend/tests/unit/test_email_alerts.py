@@ -111,8 +111,9 @@ class Queue:
         self.tokens.append(token)
         return not self.lost
 
-    async def sent(self, alert: ClaimedAlert, now: datetime) -> None:
+    async def sent(self, alert: ClaimedAlert, now: datetime) -> bool:
         self.delivered.append(alert)
+        return len(self.delivered) == 1  # the first one sent of the incident
 
     async def failed(
         self, alert: ClaimedAlert, error: str, retry: datetime | None, now: datetime
@@ -187,3 +188,29 @@ async def test_the_send_is_logged_with_its_incident_correlation_id(
     lines = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line]
     [sent] = [entry for entry in lines if entry["event"] == "alert_sent"]
     assert sent["correlation_id"] == str(correlation_id)
+
+
+def _sent_lines(capsys: pytest.CaptureFixture[str]) -> list[dict[str, object]]:
+    lines = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line]
+    return [entry for entry in lines if entry["event"] == "alert_sent"]
+
+
+async def test_the_first_alert_sent_logs_the_latency_from_its_reading(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure_logging()
+    received = T0 - timedelta(seconds=2, milliseconds=500)
+    first = replace(_claimed(), trigger_received_at=received)
+    second = replace(_claimed(), trigger_received_at=received)
+    await _dispatcher(Queue(first, second), Sender()).dispatch(10)
+    # Only the incident's first alert sent measures it (SPEC: received -> first alert).
+    assert [line.get("received_to_alert_seconds") for line in _sent_lines(capsys)] == [2.5, None]
+
+
+async def test_a_silence_alert_has_no_reading_to_measure_from(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure_logging()
+    await _dispatcher(Queue(_claimed()), Sender()).dispatch(10)
+    [line] = _sent_lines(capsys)
+    assert "received_to_alert_seconds" not in line
