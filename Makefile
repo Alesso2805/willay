@@ -15,7 +15,7 @@ endif
 # Git Bash would rewrite container paths such as /secrets as Windows paths; elsewhere it is unused.
 export MSYS_NO_PATHCONV := 1
 
-.PHONY: help up down lint lint-backend lint-dashboard test test-backend test-dashboard openapi migrate seed simulate latency demo
+.PHONY: help up down lint lint-backend lint-dashboard test test-backend test-dashboard openapi migrate seed simulate latency loadtest demo
 
 help: ## List the available commands
 ifeq ($(OS),Windows_NT)
@@ -67,6 +67,9 @@ simulate: ## Station simulator against the local API (ARGS="--scenario rimac --s
 
 latency: .env ## p50/p95 of reading received -> first alert sent (ARGS="--minutes 60")
 	$(COMPOSE) run --rm migrate python -m willay.alerts.api.latency_cli $(ARGS)
+
+loadtest: .env ## Load test: 50 stations x 1 reading/10 s, checks SPEC (ARGS="--minutes 30")
+	$(COMPOSE) run --rm migrate python -m willay.loadtest $(ARGS)
 
 demo: ## Guided Rímac scenario (VIG-30)
 	@echo "make demo arrives with VIG-30 (Sprint 7)." && exit 1

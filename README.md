@@ -55,6 +55,7 @@ make help   # lists all the commands
 make lint   # Ruff, Mypy strict, ESLint
 make test   # Pytest (unit + integration with real Postgres via Docker) and Vitest
 make latency ARGS="--minutes 60"   # p50/p95 of reading received -> first alert sent (target < 30 s)
+make loadtest ARGS="--minutes 30"  # 50 stations x 1 reading/10 s against the running stack; checks SPEC
 ```
 
 ## Station simulator
