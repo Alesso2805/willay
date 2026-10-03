@@ -24,7 +24,22 @@ With WSL, clone the repo inside the WSL file system (for example `~/code/willay`
 cp .env.example .env    # and fill in the values
 make up                 # postgres, keycloak, mailpit, migrate, api, 5 workers, dashboard
 make seed               # demo data; prints the simulator's API keys
+make demo               # the Rímac scenario, narrated (about 8 minutes)
 ```
+
+## The demo
+
+`make demo` plays SPEC's scenario: something dams the Rímac, the downstream station in Chaclacayo records a sudden discharge drop and, 4 minutes later, the upstream station in Santa Eulalia stops reporting. The terminal tells each step of both incidents' timelines as it happens, with links to the dashboard:
+
+| Time | What happens |
+| --- | --- |
+| 1:00 | The drop opens an incident; level 1 (Óscar) gets an email |
+| 3:00 | Nobody acknowledged: level 2 (Brigada Chosica) gets Telegram and email |
+| 5:00 | Santa Eulalia goes silent: a second incident, which climbs the same levels |
+
+Level 2 acknowledges both incidents, with the Telegram button or the link in its email (Mailpit, http://localhost:8025). The demo ends with PASS when both are acknowledged at level 2, and with FAIL if one is acknowledged at level 1 or escalates to level 3. After a PASS the stations keep reporting until Ctrl+C, so the dashboard stays live.
+
+Each run starts from a clean slate: it deletes the demo organization's readings, incidents, events and alerts, and keeps its configuration (zones, stations, rules, policy and contacts, with their Telegram link). It connects as `willay_owner` for that, because the API and the workers cannot delete incident events. When it ends, the stations count as not reporting yet, so no silence incident opens after the demo.
 
 ## The dashboard
 
@@ -78,7 +93,7 @@ The Rímac policy has 3 levels:
 
 Confirming any alert, either with the email link or with the Telegram button, stops the escalation. The emails can be seen in Mailpit (http://localhost:8025).
 
-A cause that was just resolved or acknowledged does not open a new incident while it is still active or during its cooldown (30 min in the seed). To repeat the scenario right away, start from an empty database (`docker compose down -v`, `make up` and `make seed`).
+A cause that was just resolved or acknowledged does not open a new incident while it is still active or during its cooldown (30 min in the seed). `make demo` repeats the scenario right away: it clears the demo organization's readings and incidents first.
 
 ## Telegram alerts (optional)
 
