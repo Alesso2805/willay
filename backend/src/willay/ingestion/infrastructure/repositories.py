@@ -99,8 +99,9 @@ _STORE_AND_ENQUEUE = text("""
     ),
     enqueued AS (
         INSERT INTO ingest.evaluation_queue (station_id, measured_at, organization_id,
-                                             enqueued_at, available_at)
-        SELECT :station_id, measured_at, :organization_id, :received_at, :received_at
+                                             enqueued_at, available_at, correlation_id)
+        SELECT :station_id, measured_at, :organization_id, :received_at, :received_at,
+               CAST(:correlation_id AS uuid)
         FROM stored
         WHERE quality = 'ok'
         ON CONFLICT (station_id, measured_at) DO NOTHING
@@ -143,6 +144,7 @@ class SqlReadingWriter:
         readings: Sequence[ClassifiedReading],
         received_at: datetime,
         heartbeat: ClassifiedReading | None,
+        correlation_id: UUID,
     ) -> StoreCounts:
         row = (
             await self._conn.execute(
@@ -156,6 +158,7 @@ class SqlReadingWriter:
                     "quality": [r.quality.value for r in readings],
                     "hb_measured_at": heartbeat.measured_at if heartbeat else None,
                     "hb_value": heartbeat.value if heartbeat else None,
+                    "correlation_id": correlation_id,
                 },
             )
         ).one()

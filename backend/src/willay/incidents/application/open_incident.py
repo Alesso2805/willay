@@ -38,6 +38,8 @@ class Trigger:
     details: Mapping[str, Any] = field(default_factory=dict)
     # None if readings cannot worsen the rule (silence).
     worsening: Worsening | None = None
+    # The batch that fired it, or one of its own for silence; stays on the incident (VIG-28).
+    correlation_id: UUID | None = None
 
     @property
     def trigger_value(self) -> float | None:

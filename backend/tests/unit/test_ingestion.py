@@ -151,6 +151,7 @@ class FakeWriter:
         self.existing = existing
         self.calls: list[tuple[list[ClassifiedReading], datetime]] = []
         self.heartbeats: list[ClassifiedReading | None] = []
+        self.correlation_ids: list[UUID] = []
 
     async def store_and_enqueue(
         self,
@@ -159,8 +160,10 @@ class FakeWriter:
         readings: Sequence[ClassifiedReading],
         received_at: datetime,
         heartbeat: ClassifiedReading | None,
+        correlation_id: UUID,
     ) -> StoreCounts:
         self.calls.append((list(readings), received_at))
+        self.correlation_ids.append(correlation_id)
         self.heartbeats.append(heartbeat)
         new = readings[self.existing :]
         late = sum(1 for r in new if r.quality is Quality.LATE)
@@ -186,6 +189,16 @@ async def test_batch_is_classified_sorted_and_stamped_with_the_clock() -> None:
     ]
     assert (result.received, result.counts.stored, result.duplicates) == (2, 1, 1)
     assert writer.heartbeats == [ClassifiedReading(NOW, 2.0, Quality.OK)]
+
+
+async def test_each_batch_gets_its_own_correlation_id_for_the_logs() -> None:
+    writer = FakeWriter()
+    station = AuthenticatedStation(STATION, ORG)
+    first = await ingest_batch(station, [Reading(NOW, 1.0)], FakeClock(NOW), writer)
+    second = await ingest_batch(station, [Reading(NOW, 2.0)], FakeClock(NOW), writer)
+    # The queue rows get the same id the API returns and logs.
+    assert writer.correlation_ids == [first.correlation_id, second.correlation_id]
+    assert first.correlation_id != second.correlation_id
 
 
 async def test_future_readings_reject_the_whole_batch() -> None:

@@ -1,11 +1,13 @@
 import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Any, cast
 from uuid import uuid4
 
 import pytest
+import structlog
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from willay.rules.application.evaluate import process_batch
@@ -102,3 +104,25 @@ async def test_cancellation_is_not_swallowed() -> None:
     with pytest.raises(asyncio.CancelledError):
         await process_batch(queue, Cancelled(), Transactions(), limit=10)
     assert queue.failed == []
+
+
+class ContextRecorder:
+    """Records the log context each evaluation runs in."""
+
+    def __init__(self) -> None:
+        self.contexts: list[dict[str, Any]] = []
+
+    async def evaluate(self, tx: Any, item: QueuedReading) -> None:
+        self.contexts.append(dict(structlog.contextvars.get_contextvars()))
+
+
+async def test_each_evaluation_logs_with_its_batch_correlation_id() -> None:
+    correlation_id = uuid4()
+    # The second row was enqueued before correlation ids existed.
+    queue = FakeQueue([replace(_item(1), correlation_id=correlation_id), _item(2)])
+    recorder = ContextRecorder()
+    await process_batch(queue, recorder, Transactions(), limit=10)
+
+    assert recorder.contexts[0].get("correlation_id") == str(correlation_id)
+    assert "correlation_id" not in recorder.contexts[1]
+    assert "correlation_id" not in structlog.contextvars.get_contextvars()  # not left behind

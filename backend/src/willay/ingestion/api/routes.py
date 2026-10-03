@@ -1,6 +1,8 @@
 from datetime import UTC, datetime
 from typing import Annotated
+from uuid import UUID
 
+import structlog
 from fastapi import APIRouter, HTTPException, status
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
@@ -11,6 +13,7 @@ from willay.ingestion.infrastructure.repositories import SqlReadingWriter
 from willay.shared.web import ClockDep, DbConnection
 
 router = APIRouter(prefix="/v1", tags=["ingestion"])
+log = structlog.get_logger()
 
 
 class ReadingIn(BaseModel):
@@ -36,6 +39,9 @@ class ReadingBatchOut(BaseModel):
         description="Of those stored, how many arrived more than 1 h late: they stay in the "
         "history but are not evaluated. Many late readings usually point to a faulty clock "
         "or link at the station."
+    )
+    correlation_id: UUID = Field(
+        description="Appears in the logs of the evaluation, the incident and its alerts"
     )
 
 
@@ -70,11 +76,21 @@ async def post_readings(
                 for i in exc.indices
             ],
         ) from exc
+    log.info(
+        "readings_ingested",
+        correlation_id=str(result.correlation_id),
+        station_id=str(station.station_id),
+        received=result.received,
+        stored=result.counts.stored,
+        enqueued=result.counts.enqueued,
+        late=result.counts.late,
+    )
     return ReadingBatchOut(
         received=result.received,
         stored=result.counts.stored,
         duplicates=result.duplicates,
         late=result.counts.late,
+        correlation_id=result.correlation_id,
     )
 
 

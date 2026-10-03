@@ -15,6 +15,7 @@ from uuid import UUID
 
 import structlog
 from sqlalchemy.ext.asyncio import AsyncConnection
+from uuid_utils.compat import uuid7
 
 from willay.alerts.application.planning import FIRST_LEVEL, IncidentAlerting
 from willay.incidents.application.open_incident import (
@@ -102,20 +103,28 @@ class SilenceChecker:
 
         opened = 0
         for station in silent:
-            # One transaction per station: if one fails, the others still open their incident.
-            async with self._transaction() as tx:
-                recorded = await record_trigger(self._incidents, tx, _trigger(station), now)
-                if recorded.outcome is TriggerOutcome.OPENED and recorded.incident_id is not None:
-                    await self._alerts.alert_level(tx, recorded.incident_id, FIRST_LEVEL, now)
-            if recorded.outcome is TriggerOutcome.OPENED:
-                opened += 1
-                log.info(
-                    "incident_opened",
-                    rule_type="silence",
-                    rule_id=str(station.rule_id),
-                    station_id=str(station.station_id),
-                    incident_id=str(recorded.incident_id),
-                )
+            # No reading opens a silence incident: it gets a correlation id of its own, which
+            # its alerts carry too (VIG-28).
+            correlation_id = uuid7()
+            with structlog.contextvars.bound_contextvars(correlation_id=str(correlation_id)):
+                # One transaction per station: if one fails, the others still open theirs.
+                async with self._transaction() as tx:
+                    trigger = _trigger(station, correlation_id)
+                    recorded = await record_trigger(self._incidents, tx, trigger, now)
+                    if (
+                        recorded.outcome is TriggerOutcome.OPENED
+                        and recorded.incident_id is not None
+                    ):
+                        await self._alerts.alert_level(tx, recorded.incident_id, FIRST_LEVEL, now)
+                if recorded.outcome is TriggerOutcome.OPENED:
+                    opened += 1
+                    log.info(
+                        "incident_opened",
+                        rule_type="silence",
+                        rule_id=str(station.rule_id),
+                        station_id=str(station.station_id),
+                        incident_id=str(recorded.incident_id),
+                    )
 
         recovered = 0
         for recovery in recoveries:
@@ -131,7 +140,7 @@ class SilenceChecker:
         return SilenceCycle(len(watched), len(silent), opened, recovered)
 
 
-def _trigger(station: WatchedStation) -> Trigger:
+def _trigger(station: WatchedStation, correlation_id: UUID) -> Trigger:
     last_seen = station.last_seen_at
     last_reading = None
     if station.last_measured_at is not None and station.last_value is not None:
@@ -154,4 +163,5 @@ def _trigger(station: WatchedStation) -> Trigger:
             "expected_interval_s": station.expected_interval_s,
             "silence_multiplier": station.silence_multiplier,
         },
+        correlation_id=correlation_id,
     )

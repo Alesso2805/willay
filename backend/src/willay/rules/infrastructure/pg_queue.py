@@ -39,7 +39,8 @@ _CLAIM = text("""
     SET attempts = q.attempts + 1, available_at = :visible_again_at
     FROM picked
     WHERE q.id = picked.id
-    RETURNING q.id, q.station_id, q.organization_id, q.measured_at, q.attempts
+    RETURNING q.id, q.station_id, q.organization_id, q.measured_at, q.attempts,
+              q.correlation_id
 """)
 
 
@@ -62,7 +63,14 @@ class PostgresEvaluationQueue:
                 },
             )
             items = [
-                QueuedReading(r.id, r.station_id, r.organization_id, r.measured_at, r.attempts)
+                QueuedReading(
+                    r.id,
+                    r.station_id,
+                    r.organization_id,
+                    r.measured_at,
+                    r.attempts,
+                    r.correlation_id,
+                )
                 for r in rows
             ]
         return sorted(items, key=lambda item: (item.measured_at, item.queue_id))

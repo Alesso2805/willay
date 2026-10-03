@@ -169,4 +169,5 @@ def _trigger(
         cooldown_s=rule.cooldown_s,
         evidence=evidence,
         worsening=worsening,
+        correlation_id=item.correlation_id,
     )

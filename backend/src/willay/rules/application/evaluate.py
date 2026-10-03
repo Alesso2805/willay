@@ -51,10 +51,14 @@ async def process_batch(
             measured_at=item.measured_at.isoformat(),
             attempt=item.attempt,
         )
+        # Every log of this evaluation (incident opened, alerts planned) carries the batch's
+        # correlation id, without passing it to each function.
+        correlation = {"correlation_id": str(item.correlation_id)} if item.correlation_id else {}
         try:
-            async with transaction() as tx:
-                await evaluator.evaluate(tx, item)
-                await queue.complete(tx, item)
+            with structlog.contextvars.bound_contextvars(**correlation):
+                async with transaction() as tx:
+                    await evaluator.evaluate(tx, item)
+                    await queue.complete(tx, item)
             completed += 1
         except LostClaimError:
             lost += 1

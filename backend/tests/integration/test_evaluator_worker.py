@@ -9,6 +9,7 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import asyncpg
 import pytest
@@ -84,7 +85,7 @@ async def test_a_notify_wakes_the_worker_long_before_the_polling_interval(
         async with engine.begin() as tx:  # like ingestion: reading + queue + NOTIFY, one commit
             reading = ClassifiedReading(now, 3.2, Quality.OK)
             await SqlReadingWriter(tx).store_and_enqueue(
-                graph.station_id, graph.organization_id, [reading], now, reading
+                graph.station_id, graph.organization_id, [reading], now, reading, uuid4()
             )
     finally:
         await engine.dispose()

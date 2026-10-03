@@ -3,6 +3,7 @@
 from collections.abc import AsyncIterator
 from datetime import datetime, timedelta
 from typing import Any
+from uuid import UUID
 
 import asyncpg
 import httpx2
@@ -55,15 +56,17 @@ async def test_batch_is_stored_and_enqueued_in_the_same_transaction(
     response = await _post(client, key, body)
 
     assert response.status_code == 202, response.text
-    assert response.json() == {"received": 3, "stored": 3, "duplicates": 0, "late": 0}
+    accepted = response.json()
+    correlation_id = UUID(accepted.pop("correlation_id"))
+    assert accepted == {"received": 3, "stored": 3, "duplicates": 0, "late": 0}
     readings = await owner.fetch(
         "SELECT measured_at, organization_id, quality, received_at FROM ingest.readings "
         "WHERE station_id = $1 ORDER BY measured_at",
         graph.station_id,
     )
     queue = await owner.fetch(
-        "SELECT measured_at, organization_id, attempts, available_at, enqueued_at "
-        "FROM ingest.evaluation_queue WHERE station_id = $1 ORDER BY measured_at",
+        "SELECT measured_at, organization_id, attempts, available_at, enqueued_at,"
+        " correlation_id FROM ingest.evaluation_queue WHERE station_id = $1 ORDER BY measured_at",
         graph.station_id,
     )
     assert [r["measured_at"] for r in readings] == [
@@ -76,6 +79,8 @@ async def test_batch_is_stored_and_enqueued_in_the_same_transaction(
     assert {r["quality"] for r in readings} == {"ok"}
     assert [q["measured_at"] for q in queue] == [r["measured_at"] for r in readings]
     assert all(q["attempts"] == 0 and q["available_at"] == q["enqueued_at"] for q in queue)
+    # The batch's correlation id, as the response gave it, follows each row (VIG-28).
+    assert {q["correlation_id"] for q in queue} == {correlation_id}
 
 
 async def test_resending_readings_does_not_duplicate_them_or_their_queue_rows(
@@ -89,7 +94,9 @@ async def test_resending_readings_does_not_duplicate_them_or_their_queue_rows(
         client, key, _batch(t0, t0 + timedelta(seconds=10), t0 + timedelta(seconds=20))
     )
 
-    assert again.json() == {"received": 3, "stored": 1, "duplicates": 2, "late": 0}
+    assert again.json() | {"correlation_id": None} == {
+        "received": 3, "stored": 1, "duplicates": 2, "late": 0, "correlation_id": None,
+    }  # fmt: skip
     counts = await owner.fetchrow(
         """
         SELECT (SELECT count(*) FROM ingest.readings WHERE station_id = $1) AS readings,

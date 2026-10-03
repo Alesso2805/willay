@@ -3,9 +3,11 @@
 import json
 from datetime import datetime, timedelta
 from typing import Any
+from uuid import UUID
 
 import asyncpg
 from sqlalchemy.ext.asyncio import AsyncEngine
+from uuid_utils.compat import uuid7
 
 from tests.integration.factories import Graph
 from willay.alerts.application.planning import AlertPlanner
@@ -45,6 +47,7 @@ class Station:
         self.interval = timedelta(seconds=interval_s)
         self.start = self.clock.now() - timedelta(minutes=30)
         self.sent = 0
+        self.correlation_ids: list[UUID] = []  # one per reading written, as ingestion does
 
     async def send(self, *values: float) -> None:
         for value in values:
@@ -60,6 +63,8 @@ class Station:
         return self.start + self.interval * self.sent
 
     async def _write(self, reading: ClassifiedReading) -> None:
+        correlation_id = uuid7()
+        self.correlation_ids.append(correlation_id)
         async with self.engine.begin() as tx:
             await SqlReadingWriter(tx).store_and_enqueue(
                 self.graph.station_id,
@@ -67,6 +72,7 @@ class Station:
                 [reading],
                 self.clock.now(),
                 reading if reading.quality is Quality.OK else None,
+                correlation_id,
             )
 
 
