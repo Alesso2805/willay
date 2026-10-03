@@ -33,13 +33,20 @@ http://localhost:4200, with the demo users `rimac-admin`, `rimac-operator`, `rim
 - **Mapa en vivo:** zones by their most urgent incident, stations with their last value, whether they report and a badge with their incident's state.
 - **Incidentes:** the inbox, filtered by status and severity in the URL.
 - **Incident detail:** readings chart, alerts by recipient and timeline; acknowledge, resolve and comment according to the role.
-- New incidents are announced on every page, and everything updates live.
+- **Reglas:** the rules by zone, in words; operator and admin create, edit and deactivate them, with a preview of where a draft would have opened incidents over the last 24 h.
+- **Contactos:** contacts and their groups, with the channels each can be reached by; admin manages them and generates Telegram links.
+- **Auditoría** (admin): who changed what and when, each field before and after.
+- New incidents are announced on every page, and so are readings the evaluator could not process (with a link to reprocess them); everything updates live.
 
 ![Live map](docs/images/live-map.png)
 
 ![Incident inbox](docs/images/incident-inbox.png)
 
 ![Incident detail](docs/images/incident-detail.png)
+
+![Rule preview over the last 24 h](docs/images/rule-preview.png)
+
+![Audit log](docs/images/audit-log.png)
 
 ## Development
 
