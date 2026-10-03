@@ -77,7 +77,7 @@ _CLAIM = text(f"""
         RETURNING a.id, a.incident_id, a.contact_id, a.level_order, a.attempts, a.destination
     )
     SELECT a.id AS alert_id, a.incident_id, i.organization_id, a.contact_id, a.attempts,
-           a.destination, {MESSAGE_COLUMNS}
+           a.destination, i.correlation_id, {MESSAGE_COLUMNS}
     FROM claimed a
     {MESSAGE_JOINS}
     ORDER BY a.id
@@ -148,6 +148,7 @@ class SqlDispatchQueue:
                     destination=r.destination,
                     message=message_from_row(r),
                     channel=channel,
+                    correlation_id=r.correlation_id,
                 )
                 for r in rows
             ]

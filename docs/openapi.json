@@ -1587,6 +1587,12 @@
       },
       "ReadingBatchOut": {
         "properties": {
+          "correlation_id": {
+            "description": "Appears in the logs of the evaluation, the incident and its alerts",
+            "format": "uuid",
+            "title": "Correlation Id",
+            "type": "string"
+          },
           "duplicates": {
             "description": "Already stored for (station, measured_at); ignored.",
             "title": "Duplicates",
@@ -1610,7 +1616,8 @@
           "received",
           "stored",
           "duplicates",
-          "late"
+          "late",
+          "correlation_id"
         ],
         "title": "ReadingBatchOut",
         "type": "object"

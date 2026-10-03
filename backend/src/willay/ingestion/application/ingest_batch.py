@@ -6,6 +6,8 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
+from uuid_utils.compat import uuid7
+
 from willay.ingestion.application.authenticate_station import AuthenticatedStation
 from willay.ingestion.domain.readings import (
     ClassifiedReading,
@@ -28,6 +30,8 @@ class StoreCounts:
 class IngestResult:
     received: int
     counts: StoreCounts
+    # Follows these readings to the incident they open and its alerts (VIG-28).
+    correlation_id: UUID
 
     @property
     def duplicates(self) -> int:
@@ -42,9 +46,11 @@ class ReadingWriter(Protocol):
         readings: Sequence[ClassifiedReading],
         received_at: datetime,
         heartbeat: ClassifiedReading | None,
+        correlation_id: UUID,
     ) -> StoreCounts:
-        """In the current transaction: store the readings, enqueue the new `ok` ones,
-        update the heartbeat with `heartbeat` (if any) and notify the evaluator."""
+        """In the current transaction: store the readings, enqueue the new `ok` ones with
+        `correlation_id`, update the heartbeat with `heartbeat` (if any) and notify the
+        evaluator."""
         ...
 
 
@@ -57,11 +63,13 @@ async def ingest_batch(
     received_at = clock.now()
     check_not_in_future(readings, received_at)
     classified = classify(readings, received_at)
+    correlation_id = uuid7()
     counts = await writer.store_and_enqueue(
         station.station_id,
         station.organization_id,
         classified,
         received_at,
         heartbeat_reading(classified),
+        correlation_id,
     )
-    return IngestResult(received=len(readings), counts=counts)
+    return IngestResult(received=len(readings), counts=counts, correlation_id=correlation_id)

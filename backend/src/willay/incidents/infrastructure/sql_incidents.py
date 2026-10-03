@@ -20,11 +20,13 @@ from willay.incidents.domain.incidents import EvidenceReading
 # With INSERT ... SELECT the parameters do not take the column type: hence the CASTs.
 _OPEN = text("""
     INSERT INTO core.incidents (id, organization_id, zone_id, rule_id, station_id, severity,
-                                trigger_value, dedup_key, opened_at, level_started_at)
+                                trigger_value, dedup_key, opened_at, level_started_at,
+                                correlation_id)
     SELECT CAST(:id AS uuid), CAST(:organization_id AS uuid), CAST(:zone_id AS uuid),
            CAST(:rule_id AS uuid), CAST(:station_id AS uuid), CAST(:severity AS text),
            CAST(:trigger_value AS double precision), CAST(:dedup_key AS text),
-           CAST(:now AS timestamptz), CAST(:now AS timestamptz)
+           CAST(:now AS timestamptz), CAST(:now AS timestamptz),
+           CAST(:correlation_id AS uuid)
     WHERE NOT EXISTS (
         SELECT 1 FROM core.incidents
         WHERE dedup_key = CAST(:dedup_key AS text) AND status = 'resolved'
@@ -90,6 +92,7 @@ class SqlIncidentStore:
                 "dedup_key": trigger.dedup_key,
                 "now": now,
                 "cooling_since": now - timedelta(seconds=trigger.cooldown_s),
+                "correlation_id": trigger.correlation_id,
             },
         )
         if not isinstance(incident_id, UUID):

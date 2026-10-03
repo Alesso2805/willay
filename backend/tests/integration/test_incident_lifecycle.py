@@ -4,7 +4,7 @@ import asyncio
 import json
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import asyncpg
 import pytest
@@ -160,6 +160,7 @@ async def test_two_evaluators_racing_on_the_same_cause_open_one_incident(
             ],
             clock.now(),
             None,
+            uuid4(),
         )
 
     barrier = asyncio.Barrier(2)

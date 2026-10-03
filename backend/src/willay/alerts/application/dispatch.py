@@ -43,6 +43,7 @@ class ClaimedAlert:
     destination: str
     message: AlertMessage
     channel: Channel = Channel.EMAIL
+    correlation_id: UUID | None = None  # its incident's (VIG-28)
 
 
 class DeliveryError(Exception):
@@ -162,7 +163,10 @@ class AlertDispatcher:
         if not await self._queue.attach_token(alert, token):
             return None
         bound = log.bind(
-            alert_id=str(alert.alert_id), attempt=alert.attempt, channel=alert.channel.value
+            alert_id=str(alert.alert_id),
+            attempt=alert.attempt,
+            channel=alert.channel.value,
+            correlation_id=str(alert.correlation_id) if alert.correlation_id else None,
         )
         try:
             await self._channel.deliver(alert.destination, alert.message, token.token)

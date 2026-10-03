@@ -332,3 +332,21 @@ async def test_pending_alerts_of_a_handled_incident_are_not_sent(
         incident["id"],
     )
     assert [r["reason"] for r in skipped] == [reason, reason]
+
+
+async def test_the_alert_carries_the_correlation_id_of_the_batch_that_opened_its_incident(
+    engine: AsyncEngine, owner: asyncpg.Connection
+) -> None:
+    station, _ = await _incident_alerting(engine, owner, "Ana")
+    correlation_id = station.correlation_ids[-1]
+    [incident] = await incidents(owner, station.graph)
+    stored = await owner.fetchval(
+        "SELECT correlation_id FROM core.incidents WHERE id = $1", incident["id"]
+    )
+    assert stored == correlation_id  # ingestion → queue → evaluator → incident (VIG-28)
+
+    now = SystemClock().now()
+    [claimed] = await SqlDispatchQueue(engine).claim(
+        Channel.EMAIL, now, now + timedelta(seconds=60), 10
+    )
+    assert claimed.correlation_id == correlation_id  # → the dispatcher's logs

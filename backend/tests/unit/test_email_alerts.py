@@ -1,4 +1,5 @@
 import hashlib
+import json
 import re
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
@@ -16,6 +17,7 @@ from willay.alerts.domain.alerts import Channel
 from willay.alerts.domain.delivery import AckToken, hash_ack_token, new_ack_token, retry_at
 from willay.alerts.domain.email import AlertMessage, EmailContent, compose_email
 from willay.shared.clock import FakeClock
+from willay.shared.logging import configure_logging
 
 T0 = datetime(2026, 11, 20, 14, 0, tzinfo=UTC)  # 09:00 in Lima (UTC-5)
 
@@ -173,3 +175,15 @@ async def test_an_unexpected_error_does_not_stop_the_other_alerts() -> None:
     result = await _dispatcher(queue, sender).dispatch(10)
     # The alert that hit an unexpected error stays claimed and is retried when the claim expires.
     assert result == DispatchResult(2, 1, 0)
+
+
+async def test_the_send_is_logged_with_its_incident_correlation_id(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure_logging()  # JSON lines, as the workers write them
+    correlation_id = uuid4()
+    queue, sender = Queue(replace(_claimed(), correlation_id=correlation_id)), Sender()
+    await _dispatcher(queue, sender).dispatch(10)
+    lines = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line]
+    [sent] = [entry for entry in lines if entry["event"] == "alert_sent"]
+    assert sent["correlation_id"] == str(correlation_id)

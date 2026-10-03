@@ -104,6 +104,11 @@ async def test_the_incident_opens_before_k_times_the_interval_plus_30_s(
         84.2,
     )
 
+    # No reading opened it, so it has a correlation id of its own for its alerts' logs.
+    assert await owner.fetchval(
+        "SELECT correlation_id FROM core.incidents WHERE id = $1", incident["id"]
+    )
+
     payload = await opened_payload(owner, incident["id"])
     assert payload["rule_type"] == "silence"
     assert [r["value"] for r in payload["readings"]] == [84.2]  # the last known reading

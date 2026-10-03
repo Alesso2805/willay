@@ -4,6 +4,7 @@ import asyncio
 from collections.abc import AsyncIterator
 from datetime import datetime, timedelta
 from typing import Any
+from uuid import uuid4
 
 import asyncpg
 import httpx2
@@ -81,7 +82,9 @@ async def test_late_readings_are_stored_but_not_enqueued(
         "/v1/readings", json=_batch(on_time, *late), headers={"X-Api-Key": key}
     )
 
-    assert response.json() == {"received": 3, "stored": 3, "duplicates": 0, "late": 2}
+    assert response.json() | {"correlation_id": None} == {
+        "received": 3, "stored": 3, "duplicates": 0, "late": 2, "correlation_id": None,
+    }  # fmt: skip
     qualities = await owner.fetch(
         "SELECT quality FROM ingest.readings WHERE station_id = $1 ORDER BY measured_at",
         graph.station_id,
@@ -140,6 +143,7 @@ async def test_notification_is_delivered_only_after_commit(
                 [reading := ClassifiedReading(now, 1.0, Quality.OK)],
                 now,
                 reading,
+                uuid4(),
             )
             assert counts.enqueued == 1
             # Rows written and NOTIFY issued, but the transaction is still open, so nobody
@@ -167,6 +171,7 @@ async def test_rolled_back_batch_never_notifies(
                 [reading := ClassifiedReading(now, 1.0, Quality.OK)],
                 now,
                 reading,
+                uuid4(),
             )
             await transaction.rollback()
     finally:
