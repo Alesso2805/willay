@@ -124,6 +124,13 @@ describe('AuditPage', () => {
     await fixture.whenStable();
     expect(fixture.nativeElement.textContent).toContain('No hay registros con estos filtros.');
     expect(fixture.nativeElement.textContent).toContain('Solo el historial de una entidad.');
+    // The selects show the filters too, though the authors' options arrived later.
+    const select = (id: string) =>
+      fixture.nativeElement.querySelector(`#${id}`) as HTMLSelectElement;
+    expect(select('audit-type').selectedOptions[0].textContent?.trim()).toBe('Regla');
+    expect(select('audit-author').selectedOptions[0].textContent?.trim()).toBe(
+      'Óscar Operador Rímac',
+    );
   });
 
   it('changing a filter goes through the URL', async () => {
