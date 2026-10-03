@@ -11,29 +11,28 @@
   >
     <div class="flex flex-col gap-1.5">
       <label for="audit-type" class="text-sm font-medium text-slate-700">Qué</label>
-      <select
-        id="audit-type"
-        class="field"
-        [value]="filters().tipo"
-        (change)="setFilter('tipo', $any($event.target).value)"
-      >
-        <option value="">Todo</option>
+      <!-- [selected] per option, not [value] on the select: the select's value would be set
+           before its options exist, and a filter read from the URL would show "Todo". -->
+      <select id="audit-type" class="field" (change)="setFilter('tipo', $any($event.target).value)">
+        <option value="" [selected]="!filters().tipo">Todo</option>
         @for (type of entityTypes; track type[0]) {
-          <option [value]="type[0]">{{ type[1] }}</option>
+          <option [value]="type[0]" [selected]="type[0] === filters().tipo">{{ type[1] }}</option>
         }
       </select>
     </div>
     <div class="flex flex-col gap-1.5">
       <label for="audit-author" class="text-sm font-medium text-slate-700">Autor</label>
+      <!-- The authors arrive after the filters: each option says whether it is the chosen one. -->
       <select
         id="audit-author"
         class="field"
-        [value]="filters().autor"
         (change)="setFilter('autor', $any($event.target).value)"
       >
-        <option value="">Cualquiera</option>
+        <option value="" [selected]="!filters().autor">Cualquiera</option>
         @for (author of authors(); track author.id) {
-          <option [value]="author.id">{{ author.name }}</option>
+          <option [value]="author.id" [selected]="author.id === filters().autor">
+            {{ author.name }}
+          </option>
         }
       </select>
     </div>
