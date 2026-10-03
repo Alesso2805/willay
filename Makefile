@@ -71,5 +71,6 @@ latency: .env ## p50/p95 of reading received -> first alert sent (ARGS="--minute
 loadtest: .env ## Load test: 50 stations x 1 reading/10 s, checks SPEC (ARGS="--minutes 30")
 	$(COMPOSE) run --rm migrate python -m willay.loadtest $(ARGS)
 
-demo: ## Guided Rímac scenario (VIG-30)
-	@echo "make demo arrives with VIG-30 (Sprint 7)." && exit 1
+# The keys file is mounted read-only: the demo only reads the keys `make seed` saved.
+demo: .env ## Guided Rímac scenario, narrated; PASS when level 2 acknowledges both incidents
+	$(COMPOSE) run --rm --user "$(SEED_USER)" -v "$(CURDIR)/.secrets:/secrets:ro" migrate python -m willay.demo $(ARGS)
