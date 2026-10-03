@@ -40,6 +40,11 @@ All notable changes are documented here. Format: [Keep a Changelog](https://keep
 - Incident detail: timeline with who acted, alerts by recipient (`GET /v1/incidents/{id}/alerts`; the email only for operator and admin) and a readings chart (`GET /v1/incidents/{id}/readings`, with the opening evidence once readings expire) (VIG-26).
 - Acknowledge, resolve and comment from the incident detail; `POST /v1/incidents/{id}/comments` (VIG-35).
 - `make` works from PowerShell and Git Bash on Windows, without WSL.
+- Contacts and groups from the dashboard: admin creates, edits and deletes them, generates or unlinks a contact's Telegram link (shown once) and removes a contact with history from its groups; operator reads them. Deleting a group that a policy notifies returns 409 naming the policy (VIG-36).
+- Failed readings: `GET /v1/failed-readings` and reprocessing for operator and admin, a live notice on every page while there is any, and the runbook moved to the dashboard (VIG-39).
+- Rules from the dashboard: `/v1/rules` with params validated per type, forms per rule type, and `POST /v1/rules/preview` to see where a draft would have opened incidents over the last 24 h. Threshold and rate-of-change rules name their station; only silence rules cover a whole zone (VIG-27).
+- Audit log for admin: `GET /v1/audit`, cursor-paginated, and a page with filters by type, author and dates in the URL that shows each changed field in words (VIG-38).
 
 ### Fixed
 - The evaluator and dispatcher workers listen again after a database restart, instead of waking only by their 5 s polling until restarted.
+- Two escalation workers no longer escalate the same incident twice when one of them escalated it just before the other locked it.
