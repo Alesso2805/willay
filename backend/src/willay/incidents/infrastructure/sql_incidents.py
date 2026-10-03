@@ -21,12 +21,12 @@ from willay.incidents.domain.incidents import EvidenceReading
 _OPEN = text("""
     INSERT INTO core.incidents (id, organization_id, zone_id, rule_id, station_id, severity,
                                 trigger_value, dedup_key, opened_at, level_started_at,
-                                correlation_id)
+                                correlation_id, trigger_received_at)
     SELECT CAST(:id AS uuid), CAST(:organization_id AS uuid), CAST(:zone_id AS uuid),
            CAST(:rule_id AS uuid), CAST(:station_id AS uuid), CAST(:severity AS text),
            CAST(:trigger_value AS double precision), CAST(:dedup_key AS text),
            CAST(:now AS timestamptz), CAST(:now AS timestamptz),
-           CAST(:correlation_id AS uuid)
+           CAST(:correlation_id AS uuid), CAST(:received_at AS timestamptz)
     WHERE NOT EXISTS (
         SELECT 1 FROM core.incidents
         WHERE dedup_key = CAST(:dedup_key AS text) AND status = 'resolved'
@@ -93,6 +93,7 @@ class SqlIncidentStore:
                 "now": now,
                 "cooling_since": now - timedelta(seconds=trigger.cooldown_s),
                 "correlation_id": trigger.correlation_id,
+                "received_at": trigger.received_at,
             },
         )
         if not isinstance(incident_id, UUID):

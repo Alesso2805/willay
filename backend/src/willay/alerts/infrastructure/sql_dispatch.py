@@ -77,7 +77,7 @@ _CLAIM = text(f"""
         RETURNING a.id, a.incident_id, a.contact_id, a.level_order, a.attempts, a.destination
     )
     SELECT a.id AS alert_id, a.incident_id, i.organization_id, a.contact_id, a.attempts,
-           a.destination, i.correlation_id, {MESSAGE_COLUMNS}
+           a.destination, i.correlation_id, i.trigger_received_at, {MESSAGE_COLUMNS}
     FROM claimed a
     {MESSAGE_JOINS}
     ORDER BY a.id
@@ -102,6 +102,12 @@ _SENT = text("""
     SELECT CAST(:incident_id AS uuid), CAST(:organization_id AS uuid),
            CAST(:now AS timestamptz), 'alert_sent', 'system', CAST(:payload AS jsonb)
     FROM done
+    -- Whether no other alert of the incident was sent before: the latency metric's first.
+    RETURNING NOT EXISTS (
+        SELECT 1 FROM core.alerts o
+        WHERE o.incident_id = CAST(:incident_id AS uuid) AND o.id <> CAST(:id AS uuid)
+          AND o.sent_at IS NOT NULL
+    ) AS first
 """)
 
 _FAILED = text("""
@@ -149,6 +155,7 @@ class SqlDispatchQueue:
                     message=message_from_row(r),
                     channel=channel,
                     correlation_id=r.correlation_id,
+                    trigger_received_at=r.trigger_received_at,
                 )
                 for r in rows
             ]
@@ -166,9 +173,10 @@ class SqlDispatchQueue:
             )
         return result.rowcount == 1
 
-    async def sent(self, alert: ClaimedAlert, now: datetime) -> None:
+    async def sent(self, alert: ClaimedAlert, now: datetime) -> bool:
         async with self._engine.begin() as tx:
-            await tx.execute(_SENT, self._params(alert, now, {}))
+            first = await tx.scalar(_SENT, self._params(alert, now, {}))
+        return bool(first)  # None: the claim was no longer ours, nothing was recorded
 
     async def failed(
         self, alert: ClaimedAlert, error: str, retry: datetime | None, now: datetime

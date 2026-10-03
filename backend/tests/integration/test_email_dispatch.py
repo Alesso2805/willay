@@ -34,6 +34,7 @@ from willay.alerts.application.dispatch import DeliveryError, EmailDispatcher
 from willay.alerts.domain.alerts import Channel
 from willay.alerts.domain.email import EmailContent
 from willay.alerts.infrastructure.sql_dispatch import SqlDispatchQueue
+from willay.alerts.infrastructure.sql_latency import received_to_alert_seconds
 from willay.shared.clock import FakeClock, SystemClock
 from willay.shared.config import Settings
 from willay.shared.db import create_engine
@@ -350,3 +351,33 @@ async def test_the_alert_carries_the_correlation_id_of_the_batch_that_opened_its
         Channel.EMAIL, now, now + timedelta(seconds=60), 10
     )
     assert claimed.correlation_id == correlation_id  # → the dispatcher's logs
+
+
+async def test_the_incident_keeps_when_its_reading_arrived_and_the_first_send_is_measured(
+    engine: AsyncEngine, owner: asyncpg.Connection
+) -> None:
+    before = SystemClock().now()
+    station, _ = await _incident_alerting(engine, owner, "Ana", "Caro")
+    [incident] = await incidents(owner, station.graph)
+    received_at = await owner.fetchval(
+        "SELECT trigger_received_at FROM core.incidents WHERE id = $1", incident["id"]
+    )
+    reading_received = await owner.fetchval(
+        "SELECT max(received_at) FROM ingest.readings WHERE station_id = $1",
+        station.graph.station_id,
+    )
+    assert received_at == reading_received  # kept on the incident: the reading may expire
+
+    now = SystemClock().now()
+    queue = SqlDispatchQueue(engine)
+    claimed = await queue.claim(Channel.EMAIL, now, now + timedelta(seconds=60), 10)
+    assert {a.trigger_received_at for a in claimed} == {received_at}
+    firsts = [
+        await queue.sent(alert, now + timedelta(seconds=i)) for i, alert in enumerate(claimed)
+    ]
+    assert firsts == [True, False]  # only the incident's first alert sent is the metric's
+
+    async with engine.connect() as conn:
+        seconds = await received_to_alert_seconds(conn, before, SystemClock().now())
+    expected = (now - received_at).total_seconds()
+    assert seconds == [pytest.approx(expected, abs=0.001)]

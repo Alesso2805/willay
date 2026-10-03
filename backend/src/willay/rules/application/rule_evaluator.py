@@ -170,4 +170,5 @@ def _trigger(
         evidence=evidence,
         worsening=worsening,
         correlation_id=item.correlation_id,
+        received_at=item.received_at,
     )

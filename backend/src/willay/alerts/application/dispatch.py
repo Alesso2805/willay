@@ -44,6 +44,8 @@ class ClaimedAlert:
     message: AlertMessage
     channel: Channel = Channel.EMAIL
     correlation_id: UUID | None = None  # its incident's (VIG-28)
+    # When the reading that opened its incident arrived; None for silence (VIG-28).
+    trigger_received_at: datetime | None = None
 
 
 class DeliveryError(Exception):
@@ -64,7 +66,9 @@ class DispatchQueue(Protocol):
         """Stores the token hash. False if the claim is no longer ours."""
         ...
 
-    async def sent(self, alert: ClaimedAlert, now: datetime) -> None: ...
+    async def sent(self, alert: ClaimedAlert, now: datetime) -> bool:
+        """Records it as sent. True if it is the first alert of its incident to be sent."""
+        ...
 
     async def failed(
         self, alert: ClaimedAlert, error: str, retry: datetime | None, now: datetime
@@ -176,8 +180,14 @@ class AlertDispatcher:
             await self._queue.failed(alert, str(exc), retry, now)
             bound.warning("alert_send_failed", error=str(exc), final=retry is None)
             return False
-        await self._queue.sent(alert, self._clock.now())
-        bound.info("alert_sent", incident_id=str(alert.incident_id))
+        sent_at = self._clock.now()
+        first = await self._queue.sent(alert, sent_at)
+        latency = {}
+        if first and alert.trigger_received_at is not None:
+            # SPEC's latency: reading received → first alert sent (p95 < 30 s).
+            seconds = (sent_at - alert.trigger_received_at).total_seconds()
+            latency = {"received_to_alert_seconds": round(seconds, 3)}
+        bound.info("alert_sent", incident_id=str(alert.incident_id), **latency)
         return True
 
 

@@ -40,6 +40,8 @@ class Trigger:
     worsening: Worsening | None = None
     # The batch that fired it, or one of its own for silence; stays on the incident (VIG-28).
     correlation_id: UUID | None = None
+    # When the reading that fired it arrived, for the latency metric; None for silence.
+    received_at: datetime | None = None
 
     @property
     def trigger_value(self) -> float | None:
