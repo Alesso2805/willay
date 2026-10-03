@@ -214,7 +214,7 @@ def _introduce(args: argparse.Namespace, stations: int, ready: Readiness) -> Non
     )
     if ready.telegram_at_ack_level:
         names = ", ".join(ready.telegram_at_ack_level)
-        _say(f"  Level {ACK_LEVEL} on Telegram: {names}. Press «Confirmar» on each message.")
+        _say(f"  Level {ACK_LEVEL} on Telegram: {names}. Press «Confirmar que lo vi» on each.")
     else:
         _say(
             f"  Nobody at level {ACK_LEVEL} has Telegram linked: acknowledge with the link in"
