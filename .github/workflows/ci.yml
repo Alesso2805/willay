@@ -41,8 +41,15 @@ jobs:
     name: Full stack from an empty database
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: read  # to pull the base images from ghcr.io as an authenticated user
     steps:
       - uses: actions/checkout@v7
+      # Anonymous pulls from the shared runners' IPs get ghcr.io 429s (Too Many Requests),
+      # and compose resolves the backend's base image once per service it builds.
+      - name: Log in to ghcr.io to pull base images
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
       # Third-party action pinned by SHA: a tag can move, a commit cannot.
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
         with:
