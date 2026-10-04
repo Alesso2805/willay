@@ -20,7 +20,9 @@ from tests.integration.factories import (
     create_group,
     create_incident,
 )
+from willay.alerts.domain.delivery import hash_ack_token
 from willay.demo import progress, reset
+from willay.demo.mailbox import Recipient
 from willay.shared.db import create_engine
 
 pytestmark = pytest.mark.integration
@@ -128,12 +130,12 @@ async def test_parking_forgets_the_heartbeats_only(
     assert set(counts.values()) == {1}
 
 
-async def test_readiness_names_who_can_acknowledge_from_telegram_at_level_2(
+async def test_readiness_names_who_can_acknowledge_at_level_2_and_how(
     owner: asyncpg.Connection, app_engine: AsyncEngine
 ) -> None:
     graph = await create_graph(owner)
-    linked = await create_contact(owner, graph, "Rosa", telegram_chat_id=123)
-    unlinked = await create_contact(owner, graph, "Lucho")
+    linked = await create_contact(owner, graph, "Rosa", email="r@b.test", telegram_chat_id=123)
+    unlinked = await create_contact(owner, graph, "Lucho", email="l@b.test")
     first = await create_group(owner, graph, await create_contact(owner, graph, "Óscar"))
     brigade = await create_group(owner, graph, linked, unlinked)
     await add_level(owner, graph, 1, (first, "email"), wait_s=120)
@@ -147,6 +149,29 @@ async def test_readiness_names_who_can_acknowledge_from_telegram_at_level_2(
     ]
     assert ready.levels == [(1, 120), (2, 180)]
     assert ready.telegram_at_ack_level == ["Rosa"]
+    # Oldest contact first: the one the demo acknowledges as when nobody has Telegram.
+    assert ready.email_at_ack_level == [
+        Recipient("Rosa", "r@b.test"),
+        Recipient("Lucho", "l@b.test"),
+    ]
+
+
+async def test_a_token_leads_to_its_alert(
+    owner: asyncpg.Connection, app_engine: AsyncEngine
+) -> None:
+    graph = await create_graph(owner)
+    rosa = await create_contact(owner, graph, "Rosa", email="r@b.test")
+    incident_id = await create_incident(owner, graph)
+    await owner.execute(
+        "INSERT INTO core.alerts (id, incident_id, level_order, contact_id, channel,"
+        " destination, status, ack_token_hash) VALUES ($1, $2, 2, $3, 'email', 'r@b.test',"
+        " 'sent', $4)",
+        uuid7(), incident_id, rosa, hash_ack_token("t" * 43),
+    )  # fmt: skip
+
+    async with app_engine.connect() as conn:
+        assert await progress.alert_of_token(conn, "t" * 43) == (incident_id, 2)
+        assert await progress.alert_of_token(conn, "u" * 43) is None
 
 
 async def test_events_carry_the_names_and_the_channel_an_acknowledgement_used(

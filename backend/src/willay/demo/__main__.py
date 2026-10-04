@@ -24,21 +24,25 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from uuid import UUID
 from zoneinfo import ZoneInfo
 
 import httpx2
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from willay.demo import progress, reset
+from willay.demo.mailbox import EmailAcknowledger, MailpitMailbox
 from willay.demo.progress import Readiness
 from willay.demo.story import (
     ACK_LEVEL,
     CAUSES,
+    AckMode,
     Case,
     Outcome,
     StoryEvent,
     Verdict,
     cause_of,
+    choose_mode,
     clock_text,
     hint,
     judge,
@@ -96,6 +100,15 @@ def _parse(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--api-url", default="http://api:8000", help="where readings are sent")
     parser.add_argument("--dashboard-url", default="http://localhost:4200", help="for links")
     parser.add_argument("--mailpit-url", default="http://localhost:8025", help="for links")
+    parser.add_argument(
+        "--confirm",
+        type=AckMode,
+        choices=list(AckMode),
+        default=AckMode.AUTO,
+        help="how level 2 acknowledges: telegram (you press the button), email (the demo"
+        " presses Confirm in a level-2 contact's email) or auto (telegram if linked)",
+    )
+    parser.add_argument("--mailpit-api", default="http://mailpit:8025", help="to read emails")
     return parser.parse_args(argv)
 
 
@@ -116,30 +129,38 @@ async def _run(args: argparse.Namespace, run: _Run) -> int:
     _stop_on_sigterm()
     app_engine = create_engine(get_settings().database_url)
     owner_engine = create_engine(owner_url)
+    clients = contextlib.AsyncExitStack()
     simulation: asyncio.Task[None] | None = None
     try:
         async with app_engine.connect() as conn:
             ready = await progress.readiness(conn, list(CAUSES), ACK_LEVEL)
         problem = _not_ready(ready)
-        if problem is not None:
-            _say(problem)
+        by_email = [recipient.name for recipient in ready.email_at_ack_level]
+        mode = choose_mode(args.confirm, ready.telegram_at_ack_level, by_email)
+        if problem is not None or isinstance(mode, str):
+            _say(problem or str(mode))
             return 1
+        acknowledger = None
+        if mode is AckMode.EMAIL:
+            acknowledger = await _acknowledger(args, ready, app_engine, clients)
         plans = build_plan(
             Scenario.RIMAC,
             [(code, _VARIABLES.get(code, "discharge")) for code in sorted(keys)],
             event_step=math.ceil(args.event_after / INTERVAL_S),
             interval_s=INTERVAL_S,
         )
-        _introduce(args, len(plans), ready)
+        _introduce(args, len(plans), ready, acknowledger)
         async with owner_engine.begin() as conn:
             cleared = await reset.clear(conn, seed.RIMAC.id)
         _say(
-            f"Cleared the previous runs: {cleared.incidents} incidents, {cleared.readings}"
-            " readings. Reload the dashboard if it was open.\n"
+            f"Cleared the previous runs: {_count(cleared.incidents, 'incident')},"
+            f" {_count(cleared.readings, 'reading')}. Reload the dashboard if it was open.\n"
         )
         since = SystemClock().now()
         simulation = asyncio.create_task(_simulate(args, plans, keys, run))
-        verdict, story = await _watch(app_engine, run, since, args.dashboard_url, simulation)
+        verdict, story = await _watch(
+            app_engine, run, since, args.dashboard_url, simulation, acknowledger
+        )
         if verdict.outcome is Outcome.FAILED:
             _say(f"\nFAIL: {verdict.reason}")
             return 1
@@ -160,6 +181,7 @@ async def _run(args: argparse.Namespace, run: _Run) -> int:
             async with owner_engine.begin() as conn:
                 await reset.park(conn, seed.RIMAC.id)
             _say("Stations parked: no silence incident opens now that they stopped reporting.")
+        await clients.aclose()
         await app_engine.dispose()
         await owner_engine.dispose()
 
@@ -184,6 +206,35 @@ async def _api_answers(api_url: str) -> bool:
     return True
 
 
+async def _acknowledger(
+    args: argparse.Namespace,
+    ready: Readiness,
+    engine: AsyncEngine,
+    clients: contextlib.AsyncExitStack,
+) -> EmailAcknowledger:
+    """Level 2's first contact with email, acknowledging through the confirmation page."""
+    mail = await clients.enter_async_context(
+        httpx2.AsyncClient(base_url=args.mailpit_api, timeout=10)
+    )
+    api = await clients.enter_async_context(httpx2.AsyncClient(base_url=args.api_url, timeout=10))
+
+    async def lookup(token: str) -> tuple[UUID, int] | None:
+        async with engine.connect() as conn:
+            return await progress.alert_of_token(conn, token)
+
+    async def confirm(token: str) -> int:
+        # The link in the email points at the public URL (localhost); inside the compose
+        # network the API is api:8000, so only the token is taken from it.
+        return (await api.post(f"/confirmar/{token}")).status_code
+
+    recipient = ready.email_at_ack_level[0]
+    return EmailAcknowledger(recipient, MailpitMailbox(mail), lookup, confirm, SystemClock())
+
+
+def _count(n: int, noun: str) -> str:
+    return f"{n} {noun}" + ("" if n == 1 else "s")
+
+
 def _not_ready(ready: Readiness) -> str | None:
     if len(ready.rules) != len(CAUSES):
         return "The demo rules are missing: run make seed."
@@ -195,7 +246,12 @@ def _not_ready(ready: Readiness) -> str | None:
     return None
 
 
-def _introduce(args: argparse.Namespace, stations: int, ready: Readiness) -> None:
+def _introduce(
+    args: argparse.Namespace,
+    stations: int,
+    ready: Readiness,
+    acknowledger: EmailAcknowledger | None,
+) -> None:
     first_wait = dict(ready.levels).get(1, 0)
     ack_wait = dict(ready.levels).get(ACK_LEVEL, 0)
     drop = args.event_after
@@ -212,13 +268,14 @@ def _introduce(args: argparse.Namespace, stations: int, ready: Readiness) -> Non
         f"  Level {ACK_LEVEL} acknowledges both, each within {clock_text(ack_wait)} of its"
         " alert: level 3 must not be reached."
     )
-    if ready.telegram_at_ack_level:
+    if acknowledger is None:
         names = ", ".join(ready.telegram_at_ack_level)
         _say(f"  Level {ACK_LEVEL} on Telegram: {names}. Press «Confirmar que lo vi» on each.")
     else:
+        why = "" if ready.telegram_at_ack_level else "Nobody there has Telegram linked: "
         _say(
-            f"  Nobody at level {ACK_LEVEL} has Telegram linked: acknowledge with the link in"
-            f" their email ({args.mailpit_url})."
+            f"  {why}the demo acknowledges as {acknowledger.recipient.name}, pressing Confirm"
+            f" in each level-{ACK_LEVEL} email ({args.mailpit_url})."
         )
     _say(f"Watch it live: {args.dashboard_url}/mapa · email: {args.mailpit_url}")
     # An acknowledgement from the dashboard at level 1 ends the story early: viewers cannot.
@@ -266,6 +323,7 @@ async def _watch(
     since: datetime,
     dashboard_url: str,
     simulation: asyncio.Task[None],
+    acknowledger: EmailAcknowledger | None,
 ) -> tuple[Verdict, list[StoryEvent]]:
     """Narrates new timeline events every couple of seconds until the verdict is in."""
     clock = SystemClock()
@@ -286,6 +344,14 @@ async def _watch(
             if tip is not None:
                 _say(f"{'':21}-> {tip}")
         now = clock.now()
+        if acknowledger is not None:
+            causes = {s.id: CAUSES[s.rule_id] for s in states.values()}
+            try:
+                for incident_id, note in await acknowledger.step(causes.keys()):
+                    _say(_line(now, causes[incident_id], note))
+            except httpx2.HTTPError as exc:
+                reason = f"could not read the emails in Mailpit ({exc!r}): is it running?"
+                return Verdict(Outcome.FAILED, reason), story
         cases = [
             Case(cause, states.get(rule_id), _since(run.happened.get(cause), now))
             for rule_id, cause in CAUSES.items()

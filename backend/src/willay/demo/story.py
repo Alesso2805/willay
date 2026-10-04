@@ -102,6 +102,31 @@ def _problem(case: Case) -> str | None:
     return None
 
 
+class AckMode(StrEnum):
+    AUTO = "auto"  # Telegram if someone at level 2 has it linked, else email
+    TELEGRAM = "telegram"  # a person presses the button in Telegram
+    EMAIL = "email"  # the demo presses Confirm in a level-2 contact's email
+
+
+def choose_mode(requested: AckMode, telegram: Sequence[str], email: Sequence[str]) -> AckMode | str:
+    """How level 2 acknowledges, given who there has Telegram linked and who gets email. A
+    string says why it cannot."""
+    if requested is AckMode.AUTO:
+        if telegram:
+            return AckMode.TELEGRAM
+        if email:
+            return AckMode.EMAIL
+        return f"Nobody at level {ACK_LEVEL} gets Telegram or email: nobody could acknowledge."
+    if requested is AckMode.TELEGRAM and not telegram:
+        return (
+            f"Nobody at level {ACK_LEVEL} has Telegram linked: link one from Contactos"
+            " (Generar enlace de Telegram), or run with --confirm email."
+        )
+    if requested is AckMode.EMAIL and not email:
+        return f"Nobody at level {ACK_LEVEL} gets email: the demo cannot acknowledge for them."
+    return requested
+
+
 @dataclass(frozen=True)
 class StoryEvent:
     """A timeline event with the names the narration needs (joined by the query)."""
