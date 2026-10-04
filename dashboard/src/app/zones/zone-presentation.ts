@@ -1,16 +1,14 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { t } from '../i18n/i18n';
 import { RISK_LEVEL_STATES } from '../ui/visual-states';
 import { Position, RiskLevel } from './zones.api';
 
 export const RISK_LEVELS: readonly RiskLevel[] = ['low', 'medium', 'high', 'critical'];
 
 /** Label and color come from the visual catalog (VIG-33); only the map stroke lives here. */
-export const RISK_LABELS: Record<RiskLevel, string> = {
-  low: RISK_LEVEL_STATES.low.label,
-  medium: RISK_LEVEL_STATES.medium.label,
-  high: RISK_LEVEL_STATES.high.label,
-  critical: RISK_LEVEL_STATES.critical.label,
-};
+export function riskLabel(level: RiskLevel): string {
+  return t(RISK_LEVEL_STATES[level].labelKey);
+}
 
 /**
  * Color reinforces but is never the only signal (WCAG): the level also appears as text in the

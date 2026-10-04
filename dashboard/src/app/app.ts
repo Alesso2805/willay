@@ -1,6 +1,10 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { FailedReadingsNotice } from './failed/failed-readings-notice';
+import { t } from './i18n/i18n';
+import { LanguageService } from './i18n/language';
+import { LanguagePicker } from './i18n/language-picker';
+import { RedrawOn } from './i18n/redraw-on';
 import { NewIncidents } from './incidents/new-incidents';
 import { visibleNavItems } from './navigation';
 import { LiveEvents } from './realtime/live-events';
@@ -20,6 +24,8 @@ import { CONNECTION_STATES } from './ui/visual-states';
     StateBadge,
     NewIncidents,
     FailedReadingsNotice,
+    LanguagePicker,
+    RedrawOn,
   ],
   selector: 'app-root',
   styleUrl: './app.css',
@@ -28,6 +34,8 @@ import { CONNECTION_STATES } from './ui/visual-states';
 export class App {
   protected readonly session = inject(Session);
   protected readonly live = inject(LiveEvents);
+  protected readonly languages = inject(LanguageService);
+  protected readonly t = t;
   protected readonly connection = computed(() => {
     const status = this.live.status();
     return status === 'off' ? null : CONNECTION_STATES[status];
@@ -38,10 +46,6 @@ export class App {
   /** Only matters on narrow screens: from `lg` up the navigation is a fixed sidebar. */
   protected readonly menuOpen = signal(false);
   protected readonly roles = roleLabels;
-  /** SPEC, ethical risk: the product must say this on every screen. */
-  protected readonly disclaimer =
-    'Herramienta de apoyo para detectar, decidir y avisar. No reemplaza a los sistemas ' +
-    'oficiales de alerta (INDECI, COER regionales, SISMATE).';
 
   constructor() {
     this.session.start();

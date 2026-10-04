@@ -45,7 +45,7 @@
           Nivel de riesgo
           <select formControlName="risk_level" class="field">
             @for (level of riskLevels; track level) {
-              <option [value]="level">{{ riskLabels[level] }}</option>
+              <option [value]="level">{{ riskLabel(level) }}</option>
             }
           </select>
         </label>

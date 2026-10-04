@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import * as L from 'leaflet';
 import { createBaseMap } from '../map/base-map';
-import { RISK_LABELS, RISK_STYLES } from './zone-presentation';
+import { RISK_STYLES, riskLabel } from './zone-presentation';
 import { MultiPolygonGeometry, PolygonGeometry, Position, Zone } from './zones.api';
 
 export type MapMode = { kind: 'view' } | { kind: 'draw' } | { kind: 'edit'; zoneId: string };
@@ -86,7 +86,7 @@ export class ZoneMap {
       const layer = L.geoJSON(zone.geometry, { style: { ...style, fillOpacity: 0.15 } })
         .getLayers()[0] as L.Polygon;
       const state = zone.is_active ? '' : ' (desactivada)';
-      layer.bindTooltip(`${zone.name} · riesgo ${RISK_LABELS[zone.risk_level]}${state}`, {
+      layer.bindTooltip(`${zone.name} · riesgo ${riskLabel(zone.risk_level)}${state}`, {
         sticky: true,
       });
       this.zoneLayer.addLayer(layer);

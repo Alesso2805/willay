@@ -196,7 +196,7 @@
         <label for="rule-severity" class="text-sm font-medium text-slate-700">Severidad</label>
         <select id="rule-severity" formControlName="severity" class="field">
           @for (severity of severityOrder; track severity) {
-            <option [value]="severity">{{ severities[severity].label }}</option>
+            <option [value]="severity">{{ t(severities[severity].labelKey) }}</option>
           }
         </select>
       </div>

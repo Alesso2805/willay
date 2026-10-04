@@ -9,7 +9,7 @@ import { LoadState, loadStatus } from '../ui/load-state';
 import { PageHeader } from '../ui/page-header';
 import { StateBadge } from '../ui/state-badge';
 import { INCIDENT_STATES, STATION_STATES, StationState, ZONE_STATES } from '../ui/visual-states';
-import { RISK_LABELS } from '../zones/zone-presentation';
+import { riskLabel } from '../zones/zone-presentation';
 import { Zone } from '../zones/zones.api';
 import { LiveMap } from './live-map';
 import {
@@ -119,7 +119,7 @@ export class LiveMapPage {
   }
 
   protected risk(zone: Zone): string {
-    return RISK_LABELS[zone.risk_level].toLowerCase();
+    return riskLabel(zone.risk_level).toLowerCase();
   }
 
   protected number(value: number): string {

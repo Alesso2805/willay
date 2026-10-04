@@ -1,18 +1,23 @@
 import { causeLabel } from '../incidents/incident-presentation';
 import { VARIABLE_LABELS } from '../stations/station-presentation';
+import { t } from '../i18n/i18n';
 import { localTime } from '../ui/formats';
-import { RISK_LEVEL_STATES, SEVERITIES } from '../ui/visual-states';
+import { RISK_LEVEL_STATES, SEVERITIES, VisualState } from '../ui/visual-states';
 import { AuditEntry, EntityType } from './audit.api';
 
 /** Stored values that are codes, in the words the rest of the dashboard uses for them. */
 const VALUE_LABELS: Readonly<Record<string, (value: string) => string | undefined>> = {
   type: causeLabel,
-  severity: (v) => SEVERITIES[v as keyof typeof SEVERITIES]?.label,
-  risk_level: (v) => RISK_LEVEL_STATES[v as keyof typeof RISK_LEVEL_STATES]?.label,
+  severity: (v) => stateLabel(SEVERITIES[v as keyof typeof SEVERITIES]),
+  risk_level: (v) => stateLabel(RISK_LEVEL_STATES[v as keyof typeof RISK_LEVEL_STATES]),
   variable: (v) => VARIABLE_LABELS[v as keyof typeof VARIABLE_LABELS],
   status: (v) => ({ active: 'Activa', inactive: 'Inactiva' })[v],
   source: (v) => ({ sensor: 'Sensor', simulator: 'Simulador' })[v],
 };
+
+function stateLabel(state: VisualState | undefined): string | undefined {
+  return state ? t(state.labelKey) : undefined;
+}
 
 export const ENTITY_LABELS: Readonly<Record<EntityType, string>> = {
   risk_zone: 'Zona',

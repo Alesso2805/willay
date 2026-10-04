@@ -1,0 +1,100 @@
+{
+  "app": {
+    "tagline": "Alerta temprana para operadores y líderes comunales",
+    "disclaimer": "Herramienta de apoyo para detectar, decidir y avisar. No reemplaza a los sistemas oficiales de alerta (INDECI, COER regionales, SISMATE).",
+    "menu": "Menú",
+    "connection": "Conexión:",
+    "logout": "Cerrar sesión",
+    "reconnecting": "Sin conexión en vivo con Willay. Reintentando… Mientras tanto, los datos se actualizan cada 15 s.",
+    "language": "Idioma"
+  },
+  "login": {
+    "loading": "Cargando sesión…",
+    "title": "Inicia sesión",
+    "hint": "Usa la cuenta de tu organización.",
+    "submit": "Iniciar sesión",
+    "forbiddenTitle": "Acceso no permitido",
+    "forbidden": "Tu usuario debe pertenecer a exactamente una organización registrada en Willay. Contacta a quien administra tu organización.",
+    "offlineTitle": "Sin conexión",
+    "offline": "No se pudo conectar con Willay. Intenta de nuevo en unos minutos."
+  },
+  "nav": {
+    "label": "Principal",
+    "home": "Inicio",
+    "map": "Mapa en vivo",
+    "incidents": "Incidentes",
+    "zones": "Zonas",
+    "stations": "Estaciones",
+    "rules": "Reglas",
+    "contacts": "Contactos",
+    "audit": "Auditoría"
+  },
+  "roles": {
+    "admin": "Administración",
+    "operator": "Operación",
+    "responder": "Respuesta",
+    "viewer": "Lectura",
+    "none": "Sin rol asignado"
+  },
+  "states": {
+    "incident": {
+      "open": "Abierto",
+      "acknowledged": "Confirmado",
+      "resolved": "Resuelto",
+      "exhausted": "Escalamiento agotado"
+    },
+    "severity": {
+      "info": "Informativo",
+      "warning": "Advertencia",
+      "critical": "Crítico"
+    },
+    "risk": {
+      "low": "Bajo",
+      "medium": "Medio",
+      "high": "Alto",
+      "critical": "Crítico"
+    },
+    "station": {
+      "reporting": "Reportando",
+      "silent": "Sin reportar",
+      "unzoned": "Sin zona",
+      "inactive": "Inactiva",
+      "waiting": "Sin lecturas"
+    },
+    "zone": {
+      "calm": "Sin incidentes",
+      "acknowledged": "Incidente confirmado",
+      "open": "Incidente abierto",
+      "exhausted": "Escalamiento agotado"
+    },
+    "alert": {
+      "pending": "Pendiente",
+      "sent": "Enviada",
+      "failed": "Falló",
+      "skipped": "Omitida",
+      "acknowledged": "Confirmó"
+    },
+    "contactChannel": {
+      "email": "Correo",
+      "telegram": "Telegram",
+      "pending": "Enlace de Telegram pendiente",
+      "none": "Sin canal"
+    },
+    "group": {
+      "empty": "Sin miembros",
+      "unused": "Ninguna política lo usa"
+    },
+    "rule": {
+      "inactive": "Desactivada"
+    },
+    "connection": {
+      "connecting": "Conectando…",
+      "live": "En vivo",
+      "reconnecting": "Sin conexión en vivo"
+    }
+  },
+  "ui": {
+    "loading": "Cargando…",
+    "retry": "Reintentar"
+  }
+}

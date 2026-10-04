@@ -1,3 +1,4 @@
+import { TranslationKey } from './i18n/i18n';
 import { IconName } from './ui/icon';
 
 /**
@@ -6,7 +7,7 @@ import { IconName } from './ui/icon';
  */
 export interface NavItem {
   path: string;
-  label: string;
+  label: TranslationKey;
   icon: IconName;
   /** null: anyone signed in. Home explains what to do to users without roles. */
   permission: string | null;
@@ -14,20 +15,20 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: readonly NavItem[] = [
-  { path: '/', label: 'Inicio', icon: 'home', permission: null, exact: true },
-  { path: '/mapa', label: 'Mapa en vivo', icon: 'radar', permission: 'view', exact: false },
-  { path: '/incidentes', label: 'Incidentes', icon: 'bell', permission: 'view', exact: false },
-  { path: '/zonas', label: 'Zonas', icon: 'map', permission: 'view', exact: false },
-  { path: '/estaciones', label: 'Estaciones', icon: 'antenna', permission: 'view', exact: false },
-  { path: '/reglas', label: 'Reglas', icon: 'sliders', permission: 'view', exact: false },
+  { path: '/', label: 'nav.home', icon: 'home', permission: null, exact: true },
+  { path: '/mapa', label: 'nav.map', icon: 'radar', permission: 'view', exact: false },
+  { path: '/incidentes', label: 'nav.incidents', icon: 'bell', permission: 'view', exact: false },
+  { path: '/zonas', label: 'nav.zones', icon: 'map', permission: 'view', exact: false },
+  { path: '/estaciones', label: 'nav.stations', icon: 'antenna', permission: 'view', exact: false },
+  { path: '/reglas', label: 'nav.rules', icon: 'sliders', permission: 'view', exact: false },
   {
     path: '/contactos',
-    label: 'Contactos',
+    label: 'nav.contacts',
     icon: 'users',
     permission: 'contacts:view_details',
     exact: false,
   },
-  { path: '/auditoria', label: 'Auditoría', icon: 'history', permission: 'audit:view', exact: false },
+  { path: '/auditoria', label: 'nav.audit', icon: 'history', permission: 'audit:view', exact: false },
 ];
 
 export function visibleNavItems(permissions: readonly string[]): NavItem[] {

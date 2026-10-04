@@ -1,0 +1,100 @@
+{
+  "app": {
+    "tagline": "Early warning for operators and community leaders",
+    "disclaimer": "A support tool to detect, decide and warn. It does not replace the official warning systems (INDECI, regional COERs, SISMATE).",
+    "menu": "Menu",
+    "connection": "Connection:",
+    "logout": "Sign out",
+    "reconnecting": "No live connection to Willay. Retrying… Meanwhile, the data refreshes every 15 s.",
+    "language": "Language"
+  },
+  "login": {
+    "loading": "Loading your session…",
+    "title": "Sign in",
+    "hint": "Use your organization's account.",
+    "submit": "Sign in",
+    "forbiddenTitle": "Access not allowed",
+    "forbidden": "Your user must belong to exactly one organization registered in Willay. Contact whoever manages your organization.",
+    "offlineTitle": "No connection",
+    "offline": "Willay could not be reached. Try again in a few minutes."
+  },
+  "nav": {
+    "label": "Main",
+    "home": "Home",
+    "map": "Live map",
+    "incidents": "Incidents",
+    "zones": "Zones",
+    "stations": "Stations",
+    "rules": "Rules",
+    "contacts": "Contacts",
+    "audit": "Audit log"
+  },
+  "roles": {
+    "admin": "Administration",
+    "operator": "Operations",
+    "responder": "Response",
+    "viewer": "Read-only",
+    "none": "No role assigned"
+  },
+  "states": {
+    "incident": {
+      "open": "Open",
+      "acknowledged": "Acknowledged",
+      "resolved": "Resolved",
+      "exhausted": "Escalation exhausted"
+    },
+    "severity": {
+      "info": "Info",
+      "warning": "Warning",
+      "critical": "Critical"
+    },
+    "risk": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "station": {
+      "reporting": "Reporting",
+      "silent": "Not reporting",
+      "unzoned": "No zone",
+      "inactive": "Inactive",
+      "waiting": "No readings yet"
+    },
+    "zone": {
+      "calm": "No incidents",
+      "acknowledged": "Incident acknowledged",
+      "open": "Incident open",
+      "exhausted": "Escalation exhausted"
+    },
+    "alert": {
+      "pending": "Pending",
+      "sent": "Sent",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "acknowledged": "Acknowledged"
+    },
+    "contactChannel": {
+      "email": "Email",
+      "telegram": "Telegram",
+      "pending": "Telegram link pending",
+      "none": "No channel"
+    },
+    "group": {
+      "empty": "No members",
+      "unused": "No policy uses it"
+    },
+    "rule": {
+      "inactive": "Deactivated"
+    },
+    "connection": {
+      "connecting": "Connecting…",
+      "live": "Live",
+      "reconnecting": "No live connection"
+    }
+  },
+  "ui": {
+    "loading": "Loading…",
+    "retry": "Retry"
+  }
+}

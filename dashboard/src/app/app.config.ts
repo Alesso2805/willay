@@ -1,8 +1,14 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  ApplicationConfig,
+  inject,
+  provideAppInitializer,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { authInterceptor, provideAuth } from 'angular-auth-oidc-client';
 import { routes } from './app.routes';
+import { LanguageService, acceptLanguageInterceptor } from './i18n/language';
 import { settings } from './settings';
 
 export const appConfig: ApplicationConfig = {
@@ -10,7 +16,9 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     // The interceptor adds "Authorization: Bearer" only to the secureRoutes URLs.
-    provideHttpClient(withInterceptors([authInterceptor()])),
+    provideHttpClient(withInterceptors([authInterceptor(), acceptLanguageInterceptor])),
+    // The first render is already in the right language: no flash of Spanish for an English user.
+    provideAppInitializer(() => inject(LanguageService).start()),
     provideAuth({
       config: {
         authority: settings.oidc.authority,

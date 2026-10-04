@@ -1,137 +1,138 @@
-@if (session.me(); as me) {
-  <div class="min-h-screen lg:flex">
-    <aside class="bg-night-900 text-night-300 lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-      <div class="flex items-center justify-between gap-3 px-4 py-3 lg:px-5 lg:py-6">
-        <a routerLink="/" class="flex min-w-0 items-center gap-3" (click)="menuOpen.set(false)">
-          <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-600 text-white">
-            <app-icon name="eye" [size]="20" />
-          </span>
-          <span class="min-w-0">
-            <span class="block font-semibold tracking-tight text-white">Willay</span>
-            <span class="block truncate text-xs">{{ me.organization_name }}</span>
-          </span>
-        </a>
-        <!-- On narrow screens the navigation folds behind this button; from lg up it is a fixed sidebar. -->
-        <button
-          type="button"
-          class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white ring-1 ring-night-700 hover:bg-night-800 lg:hidden"
-          aria-controls="menu-principal"
-          [attr.aria-expanded]="menuOpen()"
-          (click)="toggleMenu()"
-        >
-          <app-icon [name]="menuOpen() ? 'x' : 'menu'" />
-          Menú
-        </button>
-      </div>
-      @if (connection(); as state) {
-        <!-- Outside the folding menu: whether the data is live must show on every screen width. -->
-        <p class="px-4 pb-3 lg:-mt-2 lg:px-5 lg:pb-5">
-          <span class="sr-only">Conexión:</span>
-          <app-state-badge [state]="state" />
-        </p>
-      }
-
-      <div
-        id="menu-principal"
-        class="flex-1 flex-col px-3 pb-4 lg:flex"
-        [class.hidden]="!menuOpen()"
-        [class.flex]="menuOpen()"
-      >
-        <nav aria-label="Principal" class="flex flex-col gap-1">
-          @for (item of navItems(); track item.path) {
-            <a
-              [routerLink]="item.path"
-              class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-night-800 hover:text-white"
-              routerLinkActive="bg-night-700 text-white"
-              [routerLinkActiveOptions]="{ exact: item.exact }"
-              ariaCurrentWhenActive="page"
-              (click)="menuOpen.set(false)"
-            >
-              <app-icon [name]="item.icon" [size]="18" />
-              {{ item.label }}
-            </a>
-          }
-        </nav>
-
-        <div class="mt-6 border-t border-night-700 pt-4 lg:mt-auto">
-          <p class="truncate px-3 text-sm font-medium text-white">{{ me.full_name }}</p>
-          <p class="truncate px-3 text-xs">{{ roles(me.roles) }}</p>
+<!-- Drawn again from scratch in a new language: every text is translated anew. -->
+<ng-container *appRedrawOn="languages.current()">
+  @if (session.me(); as me) {
+    <div class="min-h-screen lg:flex">
+      <aside class="bg-night-900 text-night-300 lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
+        <div class="flex items-center justify-between gap-3 px-4 py-3 lg:px-5 lg:py-6">
+          <a routerLink="/" class="flex min-w-0 items-center gap-3" (click)="menuOpen.set(false)">
+            <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-600 text-white">
+              <app-icon name="eye" [size]="20" />
+            </span>
+            <span class="min-w-0">
+              <span class="block font-semibold tracking-tight text-white">Willay</span>
+              <span class="block truncate text-xs">{{ me.organization_name }}</span>
+            </span>
+          </a>
+          <!-- On narrow screens the navigation folds behind this button; from lg up it is a fixed sidebar. -->
           <button
             type="button"
-            class="mt-3 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-night-800 hover:text-white"
-            (click)="session.logout()"
+            class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white ring-1 ring-night-700 hover:bg-night-800 lg:hidden"
+            aria-controls="menu-principal"
+            [attr.aria-expanded]="menuOpen()"
+            (click)="toggleMenu()"
           >
-            <app-icon name="logout" [size]="18" />
-            Cerrar sesión
+            <app-icon [name]="menuOpen() ? 'x' : 'menu'" />
+            {{ t('app.menu') }}
           </button>
         </div>
-      </div>
-    </aside>
-
-    <div class="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-64">
-      <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-6 lg:px-8 lg:py-8">
-        @if (live.status() === 'reconnecting') {
-          <app-notice tone="warning" class="mb-6">
-            Sin conexión en vivo con Willay. Reintentando… Mientras tanto, los datos se
-            actualizan cada 15 s.
-          </app-notice>
+        @if (connection(); as state) {
+          <!-- Outside the folding menu: whether the data is live must show on every screen width. -->
+          <p class="px-4 pb-3 lg:-mt-2 lg:px-5 lg:pb-5">
+            <span class="sr-only">{{ t('app.connection') }}</span>
+            <app-state-badge [state]="state" />
+          </p>
         }
-        <app-failed-readings-notice />
-        <app-new-incidents />
-        <!-- Routes only exist with a valid session: no per-page guard is needed. -->
-        <router-outlet />
-      </main>
-      <footer class="mx-auto flex w-full max-w-7xl items-start gap-2 px-4 pb-6 text-xs text-slate-500 lg:px-8">
-        <app-icon name="info" [size]="14" />
-        <p>{{ disclaimer }}</p>
-      </footer>
-    </div>
-  </div>
-} @else {
-  <div class="grid min-h-screen place-items-center bg-night-900 px-4 py-10">
-    <div class="w-full max-w-md">
-      <div class="mb-6 flex items-center gap-3">
-        <span class="grid size-11 place-items-center rounded-xl bg-brand-600 text-white">
-          <app-icon name="eye" [size]="24" />
-        </span>
-        <div>
-          <p class="text-xl font-semibold tracking-tight text-white">Willay</p>
-          <p class="text-sm text-night-300">Alerta temprana para operadores y líderes comunales</p>
+
+        <div
+          id="menu-principal"
+          class="flex-1 flex-col px-3 pb-4 lg:flex"
+          [class.hidden]="!menuOpen()"
+          [class.flex]="menuOpen()"
+        >
+          <nav [attr.aria-label]="t('nav.label')" class="flex flex-col gap-1">
+            @for (item of navItems(); track item.path) {
+              <a
+                [routerLink]="item.path"
+                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-night-800 hover:text-white"
+                routerLinkActive="bg-night-700 text-white"
+                [routerLinkActiveOptions]="{ exact: item.exact }"
+                ariaCurrentWhenActive="page"
+                (click)="menuOpen.set(false)"
+              >
+                <app-icon [name]="item.icon" [size]="18" />
+                {{ t(item.label) }}
+              </a>
+            }
+          </nav>
+
+          <div class="mt-6 border-t border-night-700 pt-4 lg:mt-auto">
+            <p class="truncate px-3 text-sm font-medium text-white">{{ me.full_name }}</p>
+            <p class="truncate px-3 text-xs">{{ roles(me.roles) }}</p>
+            <div class="mt-3 px-3">
+              <app-language-picker [signedIn]="true" />
+            </div>
+            <button
+              type="button"
+              class="mt-3 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-night-800 hover:text-white"
+              (click)="session.logout()"
+            >
+              <app-icon name="logout" [size]="18" />
+              {{ t('app.logout') }}
+            </button>
+          </div>
         </div>
+      </aside>
+
+      <div class="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-64">
+        <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-6 lg:px-8 lg:py-8">
+          @if (live.status() === 'reconnecting') {
+            <app-notice tone="warning" class="mb-6">{{ t('app.reconnecting') }}</app-notice>
+          }
+          <app-failed-readings-notice />
+          <app-new-incidents />
+          <!-- Routes only exist with a valid session: no per-page guard is needed. -->
+          <router-outlet />
+        </main>
+        <footer class="mx-auto flex w-full max-w-7xl items-start gap-2 px-4 pb-6 text-xs text-slate-500 lg:px-8">
+          <app-icon name="info" [size]="14" />
+          <p>{{ t('app.disclaimer') }}</p>
+        </footer>
       </div>
-
-      <main class="rounded-2xl bg-white p-6 shadow-xl">
-        @switch (session.state().status) {
-          @case ('loading') {
-            <p class="text-slate-600" role="status" aria-live="polite">Cargando sesión…</p>
-          }
-          @case ('anonymous') {
-            <h1 class="text-lg font-semibold text-slate-900">Inicia sesión</h1>
-            <p class="mt-1 text-sm text-slate-600">Usa la cuenta de tu organización.</p>
-            <button type="button" class="btn-primary mt-5 w-full" (click)="session.login()">
-              Iniciar sesión
-            </button>
-          }
-          @case ('forbidden') {
-            <h1 class="text-lg font-semibold text-slate-900">Acceso no permitido</h1>
-            <app-notice class="mt-3">
-              Tu usuario debe pertenecer a exactamente una organización registrada en Willay.
-              Contacta a quien administra tu organización.
-            </app-notice>
-            <button type="button" class="btn-secondary mt-4 w-full" (click)="session.logout()">
-              Cerrar sesión
-            </button>
-          }
-          @default {
-            <h1 class="text-lg font-semibold text-slate-900">Sin conexión</h1>
-            <app-notice class="mt-3">
-              No se pudo conectar con Willay. Intenta de nuevo en unos minutos.
-            </app-notice>
-          }
-        }
-      </main>
-
-      <p class="mt-6 text-center text-xs leading-relaxed text-night-300">{{ disclaimer }}</p>
     </div>
-  </div>
-}
+  } @else {
+    <div class="grid min-h-screen place-items-center bg-night-900 px-4 py-10">
+      <div class="w-full max-w-md">
+        <div class="mb-6 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <span class="grid size-11 place-items-center rounded-xl bg-brand-600 text-white">
+              <app-icon name="eye" [size]="24" />
+            </span>
+            <div>
+              <p class="text-xl font-semibold tracking-tight text-white">Willay</p>
+              <p class="text-sm text-night-300">{{ t('app.tagline') }}</p>
+            </div>
+          </div>
+          <app-language-picker />
+        </div>
+
+        <main class="rounded-2xl bg-white p-6 shadow-xl">
+          @switch (session.state().status) {
+            @case ('loading') {
+              <p class="text-slate-600" role="status" aria-live="polite">{{ t('login.loading') }}</p>
+            }
+            @case ('anonymous') {
+              <h1 class="text-lg font-semibold text-slate-900">{{ t('login.title') }}</h1>
+              <p class="mt-1 text-sm text-slate-600">{{ t('login.hint') }}</p>
+              <button type="button" class="btn-primary mt-5 w-full" (click)="session.login()">
+                {{ t('login.submit') }}
+              </button>
+            }
+            @case ('forbidden') {
+              <h1 class="text-lg font-semibold text-slate-900">{{ t('login.forbiddenTitle') }}</h1>
+              <app-notice class="mt-3">{{ t('login.forbidden') }}</app-notice>
+              <button type="button" class="btn-secondary mt-4 w-full" (click)="session.logout()">
+                {{ t('app.logout') }}
+              </button>
+            }
+            @default {
+              <h1 class="text-lg font-semibold text-slate-900">{{ t('login.offlineTitle') }}</h1>
+              <app-notice class="mt-3">{{ t('login.offline') }}</app-notice>
+            }
+          }
+        </main>
+
+        <p class="mt-6 text-center text-xs leading-relaxed text-night-300">{{ t('app.disclaimer') }}</p>
+      </div>
+    </div>
+  }
+</ng-container>

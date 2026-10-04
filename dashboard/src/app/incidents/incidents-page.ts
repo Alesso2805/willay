@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { EMPTY, Subject, catchError, map, merge, switchMap } from 'rxjs';
+import { t } from '../i18n/i18n';
 import { LiveEvents } from '../realtime/live-events';
 import { Session } from '../session';
 import { clock } from '../ui/clock';
@@ -43,6 +44,7 @@ export class IncidentsPage {
   protected readonly severityOptions = SEVERITY_OPTIONS;
   protected readonly incidentStates = INCIDENT_STATES;
   protected readonly severities = SEVERITIES;
+  protected readonly t = t;
   protected readonly exhaustedColor = INCIDENT_STATES.exhausted.background;
   protected readonly cause = causeLabel;
   protected readonly stateOf = incidentState;

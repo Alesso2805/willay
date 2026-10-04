@@ -21,6 +21,7 @@ const ME: Me = {
   organization_timezone: 'America/Lima',
   roles: ['operator'],
   permissions: ['view', 'incidents:acknowledge', 'incidents:resolve', 'territory:manage'],
+  language: null,
 };
 
 function navLabels(root: HTMLElement): string[] {
@@ -185,6 +186,49 @@ describe('App', () => {
     await TestBed.inject(Router).navigateByUrl('/');
     await fixture.whenStable();
     expect(await seriousViolations(fixture.nativeElement)).toEqual([]);
+  });
+
+  it('switches the whole dashboard to English and saves the choice for the user', async () => {
+    const { fixture, http, text } = setup(true);
+    http.expectOne(`${settings.apiUrl}/v1/me`).flush(ME);
+    await TestBed.inject(Router).navigateByUrl('/');
+    await fixture.whenStable();
+
+    const english = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      'button[lang="en"]',
+    );
+    expect(english?.getAttribute('aria-pressed')).toBe('false');
+    english?.click();
+    await vi.waitFor(() => expect(text()).toContain('Sign out'));
+    await fixture.whenStable();
+
+    expect(text()).toContain('Operations');
+    expect(text()).toContain('does not replace the official warning systems');
+    const nav = (fixture.nativeElement as HTMLElement).querySelectorAll('nav[aria-label="Main"] a');
+    expect([...nav].map((a) => a.textContent?.trim())).toEqual(['Home', 'Live map', 'Incidents', 'Zones', 'Stations', 'Rules']);
+    expect(document.documentElement.lang).toBe('en');
+    const saved = http.expectOne(`${settings.apiUrl}/v1/me/language`);
+    expect(saved.request.body).toEqual({ language: 'en' });
+  });
+
+  it('shows the language the user saved as soon as they sign in', async () => {
+    const { http, text } = setup(true);
+    http.expectOne(`${settings.apiUrl}/v1/me`).flush({ ...ME, language: 'en' });
+    await vi.waitFor(() => expect(text()).toContain('Sign out'));
+    expect(text()).not.toContain('Cerrar sesión');
+  });
+
+  it('opens Keycloak in the language on screen', async () => {
+    const { fixture, oidc } = setup(false);
+    await fixture.whenStable();
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button[lang="en"]')?.click();
+    await vi.waitFor(() => expect(fixture.nativeElement.textContent).toContain('Sign in'));
+    await fixture.whenStable();
+    const signIn = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === 'Sign in',
+    );
+    signIn?.click();
+    expect(oidc.authorize).toHaveBeenCalledWith(undefined, { customParams: { ui_locales: 'en' } });
   });
 
   it('explains a 403 from the API (zero or several organizations)', async () => {

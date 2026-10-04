@@ -1,3 +1,4 @@
+import { t } from '../i18n/i18n';
 import { incidentState } from '../incidents/incident-presentation';
 import { Incident } from '../incidents/incidents.api';
 import { stationState } from '../stations/station-presentation';
@@ -70,7 +71,7 @@ export function incidentSummary(incidents: readonly Incident[]): string {
     const count = counts.get(state) ?? 0;
     return count === 0 ? [] : [`${count} ${COUNT_WORDS[state][count === 1 ? 0 : 1]}`];
   });
-  return parts.length > 0 ? parts.join(' · ') : ZONE_STATES.calm.label;
+  return parts.length > 0 ? parts.join(' · ') : t(ZONE_STATES.calm.labelKey);
 }
 
 /**
@@ -119,10 +120,10 @@ export function stationView(
     const value = valueWithUnit(heartbeat.last_value, station.unit);
     parts.push(`${value} ${ageText(heartbeat.last_measured_at, now)}`);
   }
-  parts.push(STATION_STATES[marker].label);
+  parts.push(t(STATION_STATES[marker].labelKey));
   const secondary = marker === 'unzoned' ? reporting : null;
-  if (secondary) parts.push(STATION_STATES[secondary].label);
-  if (incident) parts.push(ZONE_STATES[incident].label);
+  if (secondary) parts.push(t(STATION_STATES[secondary].labelKey));
+  if (incident) parts.push(t(ZONE_STATES[incident].labelKey));
   return { station, marker, secondary, incident, label: parts.join(' · ') };
 }
 
