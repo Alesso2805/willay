@@ -1,4 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
+import { useLanguage } from './i18n/i18n';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -99,6 +100,22 @@ function setup(permissions: string[]) {
 }
 
 describe('HomePage', () => {
+  it('speaks English too', async () => {
+    await useLanguage('en');
+    const { fixture, text, loaded } = setup(['view']);
+    loaded(
+      [incident('open', true), incident('acknowledged'), incident('acknowledged')],
+      [station(5, true), station(600, false)],
+      [zone('critical'), zone('high')],
+    );
+    await fixture.whenStable();
+    expect(text()).toContain('Active incidents');
+    expect(text()).toContain('1 unacknowledged · 2 acknowledged · 1 with escalation exhausted');
+    expect(text()).toContain('1 of 2');
+    expect(text()).toContain('1 not reporting · 1 without a zone');
+    expect(text()).toContain('Your account');
+  });
+
   it('sums up active incidents, reporting stations and zones by risk', async () => {
     const { fixture, text, loaded } = setup(['view']);
     loaded(
@@ -108,7 +125,7 @@ describe('HomePage', () => {
     );
     await fixture.whenStable();
 
-    expect(text()).toContain('1 sin confirmar · 1 confirmados · 1 con escalamiento agotado');
+    expect(text()).toContain('1 sin confirmar · 1 confirmado · 1 con escalamiento agotado');
     expect(text()).toContain('1 de 2'); // the station silent for 10 min does not count
     expect(text()).toContain('1 sin reportar · 1 sin zona');
     expect(text()).toContain('1 de riesgo crítico · 1 alto');

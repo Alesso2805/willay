@@ -1,4 +1,5 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { t } from '../i18n/i18n';
 import { Session } from '../session';
 import { Notice } from '../ui/notice';
 import { MAX_COMMENT_LENGTH, actionProblem } from './incident-presentation';
@@ -15,7 +16,7 @@ import { IncidentsApi } from './incidents.api';
     @if (allowed()) {
       <form class="mb-6" (submit)="$event.preventDefault(); submit()">
         <label for="comment-text" class="text-sm font-medium text-slate-700">
-          Agregar un comentario
+          {{ t('incidents.comment.label') }}
         </label>
         <textarea
           id="comment-text"
@@ -28,10 +29,10 @@ import { IncidentsApi } from './incidents.api';
         ></textarea>
         <div class="mt-2 flex items-center justify-between gap-2">
           <span id="comment-count" class="text-xs text-slate-500">
-            {{ length() }} de {{ max }} caracteres
+            {{ t('incidents.comment.count', { length: length(), max }) }}
           </span>
           <button type="submit" class="btn-primary" [disabled]="length() === 0 || busy()">
-            Comentar
+            {{ t('incidents.comment.submit') }}
           </button>
         </div>
         @if (problem(); as message) {
@@ -51,6 +52,7 @@ export class IncidentComment {
   private readonly session = inject(Session);
 
   protected readonly max = MAX_COMMENT_LENGTH;
+  protected readonly t = t;
   protected readonly allowed = computed(
     () => this.session.me()?.permissions.includes('incidents:acknowledge') ?? false,
   );
@@ -71,7 +73,7 @@ export class IncidentComment {
       next: () => {
         this.busy.set(false);
         this.text.set('');
-        this.done.set('Comentario agregado.');
+        this.done.set(t('incidents.comment.done'));
         this.changed.emit();
       },
       error: (error: unknown) => {

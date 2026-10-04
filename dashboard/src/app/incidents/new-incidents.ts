@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { catchError, filter, map, mergeMap, of } from 'rxjs';
+import { t } from '../i18n/i18n';
 import { LiveEvents } from '../realtime/live-events';
 import { Session } from '../session';
 import { localTime } from '../ui/formats';
@@ -41,9 +42,11 @@ interface Announcement {
             <app-icon class="mt-0.5" name="bell" [size]="18" />
             <span>
               @if (item.incident; as incident) {
-                <strong>Nuevo incidente en {{ incident.zone_name }}:</strong> {{ summary(incident) }}
+                <strong>{{ t('incidents.announce.title', { zone: incident.zone_name }) }}</strong>
+                {{ summary(incident) }}
               } @else {
-                <strong>Se abrió un nuevo incidente.</strong> No se pudieron cargar sus detalles.
+                <strong>{{ t('incidents.announce.unknownTitle') }}</strong>
+                {{ t('incidents.announce.unknownBody') }}
               }
             </span>
           </p>
@@ -51,14 +54,20 @@ interface Announcement {
             @if (item.incident; as incident) {
               <app-state-badge [state]="severities[incident.severity]" />
             }
-            <a [routerLink]="['/incidentes', item.id]" class="font-medium underline">Ver incidente</a>
+            <a [routerLink]="['/incidentes', item.id]" class="font-medium underline">
+              {{ t('incidents.announce.view') }}
+            </a>
             <button
               type="button"
               class="font-medium underline"
-              [attr.aria-label]="'Cerrar aviso del incidente' + (item.incident ? ' en ' + item.incident.zone_name : '')"
+              [attr.aria-label]="
+                item.incident
+                  ? t('incidents.announce.dismissZone', { zone: item.incident.zone_name })
+                  : t('incidents.announce.dismissUnknown')
+              "
               (click)="dismiss(item.id)"
             >
-              Cerrar
+              {{ t('incidents.announce.dismiss') }}
             </button>
           </div>
         </div>
@@ -72,6 +81,7 @@ export class NewIncidents {
 
   protected readonly tone = INCIDENT_STATES.open;
   protected readonly severities = SEVERITIES;
+  protected readonly t = t;
   /** Newest first. */
   protected readonly announcements = signal<Announcement[]>([]);
 

@@ -3,6 +3,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { EMPTY, Subject, catchError, filter, forkJoin, map, merge, switchMap } from 'rxjs';
+import { TranslationKey, t } from '../i18n/i18n';
 import { LiveEvents } from '../realtime/live-events';
 import { Session } from '../session';
 import { localTime } from '../ui/formats';
@@ -23,7 +24,10 @@ type DetailState =
   | { status: 'not-found' }
   | { status: 'error' };
 
-const CHANNELS: Record<IncidentAlert['channel'], string> = { email: 'Correo', telegram: 'Telegram' };
+const CHANNELS: Readonly<Record<IncidentAlert['channel'], TranslationKey>> = {
+  email: 'incidents.channels.email',
+  telegram: 'incidents.channels.telegram',
+};
 
 /**
  * An incident's detail (VIG-26): summary, alerts by recipient and timeline. It reloads when
@@ -41,6 +45,7 @@ export class IncidentDetailPage {
   protected readonly incidentStates = INCIDENT_STATES;
   protected readonly alertStates = ALERT_STATES;
   protected readonly channels = CHANNELS;
+  protected readonly t = t;
   protected readonly severities = SEVERITIES;
   protected readonly stateOf = incidentState;
   protected readonly text = eventText;
@@ -63,9 +68,13 @@ export class IncidentDetailPage {
   protected readonly marks = computed<ChartMark[]>(() => {
     const incident = this.incident();
     if (!incident) return [];
-    const marks = [{ at: incident.opened_at, label: 'Apertura' }];
-    if (incident.acknowledged_at) marks.push({ at: incident.acknowledged_at, label: 'Confirmación' });
-    if (incident.resolved_at) marks.push({ at: incident.resolved_at, label: 'Resolución' });
+    const marks = [{ at: incident.opened_at, label: t('incidents.detail.markOpened') }];
+    if (incident.acknowledged_at) {
+      marks.push({ at: incident.acknowledged_at, label: t('incidents.detail.markAcknowledged') });
+    }
+    if (incident.resolved_at) {
+      marks.push({ at: incident.resolved_at, label: t('incidents.detail.markResolved') });
+    }
     return marks;
   });
   /** Alerts grouped by escalation level, in order (the cards on narrow screens). */
@@ -81,7 +90,7 @@ export class IncidentDetailPage {
   /** "Estación sin reportar · RIM-SEU-01". */
   protected readonly title = computed(() => {
     const incident = this.incident();
-    if (!incident) return 'Incidente';
+    if (!incident) return t('incidents.detail.fallbackTitle');
     const cause = causeLabel(incident.rule_type);
     return incident.station_code ? `${cause} · ${incident.station_code}` : cause;
   });
@@ -128,8 +137,10 @@ export class IncidentDetailPage {
 
   /** "Confirmó el 02/10/2026 00:30" or "Enviada el …"; null if it never went out. */
   protected when(alert: IncidentAlert): string | null {
-    if (alert.acknowledged_at) return `Confirmó el ${this.time(alert.acknowledged_at)}`;
-    if (alert.sent_at) return `Enviada el ${this.time(alert.sent_at)}`;
+    if (alert.acknowledged_at) {
+      return t('incidents.detail.alertAcknowledged', { time: this.time(alert.acknowledged_at) });
+    }
+    if (alert.sent_at) return t('incidents.detail.alertSent', { time: this.time(alert.sent_at) });
     return null;
   }
 

@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/i18n';
 import { IncidentEvent } from './incidents.api';
 import { eventText } from './timeline-presentation';
 
@@ -21,6 +22,28 @@ const text = (e: IncidentEvent) => {
 };
 
 describe('timeline presentation', () => {
+  it('tells the timeline in English too', async () => {
+    await useLanguage('en');
+    expect(
+      text(
+        event('opened', {
+          rule_type: 'threshold',
+          rule_params: { operator: 'gt', value: 3.5, consecutive: 2 },
+          trigger_value: 4.6,
+        }),
+      ),
+    ).toBe('The incident opened | Rule: more than 3.5 in 2 readings in a row · value 4.6');
+    expect(
+      text(event('opened', { rule_type: 'silence', rule_params: {}, trigger_value: 85.2 })),
+    ).toBe('The incident opened | Rule: the station stopped reporting · last value 85.2');
+    expect(
+      text(event('alert_sent', { channel: 'email', level_order: 2 }, { contact_name: 'Rosa' })),
+    ).toBe('Alert sent to Rosa by email | level 2');
+    expect(text(event('acknowledged', {}, { actor_type: 'contact', actor_name: 'Rosa' }))).toBe(
+      'Acknowledged by Rosa | From their alert',
+    );
+  });
+
   it('says how the incident opened, with its rule and value', () => {
     expect(
       text(

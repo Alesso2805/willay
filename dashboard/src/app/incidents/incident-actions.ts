@@ -11,6 +11,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { t } from '../i18n/i18n';
 import { Session } from '../session';
 import { Notice } from '../ui/notice';
 import { actionProblem } from './incident-presentation';
@@ -29,20 +30,20 @@ type Resolution = 'resolved' | 'false_alarm';
   imports: [Notice],
   template: `
     @if (!mayAct()) {
-      <p class="text-sm text-slate-600">Tu rol solo permite ver este incidente.</p>
+      <p class="text-sm text-slate-600">{{ t('incidents.actions.viewOnly') }}</p>
     } @else if (!canAcknowledge() && !canResolve()) {
       <p class="text-sm text-slate-600">
         @if (incident().status === 'resolved') {
-          Este incidente está resuelto: ya no admite cambios de estado.
+          {{ t('incidents.actions.resolvedFinal') }}
         } @else {
-          Ya está confirmado. Resolverlo le corresponde a operación.
+          {{ t('incidents.actions.operatorResolves') }}
         }
       </p>
     } @else {
       <div class="flex flex-wrap gap-2">
         @if (canAcknowledge()) {
           <button type="button" class="btn-primary" [disabled]="busy()" (click)="acknowledge()">
-            Confirmar
+            {{ t('incidents.actions.acknowledge') }}
           </button>
         }
         @if (canResolve() && !resolving()) {
@@ -54,7 +55,7 @@ type Resolution = 'resolved' | 'false_alarm';
             [attr.aria-expanded]="resolving()"
             (click)="openResolve()"
           >
-            Resolver…
+            {{ t('incidents.actions.resolve') }}
           </button>
         }
       </div>
@@ -66,7 +67,7 @@ type Resolution = 'resolved' | 'false_alarm';
           (submit)="$event.preventDefault(); resolve()"
         >
           <fieldset>
-            <legend class="text-sm font-medium text-slate-900">¿Cómo terminó?</legend>
+            <legend class="text-sm font-medium text-slate-900">{{ t('incidents.actions.howEnded') }}</legend>
             <label class="mt-3 flex items-start gap-2 text-sm">
               <input
                 #firstOption
@@ -77,8 +78,8 @@ type Resolution = 'resolved' | 'false_alarm';
                 (change)="resolution.set('resolved')"
               />
               <span>
-                <span class="font-medium text-slate-900">Resuelto</span>
-                <span class="block text-slate-600">Hubo un evento real y ya se atendió.</span>
+                <span class="font-medium text-slate-900">{{ t('incidents.actions.resolved') }}</span>
+                <span class="block text-slate-600">{{ t('incidents.actions.resolvedHint') }}</span>
               </span>
             </label>
             <label class="mt-2 flex items-start gap-2 text-sm">
@@ -90,19 +91,19 @@ type Resolution = 'resolved' | 'false_alarm';
                 (change)="resolution.set('false_alarm')"
               />
               <span>
-                <span class="font-medium text-slate-900">Falsa alarma</span>
-                <span class="block text-slate-600">No hubo un evento real; por ejemplo, falló un sensor.</span>
+                <span class="font-medium text-slate-900">{{ t('incidents.actions.falseAlarm') }}</span>
+                <span class="block text-slate-600">{{ t('incidents.actions.falseAlarmHint') }}</span>
               </span>
             </label>
           </fieldset>
-          <p class="mt-3 text-sm text-slate-700">
-            Resolver es definitivo: el incidente no se podrá confirmar ni reabrir.
-          </p>
+          <p class="mt-3 text-sm text-slate-700">{{ t('incidents.actions.finalWarning') }}</p>
           <div class="mt-3 flex flex-wrap gap-2">
             <button type="submit" class="btn-primary" [disabled]="!resolution() || busy()">
-              Resolver definitivamente
+              {{ t('incidents.actions.resolveFinal') }}
             </button>
-            <button type="button" class="btn-secondary" (click)="cancelResolve()">Cancelar</button>
+            <button type="button" class="btn-secondary" (click)="cancelResolve()">
+              {{ t('incidents.actions.cancel') }}
+            </button>
           </div>
         </form>
       }
@@ -121,6 +122,7 @@ export class IncidentActions {
 
   private readonly api = inject(IncidentsApi);
   private readonly session = inject(Session);
+  protected readonly t = t;
   private readonly injector = inject(Injector);
   private readonly firstOption = viewChild<ElementRef<HTMLInputElement>>('firstOption');
 
@@ -147,7 +149,7 @@ export class IncidentActions {
   protected acknowledge(): void {
     this.start();
     this.api.acknowledge(this.incident().id).subscribe({
-      next: () => this.finish('Incidente confirmado.'),
+      next: () => this.finish(t('incidents.actions.doneAcknowledged')),
       error: (error: unknown) => this.failed(error),
     });
   }
@@ -172,7 +174,11 @@ export class IncidentActions {
       next: () => {
         this.resolving.set(false);
         this.finish(
-          resolution === 'false_alarm' ? 'Incidente marcado como falsa alarma.' : 'Incidente resuelto.',
+          t(
+            resolution === 'false_alarm'
+              ? 'incidents.actions.doneFalseAlarm'
+              : 'incidents.actions.doneResolved',
+          ),
         );
       },
       error: (error: unknown) => this.failed(error),

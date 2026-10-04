@@ -1,22 +1,19 @@
 <a routerLink="/incidentes" class="link-action mb-4 inline-flex items-center gap-1 text-sm">
-  ← Incidentes
+  {{ t('incidents.detail.back') }}
 </a>
 
 @switch (state().status) {
   @case ('loading') {
-    <p role="status" class="text-sm text-slate-600">Cargando incidente…</p>
+    <p role="status" class="text-sm text-slate-600">{{ t('incidents.detail.loading') }}</p>
   }
   @case ('not-found') {
-    <app-page-header title="Incidente" />
-    <app-notice tone="info">
-      No encontramos ese incidente: puede que el enlace esté incompleto o que no sea de tu
-      organización.
-    </app-notice>
+    <app-page-header [title]="t('incidents.detail.fallbackTitle')" />
+    <app-notice tone="info">{{ t('incidents.detail.notFound') }}</app-notice>
   }
   @case ('error') {
     <app-notice>
-      No se pudo cargar el incidente.
-      <button type="button" class="ml-1 underline" (click)="retry()">Reintentar</button>
+      {{ t('incidents.detail.loadFailed') }}
+      <button type="button" class="ml-1 underline" (click)="retry()">{{ t('ui.retry') }}</button>
     </app-notice>
   }
 }
@@ -25,7 +22,7 @@
   @let state = stateOf(incident);
   <app-page-header
     [title]="title()"
-    [subtitle]="incident.zone_name + ' · abierto el ' + time(incident.opened_at)"
+    [subtitle]="t('incidents.detail.subtitle', { zone: incident.zone_name, time: time(incident.opened_at) })"
   />
   <p class="-mt-3 mb-6 flex flex-wrap items-center gap-2">
     <app-state-badge [state]="incidentStates[state]" />
@@ -33,39 +30,36 @@
   </p>
 
   <section class="card mb-6 p-5" aria-labelledby="actions-title">
-    <h2 id="actions-title" class="font-semibold text-slate-900">Acciones</h2>
+    <h2 id="actions-title" class="font-semibold text-slate-900">{{ t('incidents.detail.actions') }}</h2>
     <app-incident-actions class="mt-3 block" [incident]="incident" (changed)="retry()" />
   </section>
 
   @if (readings(); as chart) {
     <section class="card mb-6 p-5" aria-labelledby="chart-title">
-      <h2 id="chart-title" class="font-semibold text-slate-900">Lecturas</h2>
+      <h2 id="chart-title" class="font-semibold text-slate-900">{{ t('incidents.detail.readings') }}</h2>
       @if (chart.source === 'evidence') {
-        <app-notice tone="info" class="mt-3">
-          Las lecturas de este periodo ya expiraron: se muestran las que dispararon la regla,
-          copiadas al abrirse el incidente.
-        </app-notice>
+        <app-notice tone="info" class="mt-3">{{ t('incidents.detail.expired') }}</app-notice>
       }
       <app-readings-chart class="mt-4 block" [data]="chart" [marks]="marks()" [timezone]="timezone()" />
     </section>
   }
 
   <section class="card mb-6 p-5" aria-labelledby="alerts-title">
-    <h2 id="alerts-title" class="font-semibold text-slate-900">Alertas</h2>
+    <h2 id="alerts-title" class="font-semibold text-slate-900">{{ t('incidents.detail.alerts') }}</h2>
     @if (alerts().length === 0) {
-      <p class="mt-3 text-sm text-slate-600">Este incidente no generó alertas.</p>
+      <p class="mt-3 text-sm text-slate-600">{{ t('incidents.detail.noAlerts') }}</p>
     } @else {
       <!-- From md up a real table; narrower, the same alerts as cards. Only one is ever
            displayed, so screen readers do not hear them twice. -->
       <table class="mt-4 hidden w-full text-left text-sm md:table">
         <thead class="border-b border-slate-200 text-xs text-slate-500">
           <tr>
-            <th scope="col" class="py-2 pr-4 font-medium">Nivel</th>
-            <th scope="col" class="py-2 pr-4 font-medium">Destinatario</th>
-            <th scope="col" class="py-2 pr-4 font-medium">Canal</th>
-            <th scope="col" class="py-2 pr-4 font-medium">Estado</th>
-            <th scope="col" class="py-2 pr-4 font-medium">Cuándo</th>
-            <th scope="col" class="py-2 font-medium">Motivo</th>
+            <th scope="col" class="py-2 pr-4 font-medium">{{ t('incidents.detail.level') }}</th>
+            <th scope="col" class="py-2 pr-4 font-medium">{{ t('incidents.detail.recipient') }}</th>
+            <th scope="col" class="py-2 pr-4 font-medium">{{ t('incidents.detail.channel') }}</th>
+            <th scope="col" class="py-2 pr-4 font-medium">{{ t('incidents.detail.status') }}</th>
+            <th scope="col" class="py-2 pr-4 font-medium">{{ t('incidents.detail.when') }}</th>
+            <th scope="col" class="py-2 font-medium">{{ t('incidents.detail.reason') }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
@@ -78,7 +72,7 @@
                   <p class="text-xs break-all text-slate-600">{{ alert.email }}</p>
                 }
               </td>
-              <td class="py-2 pr-4 text-slate-700">{{ channels[alert.channel] }}</td>
+              <td class="py-2 pr-4 text-slate-700">{{ t(channels[alert.channel]) }}</td>
               <td class="py-2 pr-4"><app-state-badge [state]="alertStates[alert.status]" /></td>
               <td class="py-2 pr-4 text-xs whitespace-nowrap text-slate-600">{{ when(alert) ?? '—' }}</td>
               <td class="py-2 text-xs text-slate-600">{{ alert.skipped_reason ?? '—' }}</td>
@@ -90,7 +84,7 @@
       <div class="md:hidden">
         @for (group of alertLevels(); track group.level) {
           <h3 class="mt-4 text-xs font-semibold tracking-wide text-slate-500 uppercase">
-            Nivel {{ group.level }}
+            {{ t('incidents.detail.levelHeading', { level: group.level }) }}
           </h3>
           <ul class="mt-2 flex flex-col divide-y divide-slate-100">
             @for (alert of group.alerts; track alert.id) {
@@ -98,7 +92,7 @@
                 <div class="flex flex-wrap items-center justify-between gap-2">
                   <p class="font-medium text-slate-900">
                     {{ alert.contact_name }}
-                    <span class="font-normal text-slate-500">· {{ channels[alert.channel] }}</span>
+                    <span class="font-normal text-slate-500">· {{ t(channels[alert.channel]) }}</span>
                   </p>
                   <app-state-badge [state]="alertStates[alert.status]" />
                 </div>
@@ -121,50 +115,52 @@
 
   <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:items-start">
     <section class="card p-5" aria-labelledby="summary-title">
-      <h2 id="summary-title" class="font-semibold text-slate-900">Resumen</h2>
+      <h2 id="summary-title" class="font-semibold text-slate-900">{{ t('incidents.detail.summary') }}</h2>
       <dl class="mt-4 grid gap-y-3 text-sm">
         <div>
-          <dt class="text-slate-500">Zona</dt>
+          <dt class="text-slate-500">{{ t('incidents.detail.zone') }}</dt>
           <dd class="font-medium text-slate-900">{{ incident.zone_name }}</dd>
         </div>
         @if (incident.station_code) {
           <div>
-            <dt class="text-slate-500">Estación</dt>
+            <dt class="text-slate-500">{{ t('incidents.detail.station') }}</dt>
             <dd class="font-mono font-medium text-slate-900">{{ incident.station_code }}</dd>
           </div>
         }
         <div>
-          <dt class="text-slate-500">Abierto</dt>
+          <dt class="text-slate-500">{{ t('incidents.detail.opened') }}</dt>
           <dd class="font-medium text-slate-900">
             <time [attr.datetime]="incident.opened_at">{{ time(incident.opened_at) }}</time>
           </dd>
         </div>
         <div>
-          <dt class="text-slate-500">Nivel de escalamiento</dt>
+          <dt class="text-slate-500">{{ t('incidents.detail.escalationLevel') }}</dt>
           <dd class="font-medium text-slate-900">
             {{ incident.current_level }}
             @if (incident.escalation_exhausted_at) {
-              · agotado
+              · {{ t('incidents.detail.exhausted') }}
             }
           </dd>
         </div>
         <div>
-          <dt class="text-slate-500">Confirmado</dt>
+          <dt class="text-slate-500">{{ t('incidents.detail.acknowledged') }}</dt>
           <dd class="font-medium text-slate-900">
             @if (incident.acknowledged_at) {
               {{ time(incident.acknowledged_at) }}
               @if (acknowledgedBy(); as name) {
-                por {{ name }}
+                {{ t('incidents.detail.acknowledgedBy', { name }) }}
               }
             } @else {
-              No
+              {{ t('incidents.detail.no') }}
             }
           </dd>
         </div>
         @if (incident.resolved_at) {
           <div>
             <dt class="text-slate-500">
-              {{ incident.resolution === 'false_alarm' ? 'Falsa alarma' : 'Resuelto' }}
+              {{
+                t(incident.resolution === 'false_alarm' ? 'incidents.detail.falseAlarm' : 'incidents.detail.resolved')
+              }}
             </dt>
             <dd class="font-medium text-slate-900">
               <time [attr.datetime]="incident.resolved_at">{{ time(incident.resolved_at) }}</time>
@@ -176,7 +172,7 @@
 
 
     <section class="card p-5" aria-labelledby="timeline-title">
-      <h2 id="timeline-title" class="font-semibold text-slate-900">Línea de tiempo</h2>
+      <h2 id="timeline-title" class="font-semibold text-slate-900">{{ t('incidents.detail.timeline') }}</h2>
       <app-incident-comment class="mt-4 block" [incidentId]="incident.id" (changed)="retry()" />
       <ol class="mt-4 flex flex-col gap-4 border-l-2 border-slate-200 pl-4">
         @for (event of incident.timeline; track event.id) {

@@ -65,16 +65,16 @@ export class IncidentsPage {
   protected readonly summary = computed(() => {
     const incidents = this.incidents();
     if (!incidents) return '';
-    const parts = [`${incidents.length} ${incidents.length === 1 ? 'incidente' : 'incidentes'}`];
+    const parts = [t('incidents.count', { count: incidents.length })];
     const exhausted = incidents.filter((incident) => incidentState(incident) === 'exhausted');
-    if (exhausted.length > 0) parts.push(`${exhausted.length} con escalamiento agotado`);
+    if (exhausted.length > 0) parts.push(t('incidents.exhausted', { count: exhausted.length }));
     return parts.join(' · ');
   });
 
   protected readonly announcement = computed(() => {
     const incidents = this.incidents();
     if (!incidents) return '';
-    return incidents.length > 0 ? this.summary() : 'No hay incidentes con estos filtros.';
+    return incidents.length > 0 ? this.summary() : t('incidents.empty');
   });
 
   constructor() {

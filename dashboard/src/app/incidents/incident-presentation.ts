@@ -1,16 +1,17 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { TranslationKey, t } from '../i18n/i18n';
 import { IncidentState } from '../ui/visual-states';
 import { Incident } from './incidents.api';
 
 /** The same wording as the alert emails and Telegram messages (alerts/domain/email.py). */
-const CAUSES: Record<string, string> = {
-  threshold: 'Valor fuera de límite',
-  rate_of_change: 'Cambio brusco',
-  silence: 'Estación sin reportar',
+const CAUSES: Readonly<Record<string, TranslationKey>> = {
+  threshold: 'causes.threshold',
+  rate_of_change: 'causes.rate_of_change',
+  silence: 'causes.silence',
 };
 
 export function causeLabel(ruleType: string): string {
-  return CAUSES[ruleType] ?? ruleType;
+  return CAUSES[ruleType] ? t(CAUSES[ruleType]) : ruleType;
 }
 
 /**
@@ -28,17 +29,15 @@ export const MAX_COMMENT_LENGTH = 2000;
 
 /**
  * Why an action on an incident failed, for the operator. A 409 means someone changed it first
- * (for example, a contact acknowledged from Telegram): the API explains it in Spanish.
+ * (for example, a contact acknowledged from Telegram): the API explains it.
  */
 export function actionProblem(error: unknown): string {
-  if (!(error instanceof HttpErrorResponse)) return 'No se pudo completar. Intenta de nuevo.';
+  if (!(error instanceof HttpErrorResponse)) return t('incidents.problems.generic');
   if (error.status === 409 && typeof error.error?.detail === 'string') {
-    return `${error.error.detail} Se actualizó el incidente.`;
+    return t('incidents.problems.conflict', { detail: error.error.detail });
   }
-  if (error.status === 403) return 'Tu rol no permite hacer esto.';
-  if (error.status === 404) return 'El incidente ya no existe o no es de tu organización.';
-  if (error.status === 422) {
-    return `El comentario debe tener entre 1 y ${MAX_COMMENT_LENGTH} caracteres.`;
-  }
-  return 'No se pudo completar. Intenta de nuevo.';
+  if (error.status === 403) return t('incidents.problems.forbidden');
+  if (error.status === 404) return t('incidents.problems.notFound');
+  if (error.status === 422) return t('incidents.problems.commentLength', { max: MAX_COMMENT_LENGTH });
+  return t('incidents.problems.generic');
 }

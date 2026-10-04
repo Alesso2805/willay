@@ -8,9 +8,11 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { currentLocale, t } from '../i18n/i18n';
 import { localTime, measurement } from '../ui/formats';
 import { ChartPoint, linePath, niceTicks, scale, splitAtGaps, timeTicks } from './chart-scale';
 import { IncidentReadings } from './incidents.api';
+import { operatorText } from './timeline-presentation';
 
 /** A moment to mark on the chart, such as the opening or the acknowledgement. */
 export interface ChartMark {
@@ -23,7 +25,6 @@ const DEFAULT_WIDTH = 640;
 const MIN_WIDTH = 280;
 const H = 240;
 const M = { top: 34, right: 16, bottom: 26, left: 52 };
-const OPERATORS: Record<string, string> = { gt: 'más de', ge: 'desde', lt: 'menos de', le: 'hasta' };
 /** Few points (such as the evidence copy) are drawn as dots too, or a short line is easy to miss. */
 const MAX_DOTS = 60;
 /** The time axis spans at least two minutes, so it always shows an HH:MM label. */
@@ -129,13 +130,22 @@ export class ReadingsChart {
       threshold: data.threshold
         ? {
             y: y(data.threshold.value),
-            label: `Umbral: ${OPERATORS[data.threshold.operator] ?? data.threshold.operator} ${measurement(data.threshold.value)} ${unit}`.trim(),
+            label: `${t('chart.threshold', {
+              operator: operatorText(data.threshold.operator),
+              value: measurement(data.threshold.value),
+            })} ${unit}`.trim(),
           }
         : null,
       marks,
       summary: this.summary(points, windowStart, windowEnd, unit),
     };
   });
+
+  protected readonly t = t;
+
+  protected station(): string {
+    return this.data().station_code ?? t('chart.theStation');
+  }
 
   protected toggleTable(): void {
     this.showTable.update((shown) => !shown);
@@ -151,7 +161,7 @@ export class ReadingsChart {
 
   /** "HH:MM" in the organization's time zone, for the time axis. */
   private clock(t: number): string {
-    return new Intl.DateTimeFormat('es-PE', {
+    return new Intl.DateTimeFormat(currentLocale(), {
       timeZone: this.timezone(),
       hour: '2-digit',
       minute: '2-digit',
@@ -161,22 +171,33 @@ export class ReadingsChart {
 
   /** What the chart shows, in words: the accessible description of the image. */
   private summary(points: ChartPoint[], windowStart: number, windowEnd: number, unit: string): string {
-    const station = this.data().station_code ?? 'la estación';
+    const station = this.station();
     if (points.length === 0) {
-      return `Sin lecturas de ${station} entre ${this.clock(windowStart)} y ${this.clock(windowEnd)}.`;
+      return t('chart.empty', {
+        station,
+        from: this.clock(windowStart),
+        to: this.clock(windowEnd),
+      });
     }
     const values = points.map((p) => p.value);
     const from = this.clock(points[0].t);
     const to = this.clock(points[points.length - 1].t);
-    const when = from === to ? `a las ${from}` : `entre ${from} y ${to}`;
-    const range = `mínimo ${measurement(Math.min(...values))} y máximo ${measurement(Math.max(...values))} ${unit}`.trim();
+    const when = from === to ? t('chart.at', { time: from }) : t('chart.between', { from, to });
+    const range = t('chart.range', {
+      min: measurement(Math.min(...values)),
+      max: measurement(Math.max(...values)),
+    });
     const parts = [
-      `${values.length} ${values.length === 1 ? 'lectura' : 'lecturas'} de ${station} ${when}`,
-      range,
+      t('chart.readings', { count: values.length, station, when }),
+      `${range} ${unit}`.trim(),
     ];
     const threshold = this.data().threshold;
     if (threshold) {
-      parts.push(`umbral ${OPERATORS[threshold.operator] ?? threshold.operator} ${measurement(threshold.value)} ${unit}`.trim());
+      const limit = t('chart.thresholdShort', {
+        operator: operatorText(threshold.operator),
+        value: measurement(threshold.value),
+      });
+      parts.push(`${limit} ${unit}`.trim());
     }
     return `${parts.join('; ')}.`;
   }
