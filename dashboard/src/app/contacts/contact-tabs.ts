@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { t } from '../i18n/i18n';
 
 /** Contacts and their groups are one section with two tabs, so the menu stays short. */
 @Component({
@@ -8,7 +9,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   imports: [RouterLink, RouterLinkActive],
   host: { class: 'mb-6 block' },
   template: `
-    <nav aria-label="Contactos y grupos" class="flex gap-1 border-b border-slate-200">
+    <nav [attr.aria-label]="t('contacts.tabsLabel')" class="flex gap-1 border-b border-slate-200">
       @for (tab of tabs; track tab.path) {
         <a
           [routerLink]="tab.path"
@@ -16,15 +17,16 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
           routerLinkActive="border-brand-700! text-brand-800!"
           [routerLinkActiveOptions]="{ exact: true }"
           ariaCurrentWhenActive="page"
-          >{{ tab.label }}</a
+          >{{ t(tab.label) }}</a
         >
       }
     </nav>
   `,
 })
 export class ContactTabs {
+  protected readonly t = t;
   protected readonly tabs = [
-    { path: '/contactos', label: 'Contactos' },
-    { path: '/contactos/grupos', label: 'Grupos' },
-  ];
+    { path: '/contactos', label: 'contacts.tabContacts' },
+    { path: '/contactos/grupos', label: 'contacts.tabGroups' },
+  ] as const;
 }

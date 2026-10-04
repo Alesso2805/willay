@@ -1,15 +1,17 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
+import { t } from '../i18n/i18n';
 import { Session } from '../session';
 import { localTime } from '../ui/formats';
 import { LoadState, loadStatus } from '../ui/load-state';
 import { Notice } from '../ui/notice';
 import { PageHeader } from '../ui/page-header';
 import {
-  ENTITY_LABELS,
+  ENTITY_TYPES,
   actionText,
   actorLabel,
+  entityLabel,
   dayStart,
   fieldChanges,
   nextDay,
@@ -43,7 +45,8 @@ export class AuditPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
-  protected readonly entityTypes = Object.entries(ENTITY_LABELS) as [EntityType, string][];
+  protected readonly t = t;
+  protected readonly entityTypes = ENTITY_TYPES.map((type) => [type, entityLabel(type)] as const);
   protected readonly entries = signal<AuditEntry[]>([]);
   protected readonly authors = signal<Author[]>([]);
   protected readonly cursor = signal<string | null>(null);
@@ -64,7 +67,7 @@ export class AuditPage {
   protected readonly dateProblem = computed(() => {
     const { desde, hasta } = this.filters();
     // Both are YYYY-MM-DD, so comparing the text compares the days.
-    return desde && hasta && hasta < desde ? '«Hasta» no puede ser anterior a «Desde».' : null;
+    return desde && hasta && hasta < desde ? t('audit.dateOrder') : null;
   });
   protected readonly actor = actorLabel;
   protected readonly action = actionText;

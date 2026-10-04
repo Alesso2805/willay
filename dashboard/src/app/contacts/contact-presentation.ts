@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { t } from '../i18n/i18n';
 import { ContactChannelState } from '../ui/visual-states';
 import { Contact } from './contacts.api';
 
@@ -13,15 +14,16 @@ export function channelStates(contact: Contact): ContactChannelState[] {
 }
 
 /** Why an action on a contact or group failed, for the admin. The API explains a 409 and a 503. */
-export function contactProblem(error: unknown, what: 'contacto' | 'grupo' = 'contacto'): string {
-  if (!(error instanceof HttpErrorResponse)) return 'No se pudo completar. Intenta de nuevo.';
+export function contactProblem(error: unknown, what: 'contact' | 'group' = 'contact'): string {
+  if (!(error instanceof HttpErrorResponse)) return t('ui.genericProblem');
   const detail = error.error?.detail;
   if ((error.status === 409 || error.status === 503) && typeof detail === 'string') return detail;
-  if (error.status === 403) return 'Tu rol no permite gestionar contactos.';
-  if (error.status === 404) return `El ${what} ya no existe.`;
+  if (error.status === 403) return t('contacts.forbidden');
+  if (error.status === 404) return t(what === 'group' ? 'contacts.groupGone' : 'contacts.contactGone');
   if (error.status === 422) {
     const first = Array.isArray(detail) ? detail[0] : null;
-    return typeof first?.msg === 'string' ? first.msg : `Revisa los datos del ${what}.`;
+    if (typeof first?.msg === 'string') return first.msg;
+    return t(what === 'group' ? 'contacts.checkGroup' : 'contacts.checkContact');
   }
-  return 'No se pudo completar. Intenta de nuevo.';
+  return t('ui.genericProblem');
 }

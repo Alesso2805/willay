@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/i18n';
 import { actionText, actorLabel, dayStart, fieldChanges, nextDay } from './audit-presentation';
 import { AuditEntry } from './audit.api';
 
@@ -28,6 +29,25 @@ const ENTRY: AuditEntry = {
 };
 
 describe('actionText', () => {
+  it('builds whole sentences in English, whose word order differs', async () => {
+    await useLanguage('en');
+    expect(actionText(ENTRY)).toBe('Edited the rule Chosica · RIM-CHO-02');
+    const removed: AuditEntry = {
+      ...ENTRY,
+      entity_type: 'contact',
+      action: 'removed_from_groups',
+      before: { full_name: 'Rosa Brigada' },
+      after: { full_name: 'Rosa Brigada' },
+    };
+    expect(actionText(removed)).toBe('Removed the contact Rosa Brigada from their groups');
+    expect(actorLabel({ ...removed, actor: null })).toBe('The contact themselves');
+    expect(fieldChanges(ENTRY)).toContainEqual({
+      field: 'Active',
+      before: 'Yes',
+      after: 'No',
+    });
+  });
+
   it('says what was done to what, with the name it had then', () => {
     expect(actionText(ENTRY)).toBe('Editó la regla Chosica · RIM-CHO-02');
     expect(
