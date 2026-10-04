@@ -7,7 +7,7 @@
     role="img"
     [attr.aria-labelledby]="id + '-title ' + id + '-desc'"
   >
-    <title [id]="id + '-title'">Lecturas de {{ data().station_code ?? 'la estación' }}</title>
+    <title [id]="id + '-title'">{{ t('chart.title', { station: station() }) }}</title>
     <desc [id]="id + '-desc'">{{ chart.summary }}</desc>
 
     @for (tick of chart.yTicks; track tick.label) {
@@ -44,9 +44,9 @@
     }
   </svg>
   <figcaption class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-    <span>Valores en {{ data().unit ?? 'la unidad de la estación' }}; horas de {{ timezone() }}.</span>
+    <span>{{ t('chart.legend', { unit: data().unit ?? t('chart.theUnit'), timezone: timezone() }) }}</span>
     <button type="button" class="link-action text-xs" [attr.aria-expanded]="showTable()" [attr.aria-controls]="id + '-table'" (click)="toggleTable()">
-      {{ showTable() ? 'Ocultar tabla' : 'Ver como tabla' }}
+      {{ t(showTable() ? 'chart.hideTable' : 'chart.showTable') }}
     </button>
   </figcaption>
 </figure>
@@ -57,8 +57,10 @@
       <caption class="sr-only">{{ chart.summary }}</caption>
       <thead class="sticky top-0 bg-slate-50 text-xs text-slate-600">
         <tr>
-          <th scope="col" class="px-3 py-2 font-medium">Hora</th>
-          <th scope="col" class="px-3 py-2 text-right font-medium">Valor ({{ data().unit ?? '' }})</th>
+          <th scope="col" class="px-3 py-2 font-medium">{{ t('chart.time') }}</th>
+          <th scope="col" class="px-3 py-2 text-right font-medium">
+            {{ t('chart.value', { unit: data().unit ?? '' }) }}
+          </th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100">

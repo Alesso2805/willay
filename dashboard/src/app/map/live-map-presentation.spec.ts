@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/i18n';
 import { causeLabel, incidentState } from '../incidents/incident-presentation';
 import { Incident } from '../incidents/incidents.api';
 import { Station } from '../stations/stations.api';
@@ -134,6 +135,15 @@ describe('live map presentation', () => {
     ).toBe('1 con escalamiento agotado · 2 confirmados');
     expect(incidentSummary([incident('z', 'open')])).toBe('1 abierto');
     expect(incidentSummary([])).toBe('Sin incidentes');
+  });
+
+  it('counts them in English too', async () => {
+    await useLanguage('en');
+    expect(
+      incidentSummary([incident('z', 'open', true), incident('z', 'open'), incident('z', 'open')]),
+    ).toBe('1 with escalation exhausted · 2 open');
+    expect(incidentSummary([])).toBe('No incidents');
+    expect(causeLabel('silence')).toBe('Station not reporting');
   });
 
   it('the tooltip also says the station\'s incident', () => {

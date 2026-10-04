@@ -1,5 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { t } from '../i18n/i18n';
 import { causeLabel, incidentState } from '../incidents/incident-presentation';
 import { Incident } from '../incidents/incidents.api';
 import { liveSnapshot } from '../realtime/live-snapshot';
@@ -108,11 +109,13 @@ export class LiveMapPage {
       (view) => view.marker === 'reporting' || view.secondary === 'reporting',
     ).length;
     return [
-      `${zones.length} ${zones.length === 1 ? 'zona' : 'zonas'}`,
-      `${troubled} con incidentes activos`,
-      `${reporting} de ${stations.length} estaciones reportando`,
+      t('map.zones', { count: zones.length }),
+      t('map.troubled', { count: troubled }),
+      t('map.reporting', { reporting, total: stations.length }),
     ].join(' · ');
   });
+
+  protected readonly t = t;
 
   protected load(): void {
     this.snapshot.load();

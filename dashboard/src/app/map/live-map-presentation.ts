@@ -1,4 +1,4 @@
-import { t } from '../i18n/i18n';
+import { TranslationKey, t } from '../i18n/i18n';
 import { incidentState } from '../incidents/incident-presentation';
 import { Incident } from '../incidents/incidents.api';
 import { stationState } from '../stations/station-presentation';
@@ -54,10 +54,10 @@ export function stationIncidentStates(
   return mostUrgent(incidents, (incident) => incident.station_id);
 }
 
-const COUNT_WORDS: Readonly<Record<ActiveIncidentState, readonly [string, string]>> = {
-  exhausted: ['con escalamiento agotado', 'con escalamiento agotado'],
-  open: ['abierto', 'abiertos'],
-  acknowledged: ['confirmado', 'confirmados'],
+const COUNT_KEYS: Readonly<Record<ActiveIncidentState, TranslationKey>> = {
+  exhausted: 'map.count.exhausted',
+  open: 'map.count.open',
+  acknowledged: 'map.count.acknowledged',
 };
 
 /** A zone's active incidents counted by state, most urgent first, or "Sin incidentes". */
@@ -69,7 +69,7 @@ export function incidentSummary(incidents: readonly Incident[]): string {
   }
   const parts = (['exhausted', 'open', 'acknowledged'] as const).flatMap((state) => {
     const count = counts.get(state) ?? 0;
-    return count === 0 ? [] : [`${count} ${COUNT_WORDS[state][count === 1 ? 0 : 1]}`];
+    return count === 0 ? [] : [t(COUNT_KEYS[state], { count })];
   });
   return parts.length > 0 ? parts.join(' · ') : t(ZONE_STATES.calm.labelKey);
 }

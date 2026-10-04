@@ -11,6 +11,7 @@ import {
 import * as L from 'leaflet';
 import { ZONE_STATES } from '../ui/visual-states';
 import { riskLabel } from '../zones/zone-presentation';
+import { t } from '../i18n/i18n';
 import { createBaseMap, plainText } from './base-map';
 import { StationView, ZONE_STYLES, ZoneView, markerHtml } from './live-map-presentation';
 
@@ -25,13 +26,14 @@ import { StationView, ZONE_STYLES, ZoneView, markerHtml } from './live-map-prese
     #container
     class="h-[24rem] w-full lg:h-[calc(100vh-14rem)] lg:min-h-[28rem]"
     role="region"
-    aria-label="Mapa en vivo de zonas y estaciones. Las listas junto al mapa muestran la misma información."
+    [attr.aria-label]="t('map.ariaLabel')"
   ></div>`,
 })
 export class LiveMap {
   readonly zones = input<ZoneView[]>([]);
   readonly stations = input<StationView[]>([]);
 
+  protected readonly t = t;
   private readonly container = viewChild.required<ElementRef<HTMLDivElement>>('container');
   private map?: L.Map;
   private readonly zoneLayer = L.featureGroup();
@@ -71,7 +73,9 @@ export class LiveMap {
     for (const { zone, state, summary } of views) {
       const risk = riskLabel(zone.risk_level).toLowerCase();
       L.geoJSON(zone.geometry, { style: { color: ZONE_STATES[state].map, ...ZONE_STYLES[state] } })
-        .bindTooltip(plainText(`${zone.name} · ${summary} · riesgo ${risk}`), { sticky: true })
+        .bindTooltip(plainText(t('map.zoneTooltip', { zone: zone.name, summary, risk })), {
+          sticky: true,
+        })
         .addTo(this.zoneLayer);
     }
   }
