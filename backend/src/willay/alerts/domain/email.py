@@ -3,24 +3,20 @@
 Plain text so it reads in any client, even a basic phone, without images or styles that
 may be blocked. Times use the organization's timezone (the database stores UTC). The
 footer states Willay does not replace official warnings (SPEC: Explicit ethical risk).
+Written in the contact's language (VIG-40); the texts live in the backend's catalogs.
 """
 
 from dataclasses import dataclass
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-SEVERITY_LABEL = {"info": "INFORMATIVO", "warning": "ADVERTENCIA", "critical": "CRÍTICO"}
-# Spanish grammar differs per severity ("un incidente ADVERTENCIA" is not idiomatic).
-SEVERITY_PHRASE = {
-    "info": "un incidente INFORMATIVO",
-    "warning": "un incidente de ADVERTENCIA",
-    "critical": "un incidente CRÍTICO",
-}
-RULE_LABEL = {
-    "threshold": "Valor fuera de límite",
-    "rate_of_change": "Cambio brusco",
-    "silence": "Estación sin reportar",
-}
+from willay.shared.errors import Term
+from willay.shared.i18n import translate
+from willay.shared.languages import Language
+
+# English month names are spelled out here rather than taken from strftime("%b"), which
+# depends on the process locale.
+_MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
 
 @dataclass(frozen=True)
@@ -39,6 +35,7 @@ class AlertMessage:
     trigger_value: float | None
     opened_at: datetime
     level_order: int
+    language: Language  # the contact's, or else the organization's
 
 
 @dataclass(frozen=True)
@@ -47,65 +44,90 @@ class EmailContent:
     body: str
 
 
-def summary(message: AlertMessage) -> list[tuple[str, str]]:
-    """Incident data as (label, value) pairs, shared by the email and the confirmation page
-    so both show the same thing."""
+def _fields(message: AlertMessage) -> list[tuple[str, str]]:
+    """Incident data as (field, value) pairs: what the email, the Telegram message and the
+    confirmation page all show."""
+    language = message.language
     fields = [
-        ("Severidad", SEVERITY_LABEL.get(message.severity, message.severity.upper())),
-        ("Causa", RULE_LABEL.get(message.rule_type, message.rule_type)),
-        ("Zona", message.zone_name),
+        ("severity", translate(f"alerts.severity.{message.severity}", language)),
+        ("cause", translate(f"alerts.cause.{message.rule_type}", language)),
+        ("zone", message.zone_name),
     ]
     if message.station_code:
         station = message.station_code + (
             f" · {message.station_name}" if message.station_name else ""
         )
-        fields.append(("Estación", station))
+        fields.append(("station", station))
     # For silence the value is the last known reading, not one that triggered the rule.
-    fields.append(("Último" if message.rule_type == "silence" else "Valor", _value(message)))
-    fields.append(("Abierto", local_time(message.opened_at, message.timezone)))
+    fields.append(("last_value" if message.rule_type == "silence" else "value", _value(message)))
+    fields.append(("opened", local_time(message.opened_at, message.timezone, language)))
     return fields
 
 
-def local_time(instant: datetime, timezone: str) -> str:
-    return f"{instant.astimezone(ZoneInfo(timezone)):%d/%m/%Y %H:%M} ({timezone})"
+def summary(message: AlertMessage) -> list[tuple[str, str]]:
+    """Incident data as (label, value) pairs, shared by the email and the confirmation page
+    so both show the same thing."""
+    return [
+        (translate(f"alerts.field.{field}", message.language), value)
+        for field, value in _fields(message)
+    ]
+
+
+def local_time(instant: datetime, timezone: str, language: Language) -> str:
+    """Spanish writes "20/11/2026 09:00 (America/Lima)"; English "Nov 20, 2026, 09:00
+    (America/Lima)", whose month name avoids reading 04/10 as April 10. As the dashboard."""
+    local = instant.astimezone(ZoneInfo(timezone))
+    if language is Language.EN:
+        text = f"{_MONTHS[local.month - 1]} {local.day}, {local.year}, {local:%H:%M}"
+    else:
+        text = f"{local:%d/%m/%Y %H:%M}"
+    return f"{text} ({timezone})"
 
 
 def compose_email(message: AlertMessage, confirm_url: str) -> EmailContent:
-    severity = SEVERITY_LABEL.get(message.severity, message.severity.upper())
-    cause = RULE_LABEL.get(message.rule_type, message.rule_type)
+    language = message.language
+    fields = dict(_fields(message))
     where = message.zone_name + (f" ({message.station_code})" if message.station_code else "")
     # Severity and zone are already in the opening sentence; the rest go in aligned columns.
     details = [
-        f"  {label + ':':<11}{value}"
-        for label, value in summary(message)
-        if label not in ("Severidad", "Zona")
+        (translate(f"alerts.field.{field}", language) + ":", value)
+        for field, value in _fields(message)
+        if field not in ("severity", "zone")
     ]
+    width = max(len(label) for label, _ in details) + 2
     lines = [
-        f"Hola {message.contact_name}:",
+        translate("alerts.email.greeting", language, name=message.contact_name),
         "",
-        f"Willay abrió {_phrase(message.severity)} en la zona {message.zone_name}.",
+        translate(
+            "alerts.email.opened",
+            language,
+            incident=Term(f"alerts.incident_of_severity.{message.severity}"),
+            zone=message.zone_name,
+        ),
         "",
-        *details,
+        *(f"  {label:<{width}}{value}" for label, value in details),
         "",
-        "Confirma que lo viste en este enlace (vale 24 horas):",
+        translate("alerts.email.confirm", language),
         confirm_url,
         "",
-        "Si nadie lo confirma, Willay avisará al siguiente nivel.",
+        translate("alerts.if_nobody_acknowledges", language),
         "",
         "--",
         f"Willay · {message.organization_name}",
-        "Herramienta de apoyo para operadores: no reemplaza los avisos oficiales",
-        "(INDECI, COER, SISMATE).",
+        translate("alerts.email.disclaimer", language),
     ]
-    return EmailContent(subject=f"[Willay] {severity} · {cause} en {where}", body="\n".join(lines))
-
-
-def _phrase(severity: str) -> str:
-    return SEVERITY_PHRASE.get(severity, f"un incidente {severity.upper()}")
+    subject = translate(
+        "alerts.email.subject",
+        language,
+        severity=fields["severity"],
+        cause=fields["cause"],
+        place=where,
+    )
+    return EmailContent(subject=subject, body="\n".join(lines))
 
 
 def _value(message: AlertMessage) -> str:
     if message.trigger_value is None:
-        return "sin dato"
+        return translate("alerts.no_value", message.language)
     unit = f" {message.unit}" if message.unit else ""
     return f"{message.trigger_value:g}{unit}"

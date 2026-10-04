@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 
 from willay.alerts.domain.confirmation import ConfirmOutcome
 from willay.alerts.domain.email import AlertMessage, local_time, summary
+from willay.shared.languages import Language
 
 LINK_TTL = timedelta(days=7)
 MAX_START_PARAMETER = 64
@@ -100,7 +101,11 @@ def closing_note(
     if outcome is ConfirmOutcome.EXPIRED:
         return "El botón venció (vale 24 horas)."
     who = acknowledged_by or "otra persona"
-    when = f" el {local_time(acknowledged_at, timezone)}" if acknowledged_at is not None else ""
+    when = (
+        f" el {local_time(acknowledged_at, timezone, Language.ES)}"
+        if acknowledged_at is not None
+        else ""
+    )
     return f"Confirmado por {who}{when}."
 
 

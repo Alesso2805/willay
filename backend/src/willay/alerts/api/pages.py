@@ -2,7 +2,8 @@
 
 Opened from email, sometimes on a modest phone: a light page that works without scripts
 and is accessible (state is stated in text, never by color alone). All variable data is
-escaped.
+escaped. Written in the contact's language (VIG-40); a link that matches no alert has no
+contact, so it follows the browser's.
 """
 
 from html import escape
@@ -11,6 +12,8 @@ from willay.alerts.application.confirmation import AlertToConfirm, ConfirmationV
 from willay.alerts.domain.confirmation import ConfirmOutcome
 from willay.alerts.domain.email import local_time, summary
 from willay.incidents.domain.lifecycle import IncidentStatus
+from willay.shared.i18n import negotiate, translate
+from willay.shared.languages import Language
 
 # Inline styles: these pages' CSP allows no external resources.
 _STYLE = """
@@ -28,83 +31,63 @@ footer { margin-top: 2rem; font-size: .85rem; color: #4a4a4a; }
 """
 
 
-def render_preview(view: ConfirmationView) -> tuple[int, str]:
+def page_language(view: ConfirmationView, accept_language: str | None) -> Language:
+    """The contact's language, or the browser's when the link matches no alert."""
+    return view.alert.message.language if view.alert is not None else negotiate(accept_language)
+
+
+def render_preview(view: ConfirmationView, language: Language) -> tuple[int, str]:
     """The page the link opens (GET). Only the button confirms."""
     alert = view.alert
     if view.outcome is not None or alert is None:
-        return _problem(view)
-    message = alert.message
+        return _problem(view, language)
     body = [
-        f"<p>Hola {escape(message.contact_name)}:</p>",
-        "<p>Willay te avisó de este incidente. Confírmalo para que no se siga avisando al "
-        "siguiente nivel.</p>",
+        f"<p>{_text('greeting', language, name=alert.message.contact_name)}</p>",
+        f"<p>{_text('intro', language)}</p>",
         _summary(alert),
     ]
-    button = "Confirmar que lo vi"
+    button = _text("confirm", language)
     if alert.incident_status is IncidentStatus.ACKNOWLEDGED:
-        body.append(f'<p class="note">{_already_acknowledged(alert)}</p>')
-        button = "Registrar que lo vi"
+        body.append(f'<p class="note">{_already_acknowledged(alert, language)}</p>')
+        button = _text("record_seen", language)
     body.append(f'<form method="post"><button type="submit">{button}</button></form>')
-    return 200, _page("Confirma la alerta", body)
+    return 200, _page(_text("title", language), body, language)
 
 
-def render_result(view: ConfirmationView) -> tuple[int, str]:
+def render_result(view: ConfirmationView, language: Language) -> tuple[int, str]:
     """The page after pressing the button (POST)."""
     alert = view.alert
     if view.outcome is ConfirmOutcome.CONFIRMED and alert is not None:
-        return 200, _page(
-            "¡Gracias! Confirmaste la alerta",
-            [
-                "<p>Quedó registrado que la viste. Willay no avisará al siguiente nivel.</p>",
-                _summary(alert),
-            ],
-        )
+        body = [f"<p>{_text('confirmed', language)}</p>", _summary(alert)]
+        return 200, _page(_text("confirmed_title", language), body, language)
     if view.outcome is ConfirmOutcome.ALREADY_ACKNOWLEDGED and alert is not None:
-        return 200, _page(
-            "Gracias: quedó registrado que la viste",
-            [f'<p class="note">{_already_acknowledged(alert)}</p>', _summary(alert)],
-        )
-    return _problem(view)
+        body = [f'<p class="note">{_already_acknowledged(alert, language)}</p>', _summary(alert)]
+        return 200, _page(_text("seen_title", language), body, language)
+    return _problem(view, language)
 
 
-def _problem(view: ConfirmationView) -> tuple[int, str]:
-    alert = view.alert
-    summary_html = [_summary(alert)] if alert is not None else []
+def _problem(view: ConfirmationView, language: Language) -> tuple[int, str]:
+    summary_html = [_summary(view.alert)] if view.alert is not None else []
     match view.outcome:
         case ConfirmOutcome.ALREADY_RESOLVED:
-            return 200, _page(
-                "Este incidente ya fue resuelto",
-                ["<p>No hace falta confirmarlo.</p>", *summary_html],
-            )
+            status, name = 200, "resolved"
         case ConfirmOutcome.USED:
-            return 410, _page(
-                "Este enlace ya se usó",
-                ["<p>La alerta ya fue confirmada con este enlace.</p>", *summary_html],
-            )
+            status, name = 410, "used"
         case ConfirmOutcome.EXPIRED:
-            return 410, _page(
-                "Este enlace venció",
-                [
-                    "<p>Los enlaces de confirmación valen 24 horas. Si el incidente sigue "
-                    "abierto, comunícate con el equipo de operaciones.</p>",
-                    *summary_html,
-                ],
-            )
+            status, name = 410, "expired"
         case _:
-            return 404, _page(
-                "Enlace no válido",
-                ["<p>Revisa que copiaste el enlace completo desde el mensaje.</p>"],
-            )
+            # Nothing about the incident: the link is not valid.
+            status, name, summary_html = 404, "invalid", []
+    body = [f"<p>{_text(name, language)}</p>", *summary_html]
+    return status, _page(_text(f"{name}_title", language), body, language)
 
 
-def _already_acknowledged(alert: AlertToConfirm) -> str:
-    who = escape(alert.acknowledged_by) if alert.acknowledged_by else "Otra persona"
-    when = (
-        f" el {escape(local_time(alert.incident_acknowledged_at, alert.message.timezone))}"
-        if alert.incident_acknowledged_at is not None
-        else ""
-    )
-    return f"{who} ya lo había confirmado{when}."
+def _already_acknowledged(alert: AlertToConfirm, language: Language) -> str:
+    who = alert.acknowledged_by or translate("alerts.page.someone_else", language)
+    if alert.incident_acknowledged_at is None:
+        return _text("already_acknowledged", language, who=who)
+    time = local_time(alert.incident_acknowledged_at, alert.message.timezone, language)
+    return _text("already_acknowledged_at", language, who=who, time=time)
 
 
 def _summary(alert: AlertToConfirm) -> str:
@@ -115,13 +98,19 @@ def _summary(alert: AlertToConfirm) -> str:
     return f"<dl>{rows}</dl>"
 
 
-def _page(title: str, body: list[str]) -> str:
+def _text(key: str, language: Language, **params: str) -> str:
+    """A page text as HTML: the parameters (names, times) are escaped, and so is the text,
+    so a translation can never inject markup either."""
+    return escape(translate(f"alerts.page.{key}", language, **params))
+
+
+def _page(title: str, body: list[str], language: Language) -> str:
+    # `title` is already escaped by _text.
     return (
-        '<!doctype html><html lang="es"><head><meta charset="utf-8">'
+        f'<!doctype html><html lang="{language}"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         '<meta name="robots" content="noindex">'
-        f"<title>{escape(title)} · Willay</title><style>{_STYLE}</style></head>"
-        f"<body><main><h1>{escape(title)}</h1>{''.join(body)}</main>"
-        "<footer>Willay es una herramienta de apoyo para operadores: no reemplaza los avisos "
-        "oficiales (INDECI, COER, SISMATE).</footer></body></html>"
+        f"<title>{title} · Willay</title><style>{_STYLE}</style></head>"
+        f"<body><main><h1>{title}</h1>{''.join(body)}</main>"
+        f"<footer>{_text('disclaimer', language)}</footer></body></html>"
     )

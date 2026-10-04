@@ -5,11 +5,13 @@ confirms. No CSRF protection needed: the POST cannot be built without the token,
 there is no session or cookie another site could ride on.
 """
 
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Header
 from fastapi.responses import HTMLResponse
 from structlog import get_logger
 
-from willay.alerts.api.pages import render_preview, render_result
+from willay.alerts.api.pages import page_language, render_preview, render_result
 from willay.alerts.application.confirmation import confirm_alert, preview_confirmation
 from willay.alerts.infrastructure.sql_confirmation import SqlConfirmationRepository
 from willay.incidents.infrastructure.incidents_repository import SqlIncidentRepository
@@ -40,12 +42,18 @@ _RESPONSES: dict[int | str, dict[str, str]] = {
     summary="Confirmation page of an alert (opening it acknowledges nothing)",
     responses=_RESPONSES,
 )
-async def get_confirmation(token: str, conn: DbConnection, clock: ClockDep) -> HTMLResponse:
+async def get_confirmation(
+    token: str,
+    conn: DbConnection,
+    clock: ClockDep,
+    accept_language: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
     view = await preview_confirmation(
         token, confirmations=SqlConfirmationRepository(conn), clock=clock
     )
-    status_code, html = render_preview(view)
-    return HTMLResponse(html, status_code=status_code, headers=_HEADERS)
+    language = page_language(view, accept_language)
+    status_code, html = render_preview(view, language)
+    return HTMLResponse(html, status_code, headers=_HEADERS | {"Content-Language": language})
 
 
 @router.post(
@@ -54,7 +62,12 @@ async def get_confirmation(token: str, conn: DbConnection, clock: ClockDep) -> H
     summary="Acknowledge an alert: acknowledges its incident and stops the escalation",
     responses=_RESPONSES,
 )
-async def post_confirmation(token: str, conn: DbConnection, clock: ClockDep) -> HTMLResponse:
+async def post_confirmation(
+    token: str,
+    conn: DbConnection,
+    clock: ClockDep,
+    accept_language: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
     view = await confirm_alert(
         token,
         confirmations=SqlConfirmationRepository(conn),
@@ -68,5 +81,6 @@ async def post_confirmation(token: str, conn: DbConnection, clock: ClockDep) -> 
             alert_id=str(view.alert.alert_id),
             incident_id=str(view.alert.incident_id),
         )
-    status_code, html = render_result(view)
-    return HTMLResponse(html, status_code=status_code, headers=_HEADERS)
+    language = page_language(view, accept_language)
+    status_code, html = render_result(view, language)
+    return HTMLResponse(html, status_code, headers=_HEADERS | {"Content-Language": language})

@@ -15,8 +15,9 @@ from willay.alerts.application.dispatch import (
 )
 from willay.alerts.domain.alerts import Channel
 from willay.alerts.domain.delivery import AckToken, hash_ack_token, new_ack_token, retry_at
-from willay.alerts.domain.email import AlertMessage, EmailContent, compose_email
+from willay.alerts.domain.email import AlertMessage, EmailContent, compose_email, local_time
 from willay.shared.clock import FakeClock
+from willay.shared.languages import Language
 from willay.shared.logging import configure_logging
 
 T0 = datetime(2026, 11, 20, 14, 0, tzinfo=UTC)  # 09:00 in Lima (UTC-5)
@@ -34,6 +35,7 @@ MESSAGE = AlertMessage(
     trigger_value=35.11,
     opened_at=T0,
     level_order=1,
+    language=Language.ES,
 )
 
 
@@ -88,6 +90,36 @@ def test_a_silence_email_shows_the_last_value_or_says_there_is_none() -> None:
     content = compose_email(silence, "http://x/confirmar/abc")
     assert "Estación sin reportar" in content.subject
     assert "Último:    sin dato" in content.body
+
+
+def test_an_english_contact_gets_the_email_in_english() -> None:
+    content = compose_email(replace(MESSAGE, language=Language.EN), "http://x/confirmar/abc")
+    assert content.subject == "[Willay] CRITICAL · Sudden change in Chosica (RIM-CHA-01)"
+    body = content.body
+    assert body.startswith("Hello Óscar Operador,")
+    assert "Willay opened a CRITICAL incident in the Chosica zone." in body
+    # The columns fit the labels of the language.
+    assert "Station:  RIM-CHA-01 · Chaclacayo (aguas abajo)" in body
+    assert "Opened:   Nov 20, 2026, 09:00 (America/Lima)" in body
+    assert "If nobody acknowledges it, Willay will alert the next level." in body
+    assert "it does not replace official warnings" in body
+    silence = replace(MESSAGE, language=Language.EN, rule_type="silence", trigger_value=None)
+    assert "Last value:  no data" in compose_email(silence, "http://x").body
+
+
+@pytest.mark.parametrize(
+    ("language", "text"),
+    [
+        (Language.ES, "04/10/2026 09:05 (America/Lima)"),
+        # The month's name: 04/10 would read as April 10 in the United States.
+        (Language.EN, "Oct 4, 2026, 09:05 (America/Lima)"),
+    ],
+)
+def test_local_time_is_written_the_way_each_language_reads_it(
+    language: Language, text: str
+) -> None:
+    instant = datetime(2026, 10, 4, 14, 5, tzinfo=UTC)
+    assert local_time(instant, "America/Lima", language) == text
 
 
 def _claimed(attempt: int = 1) -> ClaimedAlert:

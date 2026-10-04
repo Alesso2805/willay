@@ -203,6 +203,38 @@ async def test_expired_and_unknown_links(
     assert (await _state(owner, case))["status"] == "open"
 
 
+async def test_the_page_speaks_the_language_of_the_contact(
+    engine: AsyncEngine, owner: asyncpg.Connection, client: httpx2.AsyncClient
+) -> None:
+    case = await _case(engine, owner, "Ana", "Caro")
+    await owner.execute(
+        "UPDATE core.contacts SET language = 'en' WHERE id = $1", case.contacts["Ana"]
+    )
+    # Whatever the browser says: the contact chose English.
+    page = await client.get(case.links["Ana"], headers={"Accept-Language": "es-PE"})
+    assert page.headers["content-language"] == "en"
+    assert '<html lang="en">' in page.text
+    assert "Hello Ana," in page.text
+    assert "<dt>Cause</dt><dd>Value out of bounds</dd>" in page.text
+    assert '<button type="submit">Acknowledge: I saw it</button>' in page.text
+    assert "Thank you! You acknowledged the alert" in (await client.post(case.links["Ana"])).text
+
+    # Caro chose none, so she gets her organization's language.
+    await owner.execute(
+        "UPDATE core.organizations SET language = 'en'"
+        " WHERE id = (SELECT organization_id FROM core.contacts WHERE id = $1)",
+        case.contacts["Caro"],
+    )
+    late = await client.get(case.links["Caro"])
+    assert "Ana had already acknowledged it on" in late.text
+
+
+async def test_a_link_of_no_alert_follows_the_browser(client: httpx2.AsyncClient) -> None:
+    unknown = await client.get("/confirmar/" + "x" * 43, headers={"Accept-Language": "en-US"})
+    assert (unknown.status_code, unknown.headers["content-language"]) == (404, "en")
+    assert "<h1>Invalid link</h1>" in unknown.text
+
+
 async def test_names_are_escaped(
     engine: AsyncEngine, owner: asyncpg.Connection, client: httpx2.AsyncClient
 ) -> None:

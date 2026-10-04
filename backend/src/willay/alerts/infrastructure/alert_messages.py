@@ -9,11 +9,13 @@ from typing import Any
 from sqlalchemy import Row
 
 from willay.alerts.domain.email import AlertMessage
+from willay.shared.languages import Language
 
 MESSAGE_COLUMNS = """
     ct.full_name AS contact_name, o.name AS organization_name, o.timezone,
     z.name AS zone_name, i.severity, r.type AS rule_type, s.code AS station_code,
-    s.name AS station_name, s.unit, i.trigger_value, i.opened_at, a.level_order
+    s.name AS station_name, s.unit, i.trigger_value, i.opened_at, a.level_order,
+    COALESCE(ct.language, o.language) AS language
 """
 
 MESSAGE_JOINS = """
@@ -40,4 +42,5 @@ def message_from_row(r: Row[Any]) -> AlertMessage:
         trigger_value=r.trigger_value,
         opened_at=r.opened_at,
         level_order=r.level_order,
+        language=Language(r.language),
     )

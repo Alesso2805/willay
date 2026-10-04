@@ -89,9 +89,10 @@ async def engine(database: Database, owner: asyncpg.Connection) -> AsyncIterator
 
 
 async def _incident_alerting(
-    engine: AsyncEngine, owner: asyncpg.Connection, *names: str
+    engine: AsyncEngine, owner: asyncpg.Connection, *names: str, english: tuple[str, ...] = ()
 ) -> tuple[Station, list[str]]:
-    """Opens an incident whose level 1 emails one contact per name."""
+    """Opens an incident whose level 1 emails one contact per name; those in `english` chose
+    English for their alerts."""
     graph = await create_graph(owner)
     await link_station(owner, graph)
     await create_rule(owner, graph, "threshold", GT_35_ONCE, station_id=graph.station_id)
@@ -101,6 +102,11 @@ async def _incident_alerting(
         for name, address in zip(names, addresses, strict=True)
     ]
     await add_level(owner, graph, 1, (await create_group(owner, graph, *contacts), "email"))
+    for name, contact_id in zip(names, contacts, strict=True):
+        if name in english:
+            await owner.execute(
+                "UPDATE core.contacts SET language = 'en' WHERE id = $1", contact_id
+            )
     station = Station(engine, graph)
     await station.send(3.6)
     return station, addresses
@@ -146,7 +152,9 @@ async def test_the_worker_emails_level_one_and_the_link_confirms_it(
     worker = asyncio.create_task(run_dispatcher(settings, stop, poll_interval_s=60.0))
     await asyncio.sleep(0.5)
     try:
-        station, (ana, caro) = await _incident_alerting(engine, owner, "Ana", "Caro")
+        station, (ana, caro) = await _incident_alerting(
+            engine, owner, "Ana", "Caro", english=("Caro",)
+        )
         deadline = asyncio.get_running_loop().time() + 10
         while not (mailpit.messages_to(ana) and mailpit.messages_to(caro)):
             if asyncio.get_running_loop().time() > deadline:
@@ -163,6 +171,10 @@ async def test_the_worker_emails_level_one_and_the_link_confirms_it(
     assert "Valor:     3.6 m3/s" in text
     match = re.search(r"http://willay\.test/confirmar/([A-Za-z0-9_-]{43})", text)
     assert match is not None
+    # Each contact in their own language (VIG-40).
+    [english] = mailpit.messages_to(caro)
+    assert english["Subject"] == "[Willay] WARNING · Value out of bounds in Zona (EST-1)"
+    assert "Hello Caro," in mailpit.text_of(english["ID"])
 
     alert = await _alert(owner, ana)
     # The link works: its token matches the stored hash, valid for 24 h.
