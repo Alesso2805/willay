@@ -3,14 +3,15 @@ from typing import Annotated
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from willay.ingestion.api.dependencies import IngestingStation
 from willay.ingestion.application.ingest_batch import ingest_batch
 from willay.ingestion.domain.readings import MAX_BATCH_SIZE, FutureReadingsError, Reading
 from willay.ingestion.infrastructure.repositories import SqlReadingWriter
-from willay.shared.web import ClockDep, DbConnection
+from willay.shared.errors import ErrorCode
+from willay.shared.web import ApiError, ClockDep, DbConnection, FieldProblem
 
 router = APIRouter(prefix="/v1", tags=["ingestion"])
 log = structlog.get_logger()
@@ -65,14 +66,15 @@ async def post_readings(
     try:
         result = await ingest_batch(station, readings, clock, SqlReadingWriter(conn))
     except FutureReadingsError as exc:
-        raise HTTPException(
+        raise ApiError(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=[
-                {
-                    "loc": ["body", "readings", i, "measured_at"],
-                    "msg": "measured_at está en el futuro (reloj de la estación desfasado)",
-                    "type": "future_timestamp",
-                }
+            ErrorCode.READING_IN_FUTURE,
+            fields=[
+                FieldProblem(
+                    ["body", "readings", i, "measured_at"],
+                    ErrorCode.READING_IN_FUTURE,
+                    type="future_timestamp",
+                )
                 for i in exc.indices
             ],
         ) from exc

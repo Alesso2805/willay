@@ -28,15 +28,16 @@ from willay.identity.api.dependencies import require
 from willay.identity.domain.permissions import Permission
 from willay.identity.domain.principal import Principal
 from willay.shared.audit import SqlAuditLog
-from willay.shared.web import ClockDep, DbConnection
+from willay.shared.errors import ErrorCode, Names
+from willay.shared.web import ApiError, ClockDep, DbConnection
 
 router = APIRouter(prefix="/v1/contact-groups", tags=["alerts"])
 
 CanView = Annotated[Principal, Depends(require(Permission.VIEW_CONTACT_DETAILS))]
 CanManage = Annotated[Principal, Depends(require(Permission.MANAGE_CONTACTS))]
 
-_NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, detail="Grupo no encontrado")
-_DUPLICATE = HTTPException(status.HTTP_409_CONFLICT, detail="Ya hay un grupo con ese nombre.")
+_NOT_FOUND = ApiError(status.HTTP_404_NOT_FOUND, ErrorCode.GROUP_NOT_FOUND)
+_DUPLICATE = ApiError(status.HTTP_409_CONFLICT, ErrorCode.GROUP_NAME_TAKEN)
 _WRITE_RESPONSES: dict[int | str, dict[str, str]] = {
     409: {"description": "A group with that name already exists"},
     422: {"description": "Invalid name, or a zone or contacts outside the organization"},
@@ -142,12 +143,11 @@ async def remove_group(
     except GroupNotFoundError as exc:
         raise _NOT_FOUND from exc
     except GroupInUseError as exc:
-        names = ", ".join(f"«{p.name}»" for p in exc.group.policies)
-        raise HTTPException(
+        raise ApiError(
             status.HTTP_409_CONFLICT,
-            detail=(
-                f"{exc.group.name} se usa en {names}. Quítalo de esa política antes de borrarlo."
-            ),
+            ErrorCode.GROUP_IN_USE,
+            group=exc.group.name,
+            policies=Names(policy.name for policy in exc.group.policies),
         ) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

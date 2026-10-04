@@ -32,14 +32,15 @@ from willay.rules.domain.threshold import MAX_CONSECUTIVE, Operator
 from willay.rules.infrastructure.rules_repository import SqlRuleAdminRepository
 from willay.rules.infrastructure.sql_preview import SqlPreviewRepository
 from willay.shared.audit import SqlAuditLog
-from willay.shared.web import ClockDep, DbConnection
+from willay.shared.errors import ErrorCode
+from willay.shared.web import ApiError, ClockDep, DbConnection
 
 router = APIRouter(prefix="/v1/rules", tags=["rules"])
 
 CanView = Annotated[Principal, Depends(require(Permission.VIEW))]
 CanManage = Annotated[Principal, Depends(require(Permission.MANAGE_RULES))]
 
-_NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, detail="Regla no encontrada")
+_NOT_FOUND = ApiError(status.HTTP_404_NOT_FOUND, ErrorCode.RULE_NOT_FOUND)
 _WRITE_RESPONSES: dict[int | str, dict[str, str]] = {
     422: {"description": "Invalid params for the type, or a zone, station or policy outside "
           "the organization"},

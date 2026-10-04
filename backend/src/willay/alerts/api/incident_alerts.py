@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
 
 from willay.alerts.domain.alerts import AlertStatus, Channel
@@ -16,7 +16,8 @@ from willay.alerts.infrastructure.sql_incident_alerts import SqlIncidentAlerts
 from willay.identity.api.dependencies import require
 from willay.identity.domain.permissions import Permission, can
 from willay.identity.domain.principal import Principal
-from willay.shared.web import DbConnection
+from willay.shared.errors import ErrorCode
+from willay.shared.web import ApiError, DbConnection
 
 router = APIRouter(prefix="/v1/incidents", tags=["alerts"])
 
@@ -50,7 +51,7 @@ async def incident_alerts(
 ) -> list[IncidentAlertOut]:
     alerts = await SqlIncidentAlerts(conn).for_incident(principal.organization_id, incident_id)
     if alerts is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Incidente no encontrado")
+        raise ApiError(status.HTTP_404_NOT_FOUND, ErrorCode.INCIDENT_NOT_FOUND)
     may_see_details = can(principal, Permission.VIEW_CONTACT_DETAILS)
     return [
         IncidentAlertOut(

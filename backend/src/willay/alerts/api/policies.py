@@ -30,14 +30,15 @@ from willay.identity.api.dependencies import require
 from willay.identity.domain.permissions import Permission
 from willay.identity.domain.principal import Principal
 from willay.shared.audit import SqlAuditLog
-from willay.shared.web import ClockDep, DbConnection
+from willay.shared.errors import ErrorCode
+from willay.shared.web import ApiError, ClockDep, DbConnection
 
 router = APIRouter(prefix="/v1/escalation-policies", tags=["alerts"])
 
 CanView = Annotated[Principal, Depends(require(Permission.VIEW))]
 CanManage = Annotated[Principal, Depends(require(Permission.MANAGE_POLICIES))]
 
-_NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, detail="Política no encontrada")
+_NOT_FOUND = ApiError(status.HTTP_404_NOT_FOUND, ErrorCode.POLICY_NOT_FOUND)
 
 
 class TargetIn(BaseModel):
@@ -168,10 +169,7 @@ async def delete_policy_route(
     except PolicyNotFoundError as exc:
         raise _NOT_FOUND from exc
     except PolicyInUseError as exc:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            detail="Alguna regla usa esta política: cámbiala en esas reglas antes de borrarla.",
-        ) from exc
+        raise ApiError(status.HTTP_409_CONFLICT, ErrorCode.POLICY_IN_USE) from exc
 
 
 def _actor(principal: Principal) -> Actor:
@@ -193,7 +191,7 @@ def _data(body: PolicyIn) -> PolicyData:
 
 def _rejected(exc: Exception) -> HTTPException:
     if isinstance(exc, DuplicatePolicyNameError):
-        return HTTPException(status.HTTP_409_CONFLICT, detail="Ya hay una política con ese nombre.")
+        return ApiError(status.HTTP_409_CONFLICT, ErrorCode.POLICY_NAME_TAKEN)
     # Same shape as FastAPI's validation 422s, so the dashboard handles them the same way.
     if isinstance(exc, UnknownGroupsError):
         detail = [{"loc": ["body", "levels"], "msg": str(exc), "type": "unknown_contact_group"}]

@@ -1,10 +1,11 @@
 """FastAPI dependencies shared by the modules (api layer)."""
 
 import math
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Mapping, Sequence
+from dataclasses import dataclass, field
 from typing import Annotated, Any
 
-from fastapi import Depends, Request, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -12,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from willay.shared.clock import Clock
 from willay.shared.config import Settings
+from willay.shared.errors import ErrorCode
+from willay.shared.i18n import negotiate, translate
 
 
 async def db_connection(request: Request) -> AsyncIterator[AsyncConnection]:
@@ -64,4 +67,54 @@ async def validation_error_handler(request: Request, exc: Exception) -> JSONResp
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content={"detail": _json_safe(jsonable_encoder(exc.errors()))},
+    )
+
+
+@dataclass(frozen=True)
+class FieldProblem:
+    """One invalid input, as in FastAPI's own 422s: where it is and what is wrong with it."""
+
+    loc: Sequence[str | int]
+    code: ErrorCode
+    params: Mapping[str, object] = field(default_factory=dict)
+    type: str = "value_error"
+
+
+class ApiError(HTTPException):
+    """An API error by code (VIG-40): answered as `{"detail": text, "code": code}`, the text in
+    the request's language. With `fields`, a 422 whose detail lists them like FastAPI does."""
+
+    def __init__(
+        self,
+        status_code: int,
+        code: ErrorCode,
+        *,
+        fields: Sequence[FieldProblem] = (),
+        headers: Mapping[str, str] | None = None,
+        **params: object,
+    ) -> None:
+        super().__init__(status_code, detail=code.value, headers=dict(headers or {}) or None)
+        self.code = code
+        self.fields = tuple(fields)
+        self.params = params
+
+
+async def api_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, ApiError)
+    language = negotiate(request.headers.get("accept-language"))
+    detail: object = translate(f"errors.{exc.code}", language, **exc.params)
+    if exc.fields:
+        detail = [
+            {
+                "loc": list(problem.loc),
+                "msg": translate(f"errors.{problem.code}", language, **problem.params),
+                "type": problem.type,
+                "code": problem.code.value,
+            }
+            for problem in exc.fields
+        ]
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": detail, "code": exc.code.value},
+        headers={**(exc.headers or {}), "Content-Language": language.value},
     )
