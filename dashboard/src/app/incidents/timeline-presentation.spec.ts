@@ -85,6 +85,25 @@ describe('timeline presentation', () => {
     expect(text(event('alert_sent', { channel: 'email' }))).toBe('Alerta enviada a un contacto por correo');
   });
 
+  it('says the reasons the workers record as codes, in either language', async () => {
+    const reasons = [
+      event('escalated', { to_level: 2, reason_code: 'not_acknowledged', reason_params: { wait_s: 120 } }),
+      event('escalation_exhausted', { reason_code: 'level_removed', reason_params: { level: 3 } }),
+      event('alert_skipped', { channel: 'telegram', reason_code: 'no_telegram' }, { contact_name: 'Rosa' }),
+    ];
+    expect(reasons.map(text)).toEqual([
+      'Escaló al nivel 2 | nadie confirmó en 120 s',
+      'Se agotó el escalamiento | el nivel 3 ya no existe en la política',
+      'No se avisó a Rosa por Telegram | el contacto no vinculó Telegram',
+    ]);
+    await useLanguage('en');
+    expect(reasons.map(text)).toEqual([
+      'Escalated to level 2 | nobody acknowledged in 120 s',
+      'The escalation was exhausted | level 3 no longer exists in the policy',
+      'Rosa was not alerted by Telegram | the contact has not linked Telegram',
+    ]);
+  });
+
   it('tells the escalation, the recovery and who acknowledged or resolved', () => {
     expect(text(event('escalated', { to_level: 2, reason: 'nadie confirmó en 120 s' }))).toBe(
       'Escaló al nivel 2 | nadie confirmó en 120 s',
