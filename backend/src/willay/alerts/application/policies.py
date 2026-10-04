@@ -21,6 +21,7 @@ from willay.alerts.domain.policies import (
 )
 from willay.shared.audit import AuditEntry, AuditLog
 from willay.shared.clock import Clock
+from willay.shared.errors import CodedError, ErrorCode
 
 ENTITY_TYPE = "escalation_policy"
 
@@ -91,9 +92,10 @@ class DuplicatePolicyNameError(Exception):
     pass
 
 
-class UnknownGroupsError(Exception):
+class UnknownGroupsError(CodedError):
     def __init__(self, group_ids: frozenset[UUID]) -> None:
-        super().__init__(f"grupos desconocidos: {sorted(map(str, group_ids))}")
+        # Without the ids: a group of another organization reads as unknown, revealing nothing.
+        super().__init__(ErrorCode.POLICY_GROUPS_UNKNOWN)
         self.group_ids = group_ids
 
 

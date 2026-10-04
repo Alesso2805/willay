@@ -9,6 +9,7 @@ from uuid_utils.compat import uuid7
 
 from willay.shared.audit import AuditEntry, AuditLog
 from willay.shared.clock import Clock
+from willay.shared.errors import ErrorCode
 from willay.territory.domain.zones import (
     InvalidGeometryError,
     MultiPolygonCoords,
@@ -120,7 +121,7 @@ async def deactivate_zone(
 async def _check_topology(zones: ZoneRepository, geometry: MultiPolygonCoords) -> None:
     reason = await zones.invalid_reason(geometry)
     if reason is not None:
-        raise InvalidGeometryError(reason)
+        raise InvalidGeometryError(ErrorCode.GEOMETRY_INVALID, reason=reason)
 
 
 def _entry(

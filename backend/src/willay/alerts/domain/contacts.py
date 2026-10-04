@@ -5,6 +5,8 @@ account. A contact may have no channel yet; the dashboard flags it, since nobody
 import re
 from dataclasses import dataclass
 
+from willay.shared.errors import ErrorCode, FieldError
+
 MAX_NAME_LENGTH = 120
 MAX_EMAIL_LENGTH = 254  # RFC 5321
 # Deliberately loose: it catches a slip such as "rosa@rimac"; whether an address really
@@ -18,18 +20,14 @@ class ContactData:
     email: str | None
 
 
-class InvalidContactError(ValueError):
-    def __init__(self, field: str, message: str) -> None:
-        super().__init__(message)
-        self.field = field
+class InvalidContactError(FieldError, ValueError):
+    pass
 
 
 def validate_contact(data: ContactData) -> None:
     if not data.full_name or len(data.full_name) > MAX_NAME_LENGTH:
-        raise InvalidContactError(
-            "full_name", f"El nombre debe tener entre 1 y {MAX_NAME_LENGTH} caracteres."
-        )
+        raise InvalidContactError("full_name", ErrorCode.CONTACT_NAME_LENGTH, max=MAX_NAME_LENGTH)
     if data.email is not None and (
         len(data.email) > MAX_EMAIL_LENGTH or not _EMAIL.fullmatch(data.email)
     ):
-        raise InvalidContactError("email", "El correo no es válido.")
+        raise InvalidContactError("email", ErrorCode.CONTACT_EMAIL_INVALID)

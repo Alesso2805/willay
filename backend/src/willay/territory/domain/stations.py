@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from uuid import UUID
 
+from willay.shared.errors import ErrorCode, FieldError
+
 MAX_NAME_LENGTH = 120
 # Uppercase letters, digits and dashes, like RIM-CHA-01. Normalized to uppercase.
 CODE_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9-]{1,31}$")
@@ -52,11 +54,8 @@ class ZonePosition(StrEnum):
     DOWNSTREAM = "downstream"
 
 
-class InvalidStationError(Exception):
-    def __init__(self, field: str, reason: str) -> None:
-        super().__init__(f"{field}: {reason}")
-        self.field = field
-        self.reason = reason
+class InvalidStationError(FieldError):
+    pass
 
 
 @dataclass(frozen=True)
@@ -67,7 +66,7 @@ class Location:
     def __post_init__(self) -> None:
         if not (-180 <= self.lon <= 180 and -90 <= self.lat <= 90):
             raise InvalidStationError(
-                "location", f"coordenada fuera de rango: [{self.lon}, {self.lat}]"
+                "location", ErrorCode.STATION_LOCATION_RANGE, lon=self.lon, lat=self.lat
             )
 
 
@@ -98,16 +97,14 @@ class StationData:
 def normalize_code(raw: str) -> str:
     code = raw.strip().upper()
     if not CODE_PATTERN.fullmatch(code):
-        raise InvalidStationError(
-            "code", "de 2 a 32 caracteres: letras, dígitos y guiones (p. ej. RIM-CHA-01)"
-        )
+        raise InvalidStationError("code", ErrorCode.STATION_CODE_FORMAT)
     return code
 
 
 def check_zones(zones: tuple[ZoneAssignment, ...]) -> None:
     """A station has one position per zone: upstream OR in the zone OR downstream."""
     if len(zones) > MAX_ZONES:
-        raise InvalidStationError("zones", f"máximo {MAX_ZONES} zonas por estación")
+        raise InvalidStationError("zones", ErrorCode.STATION_TOO_MANY_ZONES, max=MAX_ZONES)
     ids = [zone.zone_id for zone in zones]
     if len(ids) != len(set(ids)):
-        raise InvalidStationError("zones", "una zona aparece más de una vez")
+        raise InvalidStationError("zones", ErrorCode.STATION_ZONE_REPEATED)

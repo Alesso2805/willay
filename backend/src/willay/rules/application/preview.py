@@ -22,6 +22,7 @@ from willay.rules.domain.rules import InvalidRuleError, RuleType, canonical_para
 from willay.rules.domain.silence import silence_threshold
 from willay.rules.domain.threshold import parse_threshold
 from willay.shared.clock import Clock
+from willay.shared.errors import ErrorCode
 
 PERIOD = timedelta(hours=24)
 # Readings before the period that rules may still look at: the longest rate-of-change window.
@@ -91,15 +92,12 @@ async def preview_rule(
 ) -> Preview:
     params = canonical_params(rule_type, raw_params)
     if rule_type is not RuleType.SILENCE and station_id is None:
-        raise InvalidRuleError(
-            "station_id",
-            "Este tipo de regla compara valores en la unidad de una estación: elige la estación.",
-        )
+        raise InvalidRuleError("station_id", ErrorCode.RULE_STATION_REQUIRED)
     if not await repository.zone_exists(organization_id, zone_id):
-        raise InvalidRuleError("zone_id", "La zona no existe.")
+        raise InvalidRuleError("zone_id", ErrorCode.RULE_ZONE_UNKNOWN)
     stations = await repository.stations(organization_id, zone_id, station_id)
     if station_id is not None and not stations:
-        raise InvalidRuleError("station_id", "La estación no pertenece a esa zona.")
+        raise InvalidRuleError("station_id", ErrorCode.RULE_STATION_OUTSIDE_ZONE)
 
     until = clock.now()
     since = until - PERIOD

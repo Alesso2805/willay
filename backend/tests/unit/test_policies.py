@@ -10,6 +10,7 @@ from willay.alerts.domain.policies import (
     Target,
     validate_policy,
 )
+from willay.shared.errors import ErrorCode
 
 GROUP = uuid4()
 EMAIL = Target(GROUP, Channel.EMAIL)
@@ -29,18 +30,29 @@ def test_a_sensible_policy_is_valid() -> None:
 
 
 @pytest.mark.parametrize(
-    ("policy", "message"),
+    ("policy", "code", "params"),
     [
-        (_policy(name="   "), "el nombre"),
-        (_policy(name="x" * 121), "el nombre"),
-        (PolicyData("Vacía", ()), "entre 1 y 10 niveles"),
-        (_policy(*(LevelData(60, (EMAIL,)),) * 11), "entre 1 y 10 niveles"),
-        (_policy(LevelData(0, (EMAIL,))), "nivel 1: la espera"),
-        (_policy(LevelData(120, (EMAIL,)), LevelData(86_401, (EMAIL,))), "nivel 2: la espera"),
-        (_policy(LevelData(120, ())), "nivel 1: necesita al menos un grupo"),
-        (_policy(LevelData(120, (EMAIL, EMAIL))), "nivel 1: el mismo grupo y canal"),
+        (_policy(name="   "), ErrorCode.POLICY_NAME_LENGTH, {"max": 120}),
+        (_policy(name="x" * 121), ErrorCode.POLICY_NAME_LENGTH, {"max": 120}),
+        (PolicyData("Vacía", ()), ErrorCode.POLICY_LEVEL_COUNT, {"max": 10}),
+        (_policy(*(LevelData(60, (EMAIL,)),) * 11), ErrorCode.POLICY_LEVEL_COUNT, {"max": 10}),
+        (_policy(LevelData(0, (EMAIL,))), ErrorCode.POLICY_LEVEL_WAIT, {"level": 1, "max": 86_400}),
+        (
+            _policy(LevelData(120, (EMAIL,)), LevelData(86_401, (EMAIL,))),
+            ErrorCode.POLICY_LEVEL_WAIT,
+            {"level": 2, "max": 86_400},
+        ),
+        (_policy(LevelData(120, ())), ErrorCode.POLICY_LEVEL_NO_TARGET, {"level": 1}),
+        (
+            _policy(LevelData(120, (EMAIL, EMAIL))),
+            ErrorCode.POLICY_LEVEL_REPEATED_TARGET,
+            {"level": 1},
+        ),
     ],
 )
-def test_invalid_policies_are_rejected_with_a_reason(policy: PolicyData, message: str) -> None:
-    with pytest.raises(InvalidPolicyError, match=message):
+def test_invalid_policies_are_rejected_with_a_reason(
+    policy: PolicyData, code: ErrorCode, params: dict[str, object]
+) -> None:
+    with pytest.raises(InvalidPolicyError) as caught:
         validate_policy(policy)
+    assert (caught.value.code, caught.value.params) == (code, params)

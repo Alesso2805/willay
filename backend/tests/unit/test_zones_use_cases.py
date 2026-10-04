@@ -6,6 +6,7 @@ import pytest
 
 from willay.shared.audit import AuditEntry
 from willay.shared.clock import FakeClock
+from willay.shared.errors import ErrorCode
 from willay.territory.application.zones import (
     Actor,
     Zone,
@@ -92,8 +93,11 @@ async def test_create_stores_the_zone_and_audits_it() -> None:
 
 async def test_topologically_invalid_geometry_is_rejected_and_nothing_is_written() -> None:
     zones, audit = FakeZones(invalid="Self-intersection[-76.65 -11.95]"), FakeAudit()
-    with pytest.raises(InvalidGeometryError, match="Self-intersection"):
+    with pytest.raises(InvalidGeometryError) as caught:
         await _created(zones, audit, FakeClock(T0))
+    # PostGIS's own reason goes through: the dashboard reads the point from it.
+    assert caught.value.code == ErrorCode.GEOMETRY_INVALID
+    assert caught.value.params == {"reason": "Self-intersection[-76.65 -11.95]"}
     assert zones.rows == {}
     assert audit.entries == []
 

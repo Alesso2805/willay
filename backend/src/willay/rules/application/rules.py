@@ -19,6 +19,7 @@ from willay.rules.application.actor import Actor
 from willay.rules.domain.rules import InvalidRuleError, RuleData, RuleType, checked
 from willay.shared.audit import AuditEntry, AuditLog
 from willay.shared.clock import Clock
+from willay.shared.errors import ErrorCode
 
 ENTITY_TYPE = "rule"
 
@@ -126,9 +127,7 @@ async def update_rule(
 ) -> Rule:
     current = await _locked(actor, rule_id, rules)
     if rule_type is not current.type:
-        raise InvalidRuleError(
-            "type", "El tipo de una regla no se cambia: desactívala y crea otra del tipo nuevo."
-        )
+        raise InvalidRuleError("type", ErrorCode.RULE_TYPE_FIXED)
     data = await _check(actor, rule_type, data, rules)
     if data == current.data:
         return current  # no changes: no write and no empty audit entry
@@ -156,14 +155,14 @@ async def _check(
     data = checked(rule_type, data)
     org = actor.organization_id
     if not await rules.zone_exists(org, data.zone_id):
-        raise InvalidRuleError("zone_id", "La zona no existe.")
+        raise InvalidRuleError("zone_id", ErrorCode.RULE_ZONE_UNKNOWN)
     # Only stations of the zone: the evaluator joins zone_stations, so any other would never fire.
     if data.station_id is not None and not await rules.station_in_zone(
         org, data.station_id, data.zone_id
     ):
-        raise InvalidRuleError("station_id", "La estación no pertenece a esa zona.")
+        raise InvalidRuleError("station_id", ErrorCode.RULE_STATION_OUTSIDE_ZONE)
     if not await rules.policy_exists(org, data.escalation_policy_id):
-        raise InvalidRuleError("escalation_policy_id", "La política de escalamiento no existe.")
+        raise InvalidRuleError("escalation_policy_id", ErrorCode.RULE_POLICY_UNKNOWN)
     return data
 
 

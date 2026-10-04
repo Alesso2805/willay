@@ -8,13 +8,14 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from willay.alerts.domain.alerts import Channel
+from willay.shared.errors import CodedError, ErrorCode
 
 MAX_NAME_LENGTH = 120
 MAX_LEVELS = 10
 MAX_WAIT_S = 86_400  # one day: waiting longer is not escalating, it is forgetting
 
 
-class InvalidPolicyError(Exception):
+class InvalidPolicyError(CodedError):
     pass
 
 
@@ -42,14 +43,14 @@ class PolicyData:
 
 def validate_policy(data: PolicyData) -> None:
     if not data.name.strip() or len(data.name) > MAX_NAME_LENGTH:
-        raise InvalidPolicyError(f"el nombre debe tener entre 1 y {MAX_NAME_LENGTH} caracteres")
+        raise InvalidPolicyError(ErrorCode.POLICY_NAME_LENGTH, max=MAX_NAME_LENGTH)
     if not 1 <= len(data.levels) <= MAX_LEVELS:
-        raise InvalidPolicyError(f"una política tiene entre 1 y {MAX_LEVELS} niveles")
+        raise InvalidPolicyError(ErrorCode.POLICY_LEVEL_COUNT, max=MAX_LEVELS)
     for order, level in enumerate(data.levels, start=1):
         if not 1 <= level.wait_s <= MAX_WAIT_S:
-            raise InvalidPolicyError(f"nivel {order}: la espera va de 1 a {MAX_WAIT_S} segundos")
+            raise InvalidPolicyError(ErrorCode.POLICY_LEVEL_WAIT, level=order, max=MAX_WAIT_S)
         # A level without targets would escalate immediately: it would be useless.
         if not level.targets:
-            raise InvalidPolicyError(f"nivel {order}: necesita al menos un grupo destino")
+            raise InvalidPolicyError(ErrorCode.POLICY_LEVEL_NO_TARGET, level=order)
         if len(set(level.targets)) != len(level.targets):
-            raise InvalidPolicyError(f"nivel {order}: el mismo grupo y canal aparece dos veces")
+            raise InvalidPolicyError(ErrorCode.POLICY_LEVEL_REPEATED_TARGET, level=order)

@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from willay.alerts.application.contacts import (
@@ -37,7 +37,7 @@ from willay.identity.domain.principal import Principal
 from willay.shared.audit import SqlAuditLog
 from willay.shared.clock import Clock
 from willay.shared.errors import ErrorCode
-from willay.shared.web import ApiError, ClockDep, DbConnection, SettingsDep
+from willay.shared.web import ApiError, ClockDep, DbConnection, SettingsDep, invalid_field
 
 router = APIRouter(prefix="/v1/contacts", tags=["alerts"])
 
@@ -234,12 +234,8 @@ def _actor(principal: Principal) -> Actor:
     return Actor(principal.organization_id, principal.user_id)
 
 
-def _invalid(exc: InvalidContactError) -> HTTPException:
-    """The same shape as FastAPI's own validation errors, so the dashboard reads both alike."""
-    return HTTPException(
-        status.HTTP_422_UNPROCESSABLE_CONTENT,
-        detail=[{"loc": ["body", exc.field], "msg": str(exc), "type": "value_error"}],
-    )
+def _invalid(exc: InvalidContactError) -> ApiError:
+    return invalid_field(exc)
 
 
 def _out(contact: Contact, clock: Clock) -> ContactOut:
