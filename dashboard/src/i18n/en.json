@@ -300,6 +300,15 @@
       "up": "rise",
       "down": "drop",
       "silenceRule": "the station stopped reporting"
+    },
+    "reasons": {
+      "not_acknowledged": "nobody acknowledged in {{wait_s}} s",
+      "level_reached_nobody": "level {{level}} could not alert anyone",
+      "level_removed": "level {{level}} no longer exists in the policy",
+      "no_email": "the contact has no email",
+      "no_telegram": "the contact has not linked Telegram",
+      "incident_acknowledged": "the incident was already acknowledged",
+      "incident_resolved": "the incident was already resolved"
     }
   },
   "chart": {

@@ -20,6 +20,26 @@ const OPERATORS: Readonly<Record<string, TranslationKey>> = {
   le: 'operators.le',
 };
 
+const REASONS: Readonly<Record<string, TranslationKey>> = {
+  not_acknowledged: 'incidents.reasons.not_acknowledged',
+  level_reached_nobody: 'incidents.reasons.level_reached_nobody',
+  level_removed: 'incidents.reasons.level_removed',
+  no_email: 'incidents.reasons.no_email',
+  no_telegram: 'incidents.reasons.no_telegram',
+  incident_acknowledged: 'incidents.reasons.incident_acknowledged',
+  incident_resolved: 'incidents.reasons.incident_resolved',
+};
+
+/**
+ * Why an alert was skipped or a level expired, in words. The workers record a code with its
+ * parameters (VIG-40); events from before then carry Spanish text instead, shown as it is.
+ */
+export function reasonText(code: unknown, params: unknown, legacy: unknown): string | null {
+  const key = typeof code === 'string' ? REASONS[code] : undefined;
+  if (key) return t(key, (params ?? {}) as Record<string, unknown>);
+  return text(legacy) ?? (typeof code === 'string' ? code : null);
+}
+
 /** "más de", "less than"... or the operator itself if it is not a known one. */
 export function operatorText(operator: unknown): string {
   const key = OPERATORS[String(operator)];
@@ -41,7 +61,8 @@ export function eventText(event: IncidentEvent): EventText {
       ? t('incidents.timeline.level', { level: p['level_order'] })
       : null;
   const sent = { recipient, channel };
-  // Reasons and errors are written by the workers (in Spanish, VIG-40d) and shown as they are.
+  const reason = reasonText(p['reason_code'], p['reason_params'], p['reason']);
+  // A channel's error is the provider's own technical message: shown as it is.
   switch (event.event_type) {
     case 'opened':
       return { title: t('incidents.timeline.opened'), detail: openingDetail(p) };
@@ -57,14 +78,14 @@ export function eventText(event: IncidentEvent): EventText {
         ? { title: t('incidents.timeline.alertFailedFinal', sent), detail: text(p['error']) ?? level }
         : { title: t('incidents.timeline.alertFailedRetry', sent), detail: level };
     case 'alert_skipped':
-      return { title: t('incidents.timeline.alertSkipped', sent), detail: text(p['reason']) };
+      return { title: t('incidents.timeline.alertSkipped', sent), detail: reason };
     case 'escalated':
       return {
         title: t('incidents.timeline.escalated', { level: p['to_level'] }),
-        detail: text(p['reason']),
+        detail: reason,
       };
     case 'escalation_exhausted':
-      return { title: t('incidents.timeline.exhausted'), detail: text(p['reason']) };
+      return { title: t('incidents.timeline.exhausted'), detail: reason };
     case 'station_recovered':
       return { title: t('incidents.timeline.recovered'), detail: null };
     case 'acknowledged':

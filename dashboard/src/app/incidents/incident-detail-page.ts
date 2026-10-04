@@ -16,7 +16,7 @@ import { IncidentAlert, IncidentDetail, IncidentReadings, IncidentsApi } from '.
 import { IncidentActions } from './incident-actions';
 import { IncidentComment } from './incident-comment';
 import { ChartMark, ReadingsChart } from './readings-chart';
-import { eventText } from './timeline-presentation';
+import { eventText, reasonText } from './timeline-presentation';
 
 type DetailState =
   | { status: 'loading' }
@@ -45,6 +45,11 @@ export class IncidentDetailPage {
   protected readonly incidentStates = INCIDENT_STATES;
   protected readonly alertStates = ALERT_STATES;
   protected readonly channels = CHANNELS;
+
+  /** Why a skipped alert was not sent, in the current language. */
+  protected skipReason(alert: IncidentAlert): string | null {
+    return reasonText(alert.skipped_reason_code, null, alert.skipped_reason);
+  }
   protected readonly t = t;
   protected readonly severities = SEVERITIES;
   protected readonly stateOf = incidentState;

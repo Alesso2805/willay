@@ -39,6 +39,7 @@ function alert(overrides: Partial<IncidentAlert>): IncidentAlert {
     attempts: 1,
     sent_at: '2026-10-02T03:31:04Z',
     acknowledged_at: null,
+    skipped_reason_code: null,
     skipped_reason: null,
     email: null,
     ...overrides,
@@ -171,7 +172,7 @@ describe('IncidentDetailPage', () => {
     const { element, respond } = await setup();
     await respond(DETAIL, [
       alert({ email: 'operador@rimac.willay.test' }),
-      alert({ level_order: 2, contact_name: 'Rosa Brigada', channel: 'telegram', status: 'skipped', sent_at: null, skipped_reason: 'el contacto no vinculó Telegram' }),
+      alert({ level_order: 2, contact_name: 'Rosa Brigada', channel: 'telegram', status: 'skipped', sent_at: null, skipped_reason_code: 'no_telegram' }),
       alert({ level_order: 3, contact_name: 'Carmen Jefatura COE', status: 'acknowledged', acknowledged_at: '2026-10-02T05:30:01Z' }),
     ]);
 

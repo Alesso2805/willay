@@ -75,7 +75,7 @@
               <td class="py-2 pr-4 text-slate-700">{{ t(channels[alert.channel]) }}</td>
               <td class="py-2 pr-4"><app-state-badge [state]="alertStates[alert.status]" /></td>
               <td class="py-2 pr-4 text-xs whitespace-nowrap text-slate-600">{{ when(alert) ?? '—' }}</td>
-              <td class="py-2 text-xs text-slate-600">{{ alert.skipped_reason ?? '—' }}</td>
+              <td class="py-2 text-xs text-slate-600">{{ skipReason(alert) ?? '—' }}</td>
             </tr>
           }
         </tbody>
@@ -99,8 +99,8 @@
                 @if (alert.email) {
                   <p class="text-xs break-all text-slate-600">{{ alert.email }}</p>
                 }
-                @if (alert.skipped_reason) {
-                  <p class="text-xs text-slate-600">{{ alert.skipped_reason }}</p>
+                @if (skipReason(alert); as reason) {
+                  <p class="text-xs text-slate-600">{{ reason }}</p>
                 }
                 @if (when(alert); as when) {
                   <p class="text-xs text-slate-500">{{ when }}</p>

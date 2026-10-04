@@ -47,6 +47,9 @@ export interface IncidentAlert {
   attempts: number;
   sent_at: string | null;
   acknowledged_at: string | null;
+  /** no_email, no_telegram, incident_acknowledged or incident_resolved. */
+  skipped_reason_code: string | null;
+  /** Spanish text, only for alerts skipped before VIG-40. */
   skipped_reason: string | null;
   email: string | null;
 }

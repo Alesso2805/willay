@@ -307,6 +307,15 @@
       "up": "subida",
       "down": "bajada",
       "silenceRule": "la estación dejó de reportar"
+    },
+    "reasons": {
+      "not_acknowledged": "nadie confirmó en {{wait_s}} s",
+      "level_reached_nobody": "el nivel {{level}} no pudo avisar a nadie",
+      "level_removed": "el nivel {{level}} ya no existe en la política",
+      "no_email": "el contacto no tiene correo",
+      "no_telegram": "el contacto no vinculó Telegram",
+      "incident_acknowledged": "el incidente ya fue confirmado",
+      "incident_resolved": "el incidente ya fue resuelto"
     }
   },
   "chart": {
