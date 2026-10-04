@@ -220,7 +220,10 @@ def _introduce(args: argparse.Namespace, stations: int, ready: Readiness) -> Non
             f"  Nobody at level {ACK_LEVEL} has Telegram linked: acknowledge with the link in"
             f" their email ({args.mailpit_url})."
         )
-    _say(f"Watch it live: {args.dashboard_url}/mapa (rimac-operator) · email: {args.mailpit_url}")
+    _say(f"Watch it live: {args.dashboard_url}/mapa · email: {args.mailpit_url}")
+    # An acknowledgement from the dashboard at level 1 ends the story early: viewers cannot.
+    _say("  Log in as rimac-viewer: a viewer cannot acknowledge, so the dashboard cannot end")
+    _say(f"  the story before level {ACK_LEVEL} does.")
     _say()
 
 
