@@ -11,7 +11,8 @@ from willay.identity.api.dependencies import require
 from willay.identity.domain.permissions import Permission
 from willay.identity.domain.principal import Principal
 from willay.shared.audit import SqlAuditLog
-from willay.shared.web import ClockDep, DbConnection
+from willay.shared.errors import ErrorCode
+from willay.shared.web import ApiError, ClockDep, DbConnection
 from willay.territory.application.zones import (
     Actor,
     Zone,
@@ -35,7 +36,7 @@ router = APIRouter(prefix="/v1/zones", tags=["territory"])
 CanView = Annotated[Principal, Depends(require(Permission.VIEW))]
 CanManage = Annotated[Principal, Depends(require(Permission.MANAGE_TERRITORY))]
 
-_NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, detail="Zona no encontrada")
+_NOT_FOUND = ApiError(status.HTTP_404_NOT_FOUND, ErrorCode.ZONE_NOT_FOUND)
 
 
 class GeoJsonGeometry(BaseModel):

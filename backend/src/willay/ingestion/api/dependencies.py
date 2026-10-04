@@ -9,7 +9,7 @@ request holding one while asking for another could deadlock the pool under load.
 
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request, Security, status
+from fastapi import Depends, Request, Security, status
 from fastapi.security import APIKeyHeader
 
 from willay.ingestion.application.authenticate_station import (
@@ -22,7 +22,8 @@ from willay.ingestion.application.rate_limit import enforce_rate_limit
 from willay.ingestion.domain.rate_limit import MAX_BATCHES_PER_MINUTE, RateLimitExceededError
 from willay.ingestion.infrastructure.api_keys import ApiKeyHasher
 from willay.ingestion.infrastructure.repositories import SqlBatchCounter, SqlStationCredentials
-from willay.shared.web import ClockDep, EngineDep
+from willay.shared.errors import ErrorCode
+from willay.shared.web import ApiError, ClockDep, EngineDep
 
 _api_key = APIKeyHeader(
     name="X-Api-Key",
@@ -44,13 +45,13 @@ async def current_station(
     try:
         return await authenticate_station(raw_key, SqlStationCredentials(engine), hasher)
     except InvalidApiKeyError as exc:
-        raise HTTPException(
+        raise ApiError(
             status.HTTP_401_UNAUTHORIZED,
-            detail="API key ausente o inválida",
+            ErrorCode.API_KEY_INVALID,
             headers={"WWW-Authenticate": "ApiKey"},
         ) from exc
     except InactiveStationError as exc:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Estación inactiva") from exc
+        raise ApiError(status.HTTP_403_FORBIDDEN, ErrorCode.STATION_INACTIVE) from exc
 
 
 async def rate_limited_station(
@@ -63,10 +64,11 @@ async def rate_limited_station(
     try:
         await enforce_rate_limit(station.station_id, clock, SqlBatchCounter(engine))
     except RateLimitExceededError as exc:
-        raise HTTPException(
+        raise ApiError(
             status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Límite de {MAX_BATCHES_PER_MINUTE} lotes por minuto por estación",
+            ErrorCode.RATE_LIMITED,
             headers={"Retry-After": str(exc.retry_after_s)},
+            max=MAX_BATCHES_PER_MINUTE,
         ) from exc
     return station
 

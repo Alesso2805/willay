@@ -13,7 +13,8 @@ from willay.identity.domain.principal import Principal
 from willay.ingestion.api.dependencies import get_api_key_hasher
 from willay.ingestion.infrastructure.api_keys import ApiKeyHasher, Argon2ApiKeyIssuer
 from willay.shared.audit import SqlAuditLog
-from willay.shared.web import ClockDep, DbConnection
+from willay.shared.errors import ErrorCode
+from willay.shared.web import ApiError, ClockDep, DbConnection
 from willay.territory.application.stations import (
     DuplicateStationCodeError,
     IssuedStation,
@@ -50,7 +51,7 @@ CanView = Annotated[Principal, Depends(require(Permission.VIEW))]
 CanManage = Annotated[Principal, Depends(require(Permission.MANAGE_TERRITORY))]
 Hasher = Annotated[ApiKeyHasher, Depends(get_api_key_hasher)]
 
-_NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, detail="Estación no encontrada")
+_NOT_FOUND = ApiError(status.HTTP_404_NOT_FOUND, ErrorCode.STATION_NOT_FOUND)
 # A response carrying a plaintext key must never be cached.
 _NO_STORE = {"Cache-Control": "no-store"}
 
@@ -163,8 +164,8 @@ async def post_station(
     except InvalidStationError as exc:
         raise _invalid(exc) from exc
     except DuplicateStationCodeError as exc:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, detail=f"Ya existe una estación con el código {exc}"
+        raise ApiError(
+            status.HTTP_409_CONFLICT, ErrorCode.STATION_CODE_TAKEN, station=str(exc)
         ) from exc
     response.headers.update({"Location": f"/v1/stations/{issued.station.id}", **_NO_STORE})
     return _issued(issued)

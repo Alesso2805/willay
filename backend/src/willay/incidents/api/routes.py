@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from willay.identity.api.dependencies import require
@@ -25,12 +25,12 @@ from willay.incidents.domain.lifecycle import (
     IncidentStatus,
     InvalidTransitionError,
     Resolution,
-    Transition,
 )
 from willay.incidents.domain.severity import Severity
 from willay.incidents.infrastructure.incident_readings import SqlIncidentReadings
 from willay.incidents.infrastructure.incidents_repository import SqlIncidentRepository
-from willay.shared.web import ClockDep, DbConnection
+from willay.shared.errors import ErrorCode, Term
+from willay.shared.web import ApiError, ClockDep, DbConnection
 
 router = APIRouter(prefix="/v1/incidents", tags=["incidents"])
 
@@ -38,14 +38,8 @@ CanView = Annotated[Principal, Depends(require(Permission.VIEW))]
 CanAcknowledge = Annotated[Principal, Depends(require(Permission.ACKNOWLEDGE_INCIDENTS))]
 CanResolve = Annotated[Principal, Depends(require(Permission.RESOLVE_INCIDENTS))]
 
-_NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, detail="Incidente no encontrado")
+_NOT_FOUND = ApiError(status.HTTP_404_NOT_FOUND, ErrorCode.INCIDENT_NOT_FOUND)
 # The dashboard shows the 409 detail verbatim: Spanish labels, not the internal values.
-_STATUS_LABEL = {
-    IncidentStatus.OPEN: "abierto",
-    IncidentStatus.ACKNOWLEDGED: "confirmado",
-    IncidentStatus.RESOLVED: "resuelto",
-}
-_TRANSITION_LABEL = {Transition.ACKNOWLEDGE: "confirmar", Transition.RESOLVE: "resolver"}
 _TRANSITION_RESPONSES: dict[int | str, dict[str, Any]] = {
     404: {"description": "Not found"},
     409: {"description": "Invalid transition for the current status"},
@@ -270,13 +264,12 @@ def _actor(principal: Principal) -> Actor:
     return Actor(principal.organization_id, principal.user_id)
 
 
-def _conflict(exc: InvalidTransitionError) -> HTTPException:
-    return HTTPException(
+def _conflict(exc: InvalidTransitionError) -> ApiError:
+    return ApiError(
         status.HTTP_409_CONFLICT,
-        detail=(
-            f"El incidente ya está {_STATUS_LABEL[exc.current]}: "
-            f"no se puede {_TRANSITION_LABEL[exc.transition]}."
-        ),
+        ErrorCode.INCIDENT_TRANSITION,
+        status=Term(f"incident_status.{exc.current.value}"),
+        action=Term(f"incident_action.{exc.transition.value}"),
     )
 
 

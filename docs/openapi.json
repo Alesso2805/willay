@@ -2693,6 +2693,7 @@
     }
   },
   "info": {
+    "description": "Errors answer `{\"detail\": text, \"code\": code}`: the code is stable, the text follows `Accept-Language` (es, en; Spanish by default). A 422 keeps FastAPI's shape, a list in `detail`, each item with its own `code`.",
     "title": "Willay API",
     "version": "0.1.0"
   },

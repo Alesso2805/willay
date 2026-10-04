@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
 
 from willay.identity.api.dependencies import require
@@ -19,7 +19,8 @@ from willay.identity.domain.audit_trail import (
 from willay.identity.domain.permissions import Permission
 from willay.identity.domain.principal import Principal
 from willay.identity.infrastructure.sql_audit_trail import SqlAuditTrail
-from willay.shared.web import DbConnection
+from willay.shared.errors import ErrorCode
+from willay.shared.web import ApiError, DbConnection, FieldProblem
 
 router = APIRouter(prefix="/v1/audit", tags=["identity"])
 
@@ -71,11 +72,11 @@ async def list_audit(
     limit: Annotated[int, Query(ge=1, le=MAX_PAGE)] = DEFAULT_PAGE,
 ) -> AuditPageOut:
     if since is not None and until is not None and since >= until:
-        raise _invalid("since", "La fecha inicial debe ser anterior a la final.")
+        raise _invalid("since", ErrorCode.AUDIT_DATE_ORDER)
     try:
         after = decode_cursor(cursor) if cursor is not None else None
     except InvalidCursorError as exc:
-        raise _invalid("cursor", "El cursor no es válido: vuelve a la primera página.") from exc
+        raise _invalid("cursor", ErrorCode.AUDIT_CURSOR_INVALID) from exc
     page = await read_page(
         principal.organization_id,
         AuditFilters(entity_type, entity_id, actor_id, since, until),
@@ -92,11 +93,10 @@ async def list_authors(principal: CanView, conn: DbConnection) -> list[AuthorOut
     return [AuthorOut(id=a.id, name=a.name) for a in authors]
 
 
-def _invalid(field: str, message: str) -> HTTPException:
+def _invalid(field: str, code: ErrorCode) -> ApiError:
     """The same shape as FastAPI's own validation errors."""
-    return HTTPException(
-        status.HTTP_422_UNPROCESSABLE_CONTENT,
-        detail=[{"loc": ["query", field], "msg": message, "type": "value_error"}],
+    return ApiError(
+        status.HTTP_422_UNPROCESSABLE_CONTENT, code, fields=[FieldProblem(["query", field], code)]
     )
 
 

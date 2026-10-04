@@ -36,14 +36,15 @@ from willay.identity.domain.permissions import Permission
 from willay.identity.domain.principal import Principal
 from willay.shared.audit import SqlAuditLog
 from willay.shared.clock import Clock
-from willay.shared.web import ClockDep, DbConnection, SettingsDep
+from willay.shared.errors import ErrorCode
+from willay.shared.web import ApiError, ClockDep, DbConnection, SettingsDep
 
 router = APIRouter(prefix="/v1/contacts", tags=["alerts"])
 
 CanView = Annotated[Principal, Depends(require(Permission.VIEW_CONTACT_DETAILS))]
 CanManage = Annotated[Principal, Depends(require(Permission.MANAGE_CONTACTS))]
 
-_NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, detail="Contacto no encontrado")
+_NOT_FOUND = ApiError(status.HTTP_404_NOT_FOUND, ErrorCode.CONTACT_NOT_FOUND)
 _RESPONSES: dict[int | str, dict[str, str]] = {404: {"description": "Not found"}}
 
 
@@ -151,12 +152,8 @@ async def remove_contact(
     except ContactNotFoundError as exc:
         raise _NOT_FOUND from exc
     except ContactHasHistoryError as exc:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            detail=(
-                f"{exc.contact.full_name} tiene historial (alertas o confirmaciones) y no se "
-                "puede borrar. Quítalo de sus grupos para que deje de recibir alertas."
-            ),
+        raise ApiError(
+            status.HTTP_409_CONFLICT, ErrorCode.CONTACT_HAS_HISTORY, name=exc.contact.full_name
         ) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -226,9 +223,8 @@ async def post_telegram_link(
     except ContactNotFoundError as exc:
         raise _NOT_FOUND from exc
     except TelegramNotConfiguredError as exc:
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="El bot de Telegram no está configurado (WILLAY_TELEGRAM_BOT_USERNAME).",
+        raise ApiError(
+            status.HTTP_503_SERVICE_UNAVAILABLE, ErrorCode.TELEGRAM_NOT_CONFIGURED
         ) from exc
     response.headers["Cache-Control"] = "no-store"  # the link is a single-use secret
     return TelegramLinkOut(url=link.url, expires_at=link.expires_at)

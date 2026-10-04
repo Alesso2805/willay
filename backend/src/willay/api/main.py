@@ -35,7 +35,7 @@ from willay.shared.config import Settings, get_settings
 from willay.shared.db import create_engine
 from willay.shared.logging import configure_logging
 from willay.shared.pg_listen import asyncpg_dsn
-from willay.shared.web import validation_error_handler
+from willay.shared.web import ApiError, api_error_handler, validation_error_handler
 from willay.territory.api.stations import router as stations_router
 from willay.territory.api.zones import router as zones_router
 
@@ -66,8 +66,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await listening
         await app.state.engine.dispose()
 
-    app = FastAPI(title="Willay API", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(
+        title="Willay API",
+        version="0.1.0",
+        description=(
+            'Errors answer `{"detail": text, "code": code}`: the code is stable, the text'
+            " follows `Accept-Language` (es, en; Spanish by default). A 422 keeps FastAPI's"
+            " shape, a list in `detail`, each item with its own `code`."
+        ),
+        lifespan=lifespan,
+    )
     app.add_exception_handler(RequestValidationError, validation_error_handler)
+    app.add_exception_handler(ApiError, api_error_handler)
     # The JWT goes in the Authorization header (never cookies): no allow_credentials needed.
     app.add_middleware(
         CORSMiddleware,

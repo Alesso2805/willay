@@ -1,0 +1,41 @@
+{
+  "errors": {
+    "token_invalid": "Missing or invalid token",
+    "organization_required": "The user must belong to exactly one organization registered in Willay",
+    "identity_unavailable": "Identity provider unavailable",
+    "permission_denied": "Your role does not have the permission {{permission}}",
+    "audit_date_order": "The start date must be before the end date.",
+    "audit_cursor_invalid": "The cursor is not valid: go back to the first page.",
+    "api_key_invalid": "Missing or invalid API key",
+    "station_inactive": "Inactive station",
+    "rate_limited": "Limit of {{max}} batches per minute per station",
+    "reading_in_future": "measured_at is in the future (the station's clock is off)",
+    "zone_not_found": "Zone not found",
+    "station_not_found": "Station not found",
+    "station_code_taken": "A station with the code {{station}} already exists",
+    "rule_not_found": "Rule not found",
+    "incident_not_found": "Incident not found",
+    "incident_transition": "The incident is already {{status}}: it cannot be {{action}}.",
+    "contact_not_found": "Contact not found",
+    "contact_has_history": "{{name}} has history (alerts or acknowledgements) and cannot be deleted. Remove them from their groups so they stop receiving alerts.",
+    "telegram_not_configured": "The Telegram bot is not configured (WILLAY_TELEGRAM_BOT_USERNAME).",
+    "group_not_found": "Group not found",
+    "group_name_taken": "There is already a group with that name.",
+    "group_in_use": "{{group}} is used by {{policies}}. Remove it from that policy before deleting it.",
+    "policy_not_found": "Policy not found",
+    "policy_in_use": "Some rule uses this policy: change it in those rules before deleting it.",
+    "policy_name_taken": "There is already a policy with that name."
+  },
+  "incident_status": {
+    "open": "open",
+    "acknowledged": "acknowledged",
+    "resolved": "resolved"
+  },
+  "incident_action": {
+    "acknowledge": "acknowledged",
+    "resolve": "resolved"
+  },
+  "format": {
+    "quote": "“{{text}}”"
+  }
+}

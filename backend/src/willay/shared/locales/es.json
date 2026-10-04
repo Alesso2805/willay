@@ -1,0 +1,41 @@
+{
+  "errors": {
+    "token_invalid": "Token ausente o inválido",
+    "organization_required": "El usuario debe pertenecer a exactamente una organización registrada en Willay",
+    "identity_unavailable": "Proveedor de identidad no disponible",
+    "permission_denied": "Tu rol no tiene el permiso {{permission}}",
+    "audit_date_order": "La fecha inicial debe ser anterior a la final.",
+    "audit_cursor_invalid": "El cursor no es válido: vuelve a la primera página.",
+    "api_key_invalid": "API key ausente o inválida",
+    "station_inactive": "Estación inactiva",
+    "rate_limited": "Límite de {{max}} lotes por minuto por estación",
+    "reading_in_future": "measured_at está en el futuro (reloj de la estación desfasado)",
+    "zone_not_found": "Zona no encontrada",
+    "station_not_found": "Estación no encontrada",
+    "station_code_taken": "Ya existe una estación con el código {{station}}",
+    "rule_not_found": "Regla no encontrada",
+    "incident_not_found": "Incidente no encontrado",
+    "incident_transition": "El incidente ya está {{status}}: no se puede {{action}}.",
+    "contact_not_found": "Contacto no encontrado",
+    "contact_has_history": "{{name}} tiene historial (alertas o confirmaciones) y no se puede borrar. Quítalo de sus grupos para que deje de recibir alertas.",
+    "telegram_not_configured": "El bot de Telegram no está configurado (WILLAY_TELEGRAM_BOT_USERNAME).",
+    "group_not_found": "Grupo no encontrado",
+    "group_name_taken": "Ya hay un grupo con ese nombre.",
+    "group_in_use": "{{group}} se usa en {{policies}}. Quítalo de esa política antes de borrarlo.",
+    "policy_not_found": "Política no encontrada",
+    "policy_in_use": "Alguna regla usa esta política: cámbiala en esas reglas antes de borrarla.",
+    "policy_name_taken": "Ya hay una política con ese nombre."
+  },
+  "incident_status": {
+    "open": "abierto",
+    "acknowledged": "confirmado",
+    "resolved": "resuelto"
+  },
+  "incident_action": {
+    "acknowledge": "confirmar",
+    "resolve": "resolver"
+  },
+  "format": {
+    "quote": "«{{text}}»"
+  }
+}

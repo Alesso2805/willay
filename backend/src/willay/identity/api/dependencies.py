@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Annotated, Any
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from willay.identity.application.authenticate import InvalidClaimsError, authenticate
@@ -29,20 +29,18 @@ from willay.identity.infrastructure.repositories import (
     SqlOrganizationRepository,
     SqlUserRepository,
 )
-from willay.shared.web import DbConnection, EngineDep
+from willay.shared.errors import ErrorCode
+from willay.shared.web import ApiError, DbConnection, EngineDep
 
 # auto_error=False: we answer 401 with WWW-Authenticate ourselves (FastAPI would send 403).
 _bearer = HTTPBearer(auto_error=False)
 
-_UNAUTHORIZED = HTTPException(
+_UNAUTHORIZED = ApiError(
     status.HTTP_401_UNAUTHORIZED,
-    detail="Token ausente o inválido",
+    ErrorCode.TOKEN_INVALID,
     headers={"WWW-Authenticate": 'Bearer error="invalid_token"'},
 )
-_FORBIDDEN_TENANT = HTTPException(
-    status.HTTP_403_FORBIDDEN,
-    detail="El usuario debe pertenecer a exactamente una organización registrada en Willay",
-)
+_FORBIDDEN_TENANT = ApiError(status.HTTP_403_FORBIDDEN, ErrorCode.ORGANIZATION_REQUIRED)
 
 
 def get_verifier(request: Request) -> JwtVerifier:
@@ -63,9 +61,7 @@ async def verified_claims(
     except TokenInvalidError as exc:
         raise _UNAUTHORIZED from exc
     except IdentityProviderUnavailableError as exc:
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE, detail="Proveedor de identidad no disponible"
-        ) from exc
+        raise ApiError(status.HTTP_503_SERVICE_UNAVAILABLE, ErrorCode.IDENTITY_UNAVAILABLE) from exc
 
 
 async def current_principal(
@@ -101,8 +97,8 @@ def require(permission: Permission) -> Callable[[Principal], Awaitable[Principal
 def _ensure(principal: Principal, permission: Permission) -> None:
     if not can(principal, permission):
         # Different message from the tenant 403, so the dashboard can tell them apart.
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN, detail=f"Tu rol no tiene el permiso {permission}"
+        raise ApiError(
+            status.HTTP_403_FORBIDDEN, ErrorCode.PERMISSION_DENIED, permission=permission.value
         )
 
 
