@@ -10,7 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import * as L from 'leaflet';
-import { createBaseMap } from '../map/base-map';
+import { createBaseMap, plainText } from '../map/base-map';
 import { RISK_STYLES, riskLabel } from './zone-presentation';
 import { MultiPolygonGeometry, PolygonGeometry, Position, Zone } from './zones.api';
 
@@ -86,7 +86,7 @@ export class ZoneMap {
       const layer = L.geoJSON(zone.geometry, { style: { ...style, fillOpacity: 0.15 } })
         .getLayers()[0] as L.Polygon;
       const state = zone.is_active ? '' : ' (desactivada)';
-      layer.bindTooltip(`${zone.name} · riesgo ${riskLabel(zone.risk_level)}${state}`, {
+      layer.bindTooltip(plainText(`${zone.name} · riesgo ${riskLabel(zone.risk_level)}${state}`), {
         sticky: true,
       });
       this.zoneLayer.addLayer(layer);

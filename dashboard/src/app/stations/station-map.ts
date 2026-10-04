@@ -10,7 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import * as L from 'leaflet';
-import { createBaseMap } from '../map/base-map';
+import { createBaseMap, plainText } from '../map/base-map';
 import { Zone } from '../zones/zones.api';
 import { Station } from './stations.api';
 
@@ -95,7 +95,7 @@ export class StationMap {
       const value = station.heartbeat?.last_value;
       const reading = value === null || value === undefined ? '' : ` · ${value} ${station.unit}`;
       const noZone = station.has_zone ? '' : ' · sin zona';
-      marker.bindTooltip(`${station.code} · ${station.name}${reading}${noZone}`);
+      marker.bindTooltip(plainText(`${station.code} · ${station.name}${reading}${noZone}`));
       this.stationLayer.addLayer(marker);
     }
     if (!this.fitted && stations.length > 0) {

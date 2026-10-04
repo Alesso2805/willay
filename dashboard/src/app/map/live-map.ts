@@ -11,7 +11,7 @@ import {
 import * as L from 'leaflet';
 import { ZONE_STATES } from '../ui/visual-states';
 import { riskLabel } from '../zones/zone-presentation';
-import { createBaseMap } from './base-map';
+import { createBaseMap, plainText } from './base-map';
 import { StationView, ZONE_STYLES, ZoneView, markerHtml } from './live-map-presentation';
 
 /**
@@ -71,7 +71,7 @@ export class LiveMap {
     for (const { zone, state, summary } of views) {
       const risk = riskLabel(zone.risk_level).toLowerCase();
       L.geoJSON(zone.geometry, { style: { color: ZONE_STATES[state].map, ...ZONE_STYLES[state] } })
-        .bindTooltip(`${zone.name} · ${summary} · riesgo ${risk}`, { sticky: true })
+        .bindTooltip(plainText(`${zone.name} · ${summary} · riesgo ${risk}`), { sticky: true })
         .addTo(this.zoneLayer);
     }
   }
@@ -84,7 +84,7 @@ export class LiveMap {
       const html = markerHtml(state, incident);
       const known = this.markers.get(station.id);
       if (known) {
-        known.marker.setLatLng([lat, lon]).setTooltipContent(label);
+        known.marker.setLatLng([lat, lon]).setTooltipContent(plainText(label));
         if (known.html !== html) {
           known.marker.setIcon(markerIcon(html));
           known.html = html;
@@ -93,7 +93,7 @@ export class LiveMap {
         // keyboard: false, the list next to the map is the keyboard and screen reader version.
         // Above and centered: a long label to one side gets clipped by the edge of the map.
         const marker = L.marker([lat, lon], { icon: markerIcon(html), keyboard: false })
-          .bindTooltip(label, { direction: 'top' })
+          .bindTooltip(plainText(label), { direction: 'top' })
           .addTo(this.stationLayer);
         this.markers.set(station.id, { marker, html });
       }
