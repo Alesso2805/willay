@@ -1,5 +1,6 @@
 import { causeLabel } from '../incidents/incident-presentation';
-import { VARIABLE_LABELS } from '../stations/station-presentation';
+import { VARIABLES, variableLabel } from '../stations/station-presentation';
+import { Variable } from '../stations/stations.api';
 import { t } from '../i18n/i18n';
 import { localTime } from '../ui/formats';
 import { RISK_LEVEL_STATES, SEVERITIES, VisualState } from '../ui/visual-states';
@@ -10,7 +11,7 @@ const VALUE_LABELS: Readonly<Record<string, (value: string) => string | undefine
   type: causeLabel,
   severity: (v) => stateLabel(SEVERITIES[v as keyof typeof SEVERITIES]),
   risk_level: (v) => stateLabel(RISK_LEVEL_STATES[v as keyof typeof RISK_LEVEL_STATES]),
-  variable: (v) => VARIABLE_LABELS[v as keyof typeof VARIABLE_LABELS],
+  variable: (v) => (VARIABLES.includes(v as Variable) ? variableLabel(v as Variable) : undefined),
   status: (v) => ({ active: 'Activa', inactive: 'Inactiva' })[v],
   source: (v) => ({ sensor: 'Sensor', simulator: 'Simulador' })[v],
 };

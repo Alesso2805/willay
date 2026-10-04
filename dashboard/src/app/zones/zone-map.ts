@@ -10,6 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import * as L from 'leaflet';
+import { currentLanguage, t } from '../i18n/i18n';
 import { createBaseMap, plainText } from '../map/base-map';
 import { RISK_STYLES, riskLabel } from './zone-presentation';
 import { MultiPolygonGeometry, PolygonGeometry, Position, Zone } from './zones.api';
@@ -31,7 +32,7 @@ const NO_SELF_INTERSECTION = { allowSelfIntersection: false } as const;
     #container
     class="h-[24rem] w-full lg:h-[calc(100vh-11rem)] lg:min-h-[28rem]"
     role="region"
-    aria-label="Mapa de zonas de riesgo. La lista junto al mapa muestra la misma información."
+    [attr.aria-label]="t('zones.mapLabel')"
   ></div>`,
 })
 export class ZoneMap {
@@ -41,6 +42,7 @@ export class ZoneMap {
   /** Geometry of the new or edited polygon, every time the operator changes it. */
   readonly geometryChange = output<DrawnGeometry>();
 
+  protected readonly t = t;
   private readonly container = viewChild.required<ElementRef<HTMLDivElement>>('container');
   private map?: L.Map;
   private readonly zoneLayer = L.featureGroup();
@@ -61,6 +63,8 @@ export class ZoneMap {
 
   private init(): void {
     const map = createBaseMap(this.container().nativeElement);
+    // Geoman's drawing hints ("click to place the first vertex"…) in the dashboard's language.
+    map.pm.setLang(currentLanguage());
     this.zoneLayer.addTo(map);
     map.on('pm:create', (event) => {
       this.draft = event.layer as L.Polygon;
@@ -85,8 +89,11 @@ export class ZoneMap {
         : { color: '#64748b', dashArray: '4 4', weight: 1 };
       const layer = L.geoJSON(zone.geometry, { style: { ...style, fillOpacity: 0.15 } })
         .getLayers()[0] as L.Polygon;
-      const state = zone.is_active ? '' : ' (desactivada)';
-      layer.bindTooltip(plainText(`${zone.name} · riesgo ${riskLabel(zone.risk_level)}${state}`), {
+      const label = t(zone.is_active ? 'zones.tooltip' : 'zones.tooltipInactive', {
+        name: zone.name,
+        risk: riskLabel(zone.risk_level),
+      });
+      layer.bindTooltip(plainText(label), {
         sticky: true,
       });
       this.zoneLayer.addLayer(layer);
@@ -130,7 +137,7 @@ export class ZoneMap {
         weight: 3,
         fillOpacity: 0.4,
       })
-        .bindTooltip('Aquí se cruza el polígono', { permanent: true, direction: 'top' })
+        .bindTooltip(t('zones.crossing'), { permanent: true, direction: 'top' })
         .addTo(this.map);
     }
   }

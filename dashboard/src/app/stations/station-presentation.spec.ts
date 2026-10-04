@@ -1,8 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { useLanguage } from '../i18n/i18n';
 import {
   keepNewerHeartbeats,
+  positionLabel,
   stationProblem,
   stationState,
+  variableLabel,
   withHeartbeat,
 } from './station-presentation';
 import { Heartbeat, Station } from './stations.api';
@@ -30,6 +33,16 @@ const STATION: Station = {
 };
 
 describe('station presentation', () => {
+  it('names variables and positions, and explains problems, in English too', async () => {
+    await useLanguage('en');
+    expect(variableLabel('water_level')).toBe('Water level');
+    expect(positionLabel('upstream')).toBe('Upstream');
+    const duplicate = new HttpErrorResponse({ status: 409 });
+    expect(stationProblem(duplicate)).toBe(
+      'A station with that code already exists in your organization.',
+    );
+  });
+
   const now = Date.parse('2026-10-27T09:00:00Z');
 
   it('a station is silent after K × its expected interval without reporting', () => {

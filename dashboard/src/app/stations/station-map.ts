@@ -10,6 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import * as L from 'leaflet';
+import { t } from '../i18n/i18n';
 import { createBaseMap, plainText } from '../map/base-map';
 import { Zone } from '../zones/zones.api';
 import { Station } from './stations.api';
@@ -27,7 +28,7 @@ export type LonLat = [number, number];
     class="h-[24rem] w-full lg:h-[calc(100vh-11rem)] lg:min-h-[28rem]"
     [class.cursor-crosshair]="picking()"
     role="region"
-    aria-label="Mapa de estaciones. La lista junto al mapa muestra la misma información."
+    [attr.aria-label]="t('stations.mapLabel')"
   ></div>`,
 })
 export class StationMap {
@@ -38,6 +39,7 @@ export class StationMap {
   readonly selectedId = input<string | null>(null);
   readonly picked = output<LonLat>();
 
+  protected readonly t = t;
   private readonly container = viewChild.required<ElementRef<HTMLDivElement>>('container');
   private map?: L.Map;
   private readonly zoneLayer = L.featureGroup();
@@ -94,7 +96,7 @@ export class StationMap {
       });
       const value = station.heartbeat?.last_value;
       const reading = value === null || value === undefined ? '' : ` · ${value} ${station.unit}`;
-      const noZone = station.has_zone ? '' : ' · sin zona';
+      const noZone = station.has_zone ? '' : ` · ${t('stations.tooltipNoZone')}`;
       marker.bindTooltip(plainText(`${station.code} · ${station.name}${reading}${noZone}`));
       this.stationLayer.addLayer(marker);
     }
@@ -111,7 +113,7 @@ export class StationMap {
     if (point) {
       const [lon, lat] = point;
       this.pendingMarker = L.circleMarker([lat, lon], { radius: 10, color: '#15803d', weight: 3 })
-        .bindTooltip('Nueva ubicación', { permanent: true, direction: 'top' })
+        .bindTooltip(t('stations.newLocation'), { permanent: true, direction: 'top' })
         .addTo(this.map);
     }
   }

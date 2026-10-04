@@ -1,4 +1,4 @@
-<app-page-header title="Zonas de riesgo" [subtitle]="subtitle()">
+<app-page-header [title]="t('zones.title')" [subtitle]="subtitle()">
   <label class="flex items-center gap-2 text-sm text-slate-600">
     <input
       type="checkbox"
@@ -6,12 +6,12 @@
       [checked]="includeInactive()"
       (change)="toggleInactive($any($event.target).checked)"
     />
-    Mostrar desactivadas
+    {{ t('ui.showInactive') }}
   </label>
   @if (canManage() && !editing()) {
     <button type="button" class="btn-primary" (click)="startCreate()">
       <app-icon name="plus" />
-      Nueva zona
+      {{ t('zones.new') }}
     </button>
   }
 </app-page-header>
@@ -31,18 +31,18 @@
   <div class="flex flex-col gap-4">
     @if (editing(); as current) {
       <form class="card flex flex-col gap-4 p-5" [formGroup]="form" (ngSubmit)="save()">
-        <h2 class="font-semibold text-slate-900">{{ current.kind === 'new' ? 'Nueva zona' : 'Editar zona' }}</h2>
+        <h2 class="font-semibold text-slate-900">{{ t(current.kind === 'new' ? 'zones.new' : 'zones.editTitle') }}</h2>
 
         <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
-          Nombre
+          {{ t('zones.name') }}
           <input formControlName="name" class="field" required maxlength="120" />
         </label>
         @if (form.controls.name.touched && form.controls.name.invalid) {
-          <p class="-mt-2 text-sm text-red-700">El nombre es obligatorio.</p>
+          <p class="-mt-2 text-sm text-red-700">{{ t('zones.nameRequired') }}</p>
         }
 
         <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
-          Nivel de riesgo
+          {{ t('zones.riskLevel') }}
           <select formControlName="risk_level" class="field">
             @for (level of riskLevels; track level) {
               <option [value]="level">{{ riskLabel(level) }}</option>
@@ -51,20 +51,20 @@
         </label>
 
         <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
-          Población estimada (opcional)
+          {{ t('zones.population') }}
           <input type="number" min="0" formControlName="population_estimate" class="field" />
         </label>
 
         <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
-          Descripción (opcional)
+          {{ t('zones.description') }}
           <textarea formControlName="description" rows="2" class="field"></textarea>
         </label>
 
         <p class="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
           @if (geometry()) {
-            Polígono listo: {{ vertexCount() }} vértices. Puedes ajustarlos en el mapa.
+            {{ t('zones.polygonReady', { count: vertexCount() }) }}
           } @else {
-            Aún no hay polígono: dibújalo en el mapa.
+            {{ t('zones.noPolygon') }}
           }
         </p>
 
@@ -74,21 +74,21 @@
 
         <div class="flex gap-2">
           <button type="submit" class="btn-primary" [disabled]="saving()">
-            {{ saving() ? 'Guardando…' : 'Guardar' }}
+            {{ t(saving() ? 'ui.saving' : 'ui.save') }}
           </button>
-          <button type="button" class="btn-secondary" (click)="cancel()">Cancelar</button>
+          <button type="button" class="btn-secondary" (click)="cancel()">{{ t('ui.cancel') }}</button>
         </div>
       </form>
     }
 
     <section aria-labelledby="zone-list-title">
-      <h2 id="zone-list-title" class="sr-only">Listado de zonas</h2>
+      <h2 id="zone-list-title" class="sr-only">{{ t('zones.listTitle') }}</h2>
       <app-load-state
         class="block"
         [status]="listStatus()"
-        loading="Cargando zonas…"
-        empty="Todavía no hay zonas."
-        error="No se pudieron cargar las zonas."
+        [loading]="t('zones.loading')"
+        [empty]="t('zones.empty')"
+        [error]="t('zones.error')"
         (retry)="load()"
       />
       <ul class="flex flex-col gap-3">
@@ -98,26 +98,26 @@
               <p class="font-semibold text-slate-900">
                 {{ zone.name }}
                 @if (!zone.is_active) {
-                  <span class="text-sm font-normal text-slate-500">(desactivada)</span>
+                  <span class="text-sm font-normal text-slate-500">{{ t('zones.inactiveTag') }}</span>
                 }
               </p>
             </div>
             <p class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
-              <span>Riesgo:</span>
+              <span>{{ t('zones.risk') }}</span>
               <app-state-badge [state]="riskStates[zone.risk_level]" />
             </p>
             @if (zone.population_estimate !== null) {
               <p class="mt-1 text-sm text-slate-600">
-                Población estimada: <span class="font-medium tabular-nums text-slate-900">{{ count(zone.population_estimate) }}</span>
+                {{ t('zones.populationLabel') }} <span class="font-medium tabular-nums text-slate-900">{{ count(zone.population_estimate) }}</span>
               </p>
             }
             @if (canManage() && !editing()) {
               <div class="mt-3 flex gap-4 border-t border-slate-100 pt-3 text-sm">
                 @if (zone.is_active) {
-                  <button type="button" class="link-action" (click)="startEdit(zone)">Editar</button>
-                  <button type="button" class="link-danger" (click)="deactivate(zone)">Desactivar</button>
+                  <button type="button" class="link-action" (click)="startEdit(zone)">{{ t('ui.edit') }}</button>
+                  <button type="button" class="link-danger" (click)="deactivate(zone)">{{ t('ui.deactivate') }}</button>
                 } @else {
-                  <button type="button" class="link-action" (click)="reactivate(zone)">Reactivar</button>
+                  <button type="button" class="link-action" (click)="reactivate(zone)">{{ t('ui.reactivate') }}</button>
                 }
               </div>
             }

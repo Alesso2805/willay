@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { t } from '../i18n/i18n';
 import { Session } from '../session';
 import { wholeNumber } from '../ui/formats';
 import { Icon } from '../ui/icon';
@@ -25,6 +26,7 @@ export class ZonesPage {
 
   protected readonly riskLevels = RISK_LEVELS;
   protected readonly riskLabel = riskLabel;
+  protected readonly t = t;
   protected readonly riskStates = RISK_LEVEL_STATES;
   protected readonly count = wholeNumber;
 
@@ -40,9 +42,9 @@ export class ZonesPage {
     const active = this.zones().filter((zone) => zone.is_active);
     const critical = active.filter((zone) => zone.risk_level === 'critical').length;
     const people = active.reduce((total, zone) => total + (zone.population_estimate ?? 0), 0);
-    const parts = [`${active.length} ${active.length === 1 ? 'zona activa' : 'zonas activas'}`];
-    if (critical > 0) parts.push(`${critical} de riesgo crítico`);
-    if (people > 0) parts.push(`${wholeNumber(people)} personas`);
+    const parts = [t('zones.active', { count: active.length })];
+    if (critical > 0) parts.push(t('zones.critical', { count: critical }));
+    if (people > 0) parts.push(t('zones.people', { count: people, people: wholeNumber(people) }));
     return parts.join(' · ');
   });
   protected readonly includeInactive = signal(false);
@@ -105,7 +107,7 @@ export class ZonesPage {
     this.geometry.set(null);
     this.problem.set(null);
     this.editing.set({ kind: 'new' });
-    this.status.set('Dibuja el polígono en el mapa: un clic por vértice y cierra en el primero.');
+    this.status.set(t('zones.drawHint'));
   }
 
   protected startEdit(zone: Zone): void {
@@ -118,7 +120,7 @@ export class ZonesPage {
     this.geometry.set(zone.geometry);
     this.problem.set(null);
     this.editing.set({ kind: 'edit', zone });
-    this.status.set(`Editando ${zone.name}. Arrastra los vértices en el mapa para cambiar la forma.`);
+    this.status.set(t('zones.editHint', { name: zone.name }));
   }
 
   protected cancel(): void {
@@ -139,12 +141,12 @@ export class ZonesPage {
     const name = this.form.controls.name.value.trim();
     if (!editing) return;
     if (!geometry) {
-      this.problem.set({ message: 'Falta dibujar el polígono en el mapa.', point: null });
+      this.problem.set({ message: t('zones.missingPolygon'), point: null });
       return;
     }
     if (this.form.invalid || !name) {
       this.form.markAllAsTouched();
-      this.problem.set({ message: 'Revisa los campos marcados.', point: null });
+      this.problem.set({ message: t('ui.checkFields'), point: null });
       return;
     }
     const value = this.form.getRawValue();
@@ -163,7 +165,7 @@ export class ZonesPage {
       next: (zone) => {
         this.saving.set(false);
         this.cancel();
-        this.status.set(`Zona «${zone.name}» guardada.`);
+        this.status.set(t('zones.saved', { name: zone.name }));
         this.load();
       },
       error: (error: unknown) => {
@@ -178,7 +180,7 @@ export class ZonesPage {
     const body: ZoneInput = { name, description, risk_level, population_estimate, geometry, is_active: true };
     this.api.update(zone.id, body).subscribe({
       next: () => {
-        this.status.set(`Zona «${zone.name}» reactivada.`);
+        this.status.set(t('zones.reactivated', { name: zone.name }));
         this.load();
       },
       error: (error: unknown) => this.status.set(saveProblem(error).message),
@@ -186,10 +188,10 @@ export class ZonesPage {
   }
 
   protected deactivate(zone: Zone): void {
-    if (!confirm(`¿Desactivar la zona «${zone.name}»? Sus reglas dejarán de aplicarse.`)) return;
+    if (!confirm(t('zones.confirmDeactivate', { name: zone.name }))) return;
     this.api.deactivate(zone.id).subscribe({
       next: () => {
-        this.status.set(`Zona «${zone.name}» desactivada.`);
+        this.status.set(t('zones.deactivated', { name: zone.name }));
         this.load();
       },
       error: (error: unknown) => this.status.set(saveProblem(error).message),

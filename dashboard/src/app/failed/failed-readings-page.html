@@ -1,23 +1,18 @@
-<app-page-header title="Lecturas fallidas" [subtitle]="subtitle()" />
+<app-page-header [title]="t('failedPage.title')" [subtitle]="subtitle()" />
 
 @if (!canReprocess()) {
-  <app-notice tone="info">
-    Tu rol no permite ver las lecturas fallidas: las ven operadores y administradores.
-  </app-notice>
+  <app-notice tone="info">{{ t('failedPage.forbidden') }}</app-notice>
 } @else {
-  <app-notice tone="info" class="mb-4">
-    El evaluador no pudo procesar estas lecturas tras 5 intentos. Cada una puede ser una alerta que
-    no salió: revisa el error, corrige la causa y reprocésalas.
-  </app-notice>
+  <app-notice tone="info" class="mb-4">{{ t('failedPage.explanation') }}</app-notice>
 
   <p class="mb-3 text-sm text-slate-600" aria-live="polite">{{ status() }}</p>
 
   <app-load-state
     class="block"
     [status]="listStatus()"
-    loading="Cargando lecturas fallidas…"
-    empty="No hay lecturas fallidas: todas se evaluaron."
-    error="No se pudieron cargar las lecturas fallidas."
+    [loading]="t('failedPage.loading')"
+    [empty]="t('failedPage.empty')"
+    [error]="t('failedPage.error')"
     (retry)="load()"
   />
 
@@ -30,7 +25,7 @@
           [checked]="allSelected()"
           (change)="toggleAll($any($event.target).checked)"
         />
-        Seleccionar todas
+        {{ t('failedPage.selectAll') }}
       </label>
       <button
         type="button"
@@ -38,24 +33,26 @@
         [disabled]="selected().size === 0 || working()"
         (click)="reprocess()"
       >
-        {{ working() ? 'Reprocesando…' : 'Reprocesar seleccionadas (' + selected().size + ')' }}
+        {{
+          working()
+            ? t('failedPage.reprocessing')
+            : t('failedPage.reprocessSelected', { count: selected().size })
+        }}
       </button>
     </div>
 
     <!-- One layout at a time: a table from md up, cards below. -->
     <div class="card hidden overflow-x-auto md:block">
       <table class="w-full text-left text-sm">
-        <caption class="sr-only">
-          Lecturas que el evaluador no pudo procesar
-        </caption>
+        <caption class="sr-only">{{ t('failedPage.caption') }}</caption>
         <thead class="border-b border-slate-200 text-xs text-slate-500 uppercase">
           <tr>
-            <th scope="col" class="w-10 px-4 py-3"><span class="sr-only">Seleccionar</span></th>
-            <th scope="col" class="px-4 py-3 font-medium">Estación</th>
-            <th scope="col" class="px-4 py-3 font-medium">Medición</th>
-            <th scope="col" class="px-4 py-3 font-medium">Intentos</th>
-            <th scope="col" class="px-4 py-3 font-medium">Falló</th>
-            <th scope="col" class="px-4 py-3 font-medium">Último error</th>
+            <th scope="col" class="w-10 px-4 py-3"><span class="sr-only">{{ t('failedPage.select') }}</span></th>
+            <th scope="col" class="px-4 py-3 font-medium">{{ t('failedPage.station') }}</th>
+            <th scope="col" class="px-4 py-3 font-medium">{{ t('failedPage.measurement') }}</th>
+            <th scope="col" class="px-4 py-3 font-medium">{{ t('failedPage.attempts') }}</th>
+            <th scope="col" class="px-4 py-3 font-medium">{{ t('failedPage.failed') }}</th>
+            <th scope="col" class="px-4 py-3 font-medium">{{ t('failedPage.lastError') }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
@@ -66,7 +63,10 @@
                   type="checkbox"
                   class="size-4 rounded border-slate-300 accent-brand-700"
                   [attr.aria-label]="
-                    'Seleccionar ' + reading.station_code + ' ' + time(reading.measured_at)
+                    t('failedPage.selectOne', {
+                      station: reading.station_code,
+                      time: time(reading.measured_at),
+                    })
                   "
                   [checked]="selected().has(reading.id)"
                   (change)="toggle(reading.id, $any($event.target).checked)"
@@ -90,7 +90,7 @@
               </td>
               <td class="px-4 py-3">
                 <code class="text-xs break-words text-slate-700">{{
-                  reading.last_error ?? 'sin detalle'
+                  reading.last_error ?? t('failedPage.noDetail')
                 }}</code>
               </td>
             </tr>
@@ -120,13 +120,13 @@
             </span>
           </label>
           <p class="mt-2 text-xs text-slate-500">
-            {{ reading.attempts }} intentos · falló
+            {{ t('failedPage.attemptsFailed', { count: reading.attempts }) }}
             <time [attr.datetime]="reading.failed_at" [title]="time(reading.failed_at)">{{
               age(reading.failed_at)
             }}</time>
           </p>
           <code class="mt-1 block text-xs break-words text-slate-700">{{
-            reading.last_error ?? 'sin detalle'
+            reading.last_error ?? t('failedPage.noDetail')
           }}</code>
         </li>
       }
