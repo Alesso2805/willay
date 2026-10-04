@@ -71,5 +71,62 @@
   },
   "format": {
     "quote": "“{{text}}”"
+  },
+  "alerts": {
+    "severity": {
+      "info": "INFO",
+      "warning": "WARNING",
+      "critical": "CRITICAL"
+    },
+    "incident_of_severity": {
+      "info": "an INFO incident",
+      "warning": "a WARNING incident",
+      "critical": "a CRITICAL incident"
+    },
+    "cause": {
+      "threshold": "Value out of bounds",
+      "rate_of_change": "Sudden change",
+      "silence": "Station not reporting"
+    },
+    "field": {
+      "severity": "Severity",
+      "cause": "Cause",
+      "zone": "Zone",
+      "station": "Station",
+      "value": "Value",
+      "last_value": "Last value",
+      "opened": "Opened"
+    },
+    "no_value": "no data",
+    "if_nobody_acknowledges": "If nobody acknowledges it, Willay will alert the next level.",
+    "email": {
+      "subject": "[Willay] {{severity}} · {{cause}} in {{place}}",
+      "greeting": "Hello {{name}},",
+      "opened": "Willay opened {{incident}} in the {{zone}} zone.",
+      "confirm": "Acknowledge that you saw it at this link (valid for 24 hours):",
+      "disclaimer": "A support tool for operators: it does not replace official warnings\n(INDECI, COER, SISMATE)."
+    },
+    "page": {
+      "greeting": "Hello {{name}},",
+      "intro": "Willay alerted you to this incident. Acknowledge it so that the next level is not alerted.",
+      "title": "Acknowledge the alert",
+      "confirm": "Acknowledge: I saw it",
+      "record_seen": "Record that I saw it",
+      "confirmed_title": "Thank you! You acknowledged the alert",
+      "confirmed": "It is recorded that you saw it. Willay will not alert the next level.",
+      "seen_title": "Thank you: it is recorded that you saw it",
+      "already_acknowledged": "{{who}} had already acknowledged it.",
+      "already_acknowledged_at": "{{who}} had already acknowledged it on {{time}}.",
+      "someone_else": "Someone else",
+      "resolved_title": "This incident is already resolved",
+      "resolved": "There is no need to acknowledge it.",
+      "used_title": "This link was already used",
+      "used": "The alert was already acknowledged with this link.",
+      "expired_title": "This link expired",
+      "expired": "Acknowledgement links are valid for 24 hours. If the incident is still open, contact the operations team.",
+      "invalid_title": "Invalid link",
+      "invalid": "Check that you copied the whole link from the message.",
+      "disclaimer": "Willay is a support tool for operators: it does not replace official warnings (INDECI, COER, SISMATE)."
+    }
   }
 }

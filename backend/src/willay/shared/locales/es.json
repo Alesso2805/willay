@@ -71,5 +71,62 @@
   },
   "format": {
     "quote": "«{{text}}»"
+  },
+  "alerts": {
+    "severity": {
+      "info": "INFORMATIVO",
+      "warning": "ADVERTENCIA",
+      "critical": "CRÍTICO"
+    },
+    "incident_of_severity": {
+      "info": "un incidente INFORMATIVO",
+      "warning": "un incidente de ADVERTENCIA",
+      "critical": "un incidente CRÍTICO"
+    },
+    "cause": {
+      "threshold": "Valor fuera de límite",
+      "rate_of_change": "Cambio brusco",
+      "silence": "Estación sin reportar"
+    },
+    "field": {
+      "severity": "Severidad",
+      "cause": "Causa",
+      "zone": "Zona",
+      "station": "Estación",
+      "value": "Valor",
+      "last_value": "Último",
+      "opened": "Abierto"
+    },
+    "no_value": "sin dato",
+    "if_nobody_acknowledges": "Si nadie lo confirma, Willay avisará al siguiente nivel.",
+    "email": {
+      "subject": "[Willay] {{severity}} · {{cause}} en {{place}}",
+      "greeting": "Hola {{name}}:",
+      "opened": "Willay abrió {{incident}} en la zona {{zone}}.",
+      "confirm": "Confirma que lo viste en este enlace (vale 24 horas):",
+      "disclaimer": "Herramienta de apoyo para operadores: no reemplaza los avisos oficiales\n(INDECI, COER, SISMATE)."
+    },
+    "page": {
+      "greeting": "Hola {{name}}:",
+      "intro": "Willay te avisó de este incidente. Confírmalo para que no se siga avisando al siguiente nivel.",
+      "title": "Confirma la alerta",
+      "confirm": "Confirmar que lo vi",
+      "record_seen": "Registrar que lo vi",
+      "confirmed_title": "¡Gracias! Confirmaste la alerta",
+      "confirmed": "Quedó registrado que la viste. Willay no avisará al siguiente nivel.",
+      "seen_title": "Gracias: quedó registrado que la viste",
+      "already_acknowledged": "{{who}} ya lo había confirmado.",
+      "already_acknowledged_at": "{{who}} ya lo había confirmado el {{time}}.",
+      "someone_else": "Otra persona",
+      "resolved_title": "Este incidente ya fue resuelto",
+      "resolved": "No hace falta confirmarlo.",
+      "used_title": "Este enlace ya se usó",
+      "used": "La alerta ya fue confirmada con este enlace.",
+      "expired_title": "Este enlace venció",
+      "expired": "Los enlaces de confirmación valen 24 horas. Si el incidente sigue abierto, comunícate con el equipo de operaciones.",
+      "invalid_title": "Enlace no válido",
+      "invalid": "Revisa que copiaste el enlace completo desde el mensaje.",
+      "disclaimer": "Willay es una herramienta de apoyo para operadores: no reemplaza los avisos oficiales (INDECI, COER, SISMATE)."
+    }
   }
 }
