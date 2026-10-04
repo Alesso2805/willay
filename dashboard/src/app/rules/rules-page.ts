@@ -16,13 +16,14 @@ import { StateBadge } from '../ui/state-badge';
 import { RULE_STATES, SEVERITIES, Severity } from '../ui/visual-states';
 import { Zone, ZonesApi } from '../zones/zones.api';
 import {
-  OPERATOR_LABELS,
+  OPERATORS,
   cooldownText,
   fieldErrors,
   previewSummary,
   ruleProblem,
   ruleSummary,
   silenceText,
+  operatorLabel,
 } from './rule-presentation';
 import {
   Direction,
@@ -64,8 +65,8 @@ export class RulesPage {
   protected readonly t = t;
   protected readonly severityOrder = SEVERITY_ORDER;
   protected readonly ruleStates = RULE_STATES;
-  protected readonly operatorLabels = OPERATOR_LABELS;
-  protected readonly operators = Object.keys(OPERATOR_LABELS) as ThresholdOperator[];
+  protected readonly operatorLabel = operatorLabel;
+  protected readonly operators = OPERATORS;
   protected readonly cooldown = cooldownText;
 
   protected readonly rules = signal<Rule[]>([]);
@@ -106,7 +107,7 @@ export class RulesPage {
     if (!this.loaded()) return '';
     const active = this.rules().filter((r) => r.is_active).length;
     const zones = new Set(this.rules().map((r) => r.zone.id)).size;
-    return `${active} ${active === 1 ? 'regla activa' : 'reglas activas'} en ${zones} ${zones === 1 ? 'zona' : 'zonas'}`;
+    return `${t('rules.active', { count: active })} ${t('rules.inZones', { count: zones })}`;
   });
 
   protected readonly form = new FormGroup({
@@ -266,7 +267,7 @@ export class RulesPage {
         this.saving.set(false);
         this.cancel();
         const where = rule.station?.code ?? rule.zone.name;
-        this.done(`Regla de ${where} ${editing.kind === 'new' ? 'creada' : 'guardada'}.`);
+        this.done(t(editing.kind === 'new' ? 'rules.created' : 'rules.saved', { where }));
       },
       error: (error: unknown) => this.failed(error, () => this.saving.set(false)),
     });
@@ -274,10 +275,9 @@ export class RulesPage {
 
   protected deactivate(rule: Rule): void {
     const where = rule.station?.code ?? rule.zone.name;
-    const question = `¿Desactivar la regla «${causeLabel(rule.type)}» de ${where}? Deja de abrir incidentes; los que ya abrió siguen su curso.`;
-    if (!confirm(question)) return;
+    if (!confirm(t('rules.confirmDeactivate', { cause: causeLabel(rule.type), where }))) return;
     this.api.deactivate(rule.id).subscribe({
-      next: () => this.done(`Regla de ${where} desactivada.`),
+      next: () => this.done(t('rules.deactivated', { where })),
       error: (error: unknown) => this.status.set(ruleProblem(error)),
     });
   }
@@ -295,7 +295,7 @@ export class RulesPage {
       is_active: true,
     };
     this.api.update(rule.id, body).subscribe({
-      next: () => this.done(`Regla de ${where} reactivada.`),
+      next: () => this.done(t('rules.reactivated', { where })),
       error: (error: unknown) => this.status.set(ruleProblem(error)),
     });
   }
@@ -304,19 +304,17 @@ export class RulesPage {
   private body(): RuleInput | null {
     const v = this.form.getRawValue();
     const errors: Record<string, string> = {};
-    if (!v.zone_id) errors['zone_id'] = 'Elige la zona.';
-    if (v.type !== 'silence' && !v.station_id) {
-      errors['station_id'] = 'Este tipo compara valores en la unidad de una estación: elígela.';
-    }
+    if (!v.zone_id) errors['zone_id'] = t('rules.zoneRequired');
+    if (v.type !== 'silence' && !v.station_id) errors['station_id'] = t('rules.stationRequired');
     let params: RuleParams = {};
     if (v.type === 'threshold') {
       if (v.value === null || !Number.isFinite(v.value))
-        errors['value'] = 'Escribe el valor límite.';
-      if (!isWhole(v.consecutive, 1, 60)) errors['consecutive'] = 'Entre 1 y 60 lecturas.';
+        errors['value'] = t('rules.valueRequired');
+      if (!isWhole(v.consecutive, 1, 60)) errors['consecutive'] = t('rules.consecutiveRange');
       params = { operator: v.operator, value: v.value ?? 0, consecutive: v.consecutive ?? 1 };
     } else if (v.type === 'rate_of_change') {
-      if (v.delta === null || !(v.delta > 0)) errors['delta'] = 'Un cambio mayor que cero.';
-      if (!isWhole(v.window_minutes, 1, 60)) errors['window_minutes'] = 'Entre 1 y 60 minutos.';
+      if (v.delta === null || !(v.delta > 0)) errors['delta'] = t('rules.deltaPositive');
+      if (!isWhole(v.window_minutes, 1, 60)) errors['window_minutes'] = t('rules.windowRange');
       params = {
         direction: v.direction,
         delta: v.delta ?? 0,
@@ -324,13 +322,13 @@ export class RulesPage {
       };
     }
     if (!v.escalation_policy_id)
-      errors['escalation_policy_id'] = 'Elige la política de escalamiento.';
+      errors['escalation_policy_id'] = t('rules.policyRequired');
     if (v.cooldown_min === null || !(v.cooldown_min >= 0 && v.cooldown_min <= MAX_COOLDOWN_MIN)) {
-      errors['cooldown_min'] = `Entre 0 y ${MAX_COOLDOWN_MIN} minutos.`;
+      errors['cooldown_min'] = t('rules.cooldownRange', { max: MAX_COOLDOWN_MIN });
     }
     this.errors.set(errors);
     if (Object.keys(errors).length > 0) {
-      this.problem.set('Revisa los campos marcados.');
+      this.problem.set(t('ui.checkFields'));
       return null;
     }
     this.problem.set(null);
@@ -368,7 +366,7 @@ export class RulesPage {
   }
 
   protected marksOf(station: RulePreview['stations'][number]) {
-    return station.firings.map((firing) => ({ at: firing.at, label: 'Incidente' }));
+    return station.firings.map((firing) => ({ at: firing.at, label: t('rules.previewMark') }));
   }
 
   protected previewText(station: RulePreview['stations'][number]): string {

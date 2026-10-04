@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { useLanguage } from '../i18n/i18n';
 import { cooldownText, fieldErrors, previewSummary, ruleSummary } from './rule-presentation';
 import { Rule } from './rules.api';
 
@@ -17,6 +18,13 @@ const BASE: Rule = {
 };
 
 describe('ruleSummary', () => {
+  it('says it in English too', async () => {
+    await useLanguage('en');
+    expect(ruleSummary(BASE)).toBe('Greater than 3.5 m for 2 readings in a row');
+    expect(cooldownText(1800)).toBe('Waits 30 min after resolving');
+    expect(cooldownText(0)).toBe('No wait after resolving');
+  });
+
   it('says what each type watches, in the station unit', () => {
     expect(ruleSummary(BASE)).toBe('Mayor que 3.5 m durante 2 lecturas seguidas');
     expect(ruleSummary({ ...BASE, params: { operator: 'le', value: 1, consecutive: 1 } })).toBe(

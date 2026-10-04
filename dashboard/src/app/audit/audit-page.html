@@ -1,34 +1,32 @@
-<app-page-header title="Auditoría" subtitle="Quién cambió qué, del más reciente al más antiguo" />
+<app-page-header [title]="t('audit.title')" [subtitle]="t('audit.subtitle')" />
 
 @if (!canView()) {
-  <app-notice tone="info"
-    >Tu rol no permite ver la auditoría: la ven los administradores.</app-notice
-  >
+  <app-notice tone="info">{{ t('audit.forbidden') }}</app-notice>
 } @else {
   <form
     class="card mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5"
     (submit)="$event.preventDefault()"
   >
     <div class="flex flex-col gap-1.5">
-      <label for="audit-type" class="text-sm font-medium text-slate-700">Qué</label>
+      <label for="audit-type" class="text-sm font-medium text-slate-700">{{ t('audit.what') }}</label>
       <!-- [selected] per option, not [value] on the select: the select's value would be set
            before its options exist, and a filter read from the URL would show "Todo". -->
       <select id="audit-type" class="field" (change)="setFilter('tipo', $any($event.target).value)">
-        <option value="" [selected]="!filters().tipo">Todo</option>
+        <option value="" [selected]="!filters().tipo">{{ t('audit.all') }}</option>
         @for (type of entityTypes; track type[0]) {
           <option [value]="type[0]" [selected]="type[0] === filters().tipo">{{ type[1] }}</option>
         }
       </select>
     </div>
     <div class="flex flex-col gap-1.5">
-      <label for="audit-author" class="text-sm font-medium text-slate-700">Autor</label>
+      <label for="audit-author" class="text-sm font-medium text-slate-700">{{ t('audit.author') }}</label>
       <!-- The authors arrive after the filters: each option says whether it is the chosen one. -->
       <select
         id="audit-author"
         class="field"
         (change)="setFilter('autor', $any($event.target).value)"
       >
-        <option value="" [selected]="!filters().autor">Cualquiera</option>
+        <option value="" [selected]="!filters().autor">{{ t('audit.anyone') }}</option>
         @for (author of authors(); track author.id) {
           <option [value]="author.id" [selected]="author.id === filters().autor">
             {{ author.name }}
@@ -37,7 +35,7 @@
       </select>
     </div>
     <div class="flex flex-col gap-1.5">
-      <label for="audit-since" class="text-sm font-medium text-slate-700">Desde</label>
+      <label for="audit-since" class="text-sm font-medium text-slate-700">{{ t('audit.since') }}</label>
       <input
         id="audit-since"
         type="date"
@@ -48,7 +46,7 @@
       />
     </div>
     <div class="flex flex-col gap-1.5">
-      <label for="audit-until" class="text-sm font-medium text-slate-700">Hasta</label>
+      <label for="audit-until" class="text-sm font-medium text-slate-700">{{ t('audit.until') }}</label>
       <input
         id="audit-until"
         type="date"
@@ -70,30 +68,30 @@
         [disabled]="!filtered()"
         (click)="clearFilters()"
       >
-        Quitar filtros
+        {{ t('audit.clear') }}
       </button>
     </div>
     @if (filters().entidad) {
       <p class="text-sm text-slate-600 sm:col-span-2 lg:col-span-5">
-        Solo el historial de una entidad.
+        {{ t('audit.oneEntity') }}
         <button type="button" class="link-action" (click)="setFilter('entidad', '')">
-          Ver todo
+          {{ t('audit.seeAll') }}
         </button>
       </p>
     }
   </form>
 
   @if (dateProblem()) {
-    <app-notice tone="info">Corrige las fechas para ver los registros.</app-notice>
+    <app-notice tone="info">{{ t('audit.fixDates') }}</app-notice>
   } @else {
     <section aria-labelledby="audit-list-title">
-      <h2 id="audit-list-title" class="sr-only">Registros de auditoría</h2>
+      <h2 id="audit-list-title" class="sr-only">{{ t('audit.listTitle') }}</h2>
       <app-load-state
         class="block"
         [status]="listStatus()"
-        loading="Cargando auditoría…"
-        [empty]="filtered() ? 'No hay registros con estos filtros.' : 'Todavía no hay registros.'"
-        error="No se pudo cargar la auditoría."
+        [loading]="t('audit.loading')"
+        [empty]="t(filtered() ? 'audit.emptyFiltered' : 'audit.empty')"
+        [error]="t('audit.error')"
         (retry)="load()"
       />
 
@@ -101,15 +99,13 @@
         <!-- One layout at a time: a table from md up, cards below. -->
         <div class="card hidden overflow-x-auto md:block">
           <table class="w-full text-left text-sm">
-            <caption class="sr-only">
-              Cambios con su autor y fecha
-            </caption>
+            <caption class="sr-only">{{ t('audit.caption') }}</caption>
             <thead class="border-b border-slate-200 text-xs text-slate-500 uppercase">
               <tr>
-                <th scope="col" class="px-4 py-3 font-medium">Fecha</th>
-                <th scope="col" class="px-4 py-3 font-medium">Autor</th>
-                <th scope="col" class="px-4 py-3 font-medium">Acción</th>
-                <th scope="col" class="px-4 py-3 font-medium">Cambios</th>
+                <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.date') }}</th>
+                <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.author') }}</th>
+                <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.action') }}</th>
+                <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.changes') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -149,7 +145,7 @@
               [disabled]="loadingMore()"
               (click)="loadMore()"
             >
-              {{ loadingMore() ? 'Cargando…' : 'Cargar más' }}
+              {{ t(loadingMore() ? 'ui.loading' : 'audit.loadMore') }}
             </button>
           </div>
         }

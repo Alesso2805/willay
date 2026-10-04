@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { t } from '../i18n/i18n';
 import { Session } from '../session';
 import { localTime } from '../ui/formats';
 import { Icon } from '../ui/icon';
@@ -23,6 +24,7 @@ type Editing = { kind: 'new' } | { kind: 'edit'; contact: Contact };
 export class ContactsPage {
   private readonly api = inject(ContactsApi);
   private readonly session = inject(Session);
+  protected readonly t = t;
 
   protected readonly channelLabels = CONTACT_CHANNEL_STATES;
   protected readonly contacts = signal<Contact[]>([]);
@@ -50,11 +52,11 @@ export class ContactsPage {
   protected readonly subtitle = computed(() => {
     if (!this.loaded()) return '';
     const contacts = this.contacts();
-    const parts = [`${contacts.length} ${contacts.length === 1 ? 'contacto' : 'contactos'}`];
+    const parts = [t('contacts.count', { count: contacts.length })];
     const unreachable = contacts.filter((c) => channelStates(c).includes('none')).length;
-    if (unreachable > 0) parts.push(`${unreachable} sin canal`);
+    if (unreachable > 0) parts.push(t('contacts.noChannel', { count: unreachable }));
     const ungrouped = contacts.filter((c) => c.groups.length === 0).length;
-    if (ungrouped > 0) parts.push(`${ungrouped} sin grupos`);
+    if (ungrouped > 0) parts.push(t('contacts.ungrouped', { count: ungrouped }));
     return parts.join(' · ');
   });
 
@@ -119,9 +121,7 @@ export class ContactsPage {
     const value = this.form.getRawValue();
     if (this.form.invalid || !value.full_name.trim()) {
       this.form.markAllAsTouched();
-      this.problem.set(
-        'Revisa los campos marcados: el nombre es obligatorio y el correo debe ser válido.',
-      );
+      this.problem.set(t('contacts.invalidForm'));
       return;
     }
     const body: ContactInput = {
@@ -136,7 +136,9 @@ export class ContactsPage {
         this.saving.set(false);
         this.cancel();
         this.done(
-          `Contacto ${contact.full_name} ${editing.kind === 'new' ? 'creado' : 'guardado'}.`,
+          t(editing.kind === 'new' ? 'contacts.created' : 'contacts.saved', {
+            name: contact.full_name,
+          }),
         );
       },
       error: (error: unknown) => {
@@ -150,7 +152,7 @@ export class ContactsPage {
     const pending = contact.telegram_link_expires_at;
     if (
       pending &&
-      !confirm(`¿Generar otro enlace para ${contact.full_name}? El anterior deja de funcionar.`)
+      !confirm(t('contacts.confirmAnotherLink', { name: contact.full_name }))
     ) {
       return;
     }
@@ -158,25 +160,24 @@ export class ContactsPage {
       next: (link) => {
         this.link.set({ name: contact.full_name, url: link.url, expiresAt: link.expires_at });
         this.copied.set(false);
-        this.done(`Enlace de Telegram generado para ${contact.full_name}.`);
+        this.done(t('contacts.linkGenerated', { name: contact.full_name }));
       },
       error: (error: unknown) => this.status.set(contactProblem(error)),
     });
   }
 
   protected unlinkTelegram(contact: Contact): void {
-    const question = `¿Desvincular el Telegram de ${contact.full_name}? Dejará de recibir alertas por Telegram hasta que vuelva a vincularse.`;
-    if (!confirm(question)) return;
+    if (!confirm(t('contacts.confirmUnlink', { name: contact.full_name }))) return;
     this.api.unlinkTelegram(contact.id).subscribe({
-      next: () => this.done(`Telegram de ${contact.full_name} desvinculado.`),
+      next: () => this.done(t('contacts.unlinked', { name: contact.full_name })),
       error: (error: unknown) => this.status.set(contactProblem(error)),
     });
   }
 
   protected remove(contact: Contact): void {
-    if (!confirm(`¿Eliminar a ${contact.full_name}? No se puede deshacer.`)) return;
+    if (!confirm(t('contacts.confirmDelete', { name: contact.full_name }))) return;
     this.api.delete(contact.id).subscribe({
-      next: () => this.done(`Contacto ${contact.full_name} eliminado.`),
+      next: () => this.done(t('contacts.deleted', { name: contact.full_name })),
       // A 409 means it gained history since the list loaded: say why and show it as it is now.
       error: (error: unknown) => {
         this.status.set(contactProblem(error));
@@ -187,9 +188,9 @@ export class ContactsPage {
 
   protected removeFromGroups(contact: Contact): void {
     const groups = contact.groups.map((g) => g.name).join(', ');
-    if (!confirm(`¿Quitar a ${contact.full_name} de ${groups}? Dejará de recibir alertas.`)) return;
+    if (!confirm(t('contacts.confirmRemoveFromGroups', { name: contact.full_name, groups }))) return;
     this.api.removeFromGroups(contact.id).subscribe({
-      next: () => this.done(`${contact.full_name} ya no está en ningún grupo.`),
+      next: () => this.done(t('contacts.removedFromGroups', { name: contact.full_name })),
       error: (error: unknown) => this.status.set(contactProblem(error)),
     });
   }

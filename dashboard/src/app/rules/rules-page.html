@@ -1,4 +1,4 @@
-<app-page-header title="Reglas" [subtitle]="subtitle()">
+<app-page-header [title]="t('rules.title')" [subtitle]="subtitle()">
   <label class="flex items-center gap-2 text-sm text-slate-600">
     <input
       type="checkbox"
@@ -6,12 +6,12 @@
       [checked]="includeInactive()"
       (change)="toggleInactive($any($event.target).checked)"
     />
-    Mostrar desactivadas
+    {{ t('ui.showInactive') }}
   </label>
   @if (canManage() && !editing()) {
     <button type="button" class="btn-primary" (click)="startCreate()">
       <app-icon name="plus" />
-      Nueva regla
+      {{ t('rules.new') }}
     </button>
   }
 </app-page-header>
@@ -21,25 +21,23 @@
 @if (editing(); as current) {
   <form class="card mb-6 flex flex-col gap-5 p-5" [formGroup]="form" (ngSubmit)="save()" novalidate>
     <h2 class="font-semibold text-slate-900">
-      {{ current.kind === 'new' ? 'Nueva regla' : 'Editar regla' }}
+      {{ t(current.kind === 'new' ? 'rules.new' : 'rules.editTitle') }}
     </h2>
 
     <div class="grid gap-4 md:grid-cols-3">
       <div class="flex flex-col gap-1.5">
-        <label for="rule-type" class="text-sm font-medium text-slate-700">Tipo</label>
+        <label for="rule-type" class="text-sm font-medium text-slate-700">{{ t('rules.type') }}</label>
         <select id="rule-type" formControlName="type" class="field">
           @for (type of ruleTypes; track type) {
             <option [value]="type">{{ typeLabel(type) }}</option>
           }
         </select>
         @if (current.kind === 'edit') {
-          <p class="text-xs text-slate-500">
-            El tipo no se cambia: desactiva la regla y crea otra.
-          </p>
+          <p class="text-xs text-slate-500">{{ t('rules.typeFixed') }}</p>
         }
       </div>
       <div class="flex flex-col gap-1.5">
-        <label for="rule-zone" class="text-sm font-medium text-slate-700">Zona</label>
+        <label for="rule-zone" class="text-sm font-medium text-slate-700">{{ t('rules.zone') }}</label>
         <select
           id="rule-zone"
           formControlName="zone_id"
@@ -47,7 +45,7 @@
           [attr.aria-invalid]="!!error('zone_id')"
           [attr.aria-describedby]="error('zone_id') ? 'rule-zone-error' : null"
         >
-          <option value="">Elige una zona</option>
+          <option value="">{{ t('rules.chooseZone') }}</option>
           @for (zone of zoneOptions(); track zone.id) {
             <option [value]="zone.id">{{ zone.name }}</option>
           }
@@ -57,7 +55,7 @@
         }
       </div>
       <div class="flex flex-col gap-1.5">
-        <label for="rule-station" class="text-sm font-medium text-slate-700">Estación</label>
+        <label for="rule-station" class="text-sm font-medium text-slate-700">{{ t('rules.station') }}</label>
         <select
           id="rule-station"
           formControlName="station_id"
@@ -66,7 +64,7 @@
           [attr.aria-describedby]="error('station_id') ? 'rule-station-error' : null"
         >
           <option value="">
-            {{ draftType() === 'silence' ? 'Toda la zona' : 'Elige una estación' }}
+            {{ t(draftType() === 'silence' ? 'rules.wholeZone' : 'rules.chooseStation') }}
           </option>
           @for (station of zoneStations(); track station.id) {
             <option [value]="station.id">
@@ -83,18 +81,18 @@
     @switch (draftType()) {
       @case ('threshold') {
         <fieldset class="grid gap-4 md:grid-cols-3">
-          <legend class="mb-2 text-sm font-medium text-slate-700">Condición</legend>
+          <legend class="mb-2 text-sm font-medium text-slate-700">{{ t('rules.condition') }}</legend>
           <div class="flex flex-col gap-1.5">
-            <label for="rule-operator" class="text-sm text-slate-700">Valor</label>
+            <label for="rule-operator" class="text-sm text-slate-700">{{ t('rules.value') }}</label>
             <select id="rule-operator" formControlName="operator" class="field">
               @for (operator of operators; track operator) {
-                <option [value]="operator">{{ operatorLabels[operator] }}</option>
+                <option [value]="operator">{{ operatorLabel(operator) }}</option>
               }
             </select>
           </div>
           <div class="flex flex-col gap-1.5">
             <label for="rule-value" class="text-sm text-slate-700">
-              Límite {{ draftStation() ? '(' + draftStation()!.unit + ')' : '' }}
+              {{ draftStation() ? t('rules.limitUnit', { unit: draftStation()!.unit }) : t('rules.limit') }}
             </label>
             <input
               id="rule-value"
@@ -111,7 +109,7 @@
           </div>
           <div class="flex flex-col gap-1.5">
             <label for="rule-consecutive" class="text-sm text-slate-700"
-              >Lecturas seguidas (1 a 60)</label
+              >{{ t('rules.consecutive') }}</label
             >
             <input
               id="rule-consecutive"
@@ -131,17 +129,17 @@
       }
       @case ('rate_of_change') {
         <fieldset class="grid gap-4 md:grid-cols-3">
-          <legend class="mb-2 text-sm font-medium text-slate-700">Condición</legend>
+          <legend class="mb-2 text-sm font-medium text-slate-700">{{ t('rules.condition') }}</legend>
           <div class="flex flex-col gap-1.5">
-            <label for="rule-direction" class="text-sm text-slate-700">El valor</label>
+            <label for="rule-direction" class="text-sm text-slate-700">{{ t('rules.theValue') }}</label>
             <select id="rule-direction" formControlName="direction" class="field">
-              <option value="down">Baja</option>
-              <option value="up">Sube</option>
+              <option value="down">{{ t('rules.down') }}</option>
+              <option value="up">{{ t('rules.up') }}</option>
             </select>
           </div>
           <div class="flex flex-col gap-1.5">
             <label for="rule-delta" class="text-sm text-slate-700">
-              Más de {{ draftStation() ? '(' + draftStation()!.unit + ')' : '' }}
+              {{ draftStation() ? t('rules.moreThanUnit', { unit: draftStation()!.unit }) : t('rules.moreThan') }}
             </label>
             <input
               id="rule-delta"
@@ -159,7 +157,7 @@
           </div>
           <div class="flex flex-col gap-1.5">
             <label for="rule-window" class="text-sm text-slate-700"
-              >En una ventana de (minutos, 1 a 60)</label
+              >{{ t('rules.window') }}</label
             >
             <input
               id="rule-window"
@@ -180,12 +178,16 @@
       @case ('silence') {
         <p class="rounded-md bg-slate-50 p-3 text-sm text-slate-700">
           @if (draftStation(); as station) {
-            {{ station.code }} se considera sin reportar tras {{ station.silence_multiplier }} ×
-            {{ station.expected_interval_s }} s ({{ silenceOf(station) }}). Se ajusta en la
-            estación.
+            {{
+              t('rules.silenceOneStation', {
+                code: station.code,
+                multiplier: station.silence_multiplier,
+                interval: station.expected_interval_s,
+                duration: silenceOf(station),
+              })
+            }}
           } @else {
-            Cada estación de la zona se considera sin reportar tras K veces su intervalo esperado,
-            según lo configurado en cada estación.
+            {{ t('rules.silenceEveryStation') }}
           }
         </p>
       }
@@ -193,7 +195,7 @@
 
     <div class="grid gap-4 md:grid-cols-3">
       <div class="flex flex-col gap-1.5">
-        <label for="rule-severity" class="text-sm font-medium text-slate-700">Severidad</label>
+        <label for="rule-severity" class="text-sm font-medium text-slate-700">{{ t('rules.severity') }}</label>
         <select id="rule-severity" formControlName="severity" class="field">
           @for (severity of severityOrder; track severity) {
             <option [value]="severity">{{ t(severities[severity].labelKey) }}</option>
@@ -202,7 +204,7 @@
       </div>
       <div class="flex flex-col gap-1.5">
         <label for="rule-policy" class="text-sm font-medium text-slate-700"
-          >Política de escalamiento</label
+          >{{ t('rules.policy') }}</label
         >
         <select
           id="rule-policy"
@@ -211,7 +213,7 @@
           [attr.aria-invalid]="!!error('escalation_policy_id')"
           [attr.aria-describedby]="error('escalation_policy_id') ? 'rule-policy-error' : null"
         >
-          <option value="">Elige una política</option>
+          <option value="">{{ t('rules.choosePolicy') }}</option>
           @for (policy of policies(); track policy.id) {
             <option [value]="policy.id">{{ policy.name }}</option>
           }
@@ -222,7 +224,7 @@
       </div>
       <div class="flex flex-col gap-1.5">
         <label for="rule-cooldown" class="text-sm font-medium text-slate-700"
-          >Espera tras resolver (min)</label
+          >{{ t('rules.cooldown') }}</label
         >
         <input
           id="rule-cooldown"
@@ -240,7 +242,7 @@
           <p id="rule-cooldown-error" class="text-xs text-red-700">{{ e }}</p>
         } @else {
           <p id="rule-cooldown-hint" class="text-xs text-slate-500">
-            Tiempo en que la misma causa no abre otro incidente.
+            {{ t('rules.cooldownHint') }}
           </p>
         }
       </div>
@@ -252,12 +254,12 @@
 
     <div class="flex flex-wrap gap-2">
       <button type="submit" class="btn-primary" [disabled]="saving()">
-        {{ saving() ? 'Guardando…' : 'Guardar' }}
+        {{ t(saving() ? 'ui.saving' : 'ui.save') }}
       </button>
       <button type="button" class="btn-secondary" [disabled]="previewing()" (click)="showPreview()">
-        {{ previewing() ? 'Calculando…' : 'Vista previa (24 h)' }}
+        {{ t(previewing() ? 'rules.calculating' : 'rules.preview') }}
       </button>
-      <button type="button" class="btn-secondary" (click)="cancel()">Cancelar</button>
+      <button type="button" class="btn-secondary" (click)="cancel()">{{ t('ui.cancel') }}</button>
     </div>
 
     @if (preview(); as result) {
@@ -267,11 +269,10 @@
       >
         <div>
           <h3 id="rule-preview-title" class="font-semibold text-slate-900">
-            Vista previa: últimas 24 h
+            {{ t('rules.previewTitle') }}
           </h3>
           <p class="text-xs text-slate-500">
-            Marca cuándo la regla habría abierto un incidente con las lecturas reales. No simula la
-            espera tras resolver: depende de cuándo alguien resuelve.
+            {{ t('rules.previewHint') }}
           </p>
         </div>
         @for (station of result.stations; track station.station.id) {
@@ -290,12 +291,12 @@
             }
             @if (station.truncated) {
               <p class="mt-1 text-xs text-slate-500">
-                Demasiadas lecturas: se muestran las más recientes.
+                {{ t('rules.truncated') }}
               </p>
             }
           </div>
         } @empty {
-          <p class="text-sm text-slate-600">La zona no tiene estaciones activas.</p>
+          <p class="text-sm text-slate-600">{{ t('rules.noStations') }}</p>
         }
       </section>
     }
@@ -303,18 +304,18 @@
 }
 
 <section aria-labelledby="rule-list-title">
-  <h2 id="rule-list-title" class="sr-only">Listado de reglas</h2>
+  <h2 id="rule-list-title" class="sr-only">{{ t('rules.listTitle') }}</h2>
   <app-load-state
     class="block"
     [status]="listStatus()"
-    loading="Cargando reglas…"
-    empty="Todavía no hay reglas."
-    error="No se pudieron cargar las reglas."
+    [loading]="t('rules.loading')"
+    [empty]="t('rules.empty')"
+    [error]="t('rules.error')"
     (retry)="load()"
   />
   @for (group of byZone(); track group.zone.id) {
     <h3 class="mt-6 mb-3 text-sm font-semibold text-slate-600 first:mt-0">
-      Zona {{ group.zone.name }}
+      {{ t('rules.zoneHeading', { zone: group.zone.name }) }}
     </h3>
     <ul class="grid gap-3 md:grid-cols-2">
       @for (rule of group.rules; track rule.id) {
@@ -323,7 +324,7 @@
             <div class="min-w-0">
               <p class="font-semibold text-slate-900">{{ typeLabel(rule.type) }}</p>
               <p class="text-sm text-slate-600">
-                {{ rule.station ? rule.station.code + ' · ' + rule.station.name : 'Toda la zona' }}
+                {{ rule.station ? rule.station.code + ' · ' + rule.station.name : t('rules.wholeZone') }}
               </p>
             </div>
             <div class="flex flex-wrap justify-end gap-1">
@@ -335,20 +336,25 @@
           </div>
           <p class="mt-3 text-sm text-slate-900">{{ summary(rule) }}</p>
           <p class="mt-1 mb-3 text-xs text-slate-500">
-            Política: {{ rule.escalation_policy.name }} · {{ cooldown(rule.cooldown_s) }}
+            {{
+              t('rules.policyLine', {
+                policy: rule.escalation_policy.name,
+                cooldown: cooldown(rule.cooldown_s),
+              })
+            }}
           </p>
           @if (canManage() && !editing()) {
             <div
               class="mt-auto flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-sm"
             >
               @if (rule.is_active) {
-                <button type="button" class="link-action" (click)="startEdit(rule)">Editar</button>
+                <button type="button" class="link-action" (click)="startEdit(rule)">{{ t('ui.edit') }}</button>
                 <button type="button" class="link-danger" (click)="deactivate(rule)">
-                  Desactivar
+                  {{ t('ui.deactivate') }}
                 </button>
               } @else {
                 <button type="button" class="link-action" (click)="reactivate(rule)">
-                  Reactivar
+                  {{ t('ui.reactivate') }}
                 </button>
               }
             </div>

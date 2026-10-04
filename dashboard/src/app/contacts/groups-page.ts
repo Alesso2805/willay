@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { t } from '../i18n/i18n';
 import { Session } from '../session';
 import { Icon } from '../ui/icon';
 import { LoadState, loadStatus } from '../ui/load-state';
@@ -34,6 +35,7 @@ export class GroupsPage {
   private readonly contactsApi = inject(ContactsApi);
   private readonly zonesApi = inject(ZonesApi);
   private readonly session = inject(Session);
+  protected readonly t = t;
 
   protected readonly groupLabels = GROUP_STATES;
   protected readonly groups = signal<ContactGroup[]>([]);
@@ -60,11 +62,11 @@ export class GroupsPage {
   protected readonly subtitle = computed(() => {
     if (!this.loaded()) return '';
     const groups = this.groups();
-    const parts = [`${groups.length} ${groups.length === 1 ? 'grupo' : 'grupos'}`];
+    const parts = [t('groups.count', { count: groups.length })];
     const empty = groups.filter((g) => g.members.length === 0).length;
-    if (empty > 0) parts.push(`${empty} sin miembros`);
+    if (empty > 0) parts.push(t('groups.emptyCount', { count: empty }));
     const unused = groups.filter((g) => g.policies.length === 0).length;
-    if (unused > 0) parts.push(`${unused} sin política`);
+    if (unused > 0) parts.push(t('groups.unusedCount', { count: unused }));
     return parts.join(' · ');
   });
   /** Active zones, plus the edited group's own if it was deactivated since. */
@@ -151,7 +153,7 @@ export class GroupsPage {
     const value = this.form.getRawValue();
     if (this.form.invalid || !value.name.trim()) {
       this.form.markAllAsTouched();
-      this.problem.set('El nombre es obligatorio (hasta 120 caracteres).');
+      this.problem.set(t('groups.nameRequired'));
       return;
     }
     const body = {
@@ -166,22 +168,22 @@ export class GroupsPage {
       next: (group) => {
         this.saving.set(false);
         this.cancel();
-        this.done(`Grupo ${group.name} ${editing.kind === 'new' ? 'creado' : 'guardado'}.`);
+        this.done(t(editing.kind === 'new' ? 'groups.created' : 'groups.saved', { name: group.name }));
       },
       error: (error: unknown) => {
         this.saving.set(false);
-        this.problem.set(contactProblem(error, 'grupo'));
+        this.problem.set(contactProblem(error, 'group'));
       },
     });
   }
 
   protected remove(group: ContactGroup): void {
-    if (!confirm(`¿Eliminar el grupo ${group.name}? Sus miembros no se borran.`)) return;
+    if (!confirm(t('groups.confirmDelete', { name: group.name }))) return;
     this.api.delete(group.id).subscribe({
-      next: () => this.done(`Grupo ${group.name} eliminado.`),
+      next: () => this.done(t('groups.deleted', { name: group.name })),
       // A 409 means a policy started using it meanwhile: say which and show it as it is now.
       error: (error: unknown) => {
-        this.status.set(contactProblem(error, 'grupo'));
+        this.status.set(contactProblem(error, 'group'));
         this.load();
       },
     });

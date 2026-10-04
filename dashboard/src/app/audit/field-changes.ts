@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { t } from '../i18n/i18n';
 import { FieldChange } from './audit-presentation';
 
 /**
@@ -19,10 +20,10 @@ import { FieldChange } from './audit-presentation';
                 <span class="text-slate-900">{{ change.after }}</span>
               } @else if (change.after === '—') {
                 <span class="line-through decoration-slate-400">{{ change.before }}</span>
-                <span class="sr-only">(quitado)</span>
+                <span class="sr-only">{{ t('audit.removed') }}</span>
               } @else {
                 <span class="line-through decoration-slate-400">{{ change.before }}</span>
-                <span aria-hidden="true"> → </span><span class="sr-only"> cambió a </span>
+                <span aria-hidden="true"> → </span><span class="sr-only"> {{ t('audit.changedTo') }} </span>
                 <span class="text-slate-900">{{ change.after }}</span>
               }
             </dd>
@@ -30,10 +31,11 @@ import { FieldChange } from './audit-presentation';
         }
       </dl>
     } @else {
-      <span class="text-slate-500">Sin cambios de campos</span>
+      <span class="text-slate-500">{{ t('audit.noFieldChanges') }}</span>
     }
   `,
 })
 export class FieldChanges {
   readonly changes = input.required<FieldChange[]>();
+  protected readonly t = t;
 }
