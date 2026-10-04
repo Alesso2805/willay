@@ -28,6 +28,7 @@ const contact = (ref: { id: string; name: string }, email: string | null): Conta
   id: ref.id,
   full_name: ref.name,
   email,
+  language: null,
   telegram_linked: false,
   telegram_link_expires_at: null,
   groups: [],
