@@ -24,7 +24,6 @@ const LOCALES: Readonly<Record<Language, string>> = { es: 'es-PE', en: 'en-US' }
 export type TranslationKey = ParseKeys;
 export type TranslationOptions = Record<string, unknown> & { count?: number };
 
-
 // Each language is its own chunk, downloaded only by whoever uses it: adding languages, or
 // texts, does not grow what everyone downloads. The app waits for it before its first render.
 // Untyped on purpose: languages differ in their plural forms; translations.spec checks them.

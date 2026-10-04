@@ -59,6 +59,6 @@ export class LanguagePicker {
   }
 
   protected choose(language: Language): void {
-    if (language !== this.service.current()) void this.service.choose(language, this.signedIn());
+    void this.service.choose(language, this.signedIn());
   }
 }

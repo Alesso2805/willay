@@ -44,9 +44,12 @@ export class LanguageService {
     }
   }
 
-  /** The user picks a language: shown at once and, if signed in, saved for them. */
+  /**
+   * The user picks a language: shown at once and, if signed in, saved for them. Pressing the one
+   * already on screen counts too: it may only be there because it is the browser's.
+   */
   async choose(language: Language, signedIn: boolean): Promise<void> {
-    await this.use(language);
+    if (language !== this._current()) await this.use(language);
     if (signedIn) this.save(language);
     else write(sessionStorage, PENDING, language);
   }

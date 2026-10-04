@@ -85,6 +85,19 @@ describe('LanguageService', () => {
     http.expectOne(`${settings.apiUrl}/v1/me/language`).flush(null);
   });
 
+  it('pressing the language already on screen before signing in still counts as a choice', async () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US']);
+    const { service, http } = setup();
+    await service.start(); // English, only because the browser is
+    await service.choose('en', false);
+
+    await service.adopt('es');
+    expect(service.current()).toBe('en');
+    expect(http.expectOne(`${settings.apiUrl}/v1/me/language`).request.body).toEqual({
+      language: 'en',
+    });
+  });
+
   it('asks the API for messages in the language on screen', async () => {
     const { service, http } = setup();
     await service.choose('en', false);
