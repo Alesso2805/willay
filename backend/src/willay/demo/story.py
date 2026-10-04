@@ -168,7 +168,8 @@ def narrate(event: StoryEvent) -> str:
         case "alert_failed":
             return f"{level}: {channel} to {recipient} failed; it will be retried"
         case "alert_skipped":
-            return f"{level}: {recipient} skipped on {channel} ({p.get('reason', '')})"
+            why = p.get("reason_code") or p.get("reason", "")
+            return f"{level}: {recipient} skipped on {channel} ({str(why).replace('_', ' ')})"
         case "escalated":
             return f"nobody acknowledged: escalated to level {p.get('to_level')}"
         case "escalation_exhausted":

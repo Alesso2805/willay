@@ -304,11 +304,11 @@ async def test_an_alert_whose_every_attempt_died_ends_failed(
         (
             "status = 'acknowledged', acknowledged_at = now(), acknowledged_by_contact_id ="
             " (SELECT contact_id FROM core.alerts WHERE incident_id = core.incidents.id LIMIT 1)",
-            "el incidente ya fue confirmado",
+            "incident_acknowledged",
         ),
         (
             "status = 'resolved', resolved_at = now(), resolution = 'false_alarm'",
-            "el incidente ya fue resuelto",
+            "incident_resolved",
         ),
     ],
     ids=["acknowledged", "resolved"],
@@ -328,7 +328,7 @@ async def test_pending_alerts_of_a_handled_incident_are_not_sent(
     for address in (ana, caro):
         assert (await _alert(owner, address))["status"] == "skipped"
     skipped = await owner.fetch(
-        "SELECT payload->>'reason' AS reason FROM core.incident_events"
+        "SELECT payload->>'reason_code' AS reason FROM core.incident_events"
         " WHERE incident_id = $1 AND event_type = 'alert_skipped'",
         incident["id"],
     )

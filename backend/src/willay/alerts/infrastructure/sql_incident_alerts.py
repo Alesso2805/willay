@@ -18,12 +18,12 @@ _EXISTS = text("""
 _ALERTS = text("""
     SELECT a.id, a.level_order, a.contact_id, c.full_name AS contact_name, a.channel, a.status,
            a.attempts, a.sent_at, a.acknowledged_at, a.destination,
-           skipped.reason AS skipped_reason
+           skipped.reason_code AS skipped_reason_code, skipped.reason AS skipped_reason
     FROM core.incidents i
     JOIN core.alerts a ON a.incident_id = i.id
     JOIN core.contacts c ON c.id = a.contact_id AND c.organization_id = i.organization_id
     LEFT JOIN LATERAL (
-        SELECT e.payload->>'reason' AS reason
+        SELECT e.payload->>'reason_code' AS reason_code, e.payload->>'reason' AS reason
         FROM core.incident_events e
         WHERE e.incident_id = a.incident_id AND e.event_type = 'alert_skipped'
           AND e.payload->>'contact_id' = CAST(a.contact_id AS text)
@@ -49,7 +49,8 @@ class IncidentAlert:
     sent_at: datetime | None
     acknowledged_at: datetime | None
     destination: str | None  # personal data: the API decides who sees it
-    skipped_reason: str | None
+    skipped_reason_code: str | None
+    skipped_reason: str | None  # Spanish text, only in events from before VIG-40
 
 
 class SqlIncidentAlerts:
@@ -76,6 +77,7 @@ class SqlIncidentAlerts:
                 r.sent_at,
                 r.acknowledged_at,
                 r.destination,
+                r.skipped_reason_code,
                 r.skipped_reason,
             )
             for r in rows

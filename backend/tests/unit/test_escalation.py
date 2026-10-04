@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from tests.support.alerts import FakeAlerting
 from willay.alerts.application.escalation import EscalationCycle, Escalator
+from willay.alerts.domain.alerts import Reason
 from willay.alerts.domain.escalation import Decision, LevelState, Step, decide
 from willay.shared.clock import FakeClock
 
@@ -32,21 +33,25 @@ def _state(**kw: Any) -> LevelState:
     ("state", "now", "decision"),
     [
         (_state(), T0 + timedelta(seconds=119), Decision(Step.WAIT)),
-        (_state(), T0 + timedelta(seconds=120), Decision(Step.ESCALATE, "nadie confirmó en 120 s")),
+        (
+            _state(),
+            T0 + timedelta(seconds=120),
+            Decision(Step.ESCALATE, Reason.NOT_ACKNOWLEDGED, {"wait_s": 120}),
+        ),
         (
             _state(current_level=3, wait_s=300, next_level=None),
             T0 + timedelta(seconds=300),
-            Decision(Step.EXHAUST, "nadie confirmó en 300 s"),
+            Decision(Step.EXHAUST, Reason.NOT_ACKNOWLEDGED, {"wait_s": 300}),
         ),
         (  # nothing was sent: the level expires at once
             _state(nobody_alerted=True),
             T0,
-            Decision(Step.ESCALATE, "el nivel 1 no pudo avisar a nadie"),
+            Decision(Step.ESCALATE, Reason.LEVEL_REACHED_NOBODY, {"level": 1}),
         ),
         (  # an admin removed the level while the incident was escalating
             _state(current_level=2, wait_s=None, next_level=None),
             T0,
-            Decision(Step.EXHAUST, "el nivel 2 ya no existe en la política"),
+            Decision(Step.EXHAUST, Reason.LEVEL_REMOVED, {"level": 2}),
         ),
     ],
 )
@@ -111,7 +116,15 @@ async def test_the_next_level_is_alerted_once_the_wait_is_over() -> None:
     assert (incident.level, incident.started) == (2, clock.now())  # its wait starts now
     assert alerting.levels == [(INCIDENT, 2)]
     assert incident.events == [
-        ("escalated", {"from_level": 1, "to_level": 2, "reason": "nadie confirmó en 120 s"})
+        (
+            "escalated",
+            {
+                "from_level": 1,
+                "to_level": 2,
+                "reason_code": Reason.NOT_ACKNOWLEDGED,
+                "reason_params": {"wait_s": 120},
+            },
+        )
     ]
 
 
@@ -122,9 +135,9 @@ async def test_a_level_that_reaches_nobody_is_skipped_in_the_same_cycle() -> Non
 
     assert cycle == EscalationCycle(escalated=2, exhausted=0)
     assert incident.level == 3
-    assert [payload["reason"] for _, payload in incident.events] == [
-        "nadie confirmó en 120 s",
-        "el nivel 2 no pudo avisar a nadie",
+    assert [(p["reason_code"], p["reason_params"]) for _, p in incident.events] == [
+        (Reason.NOT_ACKNOWLEDGED, {"wait_s": 120}),
+        (Reason.LEVEL_REACHED_NOBODY, {"level": 2}),
     ]
 
 
@@ -139,7 +152,7 @@ async def test_the_last_level_exhausts_the_policy_once() -> None:
     assert incident.exhausted_at == clock.now()
     assert incident.events[-1] == (
         "escalation_exhausted",
-        {"level": 3, "reason": "nadie confirmó en 300 s"},
+        {"level": 3, "reason_code": Reason.NOT_ACKNOWLEDGED, "reason_params": {"wait_s": 300}},
     )
     clock.advance(timedelta(hours=1))
     assert await escalator.run() == EscalationCycle(escalated=0, exhausted=0)

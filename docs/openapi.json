@@ -659,8 +659,20 @@
                 "type": "null"
               }
             ],
-            "description": "Why it was not sent, for skipped alerts",
+            "description": "The reason as Spanish text, only for alerts skipped before VIG-40",
             "title": "Skipped Reason"
+          },
+          "skipped_reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why it was not sent, for skipped alerts: no_email, no_telegram, incident_acknowledged or incident_resolved; the dashboard says it in words",
+            "title": "Skipped Reason Code"
           },
           "status": {
             "$ref": "#/components/schemas/AlertStatus"
@@ -676,6 +688,7 @@
           "attempts",
           "sent_at",
           "acknowledged_at",
+          "skipped_reason_code",
           "skipped_reason",
           "email"
         ],
