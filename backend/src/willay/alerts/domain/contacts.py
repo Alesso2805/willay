@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass
 
 from willay.shared.errors import ErrorCode, FieldError
+from willay.shared.languages import Language
 
 MAX_NAME_LENGTH = 120
 MAX_EMAIL_LENGTH = 254  # RFC 5321
@@ -18,6 +19,8 @@ _EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 class ContactData:
     full_name: str
     email: str | None
+    # The language of its alerts; None: the organization's (VIG-40).
+    language: Language | None = None
 
 
 class InvalidContactError(FieldError, ValueError):

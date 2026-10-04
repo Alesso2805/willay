@@ -8,11 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from willay.alerts.application.contacts import Contact, ContactGroupRef
 from willay.alerts.domain.contacts import ContactData
+from willay.shared.languages import Language
 
 # History = anything that names the contact: an alert, an acknowledgement, a timeline event.
 # The chat itself never leaves this query: only whether there is one.
 _SELECT = """
-    SELECT c.id, c.full_name, c.email,
+    SELECT c.id, c.full_name, c.email, c.language,
            c.telegram_chat_id IS NOT NULL AS telegram_linked,
            CASE WHEN c.telegram_chat_id IS NULL THEN c.telegram_link_expires_at END
                AS telegram_link_expires_at,
@@ -35,12 +36,12 @@ _GET_FOR_UPDATE = text(
 )
 
 _ADD = text("""
-    INSERT INTO core.contacts (id, organization_id, full_name, email)
-    VALUES (:id, :organization_id, :full_name, :email)
+    INSERT INTO core.contacts (id, organization_id, full_name, email, language)
+    VALUES (:id, :organization_id, :full_name, :email, :language)
 """)
 
 _REPLACE = text("""
-    UPDATE core.contacts SET full_name = :full_name, email = :email
+    UPDATE core.contacts SET full_name = :full_name, email = :email, language = :language
     WHERE organization_id = :organization_id AND id = :id
 """)
 
@@ -80,6 +81,7 @@ class SqlContactRepository:
                 "organization_id": organization_id,
                 "full_name": data.full_name,
                 "email": data.email,
+                "language": data.language,
             },
         )
         return await self._reload(organization_id, contact_id)
@@ -92,6 +94,7 @@ class SqlContactRepository:
                 "id": contact_id,
                 "full_name": data.full_name,
                 "email": data.email,
+                "language": data.language,
             },
         )
         return await self._reload(organization_id, contact_id)
@@ -121,6 +124,7 @@ def _contact(r: Row[Any]) -> Contact:
         id=r.id,
         full_name=r.full_name,
         email=r.email,
+        language=Language(r.language) if r.language else None,
         telegram_linked=r.telegram_linked,
         telegram_link_expires_at=r.telegram_link_expires_at,
         groups=tuple(ContactGroupRef(UUID(g["id"]), g["name"]) for g in r.groups),

@@ -39,13 +39,18 @@ class FakeContacts:
         return self.by_id.get(contact_id) if organization_id == ACTOR.organization_id else None
 
     async def add(self, contact_id: UUID, organization_id: UUID, data: ContactData) -> Contact:
-        contact = Contact(contact_id, data.full_name, data.email, False, None, (), False)
+        contact = Contact(
+            contact_id, data.full_name, data.email, data.language, False, None, (), False
+        )
         self.by_id[contact_id] = contact
         return contact
 
     async def replace(self, organization_id: UUID, contact_id: UUID, data: ContactData) -> Contact:
         self.by_id[contact_id] = replace(
-            self.by_id[contact_id], full_name=data.full_name, email=data.email
+            self.by_id[contact_id],
+            full_name=data.full_name,
+            email=data.email,
+            language=data.language,
         )
         return self.by_id[contact_id]
 
@@ -72,7 +77,7 @@ class FakeAudit:
 
 
 def _contact(**changes: object) -> Contact:
-    base = Contact(uuid4(), "Rosa Brigada", "brigada@rimac.test", True, None, (), False)
+    base = Contact(uuid4(), "Rosa Brigada", "brigada@rimac.test", None, True, None, (), False)
     return replace(base, **changes)  # type: ignore[arg-type]
 
 
@@ -105,7 +110,13 @@ async def test_creating_records_the_contact_in_the_audit_log() -> None:
         (
             "create",
             None,
-            {"full_name": "Lucho", "email": None, "telegram_linked": False, "groups": []},
+            {
+                "full_name": "Lucho",
+                "email": None,
+                "language": None,
+                "telegram_linked": False,
+                "groups": [],
+            },
         )
     ]
     assert audit.entries[0].entity_id == contact.id

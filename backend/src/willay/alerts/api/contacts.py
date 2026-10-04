@@ -11,7 +11,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Response, status
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from willay.alerts.application.contacts import (
     Contact,
@@ -37,6 +37,7 @@ from willay.identity.domain.principal import Principal
 from willay.shared.audit import SqlAuditLog
 from willay.shared.clock import Clock
 from willay.shared.errors import ErrorCode
+from willay.shared.languages import Language
 from willay.shared.web import ApiError, ClockDep, DbConnection, SettingsDep, invalid_field
 
 router = APIRouter(prefix="/v1/contacts", tags=["alerts"])
@@ -53,6 +54,9 @@ class ContactIn(BaseModel):
 
     full_name: str
     email: str | None = None
+    language: Language | None = Field(
+        default=None, description="Of its alerts; null: the organization's language"
+    )
 
     @field_validator("email")
     @classmethod
@@ -61,7 +65,7 @@ class ContactIn(BaseModel):
 
     @property
     def data(self) -> ContactData:
-        return ContactData(self.full_name, self.email)
+        return ContactData(self.full_name, self.email, self.language)
 
 
 class GroupRefOut(BaseModel):
@@ -73,6 +77,7 @@ class ContactOut(BaseModel):
     id: UUID
     full_name: str
     email: str | None
+    language: Language | None = Field(description="Of its alerts; null: the organization's")
     telegram_linked: bool
     telegram_link_expires_at: datetime | None
     groups: list[GroupRefOut]
@@ -243,6 +248,7 @@ def _out(contact: Contact, clock: Clock) -> ContactOut:
         id=contact.id,
         full_name=contact.full_name,
         email=contact.email,
+        language=contact.language,
         telegram_linked=contact.telegram_linked,
         telegram_link_expires_at=contact.pending_link_until(clock.now()),
         groups=[GroupRefOut(id=g.id, name=g.name) for g in contact.groups],
