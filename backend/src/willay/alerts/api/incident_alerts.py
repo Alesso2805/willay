@@ -34,7 +34,13 @@ class IncidentAlertOut(BaseModel):
     attempts: int
     sent_at: datetime | None
     acknowledged_at: datetime | None
-    skipped_reason: str | None = Field(description="Why it was not sent, for skipped alerts")
+    skipped_reason_code: str | None = Field(
+        description="Why it was not sent, for skipped alerts: no_email, no_telegram,"
+        " incident_acknowledged or incident_resolved; the dashboard says it in words"
+    )
+    skipped_reason: str | None = Field(
+        description="The reason as Spanish text, only for alerts skipped before VIG-40"
+    )
     email: str | None = Field(
         description="Only for email alerts and only for users who may see contact details "
         "(operator, admin); a Telegram chat is never returned"
@@ -64,6 +70,7 @@ async def incident_alerts(
             attempts=a.attempts,
             sent_at=a.sent_at,
             acknowledged_at=a.acknowledged_at,
+            skipped_reason_code=a.skipped_reason_code,
             skipped_reason=a.skipped_reason,
             email=shown_email(a.channel, a.destination, may_see_details),
         )

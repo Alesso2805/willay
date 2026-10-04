@@ -98,12 +98,12 @@ async def test_opening_creates_one_alert_per_contact_and_channel_of_level_one(
         incident["id"],
     )
     reasons = {
-        (p["contact_id"], p["channel"], p["reason"])
+        (p["contact_id"], p["channel"], p["reason_code"])
         for p in (json.loads(r["payload"]) for r in skipped)
     }
     assert reasons == {
-        (str(people.beto), "email", "el contacto no tiene correo"),
-        (str(people.caro), "telegram", "el contacto no vinculó Telegram"),
+        (str(people.beto), "email", "no_email"),
+        (str(people.caro), "telegram", "no_telegram"),
     }
     # The destination is personal data: it stays out of the timeline.
     assert "@" not in " ".join(r["payload"] for r in skipped)

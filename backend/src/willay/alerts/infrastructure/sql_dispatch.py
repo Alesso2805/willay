@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from willay.alerts.application.dispatch import ClaimedAlert
-from willay.alerts.domain.alerts import SKIP_ACKNOWLEDGED, SKIP_RESOLVED, Channel
+from willay.alerts.domain.alerts import Channel, Reason
 from willay.alerts.domain.delivery import MAX_ATTEMPTS, AckToken
 from willay.alerts.infrastructure.alert_messages import (
     MESSAGE_COLUMNS,
@@ -34,10 +34,10 @@ _CANCEL = text("""
            'system',
            jsonb_build_object('alert_id', c.id, 'contact_id', c.contact_id,
                               'channel', CAST(:channel AS text), 'level_order', c.level_order,
-                              'reason', CASE c.incident_status
-                                            WHEN 'acknowledged'
-                                            THEN CAST(:skip_acknowledged AS text)
-                                            ELSE CAST(:skip_resolved AS text) END)
+                              'reason_code', CASE c.incident_status
+                                                 WHEN 'acknowledged'
+                                                 THEN CAST(:skip_acknowledged AS text)
+                                                 ELSE CAST(:skip_resolved AS text) END)
     FROM cancelled c
 """)
 
@@ -137,7 +137,11 @@ class SqlDispatchQueue:
         async with self._engine.begin() as tx:
             await tx.execute(
                 _CANCEL,
-                params | {"skip_acknowledged": SKIP_ACKNOWLEDGED, "skip_resolved": SKIP_RESOLVED},
+                params
+                | {
+                    "skip_acknowledged": Reason.INCIDENT_ACKNOWLEDGED.value,
+                    "skip_resolved": Reason.INCIDENT_RESOLVED.value,
+                },
             )
             await tx.execute(_ABANDON, params)
             rows = await tx.execute(

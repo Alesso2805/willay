@@ -33,7 +33,6 @@ pytestmark = pytest.mark.integration
 RULE = data.RULES[0]
 EMAIL = "brigada@rimac.willay.test"
 CHAT_ID = "987654321"
-SKIP_REASON = "el contacto no vinculó Telegram"
 
 
 @pytest.fixture
@@ -79,7 +78,7 @@ async def _incident_with_alerts(owner: asyncpg.Connection) -> str:
         " event_type, actor_type, payload) VALUES ($1, $2, $3, 'alert_skipped', 'system', $4)",
         incident_id, data.RIMAC.id, now,
         json.dumps({"contact_id": str(data.C_OPERATOR), "channel": "telegram",
-                    "level_order": 1, "reason": SKIP_REASON}),
+                    "level_order": 1, "reason_code": "no_telegram"}),
     )  # fmt: skip
     return str(incident_id)
 
@@ -114,7 +113,8 @@ async def test_each_role_sees_the_alerts_and_only_operator_and_admin_the_email(
         ("Óscar Operador", "telegram", "skipped"),
     ]
     assert alerts[0]["email"] == (EMAIL if sees_email else None)
-    assert alerts[2]["skipped_reason"] == SKIP_REASON
+    # A code the dashboard says in words; the old Spanish text only for events before VIG-40.
+    assert (alerts[2]["skipped_reason_code"], alerts[2]["skipped_reason"]) == ("no_telegram", None)
     # Whoever asks: no Telegram chat and no raw destination field at all.
     assert CHAT_ID not in response.text
     assert all("destination" not in a for a in alerts)

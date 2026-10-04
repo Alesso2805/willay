@@ -9,7 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 from uuid_utils.compat import uuid7
 
-from willay.alerts.domain.alerts import Channel, Target
+from willay.alerts.domain.alerts import Channel, Reason, Target
 from willay.shared import notifications
 
 # Incident -> rule -> policy -> requested level -> target groups -> members. DISTINCT ON:
@@ -91,14 +91,14 @@ class SqlAlertRepository:
         incident_id: UUID,
         level_order: int,
         target: Target,
-        reason: str,
+        reason: Reason,
         now: datetime,
     ) -> None:
         payload = {
             "contact_id": str(target.contact_id),
             "channel": target.channel.value,
             "level_order": level_order,
-            "reason": reason,
+            "reason_code": reason.value,
         }
         await tx.execute(
             _SKIPPED_EVENT,

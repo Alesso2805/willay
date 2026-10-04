@@ -130,9 +130,9 @@ def _event(event_type: str, payload: dict[str, Any] | None = None, **fields: Any
         ),
         (
             _event("alert_skipped",
-                   {"channel": "telegram", "level_order": 2, "reason": "sin Telegram"},
+                   {"channel": "telegram", "level_order": 2, "reason_code": "no_telegram"},
                    contact_name="Lucho"),
-            "level 2: Lucho skipped on Telegram (sin Telegram)",
+            "level 2: Lucho skipped on Telegram (no telegram)",
         ),
         (
             _event("escalated", {"from_level": 1, "to_level": 2}),

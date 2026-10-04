@@ -39,12 +39,20 @@ class Target:
         return AlertStatus.PENDING if self.reachable else AlertStatus.SKIPPED
 
 
-# A pending alert of an incident that is no longer open is not sent (SPEC): nobody should
-# be asked to confirm something already handled. Reasons are stored in the timeline.
-SKIP_ACKNOWLEDGED = "el incidente ya fue confirmado"
-SKIP_RESOLVED = "el incidente ya fue resuelto"
+class Reason(StrEnum):
+    """Why an alert was skipped or a level expired, recorded in the timeline as a code with its
+    parameters (VIG-40): the dashboard says it in each user's language. Events from before
+    VIG-40 keep their Spanish text under `reason`."""
 
-SKIP_REASON = {
-    Channel.EMAIL: "el contacto no tiene correo",
-    Channel.TELEGRAM: "el contacto no vinculó Telegram",
-}
+    NO_EMAIL = "no_email"
+    NO_TELEGRAM = "no_telegram"
+    # A pending alert of an incident that is no longer open is not sent (SPEC): nobody should
+    # be asked to confirm something already handled.
+    INCIDENT_ACKNOWLEDGED = "incident_acknowledged"
+    INCIDENT_RESOLVED = "incident_resolved"
+    NOT_ACKNOWLEDGED = "not_acknowledged"  # {wait_s}
+    LEVEL_REACHED_NOBODY = "level_reached_nobody"  # {level}
+    LEVEL_REMOVED = "level_removed"  # {level}
+
+
+SKIP_REASON = {Channel.EMAIL: Reason.NO_EMAIL, Channel.TELEGRAM: Reason.NO_TELEGRAM}

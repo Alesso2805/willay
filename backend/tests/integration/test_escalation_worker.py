@@ -131,7 +131,15 @@ async def test_level_two_is_alerted_when_level_one_expires(
     assert (level["current_level"], level["level_started_at"]) == (2, clock.now())
     assert await _alerted(owner, case) == [(1, "Ana"), (2, "Beto")]
     assert await _escalations(owner, case) == [
-        ("escalated", {"from_level": 1, "to_level": 2, "reason": "nadie confirmó en 120 s"})
+        (
+            "escalated",
+            {
+                "from_level": 1,
+                "to_level": 2,
+                "reason_code": "not_acknowledged",
+                "reason_params": {"wait_s": 120},
+            },
+        )
     ]
 
 
@@ -179,7 +187,10 @@ async def test_a_first_level_that_reaches_nobody_escalates_at_once(
 
     assert (await _level(owner, case))["current_level"] == 2
     [(_, payload)] = await _escalations(owner, case)
-    assert payload["reason"] == "el nivel 1 no pudo avisar a nadie"
+    assert (payload["reason_code"], payload["reason_params"]) == (
+        "level_reached_nobody",
+        {"level": 1},
+    )
 
 
 async def test_policy_changes_apply_to_incidents_in_progress(

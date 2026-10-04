@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from tests.support.alerts import FakeAlerting
 from tests.support.incidents import FakeIncidentStore
 from willay.alerts.application.planning import AlertPlanner, LevelAlerts
-from willay.alerts.domain.alerts import AlertStatus, Channel, Target
+from willay.alerts.domain.alerts import AlertStatus, Channel, Reason, Target
 from willay.incidents.domain.incidents import EvidenceReading
 from willay.rules.application.queue import QueuedReading
 from willay.rules.application.rule_evaluator import ApplicableRule, RuleEvaluator
@@ -80,8 +80,8 @@ async def test_every_target_gets_an_alert_and_the_unreachable_are_recorded() -> 
     assert result == LevelAlerts(pending=1, skipped=2)
     assert repository.added == [email, no_email, no_telegram]
     assert repository.skipped == [
-        (no_email, "el contacto no tiene correo"),
-        (no_telegram, "el contacto no vinculó Telegram"),
+        (no_email, Reason.NO_EMAIL),
+        (no_telegram, Reason.NO_TELEGRAM),
     ]
     assert repository.woken == 1
 

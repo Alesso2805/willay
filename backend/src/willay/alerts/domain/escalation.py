@@ -5,9 +5,12 @@ acknowledgement; when it reached nobody (all alerts skipped, SPEC: escalate imme
 including level 1 on opening; or when an admin removed it from the policy meanwhile.
 """
 
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import StrEnum
+
+from willay.alerts.domain.alerts import Reason
 
 
 class Step(StrEnum):
@@ -19,7 +22,12 @@ class Step(StrEnum):
 @dataclass(frozen=True)
 class Decision:
     step: Step
-    reason: str | None = None  # why the level expired; stored in the timeline event
+    reason: Reason | None = None  # why the level expired; stored in the timeline event
+    reason_params: Mapping[str, int] = field(default_factory=dict)
+
+    def payload(self) -> dict[str, object]:
+        """How the timeline event records the reason."""
+        return {"reason_code": self.reason, "reason_params": dict(self.reason_params)}
 
 
 @dataclass(frozen=True)
@@ -35,13 +43,15 @@ class LevelState:
 
 def decide(state: LevelState, now: datetime) -> Decision:
     level = state.current_level
+    reason: Reason
+    params: dict[str, int]
     if state.wait_s is None:
-        reason = f"el nivel {level} ya no existe en la política"
+        reason, params = Reason.LEVEL_REMOVED, {"level": level}
     elif state.nobody_alerted:
-        reason = f"el nivel {level} no pudo avisar a nadie"
+        reason, params = Reason.LEVEL_REACHED_NOBODY, {"level": level}
     elif now - state.level_started_at >= timedelta(seconds=state.wait_s):
-        reason = f"nadie confirmó en {state.wait_s} s"
+        reason, params = Reason.NOT_ACKNOWLEDGED, {"wait_s": state.wait_s}
     else:
         return Decision(Step.WAIT)
     step = Step.ESCALATE if state.next_level is not None else Step.EXHAUST
-    return Decision(step, reason)
+    return Decision(step, reason, params)

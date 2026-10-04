@@ -91,7 +91,7 @@ class Escalator:
                 break
             if decision.step is Step.EXHAUST or state.next_level is None:
                 await self._repository.exhaust(tx, incident_id, now)
-                payload = {"level": state.current_level, "reason": decision.reason}
+                payload = {"level": state.current_level, **decision.payload()}
                 await self._repository.record(tx, incident_id, "escalation_exhausted", payload, now)
                 bound.warning("escalation_exhausted", reason=decision.reason)
                 return moves, 1
@@ -101,7 +101,7 @@ class Escalator:
             payload = {
                 "from_level": state.current_level,
                 "to_level": to_level,
-                "reason": decision.reason,
+                **decision.payload(),
             }
             await self._repository.record(tx, incident_id, "escalated", payload, now)
             alerted = await self._alerts.alert_level(tx, incident_id, to_level, now)

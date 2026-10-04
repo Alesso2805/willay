@@ -14,7 +14,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from willay.alerts.domain.alerts import SKIP_REASON, AlertStatus, Target
+from willay.alerts.domain.alerts import SKIP_REASON, AlertStatus, Reason, Target
 
 FIRST_LEVEL = 1
 
@@ -49,7 +49,7 @@ class AlertRepository(Protocol):
         incident_id: UUID,
         level_order: int,
         target: Target,
-        reason: str,
+        reason: Reason,
         now: datetime,
     ) -> None:
         """`alert_skipped` event (without the destination: it is personal data)."""
