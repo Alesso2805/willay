@@ -1203,6 +1203,26 @@
         "title": "IssuedKeyOut",
         "type": "object"
       },
+      "Language": {
+        "enum": [
+          "es",
+          "en"
+        ],
+        "title": "Language",
+        "type": "string"
+      },
+      "LanguageIn": {
+        "properties": {
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          }
+        },
+        "required": [
+          "language"
+        ],
+        "title": "LanguageIn",
+        "type": "object"
+      },
       "LevelIn": {
         "additionalProperties": false,
         "properties": {
@@ -1266,6 +1286,17 @@
             "title": "Keycloak Org Id",
             "type": "string"
           },
+          "language": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Language"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The dashboard language the user chose; null until they choose one, and meanwhile the dashboard follows the browser's."
+          },
           "organization_id": {
             "format": "uuid",
             "title": "Organization Id",
@@ -1310,7 +1341,8 @@
           "organization_name",
           "organization_timezone",
           "roles",
-          "permissions"
+          "permissions",
+          "language"
         ],
         "title": "MeResponse",
         "type": "object"
@@ -4391,6 +4423,45 @@
           }
         ],
         "summary": "The authenticated user, their organization, roles and permissions",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/v1/me/language": {
+      "put": {
+        "operationId": "choose_language_v1_me_language_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LanguageIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Save the dashboard language the user chose",
         "tags": [
           "identity"
         ]

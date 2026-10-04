@@ -114,3 +114,34 @@ async def test_user_row_is_created_once_and_follows_keycloak(
 
 async def test_health_needs_no_token(client: httpx2.AsyncClient) -> None:
     assert (await client.get("/health")).status_code == 200
+
+
+async def test_the_language_is_unset_until_the_user_chooses_one(
+    client: httpx2.AsyncClient, tokens: TokenFactory, owner: asyncpg.Connection
+) -> None:
+    sub = UUID(str(uuid7()))  # a user of their own: other tests do not change their choice
+    token = tokens.issue(sub, organization=RIMAC, roles=())
+    assert (await _me(client, token)).json()["language"] is None
+
+    chosen = await client.put("/v1/me/language", headers=bearer(token), json={"language": "en"})
+
+    assert chosen.status_code == 204, chosen.text
+    assert (await _me(client, token)).json()["language"] == "en"
+    assert await owner.fetchval("SELECT language FROM core.users WHERE id = $1", sub) == "en"
+    # Keycloak renames the user: the profile is updated and the choice stays.
+    renamed = tokens.issue(sub, organization=RIMAC, roles=(), name="Nombre nuevo")
+    me = (await _me(client, renamed)).json()
+    assert (me["full_name"], me["language"]) == ("Nombre nuevo", "en")
+
+
+async def test_only_offered_languages_can_be_chosen(
+    client: httpx2.AsyncClient, tokens: TokenFactory
+) -> None:
+    token = tokens.issue(UUID(str(uuid7())), organization=RIMAC)
+    response = await client.put("/v1/me/language", headers=bearer(token), json={"language": "fr"})
+    assert response.status_code == 422
+
+
+async def test_choosing_a_language_needs_a_valid_token(client: httpx2.AsyncClient) -> None:
+    response = await client.put("/v1/me/language", json={"language": "en"})
+    assert response.status_code == 401
