@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { t } from '../i18n/i18n';
 import { Icon } from './icon';
 import { VisualState } from './visual-states';
 
@@ -14,10 +15,11 @@ import { VisualState } from './visual-states';
       [style.background-color]="state().background"
     >
       <app-icon [name]="state().icon" [size]="14" />
-      {{ state().label }}
+      {{ t(state().labelKey) }}
     </span>
   `,
 })
 export class StateBadge {
   readonly state = input.required<VisualState>();
+  protected readonly t = t;
 }

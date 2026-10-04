@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/i18n';
 import { ageText, localTime, valueWithUnit, wholeNumber } from './formats';
 
 describe('wholeNumber', () => {
@@ -14,8 +15,15 @@ describe('ageText', () => {
     expect(ageText('2026-10-27T08:59:48Z', now)).toBe('hace 12 s');
     expect(ageText('2026-10-27T08:57:00Z', now)).toBe('hace 3 min');
     expect(ageText('2026-10-27T06:00:00Z', now)).toBe('hace 3 h');
-    expect(ageText('2026-10-25T09:00:00Z', now)).toBe('hace 2 d');
+    expect(ageText('2026-10-25T09:00:00Z', now)).toBe('hace 2 días');
     expect(ageText('2026-10-27T09:00:05Z', now)).toBe('hace 0 s'); // clock running ahead
+  });
+
+  it('in English too', async () => {
+    await useLanguage('en');
+    expect(ageText('2026-10-27T08:59:48Z', now)).toBe('12s ago');
+    expect(ageText('2026-10-27T08:57:00Z', now)).toBe('3m ago');
+    expect(ageText('2026-10-25T09:00:00Z', now)).toBe('2d ago');
   });
 });
 
@@ -28,6 +36,12 @@ describe('localTime', () => {
   it('uses a 24-hour clock', () => {
     expect(localTime('2026-10-01T05:05:00Z', 'America/Lima')).toBe('01/10/2026 00:05');
     expect(localTime('2026-09-30T23:57:04Z', 'America/Lima', true)).toBe('30/09/2026 18:57:04');
+  });
+
+  it('in English, with the month by name: 04/10 is not April 10', async () => {
+    await useLanguage('en');
+    expect(localTime('2026-10-04T05:50:16Z', 'America/Lima')).toBe('Oct 4, 2026, 00:50');
+    expect(localTime('2026-10-04T05:50:16Z', 'America/Lima', true)).toBe('Oct 4, 2026, 00:50:16');
   });
 });
 

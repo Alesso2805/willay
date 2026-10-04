@@ -1,7 +1,9 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
-import { Observable, catchError, map, of, switchMap } from 'rxjs';
+import { Observable, catchError, from, map, of, switchMap } from 'rxjs';
+import { Language, TranslationKey, currentLanguage, t } from './i18n/i18n';
+import { LanguageService } from './i18n/language';
 import { settings } from './settings';
 
 /** GET /v1/me response. */
@@ -17,17 +19,20 @@ export interface Me {
   roles: string[];
   /** Only for hiding actions in the UI: the API checks the permission on every endpoint. */
   permissions: string[];
+  /** The dashboard language the user chose; null: never chose one. */
+  language: Language | null;
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  admin: 'Administración',
-  operator: 'Operación',
-  responder: 'Respuesta',
-  viewer: 'Lectura',
+const ROLE_LABELS: Readonly<Record<string, TranslationKey>> = {
+  admin: 'roles.admin',
+  operator: 'roles.operator',
+  responder: 'roles.responder',
+  viewer: 'roles.viewer',
 };
 
 export function roleLabels(roles: readonly string[]): string {
-  return roles.map((role) => ROLE_LABELS[role] ?? role).join(', ') || 'Sin rol asignado';
+  const labels = roles.map((role) => (ROLE_LABELS[role] ? t(ROLE_LABELS[role]) : role));
+  return labels.join(', ') || t('roles.none');
 }
 
 export type SessionState =
@@ -41,6 +46,7 @@ export type SessionState =
 export class Session {
   private readonly oidc = inject(OidcSecurityService);
   private readonly http = inject(HttpClient);
+  private readonly language = inject(LanguageService);
 
   private readonly _state = signal<SessionState>({ status: 'loading' });
   readonly state = this._state.asReadonly();
@@ -62,7 +68,8 @@ export class Session {
   }
 
   login(): void {
-    this.oidc.authorize();
+    // Keycloak's sign-in page in the same language as the dashboard (OIDC ui_locales).
+    this.oidc.authorize(undefined, { customParams: { ui_locales: currentLanguage() } });
   }
 
   logout(): void {
@@ -71,6 +78,8 @@ export class Session {
 
   private loadMe(): Observable<SessionState> {
     return this.http.get<Me>(`${settings.apiUrl}/v1/me`).pipe(
+      // The user's language is in place before the first page renders.
+      switchMap((me) => from(this.language.adopt(me.language)).pipe(map(() => me))),
       map((me): SessionState => ({ status: 'ready', me })),
       catchError((error: unknown) =>
         of<SessionState>(

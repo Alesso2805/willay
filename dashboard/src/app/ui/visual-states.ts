@@ -1,3 +1,4 @@
+import { TranslationKey } from '../i18n/i18n';
 import { IconName } from './icon';
 
 /**
@@ -10,7 +11,8 @@ import { IconName } from './icon';
  * - `map` on white: ≥ 3:1 (strokes and markers on the map).
  */
 export interface VisualState {
-  label: string;
+  /** Translated where it is drawn: `t(state.labelKey)`. */
+  labelKey: TranslationKey;
   icon: IconName;
   foreground: string;
   background: string;
@@ -38,78 +40,78 @@ export type RuleState = 'inactive';
 
 /** `exhausted`: open with nobody acknowledging at any level (SPEC: shown in red). */
 export const INCIDENT_STATES: Readonly<Record<IncidentState, VisualState>> = {
-  open: { label: 'Abierto', icon: 'bell', ...ORANGE },
-  acknowledged: { label: 'Confirmado', icon: 'check', ...BLUE },
-  resolved: { label: 'Resuelto', icon: 'check-circle', ...SLATE },
-  exhausted: { label: 'Escalamiento agotado', icon: 'octagon-x', ...ALARM },
+  open: { labelKey: 'states.incident.open', icon: 'bell', ...ORANGE },
+  acknowledged: { labelKey: 'states.incident.acknowledged', icon: 'check', ...BLUE },
+  resolved: { labelKey: 'states.incident.resolved', icon: 'check-circle', ...SLATE },
+  exhausted: { labelKey: 'states.incident.exhausted', icon: 'octagon-x', ...ALARM },
 };
 
 export const SEVERITIES: Readonly<Record<Severity, VisualState>> = {
-  info: { label: 'Informativo', icon: 'info', ...BLUE },
-  warning: { label: 'Advertencia', icon: 'triangle-alert', ...AMBER },
-  critical: { label: 'Crítico', icon: 'octagon-alert', ...RED },
+  info: { labelKey: 'states.severity.info', icon: 'info', ...BLUE },
+  warning: { labelKey: 'states.severity.warning', icon: 'triangle-alert', ...AMBER },
+  critical: { labelKey: 'states.severity.critical', icon: 'octagon-alert', ...RED },
 };
 
 /** The icon's bars grow with the level: the order also reads without color. */
 export const RISK_LEVEL_STATES: Readonly<Record<RiskLevelKey, VisualState>> = {
-  low: { label: 'Bajo', icon: 'level-1', ...GREEN },
-  medium: { label: 'Medio', icon: 'level-2', ...AMBER },
-  high: { label: 'Alto', icon: 'level-3', ...ORANGE },
-  critical: { label: 'Crítico', icon: 'level-4', ...RED },
+  low: { labelKey: 'states.risk.low', icon: 'level-1', ...GREEN },
+  medium: { labelKey: 'states.risk.medium', icon: 'level-2', ...AMBER },
+  high: { labelKey: 'states.risk.high', icon: 'level-3', ...ORANGE },
+  critical: { labelKey: 'states.risk.critical', icon: 'level-4', ...RED },
 };
 
 export const STATION_STATES: Readonly<Record<StationState, VisualState>> = {
-  reporting: { label: 'Reportando', icon: 'signal', ...GREEN },
-  silent: { label: 'Sin reportar', icon: 'signal-off', ...RED },
-  unzoned: { label: 'Sin zona', icon: 'pin-off', ...AMBER },
-  inactive: { label: 'Inactiva', icon: 'pause', ...SLATE },
+  reporting: { labelKey: 'states.station.reporting', icon: 'signal', ...GREEN },
+  silent: { labelKey: 'states.station.silent', icon: 'signal-off', ...RED },
+  unzoned: { labelKey: 'states.station.unzoned', icon: 'pin-off', ...AMBER },
+  inactive: { labelKey: 'states.station.inactive', icon: 'pause', ...SLATE },
   /** Never reported: it has not started transmitting yet, so it is not silent (SPEC). */
-  waiting: { label: 'Sin lecturas', icon: 'clock', ...SLATE },
+  waiting: { labelKey: 'states.station.waiting', icon: 'clock', ...SLATE },
 };
 
 /** A zone on the live map (VIG-25) shows its most urgent active incident. */
 export const ZONE_STATES: Readonly<Record<ZoneState, VisualState>> = {
-  calm: { label: 'Sin incidentes', icon: 'check-circle', ...GREEN },
-  acknowledged: { label: 'Incidente confirmado', icon: 'check', ...BLUE },
-  open: { label: 'Incidente abierto', icon: 'bell', ...ORANGE },
-  exhausted: { label: 'Escalamiento agotado', icon: 'octagon-x', ...ALARM },
+  calm: { labelKey: 'states.zone.calm', icon: 'check-circle', ...GREEN },
+  acknowledged: { labelKey: 'states.zone.acknowledged', icon: 'check', ...BLUE },
+  open: { labelKey: 'states.zone.open', icon: 'bell', ...ORANGE },
+  exhausted: { labelKey: 'states.zone.exhausted', icon: 'octagon-x', ...ALARM },
 };
 
 /** One alert to one recipient through one channel (VIG-26). */
 export const ALERT_STATES: Readonly<Record<AlertState, VisualState>> = {
-  pending: { label: 'Pendiente', icon: 'clock', ...SLATE },
-  sent: { label: 'Enviada', icon: 'check', ...BLUE },
-  failed: { label: 'Falló', icon: 'octagon-x', ...RED },
-  skipped: { label: 'Omitida', icon: 'pause', ...AMBER },
-  acknowledged: { label: 'Confirmó', icon: 'check-circle', ...GREEN },
+  pending: { labelKey: 'states.alert.pending', icon: 'clock', ...SLATE },
+  sent: { labelKey: 'states.alert.sent', icon: 'check', ...BLUE },
+  failed: { labelKey: 'states.alert.failed', icon: 'octagon-x', ...RED },
+  skipped: { labelKey: 'states.alert.skipped', icon: 'pause', ...AMBER },
+  acknowledged: { labelKey: 'states.alert.acknowledged', icon: 'check-circle', ...GREEN },
 };
 
 /** How a contact can be reached (VIG-36); one that cannot is flagged, since no alert reaches it. */
 export const CONTACT_CHANNEL_STATES: Readonly<Record<ContactChannelState, VisualState>> = {
-  email: { label: 'Correo', icon: 'mail', ...BLUE },
-  telegram: { label: 'Telegram', icon: 'send', ...BLUE },
-  pending: { label: 'Enlace de Telegram pendiente', icon: 'clock', ...SLATE },
-  none: { label: 'Sin canal', icon: 'triangle-alert', ...AMBER },
+  email: { labelKey: 'states.contactChannel.email', icon: 'mail', ...BLUE },
+  telegram: { labelKey: 'states.contactChannel.telegram', icon: 'send', ...BLUE },
+  pending: { labelKey: 'states.contactChannel.pending', icon: 'clock', ...SLATE },
+  none: { labelKey: 'states.contactChannel.none', icon: 'triangle-alert', ...AMBER },
 };
 
 /** A group whose alerts reach nobody (VIG-36): no members, or no policy notifies it. */
 export const GROUP_STATES: Readonly<Record<GroupState, VisualState>> = {
-  empty: { label: 'Sin miembros', icon: 'triangle-alert', ...AMBER },
-  unused: { label: 'Ninguna política lo usa', icon: 'pause', ...SLATE },
+  empty: { labelKey: 'states.group.empty', icon: 'triangle-alert', ...AMBER },
+  unused: { labelKey: 'states.group.unused', icon: 'pause', ...SLATE },
 };
 
 /** A deactivated rule (VIG-27): kept because incidents point to it, but it no longer fires. */
 export const RULE_STATES: Readonly<Record<RuleState, VisualState>> = {
-  inactive: { label: 'Desactivada', icon: 'pause', ...SLATE },
+  inactive: { labelKey: 'states.rule.inactive', icon: 'pause', ...SLATE },
 };
 
 export type ConnectionState = 'connecting' | 'live' | 'reconnecting';
 
 /** The live channel (VIG-25): while it is down, what the dashboard shows may be stale. */
 export const CONNECTION_STATES: Readonly<Record<ConnectionState, VisualState>> = {
-  connecting: { label: 'Conectando…', icon: 'refresh', ...SLATE },
-  live: { label: 'En vivo', icon: 'broadcast', ...GREEN },
-  reconnecting: { label: 'Sin conexión en vivo', icon: 'signal-off', ...AMBER },
+  connecting: { labelKey: 'states.connection.connecting', icon: 'refresh', ...SLATE },
+  live: { labelKey: 'states.connection.live', icon: 'broadcast', ...GREEN },
+  reconnecting: { labelKey: 'states.connection.reconnecting', icon: 'signal-off', ...AMBER },
 };
 
 /** UI notices (errors, warnings): not states, but pages do not pick their colors either. */

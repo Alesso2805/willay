@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { t } from '../i18n/i18n';
 import { Notice } from './notice';
 
 export type LoadStatus = 'loading' | 'error' | 'empty' | 'ready';
@@ -22,7 +23,7 @@ export function loadStatus(loaded: boolean, failed: boolean, count: number): Loa
   template: `
     @switch (status()) {
       @case ('loading') {
-        <p role="status" class="text-sm text-slate-600">{{ loading() }}</p>
+        <p role="status" class="text-sm text-slate-600">{{ loading() ?? t('ui.loading') }}</p>
       }
       @case ('empty') {
         <p class="text-sm text-slate-600">{{ empty() }}</p>
@@ -30,7 +31,9 @@ export function loadStatus(loaded: boolean, failed: boolean, count: number): Loa
       @case ('error') {
         <app-notice tone="error">
           {{ error() }}
-          <button type="button" class="ml-1 underline" (click)="retry.emit()">Reintentar</button>
+          <button type="button" class="ml-1 underline" (click)="retry.emit()">
+            {{ t('ui.retry') }}
+          </button>
         </app-notice>
       }
     }
@@ -38,8 +41,10 @@ export function loadStatus(loaded: boolean, failed: boolean, count: number): Loa
 })
 export class LoadState {
   readonly status = input.required<LoadStatus>();
-  readonly loading = input('Cargando…');
+  /** Default: "Loading…" in the current language. */
+  readonly loading = input<string>();
   readonly empty = input.required<string>();
   readonly error = input.required<string>();
   readonly retry = output();
+  protected readonly t = t;
 }

@@ -9,7 +9,7 @@ import { PageHeader } from '../ui/page-header';
 import { StateBadge } from '../ui/state-badge';
 import { RISK_LEVEL_STATES } from '../ui/visual-states';
 import { DrawnGeometry, MapMode, ZoneMap } from './zone-map';
-import { RISK_LABELS, RISK_LEVELS, SaveProblem, saveProblem } from './zone-presentation';
+import { RISK_LEVELS, SaveProblem, riskLabel, saveProblem } from './zone-presentation';
 import { RiskLevel, Zone, ZoneInput, ZonesApi } from './zones.api';
 
 type Editing = { kind: 'new' } | { kind: 'edit'; zone: Zone };
@@ -24,7 +24,7 @@ export class ZonesPage {
   private readonly session = inject(Session);
 
   protected readonly riskLevels = RISK_LEVELS;
-  protected readonly riskLabels = RISK_LABELS;
+  protected readonly riskLabel = riskLabel;
   protected readonly riskStates = RISK_LEVEL_STATES;
   protected readonly count = wholeNumber;
 

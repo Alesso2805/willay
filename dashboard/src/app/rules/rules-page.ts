@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { map, startWith } from 'rxjs';
+import { t } from '../i18n/i18n';
 import { causeLabel } from '../incidents/incident-presentation';
 import { ReadingsChart } from '../incidents/readings-chart';
 import { IncidentReadings } from '../incidents/incidents.api';
@@ -60,6 +61,7 @@ export class RulesPage {
   protected readonly ruleTypes = RULE_TYPES;
   protected readonly typeLabel = causeLabel;
   protected readonly severities = SEVERITIES;
+  protected readonly t = t;
   protected readonly severityOrder = SEVERITY_ORDER;
   protected readonly ruleStates = RULE_STATES;
   protected readonly operatorLabels = OPERATOR_LABELS;
