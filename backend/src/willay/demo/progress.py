@@ -10,6 +10,8 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from willay.alerts.domain.delivery import hash_ack_token
+from willay.demo.mailbox import Recipient
 from willay.demo.story import IncidentState, StoryEvent
 
 _RULES = text("""
@@ -33,6 +35,21 @@ _TELEGRAM_AT_LEVEL = text("""
     WHERE l.policy_id = :policy_id AND l.level_order = :level_order
       AND c.telegram_chat_id IS NOT NULL
     ORDER BY c.full_name
+""")
+
+# Oldest contact first (uuid v7 ids are time-ordered): with the seed, Rosa Brigada.
+_EMAIL_AT_LEVEL = text("""
+    SELECT DISTINCT c.id, c.full_name, c.email
+    FROM core.escalation_levels l
+    JOIN core.level_targets t ON t.level_id = l.id AND t.channel = 'email'
+    JOIN core.contact_group_members m ON m.group_id = t.contact_group_id
+    JOIN core.contacts c ON c.id = m.contact_id
+    WHERE l.policy_id = :policy_id AND l.level_order = :level_order AND c.email IS NOT NULL
+    ORDER BY c.id
+""")
+
+_ALERT_OF_TOKEN = text("""
+    SELECT incident_id, level_order FROM core.alerts WHERE ack_token_hash = :token_hash
 """)
 
 # The same names as the dashboard's timeline (incidents_repository._TIMELINE), plus the
@@ -87,6 +104,7 @@ class Readiness:
     rules: list[DemoRule]
     levels: list[tuple[int, int]]  # (level_order, wait_s) of the first rule's policy
     telegram_at_ack_level: list[str]  # who can acknowledge from Telegram at that level
+    email_at_ack_level: list[Recipient]  # who gets that level's alerts by email
 
 
 async def readiness(conn: AsyncConnection, rule_ids: Sequence[UUID], ack_level: int) -> Readiness:
@@ -94,15 +112,18 @@ async def readiness(conn: AsyncConnection, rule_ids: Sequence[UUID], ack_level: 
     by_id = {r.id: DemoRule(r.id, r.is_active, r.escalation_policy_id, r.code) for r in rows}
     rules = [by_id[rule_id] for rule_id in rule_ids if rule_id in by_id]
     if not rules:
-        return Readiness([], [], [])
-    policy_id = rules[0].policy_id
-    levels = [
-        (r.level_order, r.wait_s) for r in await conn.execute(_LEVELS, {"policy_id": policy_id})
-    ]
-    names = await conn.scalars(
-        _TELEGRAM_AT_LEVEL, {"policy_id": policy_id, "level_order": ack_level}
-    )
-    return Readiness(rules, levels, list(names))
+        return Readiness([], [], [], [])
+    level = {"policy_id": rules[0].policy_id, "level_order": ack_level}
+    levels = [(r.level_order, r.wait_s) for r in await conn.execute(_LEVELS, level)]
+    names = await conn.scalars(_TELEGRAM_AT_LEVEL, level)
+    emails = [Recipient(r.full_name, r.email) for r in await conn.execute(_EMAIL_AT_LEVEL, level)]
+    return Readiness(rules, levels, list(names), emails)
+
+
+async def alert_of_token(conn: AsyncConnection, token: str) -> tuple[UUID, int] | None:
+    """(incident_id, level_order) of the alert whose email carries this token."""
+    row = (await conn.execute(_ALERT_OF_TOKEN, {"token_hash": hash_ack_token(token)})).first()
+    return None if row is None else (row.incident_id, row.level_order)
 
 
 async def events(conn: AsyncConnection, organization_id: UUID, since: datetime) -> list[StoryEvent]:
