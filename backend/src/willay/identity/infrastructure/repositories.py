@@ -6,6 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from willay.identity.application.authenticate import Organization, UserProfile
+from willay.shared.languages import Language
 
 
 class SqlOrganizationRepository:
@@ -50,4 +51,16 @@ class SqlUserRepository:
                 "email": profile.email,
                 "full_name": profile.full_name,
             },
+        )
+
+    async def language(self, user_id: UUID) -> Language | None:
+        value = await self._conn.scalar(
+            text("SELECT language FROM core.users WHERE id = :id"), {"id": user_id}
+        )
+        return Language(value) if value is not None else None
+
+    async def set_language(self, user_id: UUID, language: Language) -> None:
+        await self._conn.execute(
+            text("UPDATE core.users SET language = :language WHERE id = :id"),
+            {"id": user_id, "language": language.value},
         )
