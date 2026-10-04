@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { t } from '../i18n/i18n';
+import { LANGUAGES, LANGUAGE_NAMES, Language, t } from '../i18n/i18n';
 import { Session } from '../session';
 import { localTime } from '../ui/formats';
 import { Icon } from '../ui/icon';
@@ -69,7 +69,11 @@ export class ContactsPage {
       nonNullable: true,
       validators: [Validators.email, Validators.maxLength(254)],
     }),
+    // '' = the organization's language.
+    language: new FormControl<Language | ''>('', { nonNullable: true }),
   });
+  protected readonly languages = LANGUAGES;
+  protected readonly languageNames = LANGUAGE_NAMES;
 
   constructor() {
     if (this.canView()) this.load();
@@ -105,7 +109,11 @@ export class ContactsPage {
   }
 
   protected startEdit(contact: Contact): void {
-    this.form.setValue({ full_name: contact.full_name, email: contact.email ?? '' });
+    this.form.setValue({
+      full_name: contact.full_name,
+      email: contact.email ?? '',
+      language: contact.language ?? '',
+    });
     this.problem.set(null);
     this.editing.set({ kind: 'edit', contact });
   }
@@ -127,6 +135,7 @@ export class ContactsPage {
     const body: ContactInput = {
       full_name: value.full_name.trim(),
       email: value.email.trim() || null,
+      language: value.language || null,
     };
     this.saving.set(true);
     const request =

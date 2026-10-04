@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { settings } from '../settings';
+import { Language } from '../i18n/i18n';
 
 export interface ContactGroupRef {
   id: string;
@@ -13,6 +14,8 @@ export interface Contact {
   id: string;
   full_name: string;
   email: string | null;
+  /** Of its alerts (emails, Telegram, the confirmation page); null: the organization's. */
+  language: Language | null;
   telegram_linked: boolean;
   /** While a generated link still works and the contact has not used it. */
   telegram_link_expires_at: string | null;
@@ -25,6 +28,7 @@ export interface Contact {
 export interface ContactInput {
   full_name: string;
   email: string | null;
+  language: Language | null;
 }
 
 /** Shown once: only its hash is stored. */

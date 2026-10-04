@@ -599,7 +599,10 @@
     "contactGone": "The contact no longer exists.",
     "groupGone": "The group no longer exists.",
     "checkContact": "Check the contact's details.",
-    "checkGroup": "Check the group's details."
+    "checkGroup": "Check the group's details.",
+    "language": "Language of their alerts",
+    "languageDefault": "The organization's",
+    "messagesIn": "Their alerts, in {{language}}"
   },
   "groups": {
     "title": "Groups",

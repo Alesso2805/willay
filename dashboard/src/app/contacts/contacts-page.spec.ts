@@ -14,6 +14,7 @@ const CARMEN: Contact = {
   id: 'c1',
   full_name: 'Carmen Jefatura COE',
   email: 'carmen@rimac.willay.test',
+  language: null,
   telegram_linked: false,
   telegram_link_expires_at: null,
   groups: [{ id: 'g1', name: 'Jefatura COE' }],
@@ -125,12 +126,38 @@ describe('ContactsPage', () => {
     button('Guardar')?.click();
 
     const request = http.expectOne({ method: 'POST', url: URL });
-    expect(request.request.body).toEqual({ full_name: 'Lucho Quispe', email: null });
+    expect(request.request.body).toEqual({
+      full_name: 'Lucho Quispe',
+      email: null,
+      language: null,
+    });
     request.flush({ ...CARMEN, id: 'c9', full_name: 'Lucho Quispe', email: null });
     http.expectOne(URL).flush([]);
     await fixture.whenStable();
     expect(text()).toContain('Contacto Lucho Quispe creado.');
     expect(button('Guardar')).toBeUndefined();
+  });
+
+  it('saves the language of the alerts of a contact, or none for the organization one', async () => {
+    const { fixture, http, element, text, button, type, listed } = setup(MANAGE);
+    await listed([{ ...CARMEN, language: 'en' }]);
+    expect(text()).toContain('Sus alertas, en English');
+
+    button('Nuevo contacto')?.click();
+    await fixture.whenStable();
+    const select = element.querySelector<HTMLSelectElement>('select[formcontrolname="language"]')!;
+    expect([...select.options].map((option) => option.textContent?.trim())).toEqual([
+      'El de la organización',
+      'Español',
+      'English',
+    ]);
+    type('full_name', 'Ann');
+    select.value = 'en';
+    select.dispatchEvent(new Event('change'));
+    button('Guardar')?.click();
+
+    const request = http.expectOne({ method: 'POST', url: URL });
+    expect(request.request.body).toEqual({ full_name: 'Ann', email: null, language: 'en' });
   });
 
   it('keeps the form open with the API explanation when it refuses the data', async () => {

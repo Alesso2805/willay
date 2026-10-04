@@ -56,6 +56,15 @@
         >{{ t('contacts.noChannelHint') }}</span
       >
     </label>
+    <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+      {{ t('contacts.language') }}
+      <select formControlName="language" class="field">
+        <option value="">{{ t('contacts.languageDefault') }}</option>
+        @for (language of languages; track language) {
+          <option [value]="language" [attr.lang]="language">{{ languageNames[language] }}</option>
+        }
+      </select>
+    </label>
     @if (problem(); as p) {
       <app-notice>{{ p }}</app-notice>
     }
@@ -91,6 +100,11 @@
               <app-state-badge [state]="channelLabels[channel]" />
             }
           </div>
+          @if (contact.language; as language) {
+            <p class="mt-1 text-xs text-slate-500">
+              {{ t('contacts.messagesIn', { language: languageNames[language] }) }}
+            </p>
+          }
           @if (contact.telegram_link_expires_at; as until) {
             <p class="mt-1 text-xs text-slate-500">{{ t('contacts.linkExpires', { time: time(until) }) }}</p>
           }

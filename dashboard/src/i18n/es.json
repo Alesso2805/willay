@@ -619,7 +619,10 @@
     "contactGone": "El contacto ya no existe.",
     "groupGone": "El grupo ya no existe.",
     "checkContact": "Revisa los datos del contacto.",
-    "checkGroup": "Revisa los datos del grupo."
+    "checkGroup": "Revisa los datos del grupo.",
+    "language": "Idioma de sus alertas",
+    "languageDefault": "El de la organización",
+    "messagesIn": "Sus alertas, en {{language}}"
   },
   "groups": {
     "title": "Grupos",
