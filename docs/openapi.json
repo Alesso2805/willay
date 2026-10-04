@@ -187,6 +187,17 @@
           "full_name": {
             "title": "Full Name",
             "type": "string"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Language"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Of its alerts; null: the organization's language"
           }
         },
         "required": [
@@ -228,6 +239,17 @@
             "title": "Id",
             "type": "string"
           },
+          "language": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Language"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Of its alerts; null: the organization's"
+          },
           "telegram_link_expires_at": {
             "anyOf": [
               {
@@ -249,6 +271,7 @@
           "id",
           "full_name",
           "email",
+          "language",
           "telegram_linked",
           "telegram_link_expires_at",
           "groups",

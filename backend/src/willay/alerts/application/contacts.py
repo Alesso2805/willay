@@ -18,6 +18,7 @@ from willay.alerts.application.telegram_link import ENTITY_TYPE, ContactNotFound
 from willay.alerts.domain.contacts import ContactData, validate_contact
 from willay.shared.audit import AuditEntry, AuditLog
 from willay.shared.clock import Clock
+from willay.shared.languages import Language
 
 
 @dataclass(frozen=True)
@@ -31,6 +32,7 @@ class Contact:
     id: UUID
     full_name: str
     email: str | None
+    language: Language | None
     telegram_linked: bool
     # When the last link generated for it expires, while it is not linked; may be past.
     telegram_link_expires_at: datetime | None
@@ -39,7 +41,7 @@ class Contact:
 
     @property
     def data(self) -> ContactData:
-        return ContactData(self.full_name, self.email)
+        return ContactData(self.full_name, self.email, self.language)
 
     def pending_link_until(self, now: datetime) -> datetime | None:
         """Until when the link sent to the contact still works, if there is one."""
@@ -51,6 +53,7 @@ class Contact:
         return {
             "full_name": self.full_name,
             "email": self.email,
+            "language": self.language,
             "telegram_linked": self.telegram_linked,
             "groups": [group.name for group in self.groups],
         }

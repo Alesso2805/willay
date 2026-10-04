@@ -80,6 +80,7 @@ async def test_a_contact_is_created_edited_and_deleted_with_its_audit(
         "id": None,
         "full_name": "Lucho Quispe",
         "email": None,  # an empty field means no email
+        "language": None,  # the organization's
         "telegram_linked": False,
         "telegram_link_expires_at": None,
         "groups": [],
@@ -87,9 +88,13 @@ async def test_a_contact_is_created_edited_and_deleted_with_its_audit(
     }
     url = f"/v1/contacts/{contact['id']}"
     edited = await client.put(
-        url, json={"full_name": "Lucho Quispe", "email": "lucho@quirio.pe"}, headers=admin
+        url,
+        json={"full_name": "Lucho Quispe", "email": "lucho@quirio.pe", "language": "en"},
+        headers=admin,
     )
-    assert edited.json()["email"] == "lucho@quirio.pe"
+    assert (edited.json()["email"], edited.json()["language"]) == ("lucho@quirio.pe", "en")
+    refused = await client.put(url, json={"full_name": "Lucho", "language": "fr"}, headers=admin)
+    assert refused.status_code == 422  # only the languages Willay speaks
     assert (await client.delete(url, headers=admin)).status_code == 204
     assert (await client.get(url, headers=admin)).status_code == 404
 
