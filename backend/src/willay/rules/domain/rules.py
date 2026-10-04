@@ -13,6 +13,7 @@ from willay.incidents.domain.severity import Severity
 from willay.rules.domain.errors import InvalidRuleParamsError
 from willay.rules.domain.rate_of_change import parse_rate_of_change
 from willay.rules.domain.threshold import parse_threshold
+from willay.shared.errors import ErrorCode, FieldError
 
 # A day: staying quiet longer after an incident is resolved is ignoring the zone.
 MAX_COOLDOWN_S = 86_400
@@ -40,23 +41,16 @@ class RuleData:
     is_active: bool
 
 
-class InvalidRuleError(ValueError):
-    def __init__(self, field: str, message: str) -> None:
-        super().__init__(message)
-        self.field = field
+class InvalidRuleError(FieldError, ValueError):
+    pass
 
 
 def checked(rule_type: RuleType, data: RuleData) -> RuleData:
     """The same rule with its params in canonical form, or InvalidRuleError."""
     if rule_type in NEEDS_STATION and data.station_id is None:
-        raise InvalidRuleError(
-            "station_id",
-            "Este tipo de regla compara valores en la unidad de una estación: elige la estación.",
-        )
+        raise InvalidRuleError("station_id", ErrorCode.RULE_STATION_REQUIRED)
     if not 0 <= data.cooldown_s <= MAX_COOLDOWN_S:
-        raise InvalidRuleError(
-            "cooldown_s", f"La espera tras resolver va de 0 a {MAX_COOLDOWN_S} segundos."
-        )
+        raise InvalidRuleError("cooldown_s", ErrorCode.RULE_COOLDOWN_RANGE, max=MAX_COOLDOWN_S)
     return RuleData(
         zone_id=data.zone_id,
         station_id=data.station_id,
@@ -91,4 +85,4 @@ def canonical_params(rule_type: RuleType, raw: Mapping[str, Any]) -> dict[str, A
                     raise InvalidRuleParamsError(f"silence takes no params: {dict(raw)}")
                 return {}
     except InvalidRuleParamsError as exc:
-        raise InvalidRuleError("params", "Los parámetros no son válidos para este tipo.") from exc
+        raise InvalidRuleError("params", ErrorCode.RULE_PARAMS_INVALID) from exc

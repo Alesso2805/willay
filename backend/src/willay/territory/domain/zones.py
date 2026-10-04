@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
+from willay.shared.errors import ErrorCode, FieldError
+
 MAX_NAME_LENGTH = 120
 # A hand-drawn polygon has tens of vertices; one imported from a GIS, a few thousand. The cap
 # stops a client from sending megabytes of geometry in one request.
@@ -33,10 +35,9 @@ class RiskLevel(StrEnum):
     CRITICAL = "critical"
 
 
-class InvalidGeometryError(Exception):
-    def __init__(self, reason: str) -> None:
-        super().__init__(reason)
-        self.reason = reason
+class InvalidGeometryError(FieldError):
+    def __init__(self, code: ErrorCode, **params: object) -> None:
+        super().__init__("geometry", code, **params)
 
 
 @dataclass(frozen=True)
@@ -64,14 +65,16 @@ def to_multipolygon(geojson: Mapping[str, Any]) -> MultiPolygonCoords:
     elif kind == "MultiPolygon":
         polygons = []
     else:
-        raise InvalidGeometryError("la geometría debe ser un Polygon o un MultiPolygon GeoJSON")
+        raise InvalidGeometryError(ErrorCode.GEOMETRY_TYPE)
     if not polygons:
-        raise InvalidGeometryError("la geometría no tiene polígonos")
+        raise InvalidGeometryError(ErrorCode.GEOMETRY_EMPTY)
 
     result = [_polygon(polygon) for polygon in polygons]
     vertices = sum(len(ring) for polygon in result for ring in polygon)
     if vertices > MAX_VERTICES:
-        raise InvalidGeometryError(f"la geometría tiene {vertices} vértices; máximo {MAX_VERTICES}")
+        raise InvalidGeometryError(
+            ErrorCode.GEOMETRY_TOO_MANY_VERTICES, vertices=vertices, max=MAX_VERTICES
+        )
     return result
 
 
@@ -84,36 +87,30 @@ def to_geojson(geometry: MultiPolygonCoords) -> dict[str, Any]:
 
 def _polygon(raw: object) -> PolygonCoords:
     if not isinstance(raw, list) or not raw:
-        raise InvalidGeometryError("cada polígono necesita al menos un anillo exterior")
+        raise InvalidGeometryError(ErrorCode.GEOMETRY_NO_RING)
     return [_ring(ring) for ring in raw]
 
 
 def _ring(raw: object) -> Ring:
     if not isinstance(raw, list):
-        raise InvalidGeometryError("un anillo debe ser una lista de posiciones")
+        raise InvalidGeometryError(ErrorCode.GEOMETRY_RING_TYPE)
     ring = [_position(position) for position in raw]
     # GeoJSON requires closed rings of at least 4 positions: a triangle is A-B-C-A.
     if len(ring) < 4:
-        raise InvalidGeometryError(
-            "un anillo necesita al menos 3 vértices distintos (4 posiciones)"
-        )
+        raise InvalidGeometryError(ErrorCode.GEOMETRY_RING_TOO_SHORT)
     if ring[0] != ring[-1]:
-        raise InvalidGeometryError(
-            "el anillo no está cerrado: la última posición debe repetir la primera"
-        )
+        raise InvalidGeometryError(ErrorCode.GEOMETRY_RING_OPEN)
     return ring
 
 
 def _position(raw: object) -> Position:
     if not isinstance(raw, Sequence) or isinstance(raw, str) or len(raw) < 2:
-        raise InvalidGeometryError("cada posición debe ser [longitud, latitud]")
+        raise InvalidGeometryError(ErrorCode.GEOMETRY_POSITION)
     lon, lat = raw[0], raw[1]
     if not all(isinstance(v, int | float) and not isinstance(v, bool) for v in (lon, lat)):
-        raise InvalidGeometryError("las coordenadas deben ser números")
+        raise InvalidGeometryError(ErrorCode.GEOMETRY_NOT_NUMBERS)
     # Catches swapped lat/lon only when latitude falls outside ±90 (e.g. in Asia). In Lima,
     # swapped [-11.9, -76.7] is still valid (lands in Antarctica): the map reveals that.
     if not (-180 <= lon <= 180 and -90 <= lat <= 90):
-        raise InvalidGeometryError(
-            f"coordenada fuera de rango: [{lon}, {lat}] (¿longitud y latitud invertidas?)"
-        )
+        raise InvalidGeometryError(ErrorCode.GEOMETRY_OUT_OF_RANGE, lon=lon, lat=lat)
     return (float(lon), float(lat))

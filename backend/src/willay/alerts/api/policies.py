@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel, ConfigDict
 
 from willay.alerts.application.policies import (
@@ -31,7 +31,7 @@ from willay.identity.domain.permissions import Permission
 from willay.identity.domain.principal import Principal
 from willay.shared.audit import SqlAuditLog
 from willay.shared.errors import ErrorCode
-from willay.shared.web import ApiError, ClockDep, DbConnection
+from willay.shared.web import ApiError, ClockDep, DbConnection, FieldProblem
 
 router = APIRouter(prefix="/v1/escalation-policies", tags=["alerts"])
 
@@ -189,15 +189,15 @@ def _data(body: PolicyIn) -> PolicyData:
     )
 
 
-def _rejected(exc: Exception) -> HTTPException:
+def _rejected(exc: InvalidPolicyError | UnknownGroupsError | DuplicatePolicyNameError) -> ApiError:
     if isinstance(exc, DuplicatePolicyNameError):
         return ApiError(status.HTTP_409_CONFLICT, ErrorCode.POLICY_NAME_TAKEN)
     # Same shape as FastAPI's validation 422s, so the dashboard handles them the same way.
-    if isinstance(exc, UnknownGroupsError):
-        detail = [{"loc": ["body", "levels"], "msg": str(exc), "type": "unknown_contact_group"}]
-    else:
-        detail = [{"loc": ["body", "levels"], "msg": str(exc), "type": "invalid_policy"}]
-    return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail=detail)
+    kind = "unknown_contact_group" if isinstance(exc, UnknownGroupsError) else "invalid_policy"
+    problem = FieldProblem(["body", "levels"], exc.code, exc.params, kind)
+    return ApiError(
+        status.HTTP_422_UNPROCESSABLE_CONTENT, exc.code, fields=[problem], params=exc.params
+    )
 
 
 def _out(policy: Policy) -> PolicyOut:

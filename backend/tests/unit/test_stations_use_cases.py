@@ -7,6 +7,7 @@ import pytest
 
 from willay.shared.audit import AuditEntry
 from willay.shared.clock import FakeClock
+from willay.shared.errors import ErrorCode
 from willay.territory.application.stations import (
     Station,
     StationNotFoundError,
@@ -128,7 +129,7 @@ async def test_create_returns_the_key_once_and_stores_only_its_hash(stations: Fa
 
 async def test_zones_of_other_organizations_are_unknown(stations: FakeStations) -> None:
     foreign = replace(DATA, zones=(ZoneAssignment(uuid4(), ZonePosition.IN_ZONE),))
-    with pytest.raises(InvalidStationError, match="desconocidas"):
+    with pytest.raises(InvalidStationError, match=ErrorCode.STATION_ZONES_UNKNOWN):
         await create_station(
             ACTOR, "X-01", foreign,
             stations=stations, issuer=FakeIssuer(), audit=FakeAudit(), clock=FakeClock(T0),

@@ -2,6 +2,7 @@ from uuid import uuid4
 
 import pytest
 
+from willay.shared.errors import ErrorCode
 from willay.territory.domain.stations import (
     InvalidStationError,
     Location,
@@ -40,8 +41,10 @@ def test_invalid_codes_are_rejected(raw: str) -> None:
 
 @pytest.mark.parametrize(("lon", "lat"), [(-181, 0), (0, 91), (200, -11.9)])
 def test_location_out_of_range_is_rejected(lon: float, lat: float) -> None:
-    with pytest.raises(InvalidStationError, match="fuera de rango"):
+    with pytest.raises(InvalidStationError) as caught:
         Location(lon, lat)
+    assert (caught.value.field, caught.value.code) == ("location", ErrorCode.STATION_LOCATION_RANGE)
+    assert caught.value.params == {"lon": lon, "lat": lat}
 
 
 def test_a_zone_can_appear_only_once() -> None:
@@ -49,7 +52,7 @@ def test_a_zone_can_appear_only_once() -> None:
     check_zones(
         (ZoneAssignment(zone, ZonePosition.UPSTREAM), ZoneAssignment(uuid4(), ZonePosition.IN_ZONE))
     )
-    with pytest.raises(InvalidStationError, match="más de una vez"):
+    with pytest.raises(InvalidStationError, match=ErrorCode.STATION_ZONE_REPEATED):
         check_zones(
             (
                 ZoneAssignment(zone, ZonePosition.UPSTREAM),

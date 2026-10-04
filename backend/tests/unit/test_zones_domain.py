@@ -2,6 +2,7 @@ from typing import Any
 
 import pytest
 
+from willay.shared.errors import ErrorCode
 from willay.territory.domain.zones import (
     MAX_VERTICES,
     InvalidGeometryError,
@@ -34,15 +35,23 @@ def test_multipolygon_with_a_hole_is_accepted() -> None:
 @pytest.mark.parametrize(
     ("geojson", "reason"),
     [
-        pytest.param({"type": "Point", "coordinates": [-76.7, -11.9]}, "Polygon", id="point"),
-        pytest.param({"type": "Polygon", "coordinates": []}, "anillo exterior", id="no-rings"),
-        pytest.param({"type": "MultiPolygon", "coordinates": []}, "no tiene", id="no-polygons"),
         pytest.param(
-            {"type": "Polygon", "coordinates": [SQUARE[:-1]]}, "no está cerrado", id="open-ring"
+            {"type": "Point", "coordinates": [-76.7, -11.9]}, ErrorCode.GEOMETRY_TYPE, id="point"
+        ),
+        pytest.param(
+            {"type": "Polygon", "coordinates": []}, ErrorCode.GEOMETRY_NO_RING, id="no-rings"
+        ),
+        pytest.param(
+            {"type": "MultiPolygon", "coordinates": []}, ErrorCode.GEOMETRY_EMPTY, id="no-polygons"
+        ),
+        pytest.param(
+            {"type": "Polygon", "coordinates": [SQUARE[:-1]]},
+            ErrorCode.GEOMETRY_RING_OPEN,
+            id="open-ring",
         ),
         pytest.param(
             {"type": "Polygon", "coordinates": [[SQUARE[0], SQUARE[1], SQUARE[0]]]},
-            "al menos 3",
+            ErrorCode.GEOMETRY_RING_TOO_SHORT,
             id="two-vertices",
         ),
         pytest.param(
@@ -51,30 +60,31 @@ def test_multipolygon_with_a_hole_is_accepted() -> None:
                 # Tokyo with lat/lon swapped: latitude 139 is impossible (swapped Lima would pass).
                 "coordinates": [[[35.6, 139.6], [35.7, 139.6], [35.7, 139.8], [35.6, 139.6]]],
             },
-            "invertidas",
+            ErrorCode.GEOMETRY_OUT_OF_RANGE,
             id="swapped-lat-lon",
         ),
         pytest.param(
             {"type": "Polygon", "coordinates": [[["a", "b"], [1, 1], [1, 2], ["a", "b"]]]},
-            "números",
+            ErrorCode.GEOMETRY_NOT_NUMBERS,
             id="non-numeric",
         ),
         pytest.param(
             {"type": "Polygon", "coordinates": [[[1], [2], [3], [1]]]},
-            "longitud, latitud",
+            ErrorCode.GEOMETRY_POSITION,
             id="short-position",
         ),
     ],
 )
 def test_structurally_invalid_geometries_are_rejected_with_a_reason(
-    geojson: dict[str, Any], reason: str
+    geojson: dict[str, Any], reason: ErrorCode
 ) -> None:
-    with pytest.raises(InvalidGeometryError, match=reason):
+    with pytest.raises(InvalidGeometryError) as caught:
         to_multipolygon(geojson)
+    assert (caught.value.field, caught.value.code) == ("geometry", reason)
 
 
 def test_too_many_vertices_are_rejected() -> None:
     ring = [[-76.7 + i * 1e-6, -11.9] for i in range(MAX_VERTICES)]
     ring += [[-76.7, -12.0], ring[0]]
-    with pytest.raises(InvalidGeometryError, match="máximo"):
+    with pytest.raises(InvalidGeometryError, match=ErrorCode.GEOMETRY_TOO_MANY_VERTICES):
         to_multipolygon({"type": "Polygon", "coordinates": [ring]})

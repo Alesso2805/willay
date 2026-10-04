@@ -87,3 +87,20 @@ async def test_an_invalid_field_keeps_fastapis_shape_with_its_code(
         ],
         "code": "audit_date_order",
     }
+
+
+async def test_a_domain_validation_error_is_translated_with_its_parameters(
+    client: httpx2.AsyncClient, tokens: TokenFactory
+) -> None:
+    admin = tokens.issue(SUB_RIMAC_OPERATOR, organization=RIMAC, roles=("admin",))
+    body = {"full_name": "x" * 500, "email": None}
+
+    english = await client.post("/v1/contacts", headers=_headers(admin, "en"), json=body)
+    spanish = await client.post("/v1/contacts", headers=_headers(admin, "es"), json=body)
+
+    assert english.status_code == spanish.status_code == 422
+    [problem] = english.json()["detail"]
+    assert problem["loc"] == ["body", "full_name"]
+    assert problem["code"] == "contact_name_length"
+    assert problem["msg"].startswith("The name must have between 1 and ")
+    assert spanish.json()["detail"][0]["msg"].startswith("El nombre debe tener entre 1 y ")

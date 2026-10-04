@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from willay.identity.api.dependencies import require
@@ -14,7 +14,7 @@ from willay.ingestion.api.dependencies import get_api_key_hasher
 from willay.ingestion.infrastructure.api_keys import ApiKeyHasher, Argon2ApiKeyIssuer
 from willay.shared.audit import SqlAuditLog
 from willay.shared.errors import ErrorCode
-from willay.shared.web import ApiError, ClockDep, DbConnection
+from willay.shared.web import ApiError, ClockDep, DbConnection, invalid_field
 from willay.territory.application.stations import (
     DuplicateStationCodeError,
     IssuedStation,
@@ -269,11 +269,8 @@ def _location(lon: float, lat: float) -> Location:
         raise _invalid(exc) from exc
 
 
-def _invalid(exc: InvalidStationError) -> HTTPException:
-    return HTTPException(
-        status.HTTP_422_UNPROCESSABLE_CONTENT,
-        detail=[{"loc": ["body", exc.field], "msg": exc.reason, "type": "invalid_station"}],
-    )
+def _invalid(exc: InvalidStationError) -> ApiError:
+    return invalid_field(exc, type="invalid_station")
 
 
 def _issued(issued: IssuedStation) -> IssuedKeyOut:

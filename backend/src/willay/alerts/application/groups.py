@@ -16,6 +16,7 @@ from willay.alerts.application.policies import Actor
 from willay.alerts.domain.groups import GroupData, InvalidGroupError, validate_group
 from willay.shared.audit import AuditEntry, AuditLog
 from willay.shared.clock import Clock
+from willay.shared.errors import ErrorCode
 
 ENTITY_TYPE = "contact_group"
 
@@ -137,9 +138,9 @@ async def _check(actor: Actor, data: GroupData, groups: GroupRepository) -> None
     if data.zone_id is not None and not await groups.zone_exists(
         actor.organization_id, data.zone_id
     ):
-        raise InvalidGroupError("zone_id", "La zona no existe.")
+        raise InvalidGroupError("zone_id", ErrorCode.GROUP_ZONE_UNKNOWN)
     if await groups.missing_contacts(actor.organization_id, data.member_ids):
-        raise InvalidGroupError("member_ids", "Algún contacto no existe.")
+        raise InvalidGroupError("member_ids", ErrorCode.GROUP_MEMBER_UNKNOWN)
 
 
 async def _locked(actor: Actor, group_id: UUID, groups: GroupRepository) -> ContactGroup:

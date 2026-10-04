@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from willay.shared.clock import Clock
 from willay.shared.config import Settings
-from willay.shared.errors import ErrorCode
+from willay.shared.errors import ErrorCode, FieldError
 from willay.shared.i18n import negotiate, translate
 
 
@@ -91,12 +91,13 @@ class ApiError(HTTPException):
         *,
         fields: Sequence[FieldProblem] = (),
         headers: Mapping[str, str] | None = None,
-        **params: object,
+        params: Mapping[str, object] | None = None,
+        **more_params: object,
     ) -> None:
         super().__init__(status_code, detail=code.value, headers=dict(headers or {}) or None)
         self.code = code
         self.fields = tuple(fields)
-        self.params = params
+        self.params = {**(params or {}), **more_params}
 
 
 async def api_error_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -117,4 +118,12 @@ async def api_error_handler(request: Request, exc: Exception) -> JSONResponse:
         status_code=exc.status_code,
         content={"detail": detail, "code": exc.code.value},
         headers={**(exc.headers or {}), "Content-Language": language.value},
+    )
+
+
+def invalid_field(error: FieldError, *, where: str = "body", type: str = "value_error") -> ApiError:
+    """A domain's invalid field as a 422 in FastAPI's shape, so the dashboard reads both alike."""
+    problem = FieldProblem([where, error.field], error.code, error.params, type)
+    return ApiError(
+        status.HTTP_422_UNPROCESSABLE_CONTENT, error.code, fields=[problem], params=error.params
     )

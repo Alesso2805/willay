@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Body, Depends, Query, Response, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from willay.identity.api.dependencies import require
@@ -33,7 +33,7 @@ from willay.rules.infrastructure.rules_repository import SqlRuleAdminRepository
 from willay.rules.infrastructure.sql_preview import SqlPreviewRepository
 from willay.shared.audit import SqlAuditLog
 from willay.shared.errors import ErrorCode
-from willay.shared.web import ApiError, ClockDep, DbConnection
+from willay.shared.web import ApiError, ClockDep, DbConnection, invalid_field
 
 router = APIRouter(prefix="/v1/rules", tags=["rules"])
 
@@ -293,12 +293,8 @@ def _data(body: ThresholdRuleIn | RateOfChangeRuleIn | SilenceRuleIn) -> RuleDat
     )
 
 
-def _invalid(exc: InvalidRuleError) -> HTTPException:
-    """The same shape as FastAPI's own validation errors, so the dashboard reads both alike."""
-    return HTTPException(
-        status.HTTP_422_UNPROCESSABLE_CONTENT,
-        detail=[{"loc": ["body", exc.field], "msg": str(exc), "type": "value_error"}],
-    )
+def _invalid(exc: InvalidRuleError) -> ApiError:
+    return invalid_field(exc)
 
 
 def _preview_out(preview: Preview) -> PreviewOut:

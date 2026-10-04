@@ -15,6 +15,7 @@ from uuid_utils.compat import uuid7
 
 from willay.shared.audit import AuditEntry, AuditLog
 from willay.shared.clock import Clock
+from willay.shared.errors import ErrorCode
 from willay.territory.application.zones import Actor
 from willay.territory.domain.stations import (
     InvalidStationError,
@@ -213,7 +214,7 @@ async def _check_zones(actor: Actor, data: StationData, stations: StationReposit
     # A zone from another organization counts as unknown: the message does not reveal it.
     unknown = wanted - await stations.zones_of(actor.organization_id, wanted)
     if unknown:
-        raise InvalidStationError("zones", f"zonas desconocidas: {sorted(str(z) for z in unknown)}")
+        raise InvalidStationError("zones", ErrorCode.STATION_ZONES_UNKNOWN)
 
 
 def _entry(

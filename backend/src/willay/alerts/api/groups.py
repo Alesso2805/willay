@@ -8,7 +8,7 @@ notify it, so the dashboard can explain beforehand why it cannot be deleted.
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel, ConfigDict
 
 from willay.alerts.application.groups import (
@@ -29,7 +29,7 @@ from willay.identity.domain.permissions import Permission
 from willay.identity.domain.principal import Principal
 from willay.shared.audit import SqlAuditLog
 from willay.shared.errors import ErrorCode, Names
-from willay.shared.web import ApiError, ClockDep, DbConnection
+from willay.shared.web import ApiError, ClockDep, DbConnection, invalid_field
 
 router = APIRouter(prefix="/v1/contact-groups", tags=["alerts"])
 
@@ -156,12 +156,8 @@ def _actor(principal: Principal) -> Actor:
     return Actor(principal.organization_id, principal.user_id)
 
 
-def _invalid(exc: InvalidGroupError) -> HTTPException:
-    """The same shape as FastAPI's own validation errors, so the dashboard reads both alike."""
-    return HTTPException(
-        status.HTTP_422_UNPROCESSABLE_CONTENT,
-        detail=[{"loc": ["body", exc.field], "msg": str(exc), "type": "value_error"}],
-    )
+def _invalid(exc: InvalidGroupError) -> ApiError:
+    return invalid_field(exc)
 
 
 def _ref(ref: Ref) -> RefOut:

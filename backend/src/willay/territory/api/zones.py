@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from willay.identity.api.dependencies import require
@@ -12,7 +12,7 @@ from willay.identity.domain.permissions import Permission
 from willay.identity.domain.principal import Principal
 from willay.shared.audit import SqlAuditLog
 from willay.shared.errors import ErrorCode
-from willay.shared.web import ApiError, ClockDep, DbConnection
+from willay.shared.web import ApiError, ClockDep, DbConnection, invalid_field
 from willay.territory.application.zones import (
     Actor,
     Zone,
@@ -181,12 +181,8 @@ def _data(body: ZoneIn) -> ZoneData:
     )
 
 
-def _invalid_geometry(exc: InvalidGeometryError) -> HTTPException:
-    # Same shape as FastAPI's validation 422s, so the dashboard handles both alike.
-    return HTTPException(
-        status.HTTP_422_UNPROCESSABLE_CONTENT,
-        detail=[{"loc": ["body", "geometry"], "msg": exc.reason, "type": "invalid_geometry"}],
-    )
+def _invalid_geometry(exc: InvalidGeometryError) -> ApiError:
+    return invalid_field(exc, type="invalid_geometry")
 
 
 def _out(zone: Zone) -> ZoneOut:
