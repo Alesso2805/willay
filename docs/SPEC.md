@@ -224,7 +224,7 @@ erDiagram
 | Table | Main columns | Key constraints |
 | --- | --- | --- |
 | `organizations` | id, keycloak\_org\_id, name, timezone, created\_at | `keycloak_org_id` unique; the `organization` claim is resolved only against this id |
-| `users` | id (= Keycloak `sub`), organization\_id, email, full\_name, is\_active, created\_at | `email` unique (one user, one organization); no role column: roles live only in Keycloak |
+| `users` | id (= Keycloak `sub`), organization\_id, email, full\_name, language, is\_active, created\_at | `email` unique (one user, one organization); no role column: roles live only in Keycloak; language ∈ es, en, NULL until the user chooses one in the dashboard (meanwhile it follows the browser) |
 | `risk_zones` | id, organization\_id, name, description, risk\_level, geom `geometry(MultiPolygon,4326)`, population\_estimate, is\_active, created\_at, updated\_at | GIST index on `geom`; risk\_level ∈ low, medium, high, critical |
 | `stations` | id, organization\_id, code, name, variable, unit, location `geometry(Point,4326)`, source, expected\_interval\_s, silence\_multiplier, status, api\_key\_hash, api\_key\_rotated\_at, created\_at | `(organization_id, code)` unique; variable ∈ water\_level, discharge, rainfall; source ∈ sensor, simulator; status ∈ active, inactive; `silence_multiplier` defaults to 3 (single source of K) |
 | `zone_stations` | zone\_id, station\_id, position | PK `(zone_id, station_id)`; position ∈ upstream, in\_zone, downstream |
