@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EMPTY, Subject, catchError, switchMap } from 'rxjs';
+import { t } from '../i18n/i18n';
 import { LiveEvents, dataTime } from '../realtime/live-events';
 import { Session } from '../session';
 import { clock } from '../ui/clock';
@@ -15,14 +16,15 @@ import { STATION_STATES } from '../ui/visual-states';
 import { Zone, ZonesApi } from '../zones/zones.api';
 import { LonLat, StationMap } from './station-map';
 import {
-  POSITION_LABELS,
+  POSITIONS,
   UNITS,
-  VARIABLE_LABELS,
   VARIABLES,
   keepNewerHeartbeats,
   stationProblem,
   stationState,
   withHeartbeat,
+  positionLabel,
+  variableLabel,
 } from './station-presentation';
 import {
   IssuedKey,
@@ -49,10 +51,11 @@ export class StationsPage {
 
   protected readonly stationStates = STATION_STATES;
   protected readonly variables = VARIABLES;
-  protected readonly variableLabels = VARIABLE_LABELS;
+  protected readonly variableLabel = variableLabel;
+  protected readonly t = t;
   protected readonly units = UNITS;
-  protected readonly positions = Object.keys(POSITION_LABELS) as ZonePosition[];
-  protected readonly positionLabels = POSITION_LABELS;
+  protected readonly positions = POSITIONS;
+  protected readonly positionLabel = positionLabel;
 
   protected readonly stations = signal<Station[]>([]);
   protected readonly zones = signal<Zone[]>([]);
@@ -91,12 +94,12 @@ export class StationsPage {
     if (!this.loaded()) return '';
     const active = this.stations().filter((station) => station.status === 'active');
     const states = active.map((station) => stationState(station, this.asOf()));
-    const parts = [`${active.length} ${active.length === 1 ? 'estación' : 'estaciones'}`];
-    parts.push(`${states.filter((s) => s === 'reporting').length} reportando`);
+    const parts = [t('stations.count', { count: active.length })];
+    parts.push(t('stations.reporting', { count: states.filter((s) => s === 'reporting').length }));
     const silent = states.filter((s) => s === 'silent').length;
-    if (silent > 0) parts.push(`${silent} sin reportar`);
+    if (silent > 0) parts.push(t('stations.silent', { count: silent }));
     const unzoned = active.filter((station) => !station.has_zone).length;
-    if (unzoned > 0) parts.push(`${unzoned} sin zona`);
+    if (unzoned > 0) parts.push(t('stations.unzoned', { count: unzoned }));
     return parts.join(' · ');
   });
 
@@ -181,7 +184,10 @@ export class StationsPage {
 
   protected zoneSummary(station: Station): string {
     return station.zones
-      .map((z) => `${this.zoneNames().get(z.zone_id) ?? 'zona'} (${POSITION_LABELS[z.position].toLowerCase()})`)
+      .map((z) => {
+        const zone = this.zoneNames().get(z.zone_id) ?? t('stations.aZone');
+        return `${zone} (${positionLabel(z.position).toLowerCase()})`;
+      })
       .join(', ');
   }
 
@@ -193,7 +199,7 @@ export class StationsPage {
     this.pending.set(null);
     this.problem.set(null);
     this.editing.set({ kind: 'new' });
-    this.status.set('Haz clic en el mapa para ubicar la estación, o escribe longitud y latitud.');
+    this.status.set(t('stations.pickHint'));
   }
 
   protected startEdit(station: Station): void {
@@ -213,7 +219,7 @@ export class StationsPage {
     this.pending.set([lon, lat]);
     this.problem.set(null);
     this.editing.set({ kind: 'edit', station });
-    this.status.set(`Editando ${station.code}. Haz clic en el mapa para moverla.`);
+    this.status.set(t('stations.editHint', { code: station.code }));
   }
 
   protected cancel(): void {
@@ -243,12 +249,12 @@ export class StationsPage {
     if (!editing) return;
     const value = this.form.getRawValue();
     if (value.lon === null || value.lat === null) {
-      this.problem.set('Falta la ubicación: haz clic en el mapa o escribe longitud y latitud.');
+      this.problem.set(t('stations.missingLocation'));
       return;
     }
     if (this.form.invalid || !value.name.trim()) {
       this.form.markAllAsTouched();
-      this.problem.set('Revisa los campos marcados.');
+      this.problem.set(t('ui.checkFields'));
       return;
     }
     const body: StationInput = {
@@ -266,30 +272,29 @@ export class StationsPage {
     this.saving.set(true);
     if (editing.kind === 'new') {
       this.api.create(value.code.trim(), body).subscribe({
-        next: (issued) => this.done(`Estación ${issued.station.code} creada.`, issued),
+        next: (issued) => this.done(t('stations.created', { code: issued.station.code }), issued),
         error: (error: unknown) => this.failed(error),
       });
     } else {
       this.api.update(editing.station.id, body).subscribe({
-        next: (station) => this.done(`Estación ${station.code} guardada.`),
+        next: (station) => this.done(t('stations.saved', { code: station.code })),
         error: (error: unknown) => this.failed(error),
       });
     }
   }
 
   protected rotate(station: Station): void {
-    const question = `¿Rotar la clave de ${station.code}? La actual deja de funcionar al instante y la estación recibirá 401 hasta que la reconfigures.`;
-    if (!confirm(question)) return;
+    if (!confirm(t('stations.confirmRotate', { code: station.code }))) return;
     this.api.rotateKey(station.id).subscribe({
-      next: (issued) => this.done(`Clave de ${station.code} rotada.`, issued),
+      next: (issued) => this.done(t('stations.rotated', { code: station.code }), issued),
       error: (error: unknown) => this.status.set(stationProblem(error)),
     });
   }
 
   protected deactivate(station: Station): void {
-    if (!confirm(`¿Desactivar ${station.code}? Sus lotes recibirán 403.`)) return;
+    if (!confirm(t('stations.confirmDeactivate', { code: station.code }))) return;
     this.api.deactivate(station.id).subscribe({
-      next: () => this.done(`Estación ${station.code} desactivada.`),
+      next: () => this.done(t('stations.deactivated', { code: station.code })),
       error: (error: unknown) => this.status.set(stationProblem(error)),
     });
   }
@@ -308,7 +313,7 @@ export class StationsPage {
       status: 'active',
     };
     this.api.update(station.id, body).subscribe({
-      next: () => this.done(`Estación ${station.code} reactivada.`),
+      next: () => this.done(t('stations.reactivated', { code: station.code })),
       error: (error: unknown) => this.status.set(stationProblem(error)),
     });
   }

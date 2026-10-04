@@ -1,11 +1,20 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { problemPoint, saveProblem } from './zone-presentation';
+import { useLanguage } from '../i18n/i18n';
+import { problemPoint, riskLabel, saveProblem } from './zone-presentation';
 
 function apiError(status: number, detail?: unknown): HttpErrorResponse {
   return new HttpErrorResponse({ status, error: detail === undefined ? null : { detail } });
 }
 
 describe('zone presentation', () => {
+  it('explains problems and names risk levels in English too', async () => {
+    await useLanguage('en');
+    const problem = saveProblem(apiError(422, [{ msg: 'Self-intersection[-76.65 -11.95]' }]));
+    expect(problem.message).toBe('The polygon crosses itself. Fix the point marked on the map.');
+    expect(saveProblem(apiError(403)).message).toBe('Your role does not allow managing zones.');
+    expect(riskLabel('critical')).toBe('Critical');
+  });
+
   it('extracts the point PostGIS reports for a self-intersection', () => {
     expect(problemPoint('Self-intersection[-76.65 -11.95]')).toEqual([-76.65, -11.95]);
     expect(problemPoint('Too few points[1 0]')).toEqual([1, 0]);

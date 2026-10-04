@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, merge, switchMap } from 'rxjs';
+import { t } from '../i18n/i18n';
 import { LiveEvents } from '../realtime/live-events';
 import { Session } from '../session';
 import { clock } from '../ui/clock';
@@ -23,6 +24,7 @@ import { FailedReading, FailedReadingsApi } from './failed-readings.api';
 export class FailedReadingsPage {
   private readonly api = inject(FailedReadingsApi);
   private readonly session = inject(Session);
+  protected readonly t = t;
   private readonly live = inject(LiveEvents);
 
   protected readonly readings = signal<FailedReading[]>([]);
@@ -42,7 +44,7 @@ export class FailedReadingsPage {
   protected readonly subtitle = computed(() => {
     if (!this.loaded()) return '';
     const count = this.readings().length;
-    return count === 1 ? '1 lectura sin evaluar' : `${count} lecturas sin evaluar`;
+    return t('failedPage.subtitle', { count });
   });
   protected readonly allSelected = computed(
     () => this.readings().length > 0 && this.selected().size === this.readings().length,
@@ -92,7 +94,7 @@ export class FailedReadingsPage {
 
   protected value(reading: FailedReading): string {
     return reading.value === null
-      ? 'lectura ya expirada'
+      ? t('failedPage.expired')
       : valueWithUnit(reading.value, reading.unit);
   }
 
@@ -112,29 +114,18 @@ export class FailedReadingsPage {
   protected reprocess(): void {
     const ids = [...this.selected()];
     if (ids.length === 0) return;
-    const question =
-      ids.length === 1
-        ? '¿Reprocesar la lectura seleccionada? Vuelve a la cola y el evaluador la toma en ' +
-          'segundos. Si la causa no se corrigió, volverá a fallar tras 5 intentos.'
-        : `¿Reprocesar las ${ids.length} lecturas seleccionadas? Vuelven a la cola y el ` +
-          'evaluador las toma en segundos. Si la causa no se corrigió, volverán a fallar ' +
-          'tras 5 intentos.';
-    if (!confirm(question)) return;
+    if (!confirm(t('failedPage.confirm', { count: ids.length }))) return;
     this.working.set(true);
     this.api.reprocess(ids).subscribe({
       next: ({ reprocessed }) => {
         this.working.set(false);
         this.selected.set(new Set());
-        this.status.set(
-          reprocessed === 1
-            ? '1 lectura devuelta a la cola.'
-            : `${reprocessed} lecturas devueltas a la cola.`,
-        );
+        this.status.set(t('failedPage.requeued', { count: reprocessed }));
         this.load();
       },
       error: () => {
         this.working.set(false);
-        this.status.set('No se pudieron reprocesar. Intenta de nuevo.');
+        this.status.set(t('failedPage.reprocessFailed'));
       },
     });
   }

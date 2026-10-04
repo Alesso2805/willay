@@ -30,23 +30,23 @@ export interface SaveProblem {
 /** Turns an API error from saving a zone into a message for the operator. */
 export function saveProblem(error: unknown): SaveProblem {
   if (!(error instanceof HttpErrorResponse)) {
-    return { message: 'No se pudo guardar la zona.', point: null };
+    return { message: t('zones.saveFailed'), point: null };
   }
   if (error.status === 403) {
-    return { message: 'Tu rol no permite gestionar zonas.', point: null };
+    return { message: t('zones.forbidden'), point: null };
   }
   if (error.status === 422) {
     const detail = error.error?.detail;
     const first = Array.isArray(detail) ? detail[0] : null;
-    const message = typeof first?.msg === 'string' ? first.msg : 'Datos inválidos.';
+    const message = typeof first?.msg === 'string' ? first.msg : t('ui.invalidData');
     return {
       message: message.startsWith('Self-intersection')
-        ? 'El polígono se cruza consigo mismo. Corrige el punto marcado en el mapa.'
+        ? t('zones.selfIntersection')
         : message,
       point: problemPoint(message),
     };
   }
-  return { message: 'No se pudo guardar la zona. Intenta de nuevo.', point: null };
+  return { message: t('zones.saveRetry'), point: null };
 }
 
 /** Extracts the point from an ST_IsValidReason reason: "Reason[lon lat]". */
