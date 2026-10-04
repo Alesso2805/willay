@@ -37,7 +37,16 @@ make demo               # the Rímac scenario, narrated (about 8 minutes)
 | 3:00 | Nobody acknowledged: level 2 (Brigada Chosica) gets Telegram and email |
 | 5:00 | Santa Eulalia goes silent: a second incident, which climbs the same levels |
 
-Level 2 acknowledges both incidents, with the Telegram button or the link in its email (Mailpit, http://localhost:8025). Watch the dashboard as `rimac-viewer`: a viewer cannot acknowledge, so a click there cannot end the story at level 1. The demo ends with PASS when both are acknowledged at level 2, and with FAIL if one is acknowledged at level 1 or escalates to level 3. After a PASS the stations keep reporting until Ctrl+C, so the dashboard stays live.
+Level 2 acknowledges both incidents:
+
+- **With Telegram:** if someone at level 2 has Telegram linked (see [Telegram alerts](#telegram-alerts-optional)), you press «Confirmar que lo vi» on each message.
+- **Without Telegram:** the demo acknowledges as Rosa Brigada itself. It presses Confirm on the page her email links to, the same POST a person makes, so the whole story runs without a bot. `make demo ARGS="--confirm email"` forces this mode.
+
+Watch the dashboard as `rimac-viewer`: a viewer cannot acknowledge, so a click there cannot end the story at level 1. The demo ends with PASS when both are acknowledged at level 2, and with FAIL if one is acknowledged at level 1 or escalates to level 3. After a PASS the stations keep reporting until Ctrl+C, so the dashboard stays live.
+
+<img src="docs/images/demo-telegram.png" alt="Both level-2 alerts in Telegram, each acknowledged with its button" width="300">
+
+![The drop incident after the demo: readings, alerts by recipient and the timeline up to Rosa's acknowledgement](docs/images/demo-incident.png)
 
 Each run starts from a clean slate: it deletes the demo organization's readings, incidents, events and alerts, and keeps its configuration (zones, stations, rules, policy and contacts, with their Telegram link). It connects as `willay_owner` for that, because the API and the workers cannot delete incident events. When it ends, the stations count as not reporting yet, so no silence incident opens after the demo.
 
@@ -102,17 +111,11 @@ Without a bot, the `telegram` worker starts disabled and Telegram alerts stay pe
 1. Create a bot with [@BotFather](https://t.me/BotFather) (`/newbot`).
 2. Put its token and its username (without `@`) in `.env`: `WILLAY_TELEGRAM_BOT_TOKEN` and `WILLAY_TELEGRAM_BOT_USERNAME`. The token is a secret: it never goes into the repository.
 3. Run `make up` so that the API and the workers read it.
-4. Generate a contact's link as admin and open it in Telegram. The example is for Rosa Brigada, from level 2 of the seed; the dashboard will have a button for this with VIG-36.
-
-```bash
-JWT=$(curl -s http://localhost:8080/realms/willay/protocol/openid-connect/token \
-  -d grant_type=password -d client_id=willay-dev-cli -d username=rimac-admin \
-  --data-urlencode "password=$(grep '^WILLAY_DEV_USER_PASSWORD=' .env | cut -d= -f2-)" \
-  --data-urlencode 'scope=openid organization:*' \
-  | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
-curl -s -X POST -H "Authorization: Bearer $JWT" \
-  http://localhost:8000/v1/contacts/01a0dc43-cd2d-7522-8430-8819717232b6/telegram-link
-```
+4. Link a contact's Telegram. For the demo, link Rosa Brigada, who is on level 2 of the seed:
+   1. Log in to the dashboard as `rimac-admin`.
+   2. In **Contactos**, press **Generar enlace de Telegram** on Rosa's card, then **Copiar**. The link is shown only once.
+   3. Open the link where your Telegram is and press **Start** in the bot's chat.
+   4. The bot answers "Listo, Rosa Brigada…". Rosa's card now offers **Desvincular Telegram**.
 
 The link is valid for 7 days and can be used only once; a new one cancels the previous one. Only the person who received an alert can confirm it with its button.
 
