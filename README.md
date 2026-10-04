@@ -37,7 +37,7 @@ make demo               # the Rímac scenario, narrated (about 8 minutes)
 | 3:00 | Nobody acknowledged: level 2 (Brigada Chosica) gets Telegram and email |
 | 5:00 | Santa Eulalia goes silent: a second incident, which climbs the same levels |
 
-Level 2 acknowledges both incidents, with the Telegram button or the link in its email (Mailpit, http://localhost:8025). The demo ends with PASS when both are acknowledged at level 2, and with FAIL if one is acknowledged at level 1 or escalates to level 3. After a PASS the stations keep reporting until Ctrl+C, so the dashboard stays live.
+Level 2 acknowledges both incidents, with the Telegram button or the link in its email (Mailpit, http://localhost:8025). Watch the dashboard as `rimac-viewer`: a viewer cannot acknowledge, so a click there cannot end the story at level 1. The demo ends with PASS when both are acknowledged at level 2, and with FAIL if one is acknowledged at level 1 or escalates to level 3. After a PASS the stations keep reporting until Ctrl+C, so the dashboard stays live.
 
 Each run starts from a clean slate: it deletes the demo organization's readings, incidents, events and alerts, and keeps its configuration (zones, stations, rules, policy and contacts, with their Telegram link). It connects as `willay_owner` for that, because the API and the workers cannot delete incident events. When it ends, the stations count as not reporting yet, so no silence incident opens after the demo.
 
