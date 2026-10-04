@@ -11,5 +11,6 @@ One technical decision per file: context, options, decision and consequences. An
 | [0005](0005-extensions-and-roles-in-init.md) | DB extensions and roles in the Postgres init | Proposed |
 | [0006](0006-sql-migrations-and-testcontainers.md) | Migrations in explicit SQL and tests with testcontainers | Proposed |
 | [0007](0007-live-events-with-triggers.md) | Live events emitted by Postgres triggers | Proposed |
+| [0008](0008-i18n-with-i18next.md) | The dashboard in several languages with i18next | Proposed |
 
 Statuses: Proposed → Accepted → (Superseded by ADR-NNNN | Deprecated).
