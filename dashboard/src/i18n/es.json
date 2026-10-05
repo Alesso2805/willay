@@ -792,5 +792,45 @@
       "in_zone": "en la zona",
       "downstream": "aguas abajo"
     }
+  },
+  "demo": {
+    "title": "Demo pública: el escenario del Rímac",
+    "intro": "Simula un represamiento del río: en Chaclacayo cae el caudal y, 4 minutos después, Santa Eulalia deja de reportar. Willay abre dos incidentes, avisa por correo y escala al siguiente nivel si nadie confirma. Dura 9 minutos.",
+    "run": "Correr el escenario",
+    "queued": "Preparando el escenario…",
+    "playing": "En curso: {{elapsed}} de {{total}}",
+    "restoring": "La demo está volviendo a su estado inicial; en unos segundos se puede usar.",
+    "mail": "Ver los correos enviados",
+    "phases": {
+      "normal": "El río, como siempre",
+      "drop": "Cae el caudal en Chaclacayo: se abre un incidente",
+      "silence": "Santa Eulalia deja de reportar: se abre otro",
+      "done": "Las estaciones vuelven a reportar"
+    },
+    "stepState": {
+      "done": "completado",
+      "current": "en curso",
+      "upcoming": "por venir"
+    },
+    "whilePlaying": "Mientras corre, abre un incidente y confírmalo, o confírmalo desde su correo.",
+    "toMap": "Ir al mapa en vivo",
+    "finished": "La última corrida terminó el {{time}}.",
+    "toIncidents": "Ver los incidentes que abrió",
+    "failed": "La última corrida no pudo completarse. Vuelve a intentarlo.",
+    "busy": "Ya hay una corrida en curso: espera a que termine.",
+    "startFailed": "No se pudo iniciar el escenario. Inténtalo de nuevo."
+  },
+  "demoAccess": {
+    "title": "Prueba Willay",
+    "intro": "Es una demo pública con datos simulados. Entra con una de estas cuentas:",
+    "admin": "lo ve y lo administra todo, y corre el escenario",
+    "operator": "gestiona zonas, estaciones, reglas e incidentes",
+    "viewer": "solo mira",
+    "password": "Contraseña de las tres:",
+    "step1": "Entra como demo-admin.",
+    "step2": "En Inicio, pulsa «Correr el escenario».",
+    "step3": "Sigue el mapa en vivo: en un minuto se abre el primer incidente.",
+    "step4": "Confírmalo desde el incidente o desde su correo.",
+    "reset": "Cada noche, a las 04:00 (hora de Lima), la demo vuelve a su estado inicial."
   }
 }

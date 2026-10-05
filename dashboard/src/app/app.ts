@@ -9,6 +9,7 @@ import { NewIncidents } from './incidents/new-incidents';
 import { visibleNavItems } from './navigation';
 import { LiveEvents } from './realtime/live-events';
 import { Session, roleLabels } from './session';
+import { settings } from './settings';
 import { ThemeService } from './theme/theme';
 import { ThemePicker } from './theme/theme-picker';
 import { Icon } from './ui/icon';
@@ -51,6 +52,8 @@ export class App {
   /** Only matters on narrow screens: from `lg` up the navigation is a fixed sidebar. */
   protected readonly menuOpen = signal(false);
   protected readonly roles = roleLabels;
+  /** The public demo's accounts on the sign-in screen (VIG-43); null off the demo. */
+  protected readonly demo = settings.demo;
 
   constructor() {
     this.session.start();
