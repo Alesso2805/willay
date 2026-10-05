@@ -30,13 +30,17 @@ async def test_updates_are_long_polled_from_the_offset() -> None:
                 "result": [
                     {
                         "update_id": 7,
-                        "message": {"chat": {"id": 42, "type": "private"}, "text": "/start abc"},
+                        "message": {
+                            "chat": {"id": 42, "type": "private"},
+                            "from": {"id": 42, "language_code": "en"},
+                            "text": "/start abc",
+                        },
                     },
                     {
                         "update_id": 8,
                         "callback_query": {
                             "id": "c8",
-                            "from": {"id": 42},
+                            "from": {"id": 42, "language_code": "es"},
                             "data": "t" * 43,
                             "message": {
                                 "message_id": 5,
@@ -62,8 +66,8 @@ async def test_updates_are_long_polled_from_the_offset() -> None:
     updates = await _api(handler).get_updates(offset=7, timeout_s=20)
 
     assert updates == [
-        Update(7, 42, "private", "/start abc"),
-        Update(8, click=Click("c8", 42, "t" * 43, 42, 5, "Willay · CRÍTICO")),
+        Update(7, 42, "private", "/start abc", language_code="en"),
+        Update(8, click=Click("c8", 42, "t" * 43, 42, 5, "Willay · CRÍTICO", language_code="es")),
         Update(9, click=Click("c9", 42, None, 42, 3, None)),
         Update(10),  # acknowledged and dropped so it does not block the next ones
     ]
@@ -125,7 +129,7 @@ async def test_an_alert_carries_a_confirm_button_with_the_token() -> None:
         return httpx2.Response(200, json={"ok": True, "result": {}})
 
     token = "t" * 43
-    await _api(handler).send_alert(42, "Willay · CRÍTICO", token)
+    await _api(handler).send_alert(42, "Willay · CRÍTICO", token, "Confirmar que lo vi")
     assert sent == [
         {
             "chat_id": 42,

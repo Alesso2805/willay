@@ -127,6 +127,30 @@
       "invalid_title": "Enlace no válido",
       "invalid": "Revisa que copiaste el enlace completo desde el mensaje.",
       "disclaimer": "Willay es una herramienta de apoyo para operadores: no reemplaza los avisos oficiales (INDECI, COER, SISMATE)."
+    },
+    "telegram": {
+      "title": "Willay · {{severity}}: {{cause}} en {{zone}}",
+      "button": "Confirmar que lo vi",
+      "disclaimer": "Herramienta de apoyo: no reemplaza los avisos oficiales (INDECI, COER, SISMATE).",
+      "linked": "Listo, {{name}}: desde ahora recibirás aquí las alertas de Willay de {{organization}}.",
+      "invalid_link": "Este enlace no es válido o ya venció. Pide uno nuevo a quien administra Willay en tu organización.",
+      "how_to_link": "Este bot solo envía alertas de Willay. Para recibirlas, abre el enlace que te compartió quien administra Willay en tu organización.",
+      "click": {
+        "confirmed": "Gracias: confirmaste la alerta. Willay no avisará al siguiente nivel.",
+        "already_acknowledged": "Gracias: quedó registrado que la viste. Otra persona ya había confirmado el incidente.",
+        "already_resolved": "Este incidente ya fue resuelto: no hace falta confirmarlo.",
+        "used": "Ya confirmaste esta alerta.",
+        "expired": "Este botón venció (vale 24 horas). Si el incidente sigue abierto, comunícate con el equipo de operaciones.",
+        "unknown": "Esta alerta ya no es válida.",
+        "not_yours": "Solo quien recibió esta alerta puede confirmarla."
+      },
+      "note": {
+        "acknowledged": "Confirmado por {{who}}.",
+        "acknowledged_at": "Confirmado por {{who}} el {{time}}.",
+        "someone_else": "otra persona",
+        "resolved": "Incidente resuelto: ya no hace falta confirmarlo.",
+        "expired": "El botón venció (vale 24 horas)."
+      }
     }
   }
 }

@@ -80,12 +80,26 @@ async def test_a_telegram_alert_is_sent_with_its_confirm_button(
     [(chat, text, token)] = bot.sent
     assert chat == CHAT
     assert text.startswith("Willay · ADVERTENCIA: Valor fuera de límite en Zona")
+    assert bot.buttons == ["Confirmar que lo vi"]
     assert len(token) == 43  # callback_data: within Telegram's 64-character limit
     alert = await _alert(owner, graph, "telegram")
     assert (alert["status"], alert["destination"]) == ("sent", str(CHAT))
     assert alert["ack_token_hash"] == hashlib.sha256(token.encode()).hexdigest()
     [event] = await _events(owner, alert["id"])
     assert (event["type"], event["channel"]) == ("alert_sent", "telegram")
+
+
+async def test_the_alert_and_its_button_are_in_the_language_of_the_contact(
+    engine: AsyncEngine, owner: asyncpg.Connection
+) -> None:
+    await telegram_incident(engine, owner, language="en")
+    bot = FakeBot()
+    clock = FakeClock(SystemClock().now() + timedelta(seconds=1))
+    await TelegramDispatcher(SqlDispatchQueue(engine), bot, clock).dispatch(10)
+
+    [(_, text, _)] = bot.sent
+    assert text.startswith("Willay · WARNING: Value out of bounds in Zona")
+    assert bot.buttons == ["Acknowledge: I saw it"]
 
 
 async def test_telegram_failing_twice_delivers_on_the_third_attempt(

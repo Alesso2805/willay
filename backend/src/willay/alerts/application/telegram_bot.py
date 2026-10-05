@@ -22,11 +22,12 @@ from willay.alerts.application.confirmation import (
 )
 from willay.alerts.application.telegram_link import ContactLinkRepository, handle_start
 from willay.alerts.domain.confirmation import ConfirmOutcome
-from willay.alerts.domain.telegram import CLICK_ANSWER, closed_text, closing_note
+from willay.alerts.domain.telegram import click_answer, closed_text, closing_note
 from willay.incidents.application.lifecycle import IncidentRepository
 from willay.rules.application.evaluate import Transaction
 from willay.shared.audit import AuditLog
 from willay.shared.clock import Clock
+from willay.shared.i18n import negotiate
 
 log = structlog.get_logger()
 
@@ -45,6 +46,7 @@ class Click:
     chat_id: int | None = None  # the button's message, to edit it
     message_id: int | None = None
     message_text: str | None = None  # None if Telegram no longer provides it
+    language_code: str | None = None  # of the clicker's Telegram app, such as "en"
 
 
 @dataclass(frozen=True)
@@ -54,6 +56,7 @@ class Update:
     chat_type: str | None = None  # "private" in a one-to-one chat with the bot
     text: str | None = None
     click: Click | None = None
+    language_code: str | None = None  # of the sender's Telegram app
 
 
 class TelegramApi(Protocol):
@@ -105,6 +108,7 @@ class TelegramPoller:
             reply = await handle_start(
                 update.chat_id,
                 update.text,
+                sender_language=negotiate(update.language_code),
                 contacts=self._contacts(tx),
                 audit=self._audit(tx),
                 clock=self._clock,
@@ -135,14 +139,23 @@ class TelegramPoller:
         )
         # The database work is committed: a failed Telegram reply is not retried.
         outcome = view.outcome or ConfirmOutcome.UNKNOWN
+        # The recipient reads the language of their alerts; anyone else, their app's.
+        if alert is not None and outcome is not ConfirmOutcome.NOT_YOURS:
+            language = alert.message.language
+        else:
+            language = negotiate(click.language_code)
         try:
-            await self._api.answer_click(click.id, CLICK_ANSWER[outcome])
+            await self._api.answer_click(click.id, click_answer(outcome, language))
         except TelegramError as exc:
             log.warning("telegram_answer_failed", update_id=update_id, error=str(exc))
         if alert is None or click.chat_id is None or click.message_id is None:
             return
         note = closing_note(
-            outcome, alert.acknowledged_by, alert.incident_acknowledged_at, alert.message.timezone
+            outcome,
+            alert.acknowledged_by,
+            alert.incident_acknowledged_at,
+            alert.message.timezone,
+            alert.message.language,
         )
         if note is None or click.message_text is None:
             return

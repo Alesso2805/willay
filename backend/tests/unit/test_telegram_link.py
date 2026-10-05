@@ -13,9 +13,10 @@ from willay.alerts.application.telegram_link import (
     handle_start,
 )
 from willay.alerts.domain.delivery import hash_ack_token
-from willay.alerts.domain.telegram import HOW_TO_LINK, INVALID_LINK, start_parameter
+from willay.alerts.domain.telegram import how_to_link, invalid_link, start_parameter
 from willay.shared.audit import AuditEntry
 from willay.shared.clock import FakeClock
+from willay.shared.languages import Language
 
 T0 = datetime(2026, 12, 1, 15, 0, tzinfo=UTC)
 TOKEN = "a" * 43
@@ -45,6 +46,7 @@ class Contacts:
             organization_name="Demo Rímac",
             telegram_linked=False,
             link_expires_at=None,
+            language=Language.ES,
         )
         self.token_hash: str | None = None
         self.chat_id: int | None = None
@@ -127,15 +129,15 @@ async def test_opening_the_link_links_the_chat_once() -> None:
     contacts, audit, clock = Contacts(ACTOR.organization_id), Audit(), FakeClock(T0)
     token = await _link(contacts, audit, clock)
 
-    reply = await handle_start(42, f"/start {token}", contacts=contacts, audit=audit, clock=clock)
+    reply = await _start(42, f"/start {token}", contacts, audit, clock)
     assert reply.startswith("Listo, Lucho Quispe")
     assert "Demo Rímac" in reply
     assert contacts.chat_id == 42
     assert audit.entries[-1].action == "telegram_linked"
     assert "42" not in str(audit.entries[-1].after)  # the chat_id is personal data
 
-    again = await handle_start(99, f"/start {token}", contacts=contacts, audit=audit, clock=clock)
-    assert (again, contacts.chat_id) == (INVALID_LINK, 42)
+    again = await _start(99, f"/start {token}", contacts, audit, clock)
+    assert (again, contacts.chat_id) == (invalid_link(Language.ES), 42)
 
 
 async def test_an_expired_or_missing_link_does_not_link() -> None:
@@ -143,11 +145,33 @@ async def test_an_expired_or_missing_link_does_not_link() -> None:
     token = await _link(contacts, audit, clock)
     clock.advance(timedelta(days=7))
 
-    assert (
-        await handle_start(42, f"/start {token}", contacts=contacts, audit=audit, clock=clock)
-        == INVALID_LINK
-    )
-    assert await handle_start(42, "/start", contacts=contacts, audit=audit, clock=clock) == (
-        HOW_TO_LINK
-    )
+    assert await _start(42, f"/start {token}", contacts, audit, clock) == invalid_link(Language.ES)
+    assert await _start(42, "/start", contacts, audit, clock) == how_to_link(Language.ES)
     assert contacts.chat_id is None
+
+
+async def test_the_bot_speaks_the_sender_language_until_it_knows_the_contact() -> None:
+    contacts, audit, clock = Contacts(ACTOR.organization_id), Audit(), FakeClock(T0)
+    contacts.contact = replace(contacts.contact, language=Language.EN)
+    # Nobody to tie the message to: the language of the sender's Telegram app.
+    assert await _start(42, "hola", contacts, audit, clock, Language.EN) == how_to_link(Language.EN)
+    assert await _start(42, "/start " + "x" * 43, contacts, audit, clock, Language.EN) == (
+        invalid_link(Language.EN)
+    )
+    # Once linked, the language of their alerts, whatever their app's.
+    token = await _link(contacts, audit, clock)
+    reply = await _start(42, f"/start {token}", contacts, audit, clock, Language.ES)
+    assert reply.startswith("Done, Lucho Quispe: from now on you will receive")
+
+
+async def _start(
+    chat_id: int,
+    text: str,
+    contacts: Contacts,
+    audit: Audit,
+    clock: FakeClock,
+    sender_language: Language = Language.ES,
+) -> str:
+    return await handle_start(
+        chat_id, text, sender_language=sender_language, contacts=contacts, audit=audit, clock=clock
+    )

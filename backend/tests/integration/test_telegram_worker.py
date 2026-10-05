@@ -16,12 +16,13 @@ from tests.integration.telegram import FakeTelegram, run_telegram_until
 from willay.alerts.application.policies import Actor
 from willay.alerts.application.telegram_bot import Update
 from willay.alerts.application.telegram_link import create_telegram_link
-from willay.alerts.domain.telegram import HOW_TO_LINK, INVALID_LINK
+from willay.alerts.domain.telegram import how_to_link, invalid_link
 from willay.alerts.infrastructure.sql_contact_links import SqlContactLinkRepository
 from willay.shared.audit import SqlAuditLog
 from willay.shared.clock import FakeClock, SystemClock
 from willay.shared.config import Settings
 from willay.shared.db import create_engine
+from willay.shared.languages import Language
 from willay.workers.telegram import run_telegram
 
 pytestmark = pytest.mark.integration
@@ -86,14 +87,19 @@ async def test_opening_the_link_links_the_chat_and_confirms_the_update(
 
 
 @pytest.mark.parametrize(
-    ("text", "reply"),
-    [("/start " + "x" * 43, INVALID_LINK), ("/start", HOW_TO_LINK), ("hola", HOW_TO_LINK)],
-    ids=["unknown-token", "no-token", "other-message"],
+    ("text", "app_language", "reply"),
+    [
+        ("/start " + "x" * 43, None, invalid_link(Language.ES)),
+        ("/start", "es", how_to_link(Language.ES)),
+        ("hola", None, how_to_link(Language.ES)),
+        ("hello", "en", how_to_link(Language.EN)),  # in the language of the sender's app
+    ],
+    ids=["unknown-token", "no-token", "other-message", "other-message-in-english"],
 )
 async def test_other_messages_get_a_helpful_reply(
-    database: Database, tmp_path: Path, text: str, reply: str
+    database: Database, tmp_path: Path, text: str, app_language: str | None, reply: str
 ) -> None:
-    api = FakeTelegram(Update(200, 7, "private", text))
+    api = FakeTelegram(Update(200, 7, "private", text, language_code=app_language))
 
     async def replied() -> bool:
         return bool(api.replies)
@@ -112,7 +118,7 @@ async def test_an_expired_link_does_not_link(
         return bool(api.replies)
 
     await run_telegram_until(database, tmp_path, api, replied)
-    assert api.replies == [(4242, INVALID_LINK)]
+    assert api.replies == [(4242, invalid_link(Language.ES))]
     assert (await _chat_of(owner, contact))["telegram_chat_id"] is None
 
 

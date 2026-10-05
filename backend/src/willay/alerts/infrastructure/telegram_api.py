@@ -12,7 +12,6 @@ from typing import Any
 import httpx2
 
 from willay.alerts.application.telegram_bot import Click, TelegramError, Update
-from willay.alerts.domain.telegram import CONFIRM_BUTTON
 
 logging.getLogger("httpx2").setLevel(logging.WARNING)
 
@@ -43,13 +42,13 @@ class TelegramBotApi:
     async def send_message(self, chat_id: int, text: str) -> None:
         await self._call("sendMessage", {"chat_id": chat_id, "text": text}, timeout_s=10)
 
-    async def send_alert(self, chat_id: int, text: str, callback_data: str) -> None:
+    async def send_alert(self, chat_id: int, text: str, callback_data: str, button: str) -> None:
         """Message with an inline button: the click reaches the bot as a `callback_query`."""
-        button = {"text": CONFIRM_BUTTON, "callback_data": callback_data}
+        keyboard_button = {"text": button, "callback_data": callback_data}
         payload = {
             "chat_id": chat_id,
             "text": text,
-            "reply_markup": {"inline_keyboard": [[button]]},
+            "reply_markup": {"inline_keyboard": [[keyboard_button]]},
         }
         await self._call("sendMessage", payload, timeout_s=10)
 
@@ -98,6 +97,7 @@ def _update(raw: dict[str, Any]) -> Update:
         chat_id=chat.get("id"),
         chat_type=chat.get("type"),
         text=message.get("text"),
+        language_code=(message.get("from") or {}).get("language_code"),
     )
 
 
@@ -116,4 +116,5 @@ def _click(callback: dict[str, Any]) -> Click | None:
         chat_id=(message.get("chat") or {}).get("id"),
         message_id=message.get("message_id"),
         message_text=message.get("text"),
+        language_code=sender.get("language_code"),
     )
