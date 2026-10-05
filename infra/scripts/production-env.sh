@@ -1,10 +1,12 @@
 #!/bin/sh
 # Writes the .env of a server (VIG-42): .env.example with a fresh random value for every
-# credential, plus the hostname and the production compose overlay. Run from the repository root
-# through `make secrets HOST=willay.example.org`. It never overwrites an existing .env.
+# credential, plus the hostname and the production compose overlay. With DEMO=1, the public
+# demo too (VIG-43). Run from the repository root through
+# `make secrets HOST=willay.example.org [DEMO=1]`. It never overwrites an existing .env.
 set -eu
 
 host="${1:-}"
+demo="${2:-}"
 if [ -z "$host" ]; then
   echo "Usage: make secrets HOST=<the server's hostname, e.g. willay.duckdns.org>" >&2
   exit 2
@@ -37,5 +39,19 @@ COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
 WILLAY_HOSTNAME=$host
 EOF
 
+if [ -n "$demo" ] && [ "$demo" != "0" ]; then
+  cat >> .env <<EOF
+
+# --- Public demo (VIG-43): demo accounts, the scenario button and the demo worker ---
+COMPOSE_PROFILES=demo
+WILLAY_DEMO_MODE=true
+# Shown on the sign-in screen on purpose: anyone may try the demo.
+WILLAY_DEMO_PASSWORD=willay-demo
+EOF
+fi
+
 echo "Wrote .env for https://$host with new credentials (readable only by you)."
+if [ -n "$demo" ] && [ "$demo" != "0" ]; then
+  echo "Public demo on: demo-admin, demo-operator and demo-viewer, password willay-demo."
+fi
 echo "Next: make up, then make seed."

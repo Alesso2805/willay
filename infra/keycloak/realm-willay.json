@@ -940,6 +940,63 @@
           "temporary": false
         }
       ]
+    },
+    {
+      "id": "4f6d2b9a-7c1e-4b8e-9a51-1d2c3e4f5a61",
+      "username": "demo-admin",
+      "email": "demo-admin@rimac.willay.test",
+      "firstName": "Demo",
+      "lastName": "Admin",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": [
+        "admin"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${WILLAY_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "4f6d2b9a-7c1e-4b8e-9a51-1d2c3e4f5a62",
+      "username": "demo-operator",
+      "email": "demo-operator@rimac.willay.test",
+      "firstName": "Demo",
+      "lastName": "Operator",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": [
+        "operator"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${WILLAY_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "4f6d2b9a-7c1e-4b8e-9a51-1d2c3e4f5a63",
+      "username": "demo-viewer",
+      "email": "demo-viewer@rimac.willay.test",
+      "firstName": "Demo",
+      "lastName": "Viewer",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": [
+        "viewer"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${WILLAY_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
     }
   ],
   "organizations": [
@@ -970,6 +1027,15 @@
         },
         {
           "username": "dos-orgs"
+        },
+        {
+          "username": "demo-admin"
+        },
+        {
+          "username": "demo-operator"
+        },
+        {
+          "username": "demo-viewer"
         }
       ]
     },

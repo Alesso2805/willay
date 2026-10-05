@@ -71,16 +71,34 @@ While the repository is private, the clone asks for credentials. Use `gh auth lo
 ## 5. Start it
 
 ```bash
-make secrets HOST=willay.duckdns.org   # .env with new credentials, only on this server
-make up                                # builds and starts everything; Caddy gets the certificate
-make seed                              # the demo data
+make secrets HOST=willay.duckdns.org DEMO=1   # .env with new credentials, only on this server
+make up                                       # builds and starts everything; Caddy gets the certificate
+make seed                                     # the demo data
 ```
 
 - The first `make up` builds the images on the server, which takes about 10 minutes on ARM, and waits until every service reports healthy.
-- Open `https://willay.duckdns.org`. The demo users (`rimac-admin`, `rimac-operator`, `rimac-responder` and `rimac-viewer`) share the password `WILLAY_DEV_USER_PASSWORD` that `make secrets` wrote into `.env` (`grep WILLAY_DEV_USER_PASSWORD .env`).
+- Open `https://willay.duckdns.org`.
 - `.env` and `.secrets/station-keys.json` hold this server's credentials. They never leave it, and they are not in the repository.
 
 `make secrets` also sets `COMPOSE_FILE` in `.env`, so every `docker compose` and `make` command on the server uses `docker-compose.prod.yml` on top of `docker-compose.yml`.
+
+### The public demo (`DEMO=1`)
+
+`DEMO=1` turns on the public demo (VIG-43). It sets `WILLAY_DEMO_MODE=true`, `WILLAY_DEMO_PASSWORD=willay-demo` and `COMPOSE_PROFILES=demo` in `.env`; the last one starts the `worker-demo` service. What a visitor gets:
+
+- **Demo accounts on the sign-in screen,** with the shared password and four steps to try:
+  - `demo-admin` sees and manages everything, and runs the scenario;
+  - `demo-operator` manages zones, stations, rules and incidents;
+  - `demo-viewer` only looks.
+- **No way to change that password.** Caddy closes Keycloak's account console, which the dashboard never uses.
+- **Live stations.** The demo worker keeps every Rímac station reporting every 10 s, so the map is live from the first visit.
+- **The scenario button.** "Correr el escenario" on Inicio plays SPEC's Rímac story in 9 minutes, one run at a time, with its progress on screen. Every run starts from a clean slate.
+- **The emails** Willay sends, readable at `/correo` (Mailpit). Nothing leaves the server.
+- **A nightly restore** at 04:00 in the organization's time zone: the demo organization goes back to the seed. What visitors changed during the day disappears: zones, rules, contacts, incidents, the audit log, their language.
+
+The private accounts (`rimac-admin`, `rimac-operator`, `rimac-responder` and `rimac-viewer`) keep the random password `WILLAY_DEV_USER_PASSWORD` that `make secrets` wrote into `.env` (`grep WILLAY_DEV_USER_PASSWORD .env`). Without `DEMO=1`, they are the only accounts.
+
+The demo accounts exist in Keycloak's realm file, so they are created on Keycloak's first start. To turn the demo on later on a running server, add the three demo lines to `.env` and run `make up`. Keycloak, however, keeps the demo accounts' password from its first start: the development one if the demo was off then.
 
 ## 6. Update
 

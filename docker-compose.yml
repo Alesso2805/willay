@@ -62,6 +62,8 @@ services:
       WILLAY_DEV_USER_PASSWORD: ${WILLAY_DEV_USER_PASSWORD:?}
       # ${WILLAY_DASHBOARD_URL}: where the dashboard may send users back after signing in or out.
       WILLAY_DASHBOARD_URL: http://localhost:${WILLAY_DASHBOARD_PORT:-4200}
+      # ${WILLAY_DEMO_PASSWORD}: the public demo accounts' shared password (VIG-43).
+      WILLAY_DEMO_PASSWORD: ${WILLAY_DEMO_PASSWORD:-${WILLAY_DEV_USER_PASSWORD:?}}
     volumes:
       - ./infra/keycloak:/opt/keycloak/data/import:ro
     ports:
@@ -198,6 +200,12 @@ services:
     build: ./dashboard
     image: willay-dashboard:dev
     restart: unless-stopped
+    environment:
+      # Written into /config.json when the container starts (docker/40-willay-config.sh).
+      WILLAY_MAIL_URL: http://localhost:${WILLAY_MAILPIT_UI_PORT:-8025}
+      # The public demo (VIG-43): the sign-in screen shows its accounts and shared password.
+      WILLAY_DEMO_MODE: ${WILLAY_DEMO_MODE:-false}
+      WILLAY_DEMO_PASSWORD: ${WILLAY_DEMO_PASSWORD:-}
     ports:
       - "${WILLAY_DASHBOARD_PORT:-4200}:80"
     depends_on: *after-migrate
