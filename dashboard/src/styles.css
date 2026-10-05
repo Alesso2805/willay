@@ -1,9 +1,20 @@
 @import 'tailwindcss';
 
 /*
+ * Light and dark mode (VIG-41): ThemeService (and, before the app loads, the script in
+ * index.html) puts `dark` on <html>. Every color below is a CSS variable that `:root.dark`
+ * redefines, so switching themes repaints without redrawing anything. ADR-0009.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
  * "Monitoring center" identity (VIG-33): night blue for navigation and water blue as the
- * brand color. Provisional: the final identity waits for the commercial name (SPEC).
- * Checked contrast: white on brand-700 5.4:1; night-300 on night-900 7.9:1.
+ * brand color, the same in both themes. Provisional: the final identity waits for the
+ * commercial name (SPEC). Checked contrast: white on brand-700 5.4:1; night-300 on night-900
+ * 7.9:1.
+ *
+ * Semantic colors (VIG-41): pages use these, never a fixed gray, so they follow the theme.
+ * Light values here, dark ones in `:root.dark`; ui/visual-states.spec.ts measures both.
  */
 @theme {
   --color-night-950: #07121d;
@@ -16,32 +27,154 @@
   --color-brand-600: #0891b2;
   --color-brand-700: #0e7490;
   --color-brand-800: #155e75;
+
+  /* Backgrounds: the page, the cards on it and a subtler shade inside them. */
+  --color-canvas: #f1f5f9;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+  /* Borders and dividers, from the faintest to the one fields need. */
+  --color-line-soft: #f1f5f9;
+  --color-line: #e2e8f0;
+  --color-line-strong: #cbd5e1;
+  /* Text, from headings to hints; every level reads ≥ 4.5:1 on every background. */
+  --color-ink: #0f172a;
+  --color-ink-soft: #334155;
+  --color-ink-muted: #475569;
+  --color-ink-subtle: #5b6b7f;
+  /* Links and selection; destructive actions. */
+  --color-accent: #0e7490;
+  --color-accent-strong: #155e75;
+  --color-accent-soft: #ecfeff;
+  --color-danger: #b91c1c;
+  --color-danger-strong: #991b1b;
+}
+
+/*
+ * State colors (VIG-33): the catalog in ui/visual-states.ts names a tone and these give its
+ * shade in each theme: `fg` on `bg` for badges, `map` for strokes and markers (with a white
+ * icon on top). `--map-canvas` is the base map's land color, which map colors must stand out
+ * from.
+ */
+:root {
+  color-scheme: light;
+  --map-canvas: #f2efe9;
+
+  --tone-red-fg: #991b1b;
+  --tone-red-bg: #fee2e2;
+  --tone-red-map: #b91c1c;
+  --tone-orange-fg: #9a3412;
+  --tone-orange-bg: #ffedd5;
+  --tone-orange-map: #c2410c;
+  --tone-amber-fg: #92400e;
+  --tone-amber-bg: #fef3c7;
+  --tone-amber-map: #a16207;
+  --tone-green-fg: #166534;
+  --tone-green-bg: #dcfce7;
+  --tone-green-map: #15803d;
+  --tone-blue-fg: #1e40af;
+  --tone-blue-bg: #dbeafe;
+  --tone-blue-map: #1d4ed8;
+  --tone-slate-fg: #334155;
+  --tone-slate-bg: #f1f5f9;
+  --tone-slate-map: #475569;
+  /* Inverted: the one thing that must stand out even with red all around. */
+  --tone-alarm-fg: #ffffff;
+  --tone-alarm-bg: #991b1b;
+  --tone-alarm-map: #7f1d1d;
+
+  --notice-error-fg: #7f1d1d;
+  --notice-error-bg: #fef2f2;
+  --notice-error-border: #fca5a5;
+  --notice-warning-fg: #78350f;
+  --notice-warning-bg: #fffbeb;
+  --notice-warning-border: #fbbf24;
+  --notice-info-fg: #1e293b;
+  --notice-info-bg: #f8fafc;
+  --notice-info-border: #cbd5e1;
+}
+
+/*
+ * Dark mode: deep night-blue backgrounds, light text. Badges turn into dark tinted chips with
+ * light text; map colors move to mid tones, light enough to stand out on the darkened map and
+ * dark enough to keep a white icon readable.
+ */
+:root.dark {
+  color-scheme: dark;
+  --map-canvas: #20242a;
+
+  --color-canvas: #081420;
+  --color-surface: #0f2132;
+  --color-surface-muted: #152a3f;
+  --color-line-soft: #172c41;
+  --color-line: #213a52;
+  --color-line-strong: #3a5772;
+  --color-ink: #e8eef5;
+  --color-ink-soft: #cdd8e4;
+  --color-ink-muted: #b2c1d1;
+  --color-ink-subtle: #93a7bb;
+  --color-accent: #5fd4e8;
+  --color-accent-strong: #a5eef8;
+  --color-accent-soft: #0d3340;
+  --color-danger: #fca5a5;
+  --color-danger-strong: #fecaca;
+
+  --tone-red-fg: #fecaca;
+  --tone-red-bg: #4a1717;
+  --tone-red-map: #e5484d;
+  --tone-orange-fg: #fed7aa;
+  --tone-orange-bg: #4a2410;
+  --tone-orange-map: #d9620f;
+  --tone-amber-fg: #fde68a;
+  --tone-amber-bg: #43300a;
+  --tone-amber-map: #b8860b;
+  --tone-green-fg: #bbf7d0;
+  --tone-green-bg: #0f3a22;
+  --tone-green-map: #1f9d55;
+  --tone-blue-fg: #bfdbfe;
+  --tone-blue-bg: #172d5c;
+  --tone-blue-map: #3b7ddd;
+  --tone-slate-fg: #d5dee8;
+  --tone-slate-bg: #22344a;
+  --tone-slate-map: #6b7f95;
+  --tone-alarm-fg: #ffffff;
+  --tone-alarm-bg: #b42323;
+  --tone-alarm-map: #e23b3b;
+
+  --notice-error-fg: #fecaca;
+  --notice-error-bg: #3a1414;
+  --notice-error-border: #b91c1c;
+  --notice-warning-fg: #fde68a;
+  --notice-warning-bg: #382808;
+  --notice-warning-border: #b7791f;
+  --notice-info-fg: #e2e8f0;
+  --notice-info-bg: #15293e;
+  --notice-info-border: #3a5772;
 }
 
 @layer base {
   body {
-    @apply bg-slate-100 text-slate-900 antialiased;
+    @apply bg-canvas text-ink antialiased;
   }
 }
 
 @layer components {
   .card {
-    @apply rounded-xl bg-white shadow-sm ring-1 ring-slate-200;
+    @apply rounded-xl bg-surface shadow-sm ring-1 ring-line;
   }
   .btn-primary {
     @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-700 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:opacity-50;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-300 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-surface px-3.5 py-2 text-sm font-medium text-ink-soft shadow-sm ring-1 ring-line-strong transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:opacity-50;
   }
   .link-action {
-    @apply font-medium text-brand-700 hover:text-brand-800 hover:underline;
+    @apply font-medium text-accent hover:text-accent-strong hover:underline;
   }
   .link-danger {
-    @apply font-medium text-red-700 hover:text-red-800 hover:underline;
+    @apply font-medium text-danger hover:text-danger-strong hover:underline;
   }
   .field {
-    @apply rounded-lg border-0 px-3 py-1.5 text-sm text-slate-900 shadow-sm ring-1 ring-slate-300 focus:ring-2 focus:ring-brand-600 focus:outline-none;
+    @apply rounded-lg border-0 bg-surface px-3 py-1.5 text-sm text-ink shadow-sm ring-1 ring-line-strong focus:ring-2 focus:ring-brand-600 focus:outline-none;
   }
 }
 
@@ -51,6 +184,40 @@
  */
 .leaflet-tile-pane {
   filter: saturate(0.35) brightness(1.04);
+}
+
+/*
+ * Leaflet draws zones as SVG paths with `stroke` and `fill` attributes, which cannot take a
+ * CSS variable. A tone class overrides them from CSS instead (CSS beats presentation
+ * attributes), so zones change color with the theme too. See toneClass().
+ */
+.leaflet-interactive.tone-red {
+  stroke: var(--tone-red-map);
+  fill: var(--tone-red-map);
+}
+.leaflet-interactive.tone-orange {
+  stroke: var(--tone-orange-map);
+  fill: var(--tone-orange-map);
+}
+.leaflet-interactive.tone-amber {
+  stroke: var(--tone-amber-map);
+  fill: var(--tone-amber-map);
+}
+.leaflet-interactive.tone-green {
+  stroke: var(--tone-green-map);
+  fill: var(--tone-green-map);
+}
+.leaflet-interactive.tone-blue {
+  stroke: var(--tone-blue-map);
+  fill: var(--tone-blue-map);
+}
+.leaflet-interactive.tone-slate {
+  stroke: var(--tone-slate-map);
+  fill: var(--tone-slate-map);
+}
+.leaflet-interactive.tone-alarm {
+  stroke: var(--tone-alarm-map);
+  fill: var(--tone-alarm-map);
 }
 
 /*

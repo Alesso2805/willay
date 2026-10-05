@@ -9,7 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import * as L from 'leaflet';
-import { ZONE_STATES } from '../ui/visual-states';
+import { ZONE_STATES, toneClass } from '../ui/visual-states';
 import { riskLabel } from '../zones/zone-presentation';
 import { t } from '../i18n/i18n';
 import { createBaseMap, plainText } from './base-map';
@@ -72,7 +72,8 @@ export class LiveMap {
     this.zoneLayer.clearLayers();
     for (const { zone, state, summary } of views) {
       const risk = riskLabel(zone.risk_level).toLowerCase();
-      L.geoJSON(zone.geometry, { style: { color: ZONE_STATES[state].map, ...ZONE_STYLES[state] } })
+      const style = { className: toneClass(ZONE_STATES[state]), ...ZONE_STYLES[state] };
+      L.geoJSON(zone.geometry, { style })
         .bindTooltip(plainText(t('map.zoneTooltip', { zone: zone.name, summary, risk })), {
           sticky: true,
         })

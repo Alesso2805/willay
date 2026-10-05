@@ -23,10 +23,10 @@ export function loadStatus(loaded: boolean, failed: boolean, count: number): Loa
   template: `
     @switch (status()) {
       @case ('loading') {
-        <p role="status" class="text-sm text-slate-600">{{ loading() ?? t('ui.loading') }}</p>
+        <p role="status" class="text-sm text-ink-muted">{{ loading() ?? t('ui.loading') }}</p>
       }
       @case ('empty') {
-        <p class="text-sm text-slate-600">{{ empty() }}</p>
+        <p class="text-sm text-ink-muted">{{ empty() }}</p>
       }
       @case ('error') {
         <app-notice tone="error">

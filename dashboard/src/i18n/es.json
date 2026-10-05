@@ -6,7 +6,13 @@
     "connection": "Conexión:",
     "logout": "Cerrar sesión",
     "reconnecting": "Sin conexión en vivo con Willay. Reintentando… Mientras tanto, los datos se actualizan cada 15 s.",
-    "language": "Idioma"
+    "language": "Idioma",
+    "theme": "Tema",
+    "themes": {
+      "system": "Sistema",
+      "light": "Claro",
+      "dark": "Oscuro"
+    }
   },
   "login": {
     "loading": "Cargando sesión…",

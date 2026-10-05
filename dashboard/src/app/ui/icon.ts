@@ -72,6 +72,19 @@ export const ICONS = {
   map: ['M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z', 'M9 4v14', 'M15 6v14'],
   antenna: ['M12 12v9', 'M9 21h6', ...WAVES],
   logout: ['M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4', 'M16 17l5-5-5-5', 'M21 12H9'],
+  sun: [
+    'M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z',
+    'M12 2v2',
+    'M12 20v2',
+    'M4.93 4.93l1.41 1.41',
+    'M17.66 17.66l1.41 1.41',
+    'M2 12h2',
+    'M20 12h2',
+    'M6.34 17.66l-1.41 1.41',
+    'M19.07 4.93l-1.41 1.41',
+  ],
+  moon: ['M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z'],
+  monitor: ['M4 3h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z', 'M8 21h8', 'M12 17v4'],
 } as const satisfies Record<string, readonly string[]>;
 
 export type IconName = keyof typeof ICONS;

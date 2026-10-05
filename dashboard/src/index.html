@@ -6,6 +6,16 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <script>
+    // VIG-41: the theme before the app loads, so a dark screen never flashes white. The same
+    // rule and storage key as ThemeService (src/app/theme/theme.ts), which takes over.
+    try {
+      var choice = localStorage.getItem('willay.theme');
+      if (choice === 'dark' || (choice !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    } catch (e) {}
+  </script>
 </head>
 <body>
   <app-root></app-root>

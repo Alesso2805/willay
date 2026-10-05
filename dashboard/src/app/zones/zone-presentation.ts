@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { t } from '../i18n/i18n';
-import { RISK_LEVEL_STATES } from '../ui/visual-states';
+import { RISK_LEVEL_STATES, toneClass } from '../ui/visual-states';
 import { Position, RiskLevel } from './zones.api';
 
 export const RISK_LEVELS: readonly RiskLevel[] = ['low', 'medium', 'high', 'critical'];
@@ -14,11 +14,14 @@ export function riskLabel(level: RiskLevel): string {
  * Color reinforces but is never the only signal (WCAG): the level also appears as text in the
  * list and in the map tooltip, and the stroke style changes per level.
  */
-export const RISK_STYLES: Record<RiskLevel, { color: string; dashArray?: string; weight: number }> = {
-  low: { color: RISK_LEVEL_STATES.low.map, dashArray: '2 6', weight: 2 },
-  medium: { color: RISK_LEVEL_STATES.medium.map, dashArray: '8 6', weight: 2 },
-  high: { color: RISK_LEVEL_STATES.high.map, weight: 3 },
-  critical: { color: RISK_LEVEL_STATES.critical.map, weight: 4 },
+export const RISK_STYLES: Record<
+  RiskLevel,
+  { className: string; dashArray?: string; weight: number }
+> = {
+  low: { className: toneClass(RISK_LEVEL_STATES.low), dashArray: '2 6', weight: 2 },
+  medium: { className: toneClass(RISK_LEVEL_STATES.medium), dashArray: '8 6', weight: 2 },
+  high: { className: toneClass(RISK_LEVEL_STATES.high), weight: 3 },
+  critical: { className: toneClass(RISK_LEVEL_STATES.critical), weight: 4 },
 };
 
 export interface SaveProblem {
