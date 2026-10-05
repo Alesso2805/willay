@@ -75,6 +75,8 @@ function zone(risk: Zone['risk_level']): Zone {
 const INCIDENTS_URL = `${settings.apiUrl}/v1/incidents?status=open&status=acknowledged&limit=500`;
 const STATIONS_URL = `${settings.apiUrl}/v1/stations?include_inactive=false`;
 const ZONES_URL = `${settings.apiUrl}/v1/zones?include_inactive=false`;
+const DEMO_URL = `${settings.apiUrl}/v1/demo`;
+const DEMO_OFF = { available: false, can_run: false, duration_s: 540, timeline: [], run: null };
 
 function setup(permissions: string[]) {
   const live = new FakeLiveEvents();
@@ -146,6 +148,8 @@ describe('HomePage', () => {
     });
     await fixture.whenStable();
     expect(text()).toContain('1 de 1');
+    // The demo panel asks once it renders, after the summary: not because of the heartbeat.
+    for (const request of http.match(DEMO_URL)) request.flush(DEMO_OFF);
     http.verify(); // the heartbeat needed no request
 
     live.incidents$.next({ incidentId: 'i1', event: 'opened' });

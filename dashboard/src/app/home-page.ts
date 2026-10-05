@@ -1,6 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { t } from './i18n/i18n';
+import { DemoPanel } from './demo/demo-panel';
 import { incidentState } from './incidents/incident-presentation';
 import { liveSnapshot } from './realtime/live-snapshot';
 import { Session, roleLabels } from './session';
@@ -13,7 +14,7 @@ import { ZONE_STATES } from './ui/visual-states';
 /** Home: what an operator wants to know on opening the dashboard, and who they are in Willay. */
 @Component({
   selector: 'app-home-page',
-  imports: [RouterLink, Icon, Notice, PageHeader],
+  imports: [RouterLink, Icon, Notice, PageHeader, DemoPanel],
   template: `
     @if (session.me(); as me) {
       <app-page-header
@@ -41,6 +42,7 @@ import { ZONE_STATES } from './ui/visual-states';
             </button>
           </app-notice>
         }
+        <app-demo-panel />
         <section [attr.aria-label]="t('home.title')" class="mb-6 grid gap-4 md:grid-cols-3">
           <a routerLink="/incidentes" class="card group p-5 transition hover:ring-brand-600">
             <div class="flex items-center gap-3">

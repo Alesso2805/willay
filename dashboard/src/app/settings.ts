@@ -7,6 +7,10 @@
 export interface Settings {
   apiUrl: string;
   oidc: { authority: string; clientId: string };
+  /** Where the emails Willay sent can be read (Mailpit). */
+  mailUrl: string;
+  /** The public demo (VIG-43): its accounts' shared password, shown on the sign-in screen. */
+  demo: { password: string } | null;
 }
 
 export const settings: Settings = {
@@ -15,6 +19,8 @@ export const settings: Settings = {
     authority: 'http://localhost:8080/realms/willay',
     clientId: 'willay-dashboard',
   },
+  mailUrl: 'http://localhost:8025',
+  demo: null,
 };
 
 /**
@@ -33,12 +39,16 @@ export async function loadSettings(fetchConfig: typeof fetch = fetch): Promise<v
 
 export function applySettings(config: unknown): void {
   if (typeof config !== 'object' || config === null) return;
-  const { apiUrl, oidc } = config as {
+  const { apiUrl, oidc, mailUrl, demo } = config as {
     apiUrl?: unknown;
     oidc?: { authority?: unknown; clientId?: unknown };
+    mailUrl?: unknown;
+    demo?: { password?: unknown } | null;
   };
   if (typeof apiUrl === 'string' && apiUrl) settings.apiUrl = apiUrl.replace(/\/+$/, '');
   if (typeof oidc?.authority === 'string' && oidc.authority)
     settings.oidc.authority = oidc.authority;
   if (typeof oidc?.clientId === 'string' && oidc.clientId) settings.oidc.clientId = oidc.clientId;
+  if (typeof mailUrl === 'string' && mailUrl) settings.mailUrl = mailUrl;
+  if (typeof demo?.password === 'string') settings.demo = { password: demo.password };
 }

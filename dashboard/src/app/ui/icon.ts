@@ -63,6 +63,7 @@ export const ICONS = {
   ],
   radar: [CIRCLE, 'M16 12a4 4 0 1 1-4-4', 'M12 12l6.5-6.5'],
   pause: ['M8 5v14', 'M16 5v14'],
+  play: ['M7 4v16l13-8z'],
   menu: ['M4 6h16', 'M4 12h16', 'M4 18h16'],
   x: ['M18 6 6 18', 'M6 6l12 12'],
   plus: ['M12 5v14', 'M5 12h14'],

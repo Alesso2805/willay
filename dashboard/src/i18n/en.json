@@ -771,5 +771,45 @@
       "in_zone": "in the zone",
       "downstream": "downstream"
     }
+  },
+  "demo": {
+    "title": "Public demo: the Rímac scenario",
+    "intro": "It simulates the river being dammed: discharge drops at Chaclacayo and, 4 minutes later, Santa Eulalia stops reporting. Willay opens two incidents, alerts by email and escalates to the next level if nobody acknowledges. It takes 9 minutes.",
+    "run": "Run the scenario",
+    "queued": "Getting the scenario ready…",
+    "playing": "Playing: {{elapsed}} of {{total}}",
+    "restoring": "The demo is going back to its initial state; it will be ready in a few seconds.",
+    "mail": "See the emails sent",
+    "phases": {
+      "normal": "The river as usual",
+      "drop": "Discharge drops at Chaclacayo: an incident opens",
+      "silence": "Santa Eulalia stops reporting: another one opens",
+      "done": "The stations report again"
+    },
+    "stepState": {
+      "done": "done",
+      "current": "now",
+      "upcoming": "to come"
+    },
+    "whilePlaying": "While it plays, open an incident and acknowledge it, or acknowledge it from its email.",
+    "toMap": "Go to the live map",
+    "finished": "The last run ended on {{time}}.",
+    "toIncidents": "See the incidents it opened",
+    "failed": "The last run could not finish. Try again.",
+    "busy": "A run is already in progress: wait for it to finish.",
+    "startFailed": "The scenario could not start. Try again."
+  },
+  "demoAccess": {
+    "title": "Try Willay",
+    "intro": "This is a public demo with simulated data. Sign in with one of these accounts:",
+    "admin": "sees and manages everything, and runs the scenario",
+    "operator": "manages zones, stations, rules and incidents",
+    "viewer": "only looks",
+    "password": "Password for all three:",
+    "step1": "Sign in as demo-admin.",
+    "step2": "On Home, press “Run the scenario”.",
+    "step3": "Follow the live map: the first incident opens within a minute.",
+    "step4": "Acknowledge it from the incident or from its email.",
+    "reset": "Every night at 04:00 (Lima time) the demo goes back to its initial state."
   }
 }

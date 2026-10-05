@@ -7,6 +7,8 @@ const DEPLOYED = {
     authority: 'https://willay.example.org/auth/realms/willay',
     clientId: 'willay-dashboard',
   },
+  mailUrl: 'https://willay.example.org/correo/',
+  demo: { password: 'willay-demo' },
 };
 
 function respond(body: unknown, status = 200): typeof fetch {
@@ -14,14 +16,19 @@ function respond(body: unknown, status = 200): typeof fetch {
 }
 
 afterEach(() => {
-  settings.apiUrl = LOCAL.apiUrl;
-  settings.oidc = { ...LOCAL.oidc };
+  Object.assign(settings, structuredClone(LOCAL));
 });
 
 describe('settings', () => {
   it('takes the URLs of the deployment from its config.json', async () => {
     await loadSettings(respond(DEPLOYED));
     expect(settings).toEqual(DEPLOYED);
+  });
+
+  it('knows the public demo only where the deployment turns it on', async () => {
+    await loadSettings(respond({ ...DEPLOYED, demo: null }));
+    expect(settings.demo).toBeNull();
+    expect(LOCAL.demo).toBeNull();
   });
 
   it('keeps the local URLs without a config.json, or with one it cannot read', async () => {

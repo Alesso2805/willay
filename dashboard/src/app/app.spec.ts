@@ -68,6 +68,26 @@ describe('App', () => {
     expect(oidc.authorize).toHaveBeenCalled();
   });
 
+  it('shows the public demo accounts, their password and what to try (VIG-43)', async () => {
+    settings.demo = { password: 'willay-demo' };
+    try {
+      const { fixture, text } = setup(false);
+      await fixture.whenStable();
+      expect(text()).toContain('Prueba Willay');
+      expect(text()).toContain('demo-admin');
+      expect(text()).toContain('willay-demo');
+      expect(text()).toContain('Correr el escenario');
+    } finally {
+      settings.demo = null;
+    }
+  });
+
+  it('shows no demo accounts outside the public demo', async () => {
+    const { fixture, text } = setup(false);
+    await fixture.whenStable();
+    expect(text()).not.toContain('Prueba Willay');
+  });
+
   it('shows the user organization by name and roles after login', async () => {
     const { fixture, http, text } = setup(true);
     http.expectOne(`${settings.apiUrl}/v1/me`).flush(ME);
