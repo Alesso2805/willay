@@ -391,6 +391,7 @@ In an alerting system, a lost alert is worse than a duplicate one: every design 
 | See contact data (email and whether Telegram is linked; the `chat_id` is never shown) | | | ✔ | ✔ |
 | Manage contacts and groups | | | | ✔ |
 | Manage escalation policies | | | | ✔ |
+| Change the organization's language and time zone (VIG-44) | | | | ✔ |
 | See the audit log | | | | ✔ |
 | Run the Rímac scenario of the public demo (only with `WILLAY_DEMO_MODE`, VIG-43) | | | | ✔ |
 
