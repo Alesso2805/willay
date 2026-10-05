@@ -120,6 +120,8 @@ async def test_opening_the_link_shows_the_incident_and_changes_nothing(
     assert page.headers["cache-control"] == "no-store"
     assert page.headers["referrer-policy"] == "no-referrer"
     assert "default-src 'none'" in page.headers["content-security-policy"]
+    # Without login, the device is the only signal for dark mode (VIG-41).
+    assert "@media (prefers-color-scheme: dark)" in html
 
     assert await _state(owner, case) == before
     assert await _alert_status(owner, case, "Ana") == "sent"
