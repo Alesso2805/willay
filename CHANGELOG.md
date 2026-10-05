@@ -6,7 +6,8 @@ All notable changes are documented here. Format: [Keep a Changelog](https://keep
 
 ### Changed
 - The product is now called **Willay** (Quechua for "to warn, to inform"): dashboard, alert emails and sender, Telegram messages, confirmation page and Keycloak realm. The code follows: repository, `willay` package, database and roles, `WILLAY_*` variables, notification channels and Docker images; story IDs keep the `VIG-` prefix. Existing local environments need `docker compose down -v` and the `.env` keys renamed.
-- Code, comments and documentation are in English; user-facing text stays in Spanish until VIG-40 (bilingual product).
+- Code, comments and documentation are in English; the product speaks Spanish and English since VIG-40.
+- The light theme's subtlest text is a little darker, to reach 4.5:1 on the page background (VIG-41).
 
 ### Added
 - Monorepo with a Python backend (`willay`), an Angular 22 dashboard, a Makefile and CI on GitHub Actions (VIG-01).
@@ -44,6 +45,18 @@ All notable changes are documented here. Format: [Keep a Changelog](https://keep
 - Failed readings: `GET /v1/failed-readings` and reprocessing for operator and admin, a live notice on every page while there is any, and the runbook moved to the dashboard (VIG-39).
 - Rules from the dashboard: `/v1/rules` with params validated per type, forms per rule type, and `POST /v1/rules/preview` to see where a draft would have opened incidents over the last 24 h. Threshold and rate-of-change rules name their station; only silence rules cover a whole zone (VIG-27).
 - Audit log for admin: `GET /v1/audit`, cursor-paginated, and a page with filters by type, author and dates in the URL that shows each changed field in words (VIG-38).
+- One `correlation_id` per batch of readings. JSON logs carry it from the reading to its incident and alerts. `received_to_alert_seconds` on each incident's first alert, and `make latency` for p50 and p95 (VIG-28).
+- `make loadtest`: 50 stations sending a reading every 10 s for 30 minutes. It checks that no reading is left unevaluated after 120 s and that p95 stays under 30 s (VIG-29).
+- `make demo`: the Rímac scenario, narrated in the terminal and judged against SPEC. Level 2 acknowledges by Telegram or, without a bot, from the email. Each run starts from a clean demo organization (VIG-30).
+- Spanish and English (VIG-40):
+  - the dashboard speaks each user's language, saved for them;
+  - API errors carry a stable `code` and a message in the request's `Accept-Language`;
+  - timeline reasons appear in each reader's language;
+  - emails, Telegram and the confirmation page use each contact's language (new `contacts.language`, defaulting to the organization's).
+- Light and dark mode: the dashboard follows the system unless the user picks one in that browser, and the confirmation page follows the device (VIG-41).
+
+### Security
+- Map tooltips no longer treat zone and station names as HTML, so a name with markup cannot run in the browser of whoever hovers over it.
 
 ### Fixed
 - The evaluator and dispatcher workers listen again after a database restart, instead of waking only by their 5 s polling until restarted.
