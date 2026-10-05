@@ -189,15 +189,35 @@ def _data(body: PolicyIn) -> PolicyData:
     )
 
 
+# The field of a level each code is about (VIG-37), so the dashboard shows it there.
+_LEVEL_FIELDS = {
+    ErrorCode.POLICY_LEVEL_WAIT: "wait_s",
+    ErrorCode.POLICY_LEVEL_NO_TARGET: "targets",
+    ErrorCode.POLICY_LEVEL_REPEATED_TARGET: "targets",
+}
+
+
 def _rejected(exc: InvalidPolicyError | UnknownGroupsError | DuplicatePolicyNameError) -> ApiError:
     if isinstance(exc, DuplicatePolicyNameError):
         return ApiError(status.HTTP_409_CONFLICT, ErrorCode.POLICY_NAME_TAKEN)
     # Same shape as FastAPI's validation 422s, so the dashboard handles them the same way.
     kind = "unknown_contact_group" if isinstance(exc, UnknownGroupsError) else "invalid_policy"
-    problem = FieldProblem(["body", "levels"], exc.code, exc.params, kind)
+    problem = FieldProblem(_where(exc), exc.code, exc.params, kind)
     return ApiError(
         status.HTTP_422_UNPROCESSABLE_CONTENT, exc.code, fields=[problem], params=exc.params
     )
+
+
+def _where(exc: InvalidPolicyError | UnknownGroupsError) -> list[str | int]:
+    """Where the problem is, as FastAPI says it for nested fields: ["body", "name"], or
+    ["body", "levels", 0, "wait_s"] for the first level's wait."""
+    if exc.code is ErrorCode.POLICY_NAME_LENGTH:
+        return ["body", "name"]
+    level = exc.params.get("level")
+    field = _LEVEL_FIELDS.get(exc.code)
+    if isinstance(level, int) and field is not None:
+        return ["body", "levels", level - 1, field]
+    return ["body", "levels"]
 
 
 def _out(policy: Policy) -> PolicyOut:

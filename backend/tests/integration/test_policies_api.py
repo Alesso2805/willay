@@ -170,6 +170,28 @@ async def test_invalid_policies_get_422(
     assert response.json()["detail"][0]["type"] == reason
 
 
+@pytest.mark.parametrize(
+    ("body", "loc"),
+    [
+        ({"name": ""}, ["body", "name"]),
+        (
+            {"levels": [_body()["levels"][0], {**_body()["levels"][1], "wait_s": 0}]},
+            ["body", "levels", 1, "wait_s"],
+        ),
+        ({"levels": [{"wait_s": 120, "targets": []}]}, ["body", "levels", 0, "targets"]),
+        ({"levels": []}, ["body", "levels"]),
+    ],
+    ids=["name", "second-level-wait", "first-level-targets", "no-levels"],
+)
+async def test_a_422_says_which_field(
+    client: httpx2.AsyncClient, admin: dict[str, str], body: dict[str, Any], loc: list[Any]
+) -> None:
+    # VIG-37: the dashboard shows each problem next to its own field.
+    response = await client.post("/v1/escalation-policies", json=_body(**body), headers=admin)
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == loc
+
+
 async def test_only_admins_manage_policies_but_everyone_reads_them(
     client: httpx2.AsyncClient, tokens: TokenFactory
 ) -> None:
