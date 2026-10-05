@@ -12,5 +12,6 @@ One technical decision per file: context, options, decision and consequences. An
 | [0006](0006-sql-migrations-and-testcontainers.md) | Migrations in explicit SQL and tests with testcontainers | Proposed |
 | [0007](0007-live-events-with-triggers.md) | Live events emitted by Postgres triggers | Proposed |
 | [0008](0008-i18n-with-i18next.md) | The dashboard in several languages with i18next | Proposed |
+| [0009](0009-light-and-dark-mode-with-css-variables.md) | Light and dark mode with CSS variables | Proposed |
 
 Statuses: Proposed → Accepted → (Superseded by ADR-NNNN | Deprecated).
