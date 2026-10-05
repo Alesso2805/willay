@@ -1,0 +1,218 @@
+<app-contact-tabs />
+
+<app-page-header [title]="t('policies.title')" [subtitle]="subtitle()">
+  @if (canManage() && !editing()) {
+    <button type="button" class="btn-primary" (click)="startCreate()">
+      <app-icon name="plus" />
+      {{ t('policies.new') }}
+    </button>
+  }
+</app-page-header>
+
+<p class="-mt-3 mb-3 text-sm text-ink-muted" aria-live="polite">{{ status() }}</p>
+
+@if (editing(); as current) {
+  <form class="card mb-6 flex max-w-3xl flex-col gap-5 p-5" (submit)="save($event)" novalidate>
+    <h2 class="font-semibold text-ink">
+      {{
+        current.kind === 'new'
+          ? t('policies.new')
+          : t('policies.editTitle', { name: current.policy.name })
+      }}
+    </h2>
+    <app-notice tone="info">{{ t('policies.appliesToOngoing') }}</app-notice>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="policy-name" class="text-sm font-medium text-ink-soft">{{
+        t('policies.name')
+      }}</label>
+      <input
+        id="policy-name"
+        class="field max-w-md"
+        autocomplete="off"
+        [value]="name()"
+        (input)="setName($any($event.target).value)"
+        [attr.aria-invalid]="errors().name ? true : null"
+        [attr.aria-describedby]="errors().name ? 'policy-name-error' : null"
+      />
+      @if (errors().name; as message) {
+        <p id="policy-name-error" class="text-sm text-danger">{{ message }}</p>
+      }
+    </div>
+
+    <ol class="flex flex-col gap-4">
+      @for (level of levels(); track $index; let i = $index, last = $last, first = $first) {
+        <li class="rounded-lg p-4 ring-1 ring-line">
+          <fieldset class="flex flex-col gap-3">
+            <legend class="font-medium text-ink">{{ t('policies.level', { n: i + 1 }) }}</legend>
+
+            <div class="flex flex-col gap-1.5">
+              <label [for]="'policy-wait-' + i" class="text-sm text-ink-soft">
+                {{ t('policies.wait') }}
+                <span class="text-ink-subtle">
+                  ({{
+                    last ? t('policies.waitHintLast') : t('policies.waitHintNext', { n: i + 2 })
+                  }})
+                </span>
+              </label>
+              <input
+                [id]="'policy-wait-' + i"
+                type="number"
+                min="1"
+                step="any"
+                inputmode="decimal"
+                class="field w-28"
+                [value]="level.minutes"
+                (input)="setMinutes(i, $any($event.target).value)"
+                [attr.aria-invalid]="errors().perLevel[i]?.wait ? true : null"
+                [attr.aria-describedby]="
+                  errors().perLevel[i]?.wait ? 'policy-wait-error-' + i : null
+                "
+              />
+              @if (errors().perLevel[i]?.wait; as message) {
+                <p [id]="'policy-wait-error-' + i" class="text-sm text-danger">{{ message }}</p>
+              }
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="text-sm">
+                <caption class="sr-only">
+                  {{
+                    t('policies.targetsCaption', { n: i + 1 })
+                  }}
+                </caption>
+                <thead>
+                  <tr class="text-left text-ink-subtle">
+                    <th scope="col" class="py-1 pr-6 font-medium">{{ t('policies.group') }}</th>
+                    @for (channel of channels; track channel) {
+                      <th scope="col" class="px-3 py-1 font-medium">
+                        {{ channelLabel(channel) }}
+                      </th>
+                    }
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-line-soft">
+                  @for (group of groups(); track group.id) {
+                    <tr>
+                      <th scope="row" class="py-1.5 pr-6 text-left font-normal text-ink-soft">
+                        {{ group.name }}
+                      </th>
+                      @for (channel of channels; track channel) {
+                        <td class="px-3 py-1.5 text-center">
+                          <input
+                            type="checkbox"
+                            class="size-4 rounded border-line-strong accent-brand-700"
+                            [checked]="has(level, group.id, channel)"
+                            (change)="toggle(i, group.id, channel, $any($event.target).checked)"
+                            [attr.aria-label]="
+                              t('policies.targetLabel', {
+                                n: i + 1,
+                                group: group.name,
+                                channel: channelLabel(channel),
+                              })
+                            "
+                          />
+                        </td>
+                      }
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="3" class="py-1.5 text-ink-subtle">
+                        {{ t('policies.noGroups') }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            @if (errors().perLevel[i]?.targets; as message) {
+              <p class="text-sm text-danger" role="alert">{{ message }}</p>
+            }
+
+            <div class="flex flex-wrap gap-3 text-sm">
+              @if (!first) {
+                <button type="button" class="link-action" (click)="move(i, -1)">
+                  {{ t('policies.moveUp') }}
+                </button>
+              }
+              @if (!last) {
+                <button type="button" class="link-action" (click)="move(i, 1)">
+                  {{ t('policies.moveDown') }}
+                </button>
+              }
+              @if (levels().length > 1) {
+                <button type="button" class="link-danger" (click)="removeLevel(i)">
+                  {{ t('policies.removeLevel') }}
+                </button>
+              }
+            </div>
+          </fieldset>
+        </li>
+      }
+    </ol>
+    <div>
+      <button type="button" class="btn-secondary" (click)="addLevel()">
+        <app-icon name="plus" />
+        {{ t('policies.addLevel') }}
+      </button>
+      @if (errors().levels; as message) {
+        <p class="mt-2 text-sm text-danger" role="alert">{{ message }}</p>
+      }
+    </div>
+
+    @if (problem(); as p) {
+      <app-notice>{{ p }}</app-notice>
+    }
+    <div class="flex gap-3">
+      <button type="submit" class="btn-primary" [disabled]="saving()">
+        {{ t('policies.save') }}
+      </button>
+      <button type="button" class="btn-secondary" (click)="cancel()">
+        {{ t('policies.cancel') }}
+      </button>
+    </div>
+  </form>
+} @else if (problem(); as p) {
+  <app-notice class="mb-4">{{ p }}</app-notice>
+}
+
+@if (listStatus() !== 'ready') {
+  <app-load-state
+    [status]="listStatus()"
+    [loading]="t('policies.loading')"
+    [empty]="t('policies.empty')"
+    [error]="t('policies.loadFailed')"
+    (retry)="load()"
+  />
+} @else {
+  <ul class="grid gap-4 lg:grid-cols-2">
+    @for (policy of policies(); track policy.id) {
+      <li class="card p-5">
+        <h2 class="font-semibold text-ink">{{ policy.name }}</h2>
+        <ol class="mt-3 flex flex-col gap-2 text-sm">
+          @for (level of policy.levels; track level.level_order; let i = $index) {
+            <li>
+              <span class="font-medium text-ink"
+                >{{ t('policies.level', { n: level.level_order }) }}:</span
+              >
+              <span class="text-ink-soft">
+                {{ t('policies.notifies', { targets: targetsText(level) }) }}</span
+              >
+              <span class="block text-ink-subtle">{{ waitText(policy, i) }}</span>
+            </li>
+          }
+        </ol>
+        @if (canManage()) {
+          <div class="mt-4 flex gap-4 border-t border-line-soft pt-3 text-sm">
+            <button type="button" class="link-action" (click)="startEdit(policy)">
+              {{ t('policies.edit') }}
+            </button>
+            <button type="button" class="link-danger" (click)="remove(policy)">
+              {{ t('policies.delete') }}
+            </button>
+          </div>
+        }
+      </li>
+    }
+  </ul>
+}
