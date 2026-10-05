@@ -33,7 +33,8 @@
     "stations": "Stations",
     "rules": "Rules",
     "contacts": "Contacts",
-    "audit": "Audit log"
+    "audit": "Audit log",
+    "organization": "Organization"
   },
   "roles": {
     "admin": "Administration",
@@ -686,7 +687,8 @@
       "rule": "Rule",
       "escalation_policy": "Policy",
       "contact": "Contact",
-      "contact_group": "Group"
+      "contact_group": "Group",
+      "organization": "Organization"
     },
     "entityPhrases": {
       "risk_zone": "the zone",
@@ -694,7 +696,8 @@
       "rule": "the rule",
       "escalation_policy": "the policy",
       "contact": "the contact",
-      "contact_group": "the group"
+      "contact_group": "the group",
+      "organization": "the organization"
     },
     "actions": {
       "create": "Created {{entity}} {{name}}",
@@ -739,7 +742,9 @@
       "escalation_policy": "Policy",
       "cooldown_s": "Wait after resolving (s)",
       "levels": "Levels",
-      "readings": "Readings"
+      "readings": "Readings",
+      "language": "Language",
+      "timezone": "Time zone"
     },
     "values": {
       "active": "Active",
@@ -811,5 +816,20 @@
     "step3": "Follow the live map: the first incident opens within a minute.",
     "step4": "Acknowledge it from the incident or from its email.",
     "reset": "Every night at 04:00 (Lima time) the demo goes back to its initial state."
+  },
+  "organization": {
+    "title": "Organization",
+    "subtitle": "How Willay writes for {{name}}",
+    "loading": "Loading the organization…",
+    "loadFailed": "The organization could not be loaded.",
+    "language": "Language",
+    "languageHelp": "The one of the alerts (email, Telegram and the confirmation page) of the contacts that chose none.",
+    "timezone": "Time zone",
+    "timezoneHelp": "The time of emails, Telegram and the whole dashboard. Now there: {{now}}.",
+    "save": "Save",
+    "saved": "Saved: it applies from the next alert.",
+    "readOnly": "Only an admin changes these settings.",
+    "forbidden": "Your role does not allow changing the organization.",
+    "saveFailed": "It could not be saved. Try again."
   }
 }

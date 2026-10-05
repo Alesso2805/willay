@@ -127,6 +127,22 @@ describe('fieldChanges', () => {
   });
 });
 
+describe('an organization entry (VIG-44)', () => {
+  it('says the change of its settings in words', () => {
+    const changed: AuditEntry = {
+      ...ENTRY,
+      entity_type: 'organization',
+      before: { name: 'Demo Rímac', language: 'es', timezone: 'America/Lima' },
+      after: { name: 'Demo Rímac', language: 'en', timezone: 'America/Bogota' },
+    };
+    expect(actionText(changed)).toBe('Editó la organización Demo Rímac');
+    expect(fieldChanges(changed)).toEqual([
+      { field: 'Idioma', before: 'Español', after: 'English' },
+      { field: 'Zona horaria', before: 'America/Lima', after: 'America/Bogota' },
+    ]);
+  });
+});
+
 describe('an entry whose snapshot has no name', () => {
   const link: AuditEntry = {
     ...ENTRY,
