@@ -4,7 +4,13 @@ import { Observable } from 'rxjs';
 import { settings } from '../settings';
 
 export type EntityType =
-  'risk_zone' | 'station' | 'rule' | 'escalation_policy' | 'contact' | 'contact_group';
+  | 'risk_zone'
+  | 'station'
+  | 'rule'
+  | 'escalation_policy'
+  | 'contact'
+  | 'contact_group'
+  | 'organization';
 
 export interface Author {
   id: string;

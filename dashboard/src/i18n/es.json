@@ -33,7 +33,8 @@
     "stations": "Estaciones",
     "rules": "Reglas",
     "contacts": "Contactos",
-    "audit": "Auditoría"
+    "audit": "Auditoría",
+    "organization": "Organización"
   },
   "roles": {
     "admin": "Administración",
@@ -707,7 +708,8 @@
       "rule": "Regla",
       "escalation_policy": "Política",
       "contact": "Contacto",
-      "contact_group": "Grupo"
+      "contact_group": "Grupo",
+      "organization": "Organización"
     },
     "entityPhrases": {
       "risk_zone": "la zona",
@@ -715,7 +717,8 @@
       "rule": "la regla",
       "escalation_policy": "la política",
       "contact": "el contacto",
-      "contact_group": "el grupo"
+      "contact_group": "el grupo",
+      "organization": "la organización"
     },
     "actions": {
       "create": "Creó {{entity}} {{name}}",
@@ -760,7 +763,9 @@
       "escalation_policy": "Política",
       "cooldown_s": "Espera tras resolver (s)",
       "levels": "Niveles",
-      "readings": "Lecturas"
+      "readings": "Lecturas",
+      "language": "Idioma",
+      "timezone": "Zona horaria"
     },
     "values": {
       "active": "Activa",
@@ -832,5 +837,20 @@
     "step3": "Sigue el mapa en vivo: en un minuto se abre el primer incidente.",
     "step4": "Confírmalo desde el incidente o desde su correo.",
     "reset": "Cada noche, a las 04:00 (hora de Lima), la demo vuelve a su estado inicial."
+  },
+  "organization": {
+    "title": "Organización",
+    "subtitle": "Cómo escribe Willay para {{name}}",
+    "loading": "Cargando la organización…",
+    "loadFailed": "No se pudo cargar la organización.",
+    "language": "Idioma",
+    "languageHelp": "El de los avisos —correo, Telegram y página de confirmación— de los contactos que no eligieron uno.",
+    "timezone": "Zona horaria",
+    "timezoneHelp": "La hora de los correos, de Telegram y de todo el dashboard. Ahora allí: {{now}}.",
+    "save": "Guardar",
+    "saved": "Guardado: se aplica desde el próximo aviso.",
+    "readOnly": "Solo un administrador cambia esta configuración.",
+    "forbidden": "Tu rol no permite cambiar la organización.",
+    "saveFailed": "No se pudo guardar. Inténtalo de nuevo."
   }
 }

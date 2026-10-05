@@ -76,6 +76,13 @@ export class Session {
     this.oidc.logoff().subscribe();
   }
 
+  /** After an admin changes the organization's time zone (VIG-44): every time on screen follows. */
+  useOrganizationTimezone(timezone: string): void {
+    const state = this._state();
+    if (state.status !== 'ready') return;
+    this._state.set({ ...state, me: { ...state.me, organization_timezone: timezone } });
+  }
+
   private loadMe(): Observable<SessionState> {
     return this.http.get<Me>(`${settings.apiUrl}/v1/me`).pipe(
       // The user's language is in place before the first page renders.

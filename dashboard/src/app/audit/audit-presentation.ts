@@ -1,7 +1,7 @@
 import { causeLabel } from '../incidents/incident-presentation';
 import { VARIABLES, variableLabel } from '../stations/station-presentation';
 import { Variable } from '../stations/stations.api';
-import { TranslationKey, t } from '../i18n/i18n';
+import { LANGUAGE_NAMES, TranslationKey, isLanguage, t } from '../i18n/i18n';
 import { localTime } from '../ui/formats';
 import { RISK_LEVEL_STATES, SEVERITIES, VisualState } from '../ui/visual-states';
 import { AuditEntry, EntityType } from './audit.api';
@@ -14,6 +14,7 @@ const VALUE_LABELS: Readonly<Record<string, (value: string) => string | undefine
   variable: (v) => (VARIABLES.includes(v as Variable) ? variableLabel(v as Variable) : undefined),
   status: (v) => (v === 'active' || v === 'inactive' ? t(`audit.values.${v}`) : undefined),
   source: (v) => (v === 'sensor' || v === 'simulator' ? t(`audit.values.${v}`) : undefined),
+  language: (v) => (isLanguage(v) ? LANGUAGE_NAMES[v] : undefined),
 };
 
 function stateLabel(state: VisualState | undefined): string | undefined {
@@ -27,6 +28,7 @@ export const ENTITY_TYPES: readonly EntityType[] = [
   'escalation_policy',
   'contact',
   'contact_group',
+  'organization',
 ];
 
 /** "Zona", "Station"… for the filter. */
@@ -79,6 +81,8 @@ const FIELD_KEYS: Readonly<Record<string, TranslationKey>> = {
   cooldown_s: 'audit.fields.cooldown_s',
   levels: 'audit.fields.levels',
   readings: 'audit.fields.readings',
+  language: 'audit.fields.language',
+  timezone: 'audit.fields.timezone',
 };
 
 export interface FieldChange {
