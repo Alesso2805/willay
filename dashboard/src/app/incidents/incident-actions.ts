@@ -30,9 +30,9 @@ type Resolution = 'resolved' | 'false_alarm';
   imports: [Notice],
   template: `
     @if (!mayAct()) {
-      <p class="text-sm text-slate-600">{{ t('incidents.actions.viewOnly') }}</p>
+      <p class="text-sm text-ink-muted">{{ t('incidents.actions.viewOnly') }}</p>
     } @else if (!canAcknowledge() && !canResolve()) {
-      <p class="text-sm text-slate-600">
+      <p class="text-sm text-ink-muted">
         @if (incident().status === 'resolved') {
           {{ t('incidents.actions.resolvedFinal') }}
         } @else {
@@ -63,11 +63,11 @@ type Resolution = 'resolved' | 'false_alarm';
       @if (resolving()) {
         <form
           id="resolve-panel"
-          class="mt-4 rounded-lg border border-slate-200 p-4"
+          class="mt-4 rounded-lg border border-line p-4"
           (submit)="$event.preventDefault(); resolve()"
         >
           <fieldset>
-            <legend class="text-sm font-medium text-slate-900">{{ t('incidents.actions.howEnded') }}</legend>
+            <legend class="text-sm font-medium text-ink">{{ t('incidents.actions.howEnded') }}</legend>
             <label class="mt-3 flex items-start gap-2 text-sm">
               <input
                 #firstOption
@@ -78,8 +78,8 @@ type Resolution = 'resolved' | 'false_alarm';
                 (change)="resolution.set('resolved')"
               />
               <span>
-                <span class="font-medium text-slate-900">{{ t('incidents.actions.resolved') }}</span>
-                <span class="block text-slate-600">{{ t('incidents.actions.resolvedHint') }}</span>
+                <span class="font-medium text-ink">{{ t('incidents.actions.resolved') }}</span>
+                <span class="block text-ink-muted">{{ t('incidents.actions.resolvedHint') }}</span>
               </span>
             </label>
             <label class="mt-2 flex items-start gap-2 text-sm">
@@ -91,12 +91,12 @@ type Resolution = 'resolved' | 'false_alarm';
                 (change)="resolution.set('false_alarm')"
               />
               <span>
-                <span class="font-medium text-slate-900">{{ t('incidents.actions.falseAlarm') }}</span>
-                <span class="block text-slate-600">{{ t('incidents.actions.falseAlarmHint') }}</span>
+                <span class="font-medium text-ink">{{ t('incidents.actions.falseAlarm') }}</span>
+                <span class="block text-ink-muted">{{ t('incidents.actions.falseAlarmHint') }}</span>
               </span>
             </label>
           </fieldset>
-          <p class="mt-3 text-sm text-slate-700">{{ t('incidents.actions.finalWarning') }}</p>
+          <p class="mt-3 text-sm text-ink-soft">{{ t('incidents.actions.finalWarning') }}</p>
           <div class="mt-3 flex flex-wrap gap-2">
             <button type="submit" class="btn-primary" [disabled]="!resolution() || busy()">
               {{ t('incidents.actions.resolveFinal') }}
@@ -112,7 +112,7 @@ type Resolution = 'resolved' | 'false_alarm';
     @if (problem(); as text) {
       <app-notice class="mt-3">{{ text }}</app-notice>
     }
-    <p class="mt-2 text-sm text-slate-700" role="status">{{ done() }}</p>
+    <p class="mt-2 text-sm text-ink-soft" role="status">{{ done() }}</p>
   `,
 })
 export class IncidentActions {

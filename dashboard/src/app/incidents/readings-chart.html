@@ -11,39 +11,39 @@
     <desc [id]="id + '-desc'">{{ chart.summary }}</desc>
 
     @for (tick of chart.yTicks; track tick.label) {
-      <line [attr.x1]="M.left" [attr.x2]="W - M.right" [attr.y1]="tick.y" [attr.y2]="tick.y" class="stroke-slate-200" />
-      <text [attr.x]="M.left - 6" [attr.y]="tick.y" text-anchor="end" dominant-baseline="middle" class="fill-slate-500 text-[11px]">
+      <line [attr.x1]="M.left" [attr.x2]="W - M.right" [attr.y1]="tick.y" [attr.y2]="tick.y" class="stroke-line" />
+      <text [attr.x]="M.left - 6" [attr.y]="tick.y" text-anchor="end" dominant-baseline="middle" class="fill-ink-subtle text-[11px]">
         {{ tick.label }}
       </text>
     }
     @for (tick of chart.xTicks; track tick.x) {
-      <text [attr.x]="tick.x" [attr.y]="H - 8" text-anchor="middle" class="fill-slate-500 text-[11px]">
+      <text [attr.x]="tick.x" [attr.y]="H - 8" text-anchor="middle" class="fill-ink-subtle text-[11px]">
         {{ tick.label }}
       </text>
     }
 
     @for (mark of chart.marks; track mark.x) {
-      <line [attr.x1]="mark.x" [attr.x2]="mark.x" [attr.y1]="M.top - 6" [attr.y2]="H - M.bottom" class="stroke-slate-500" stroke-dasharray="3 3" />
-      <text [attr.x]="mark.x + (mark.anchor === 'end' ? -4 : 4)" [attr.y]="mark.labelY" [attr.text-anchor]="mark.anchor" class="fill-slate-700 text-[11px]">
+      <line [attr.x1]="mark.x" [attr.x2]="mark.x" [attr.y1]="M.top - 6" [attr.y2]="H - M.bottom" class="stroke-ink-subtle" stroke-dasharray="3 3" />
+      <text [attr.x]="mark.x + (mark.anchor === 'end' ? -4 : 4)" [attr.y]="mark.labelY" [attr.text-anchor]="mark.anchor" class="fill-ink-soft text-[11px]">
         {{ mark.label }}
       </text>
     }
 
     @if (chart.threshold; as threshold) {
-      <line [attr.x1]="M.left" [attr.x2]="W - M.right" [attr.y1]="threshold.y" [attr.y2]="threshold.y" class="stroke-red-700" stroke-width="1.5" stroke-dasharray="6 4" />
-      <text [attr.x]="W - M.right" [attr.y]="threshold.y - 5" text-anchor="end" class="fill-red-800 text-[11px] font-medium">
+      <line [attr.x1]="M.left" [attr.x2]="W - M.right" [attr.y1]="threshold.y" [attr.y2]="threshold.y" class="stroke-danger" stroke-width="1.5" stroke-dasharray="6 4" />
+      <text [attr.x]="W - M.right" [attr.y]="threshold.y - 5" text-anchor="end" class="fill-danger-strong text-[11px] font-medium">
         {{ threshold.label }}
       </text>
     }
 
     @for (path of chart.paths; track $index) {
-      <path [attr.d]="path" fill="none" class="stroke-brand-700" stroke-width="2" stroke-linejoin="round" />
+      <path [attr.d]="path" fill="none" class="stroke-accent" stroke-width="2" stroke-linejoin="round" />
     }
     @for (dot of chart.dots; track $index) {
-      <circle [attr.cx]="dot.x" [attr.cy]="dot.y" r="3" class="fill-brand-700" />
+      <circle [attr.cx]="dot.x" [attr.cy]="dot.y" r="3" class="fill-accent" />
     }
   </svg>
-  <figcaption class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+  <figcaption class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-subtle">
     <span>{{ t('chart.legend', { unit: data().unit ?? t('chart.theUnit'), timezone: timezone() }) }}</span>
     <button type="button" class="link-action text-xs" [attr.aria-expanded]="showTable()" [attr.aria-controls]="id + '-table'" (click)="toggleTable()">
       {{ t(showTable() ? 'chart.hideTable' : 'chart.showTable') }}
@@ -52,10 +52,10 @@
 </figure>
 
 @if (showTable()) {
-  <div [id]="id + '-table'" class="mt-3 max-h-64 overflow-auto rounded-md border border-slate-200">
+  <div [id]="id + '-table'" class="mt-3 max-h-64 overflow-auto rounded-md border border-line">
     <table class="w-full text-left text-sm">
       <caption class="sr-only">{{ chart.summary }}</caption>
-      <thead class="sticky top-0 bg-slate-50 text-xs text-slate-600">
+      <thead class="sticky top-0 bg-surface-muted text-xs text-ink-muted">
         <tr>
           <th scope="col" class="px-3 py-2 font-medium">{{ t('chart.time') }}</th>
           <th scope="col" class="px-3 py-2 text-right font-medium">
@@ -63,11 +63,11 @@
           </th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody class="divide-y divide-line-soft">
         @for (reading of data().readings; track reading.measured_at) {
           <tr>
-            <td class="px-3 py-1.5 text-slate-700">{{ time(reading.measured_at) }}</td>
-            <td class="px-3 py-1.5 text-right tabular-nums text-slate-900">{{ number(reading.value) }}</td>
+            <td class="px-3 py-1.5 text-ink-soft">{{ time(reading.measured_at) }}</td>
+            <td class="px-3 py-1.5 text-right tabular-nums text-ink">{{ number(reading.value) }}</td>
           </tr>
         }
       </tbody>
