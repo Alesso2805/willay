@@ -19,6 +19,7 @@ from willay.alerts.api.contacts import router as contacts_router
 from willay.alerts.api.groups import router as groups_router
 from willay.alerts.api.incident_alerts import router as incident_alerts_router
 from willay.alerts.api.policies import router as policies_router
+from willay.demo.api import router as demo_router
 from willay.identity.api.audit import router as audit_router
 from willay.identity.api.routes import router as identity_router
 from willay.identity.infrastructure.jwt_verifier import JwtVerifier, jwks_key_resolver
@@ -105,4 +106,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(failed_readings_router)
     app.include_router(rules_router)
     app.include_router(realtime_router)
+    app.include_router(demo_router)
     return app
