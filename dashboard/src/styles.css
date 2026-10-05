@@ -41,12 +41,14 @@
   --color-ink-soft: #334155;
   --color-ink-muted: #475569;
   --color-ink-subtle: #5b6b7f;
-  /* Links and selection; destructive actions. */
+  /* Links and selection; destructive actions and cautions. */
   --color-accent: #0e7490;
   --color-accent-strong: #155e75;
   --color-accent-soft: #ecfeff;
   --color-danger: #b91c1c;
   --color-danger-strong: #991b1b;
+  /* A caution in running text, such as a contact no alert reaches. */
+  --color-warning: #92400e;
 }
 
 /*
@@ -117,6 +119,7 @@
   --color-accent-soft: #0d3340;
   --color-danger: #fca5a5;
   --color-danger-strong: #fecaca;
+  --color-warning: #fcd34d;
 
   --tone-red-fg: #fecaca;
   --tone-red-bg: #4a1717;

@@ -9,12 +9,12 @@ import { t } from '../i18n/i18n';
   imports: [RouterLink, RouterLinkActive],
   host: { class: 'mb-6 block' },
   template: `
-    <nav [attr.aria-label]="t('contacts.tabsLabel')" class="flex gap-1 border-b border-slate-200">
+    <nav [attr.aria-label]="t('contacts.tabsLabel')" class="flex gap-1 border-b border-line">
       @for (tab of tabs; track tab.path) {
         <a
           [routerLink]="tab.path"
-          class="-mb-px border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900"
-          routerLinkActive="border-brand-700! text-brand-800!"
+          class="-mb-px border-b-2 border-transparent px-3 py-2 text-sm font-medium text-ink-muted hover:text-ink"
+          routerLinkActive="border-accent! text-accent-strong!"
           [routerLinkActiveOptions]="{ exact: true }"
           ariaCurrentWhenActive="page"
           >{{ t(tab.label) }}</a

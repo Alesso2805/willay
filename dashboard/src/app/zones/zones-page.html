@@ -1,8 +1,8 @@
 <app-page-header [title]="t('zones.title')" [subtitle]="subtitle()">
-  <label class="flex items-center gap-2 text-sm text-slate-600">
+  <label class="flex items-center gap-2 text-sm text-ink-muted">
     <input
       type="checkbox"
-      class="size-4 rounded border-slate-300 accent-brand-700"
+      class="size-4 rounded border-line-strong accent-brand-700"
       [checked]="includeInactive()"
       (change)="toggleInactive($any($event.target).checked)"
     />
@@ -16,7 +16,7 @@
   }
 </app-page-header>
 
-<p class="-mt-3 mb-3 text-sm text-slate-600" aria-live="polite">{{ status() }}</p>
+<p class="-mt-3 mb-3 text-sm text-ink-muted" aria-live="polite">{{ status() }}</p>
 
 <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
   <div class="card overflow-hidden lg:sticky lg:top-8 lg:self-start">
@@ -31,17 +31,17 @@
   <div class="flex flex-col gap-4">
     @if (editing(); as current) {
       <form class="card flex flex-col gap-4 p-5" [formGroup]="form" (ngSubmit)="save()">
-        <h2 class="font-semibold text-slate-900">{{ t(current.kind === 'new' ? 'zones.new' : 'zones.editTitle') }}</h2>
+        <h2 class="font-semibold text-ink">{{ t(current.kind === 'new' ? 'zones.new' : 'zones.editTitle') }}</h2>
 
-        <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+        <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
           {{ t('zones.name') }}
           <input formControlName="name" class="field" required maxlength="120" />
         </label>
         @if (form.controls.name.touched && form.controls.name.invalid) {
-          <p class="-mt-2 text-sm text-red-700">{{ t('zones.nameRequired') }}</p>
+          <p class="-mt-2 text-sm text-danger">{{ t('zones.nameRequired') }}</p>
         }
 
-        <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+        <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
           {{ t('zones.riskLevel') }}
           <select formControlName="risk_level" class="field">
             @for (level of riskLevels; track level) {
@@ -50,17 +50,17 @@
           </select>
         </label>
 
-        <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+        <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
           {{ t('zones.population') }}
           <input type="number" min="0" formControlName="population_estimate" class="field" />
         </label>
 
-        <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+        <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
           {{ t('zones.description') }}
           <textarea formControlName="description" rows="2" class="field"></textarea>
         </label>
 
-        <p class="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+        <p class="rounded-lg bg-surface-muted px-3 py-2 text-sm text-ink-muted">
           @if (geometry()) {
             {{ t('zones.polygonReady', { count: vertexCount() }) }}
           } @else {
@@ -95,24 +95,24 @@
         @for (zone of zones(); track zone.id) {
           <li class="card p-4" [class.opacity-60]="!zone.is_active">
             <div class="flex items-start justify-between gap-3">
-              <p class="font-semibold text-slate-900">
+              <p class="font-semibold text-ink">
                 {{ zone.name }}
                 @if (!zone.is_active) {
-                  <span class="text-sm font-normal text-slate-500">{{ t('zones.inactiveTag') }}</span>
+                  <span class="text-sm font-normal text-ink-subtle">{{ t('zones.inactiveTag') }}</span>
                 }
               </p>
             </div>
-            <p class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
+            <p class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
               <span>{{ t('zones.risk') }}</span>
               <app-state-badge [state]="riskStates[zone.risk_level]" />
             </p>
             @if (zone.population_estimate !== null) {
-              <p class="mt-1 text-sm text-slate-600">
-                {{ t('zones.populationLabel') }} <span class="font-medium tabular-nums text-slate-900">{{ count(zone.population_estimate) }}</span>
+              <p class="mt-1 text-sm text-ink-muted">
+                {{ t('zones.populationLabel') }} <span class="font-medium tabular-nums text-ink">{{ count(zone.population_estimate) }}</span>
               </p>
             }
             @if (canManage() && !editing()) {
-              <div class="mt-3 flex gap-4 border-t border-slate-100 pt-3 text-sm">
+              <div class="mt-3 flex gap-4 border-t border-line-soft pt-3 text-sm">
                 @if (zone.is_active) {
                   <button type="button" class="link-action" (click)="startEdit(zone)">{{ t('ui.edit') }}</button>
                   <button type="button" class="link-danger" (click)="deactivate(zone)">{{ t('ui.deactivate') }}</button>

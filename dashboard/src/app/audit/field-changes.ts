@@ -14,24 +14,24 @@ import { FieldChange } from './audit-presentation';
       <dl class="flex flex-col gap-1">
         @for (change of changes(); track change.field) {
           <div class="wrap-anywhere">
-            <dt class="inline font-medium text-slate-700">{{ change.field }}:</dt>
-            <dd class="ml-1 inline text-slate-600">
+            <dt class="inline font-medium text-ink-soft">{{ change.field }}:</dt>
+            <dd class="ml-1 inline text-ink-muted">
               @if (change.before === '—') {
-                <span class="text-slate-900">{{ change.after }}</span>
+                <span class="text-ink">{{ change.after }}</span>
               } @else if (change.after === '—') {
-                <span class="line-through decoration-slate-400">{{ change.before }}</span>
+                <span class="line-through decoration-ink-subtle">{{ change.before }}</span>
                 <span class="sr-only">{{ t('audit.removed') }}</span>
               } @else {
-                <span class="line-through decoration-slate-400">{{ change.before }}</span>
+                <span class="line-through decoration-ink-subtle">{{ change.before }}</span>
                 <span aria-hidden="true"> → </span><span class="sr-only"> {{ t('audit.changedTo') }} </span>
-                <span class="text-slate-900">{{ change.after }}</span>
+                <span class="text-ink">{{ change.after }}</span>
               }
             </dd>
           </div>
         }
       </dl>
     } @else {
-      <span class="text-slate-500">{{ t('audit.noFieldChanges') }}</span>
+      <span class="text-ink-subtle">{{ t('audit.noFieldChanges') }}</span>
     }
   `,
 })

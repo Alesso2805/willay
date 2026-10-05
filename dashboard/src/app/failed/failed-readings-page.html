@@ -5,7 +5,7 @@
 } @else {
   <app-notice tone="info" class="mb-4">{{ t('failedPage.explanation') }}</app-notice>
 
-  <p class="mb-3 text-sm text-slate-600" aria-live="polite">{{ status() }}</p>
+  <p class="mb-3 text-sm text-ink-muted" aria-live="polite">{{ status() }}</p>
 
   <app-load-state
     class="block"
@@ -18,10 +18,10 @@
 
   @if (readings().length > 0) {
     <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-      <label class="flex items-center gap-2 text-sm text-slate-700">
+      <label class="flex items-center gap-2 text-sm text-ink-soft">
         <input
           type="checkbox"
-          class="size-4 rounded border-slate-300 accent-brand-700"
+          class="size-4 rounded border-line-strong accent-brand-700"
           [checked]="allSelected()"
           (change)="toggleAll($any($event.target).checked)"
         />
@@ -45,7 +45,7 @@
     <div class="card hidden overflow-x-auto md:block">
       <table class="w-full text-left text-sm">
         <caption class="sr-only">{{ t('failedPage.caption') }}</caption>
-        <thead class="border-b border-slate-200 text-xs text-slate-500 uppercase">
+        <thead class="border-b border-line text-xs text-ink-subtle uppercase">
           <tr>
             <th scope="col" class="w-10 px-4 py-3"><span class="sr-only">{{ t('failedPage.select') }}</span></th>
             <th scope="col" class="px-4 py-3 font-medium">{{ t('failedPage.station') }}</th>
@@ -55,13 +55,13 @@
             <th scope="col" class="px-4 py-3 font-medium">{{ t('failedPage.lastError') }}</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100">
+        <tbody class="divide-y divide-line-soft">
           @for (reading of readings(); track reading.id) {
             <tr class="align-top">
               <td class="px-4 py-3">
                 <input
                   type="checkbox"
-                  class="size-4 rounded border-slate-300 accent-brand-700"
+                  class="size-4 rounded border-line-strong accent-brand-700"
                   [attr.aria-label]="
                     t('failedPage.selectOne', {
                       station: reading.station_code,
@@ -73,14 +73,14 @@
                 />
               </td>
               <td class="px-4 py-3">
-                <p class="font-mono text-xs font-medium text-slate-500">
+                <p class="font-mono text-xs font-medium text-ink-subtle">
                   {{ reading.station_code }}
                 </p>
-                <p class="text-slate-900">{{ reading.station_name }}</p>
+                <p class="text-ink">{{ reading.station_name }}</p>
               </td>
               <td class="px-4 py-3">
-                <p class="text-slate-900 tabular-nums">{{ value(reading) }}</p>
-                <p class="text-xs text-slate-500">{{ time(reading.measured_at) }}</p>
+                <p class="text-ink tabular-nums">{{ value(reading) }}</p>
+                <p class="text-xs text-ink-subtle">{{ time(reading.measured_at) }}</p>
               </td>
               <td class="px-4 py-3 tabular-nums">{{ reading.attempts }}</td>
               <td class="px-4 py-3">
@@ -89,7 +89,7 @@
                 }}</time>
               </td>
               <td class="px-4 py-3">
-                <code class="text-xs break-words text-slate-700">{{
+                <code class="text-xs break-words text-ink-soft">{{
                   reading.last_error ?? t('failedPage.noDetail')
                 }}</code>
               </td>
@@ -105,27 +105,27 @@
           <label class="flex items-start gap-3">
             <input
               type="checkbox"
-              class="mt-1 size-4 rounded border-slate-300 accent-brand-700"
+              class="mt-1 size-4 rounded border-line-strong accent-brand-700"
               [checked]="selected().has(reading.id)"
               (change)="toggle(reading.id, $any($event.target).checked)"
             />
             <span class="min-w-0">
-              <span class="block font-mono text-xs font-medium text-slate-500">{{
+              <span class="block font-mono text-xs font-medium text-ink-subtle">{{
                 reading.station_code
               }}</span>
-              <span class="block text-slate-900">{{ reading.station_name }}</span>
-              <span class="mt-1 block text-sm text-slate-700 tabular-nums">
+              <span class="block text-ink">{{ reading.station_name }}</span>
+              <span class="mt-1 block text-sm text-ink-soft tabular-nums">
                 {{ value(reading) }} · {{ time(reading.measured_at) }}
               </span>
             </span>
           </label>
-          <p class="mt-2 text-xs text-slate-500">
+          <p class="mt-2 text-xs text-ink-subtle">
             {{ t('failedPage.attemptsFailed', { count: reading.attempts }) }}
             <time [attr.datetime]="reading.failed_at" [title]="time(reading.failed_at)">{{
               age(reading.failed_at)
             }}</time>
           </p>
-          <code class="mt-1 block text-xs break-words text-slate-700">{{
+          <code class="mt-1 block text-xs break-words text-ink-soft">{{
             reading.last_error ?? t('failedPage.noDetail')
           }}</code>
         </li>

@@ -75,7 +75,7 @@ describe('theme colors', () => {
   describe.each(THEMES)('%s theme', (theme) => {
     it('every text color reads ≥ 4.5:1 on every background', () => {
       const texts = ['ink', 'ink-soft', 'ink-muted', 'ink-subtle', 'accent', 'accent-strong'];
-      for (const text of [...texts, 'danger', 'danger-strong']) {
+      for (const text of [...texts, 'danger', 'danger-strong', 'warning']) {
         for (const background of ['canvas', 'surface', 'surface-muted']) {
           const ratio = contrastRatio(
             color(theme, `--color-${text}`),
