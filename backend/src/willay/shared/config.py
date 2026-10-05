@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
+from uuid import UUID
 
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -43,6 +44,14 @@ class Settings(BaseSettings):
     telegram_bot_token: SecretStr | None = None
     telegram_bot_username: str | None = None
     telegram_api_url: str = "https://api.telegram.org"
+
+    # Public demo (VIG-43): off unless set. The demo organization defaults to the seed's Rímac,
+    # restored every night at this local hour. Only the demo worker needs willay_owner, because
+    # restoring deletes incident events, which are append-only for willay_app.
+    demo_mode: bool = False
+    demo_organization_id: UUID | None = None
+    demo_restore_hour: int = 4
+    migrate_database_url: str | None = None
 
     @field_validator("telegram_bot_token", "telegram_bot_username", mode="before")
     @classmethod

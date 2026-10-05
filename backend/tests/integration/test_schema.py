@@ -19,7 +19,8 @@ async def test_all_tables_exist(owner: asyncpg.Connection) -> None:
         GROUP BY table_schema
         """
     )
-    assert {r["table_schema"]: r["n"] for r in rows} == {"core": 16, "ingest": 4}
+    # As SPEC says: core has 17 tables since VIG-43 (demo_runs).
+    assert {r["table_schema"]: r["n"] for r in rows} == {"core": 17, "ingest": 4}
 
 
 async def test_readings_is_a_hypertable_with_columnstore_and_retention(
