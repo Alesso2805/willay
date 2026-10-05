@@ -723,14 +723,14 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "redirectUris": [
-        "http://localhost:4200/*"
+        "${WILLAY_DASHBOARD_URL}/*"
       ],
       "webOrigins": [
-        "http://localhost:4200"
+        "${WILLAY_DASHBOARD_URL}"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:4200/*"
+        "post.logout.redirect.uris": "${WILLAY_DASHBOARD_URL}/*"
       },
       "optionalClientScopes": [
         "organization"

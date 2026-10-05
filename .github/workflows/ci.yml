@@ -58,6 +58,9 @@ jobs:
           # Its own key: the backend job saves its own in parallel with the same lock.
           cache-suffix: compose
       - run: cp .env.example .env
+      # The server overlay (VIG-42) must stay valid even though CI never deploys it.
+      - name: docker-compose.prod.yml is valid
+        run: WILLAY_HOSTNAME=willay.example.org docker compose -f docker-compose.yml -f docker-compose.prod.yml config --quiet
       # --wait fails if any healthcheck does not turn green.
       - run: docker compose up -d --build --wait --wait-timeout 300
       - name: migrate finished successfully

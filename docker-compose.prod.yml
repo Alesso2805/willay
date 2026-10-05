@@ -1,0 +1,95 @@
+# Willay on a server (VIG-42), on top of docker-compose.yml. The .env that `make secrets` writes
+# sets COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml, so every docker compose and make
+# command uses both files. One hostname behind Caddy, with automatic HTTPS:
+#   /         dashboard
+#   /api      API (and the confirmation links of the emails)
+#   /auth     Keycloak (its admin console stays off the internet: see infra/caddy/Caddyfile)
+#   /correo   Mailpit: the emails Willay sends, caught before they reach anyone
+# Caddy publishes 80 and 443, and Keycloak only on the server's loopback (127.0.0.1:8081) for
+# its admin console through an SSH tunnel; nothing else is reachable from outside. ADR-0010.
+
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      WILLAY_HOSTNAME: ${WILLAY_HOSTNAME:?set WILLAY_HOSTNAME in .env (make secrets HOST=...)}
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      dashboard:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+  postgres:
+    ports: !reset []
+
+  keycloak:
+    command: ["start", "--import-realm"]
+    # Only on the server's loopback: the admin console is reached through an SSH tunnel
+    # (ssh -L 8081:127.0.0.1:8081 ...), never from the internet.
+    ports: !override
+      - "127.0.0.1:8081:8080"
+    environment:
+      # Production mode behind the proxy: Caddy terminates TLS and forwards plain HTTP. Keycloak
+      # takes its address from each request instead of a fixed hostname, so the same server
+      # answers as https://WILLAY_HOSTNAME/auth through Caddy (which serves only that hostname
+      # and sends X-Forwarded-*) and as http://localhost:8081/auth through the tunnel, where the
+      # admin console and its master realm live. Nothing else can reach Keycloak.
+      # Empty unsets the local KC_HOSTNAME of docker-compose.yml (Keycloak reads "" as unset).
+      KC_HOSTNAME: ""
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "false"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_RELATIVE_PATH: /auth
+      # The healthcheck asks the management port for /health/ready, outside /auth.
+      KC_HTTP_MANAGEMENT_RELATIVE_PATH: /
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      WILLAY_DASHBOARD_URL: https://${WILLAY_HOSTNAME:?}
+
+  mailpit:
+    ports: !reset []
+    environment:
+      MP_WEBROOT: /correo/
+
+  api:
+    # /api is stripped by Caddy; --root-path keeps the OpenAPI page's links right.
+    command:
+      - uvicorn
+      - --factory
+      - willay.api.main:create_app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --root-path
+      - /api
+      - --proxy-headers
+      - --forwarded-allow-ips
+      - "*"
+    ports: !reset []
+    environment:
+      WILLAY_OIDC_ISSUER: https://${WILLAY_HOSTNAME:?}/auth/realms/willay
+      WILLAY_OIDC_JWKS_URL: http://keycloak:8080/auth/realms/willay/protocol/openid-connect/certs
+      WILLAY_CORS_ORIGINS: '["https://${WILLAY_HOSTNAME:?}"]'
+
+  worker-dispatcher:
+    environment:
+      WILLAY_PUBLIC_URL: https://${WILLAY_HOSTNAME:?}/api
+
+  dashboard:
+    ports: !reset []
+    environment:
+      WILLAY_API_URL: https://${WILLAY_HOSTNAME:?}/api
+      WILLAY_OIDC_AUTHORITY: https://${WILLAY_HOSTNAME:?}/auth/realms/willay
+
+volumes:
+  caddy_data:
+  caddy_config:
