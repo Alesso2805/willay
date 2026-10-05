@@ -37,8 +37,8 @@ down: ## Stop the stack (keeps the volumes)
 	$(COMPOSE) down
 
 # On a server only (docs/runbooks/deploy.md): there is no .env yet, and this one is not for local use.
-secrets: ## Server: write .env with new credentials for HOST (HOST=willay.example.org)
-	sh infra/scripts/production-env.sh "$(HOST)"
+secrets: ## Server: write .env with new credentials for HOST (HOST=willay.example.org DEMO=1)
+	sh infra/scripts/production-env.sh "$(HOST)" "$(DEMO)"
 
 lint: lint-backend lint-dashboard ## Ruff, Mypy and ESLint
 

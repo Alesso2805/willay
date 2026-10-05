@@ -89,6 +89,7 @@ services:
     environment:
       WILLAY_API_URL: https://${WILLAY_HOSTNAME:?}/api
       WILLAY_OIDC_AUTHORITY: https://${WILLAY_HOSTNAME:?}/auth/realms/willay
+      WILLAY_MAIL_URL: https://${WILLAY_HOSTNAME:?}/correo/
 
 volumes:
   caddy_data:
