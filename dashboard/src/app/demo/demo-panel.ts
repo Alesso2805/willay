@@ -184,20 +184,15 @@ export class DemoPanel {
     return finished ? localTime(finished, timezone) : '';
   });
 
+  private timer: ReturnType<typeof setTimeout> | undefined;
+  private destroyed = false;
+
   constructor() {
     this.load();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const schedule = () => {
-      timer = setTimeout(
-        () => {
-          this.load();
-          schedule();
-        },
-        this.active() ? ACTIVE_POLL_MS : IDLE_POLL_MS,
-      );
-    };
-    schedule();
-    inject(DestroyRef).onDestroy(() => clearTimeout(timer));
+    inject(DestroyRef).onDestroy(() => {
+      this.destroyed = true;
+      clearTimeout(this.timer);
+    });
   }
 
   protected start(): void {
@@ -217,14 +212,24 @@ export class DemoPanel {
     });
   }
 
+  /** Each answer schedules the next question by what it says: a run that just started is
+   * followed every 3 s at once, not after the 30 s wait scheduled before it existed. */
   private load(): void {
+    clearTimeout(this.timer);
     this.api.get().subscribe({
       next: (demo) => {
         this.fetchedAt.set(Date.now());
         this.demo.set(demo);
+        this.scheduleNext();
       },
       // Not worth a notice: the panel simply stays as it was, or absent.
-      error: () => undefined,
+      error: () => this.scheduleNext(),
     });
+  }
+
+  private scheduleNext(): void {
+    if (this.destroyed) return;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.load(), this.active() ? ACTIVE_POLL_MS : IDLE_POLL_MS);
   }
 }
