@@ -58,7 +58,9 @@
     "geometry_position": "Cada posición debe ser [longitud, latitud].",
     "geometry_not_numbers": "Las coordenadas deben ser números.",
     "geometry_out_of_range": "Coordenada fuera de rango: [{{lon}}, {{lat}}] (¿longitud y latitud invertidas?).",
-    "geometry_invalid": "{{reason}}"
+    "geometry_invalid": "{{reason}}",
+    "demo_unavailable": "La demo pública no está activa para tu organización.",
+    "demo_run_active": "Ya hay una corrida de la demo en curso: espera a que termine."
   },
   "incident_status": {
     "open": "abierto",

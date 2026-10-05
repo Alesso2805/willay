@@ -280,6 +280,136 @@
         "title": "ContactOut",
         "type": "object"
       },
+      "DemoOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "can_run": {
+            "title": "Can Run",
+            "type": "boolean"
+          },
+          "duration_s": {
+            "title": "Duration S",
+            "type": "integer"
+          },
+          "run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DemoRunOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timeline": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineStepOut"
+            },
+            "title": "Timeline",
+            "type": "array"
+          }
+        },
+        "required": [
+          "available",
+          "can_run",
+          "duration_s",
+          "timeline",
+          "run"
+        ],
+        "title": "DemoOut",
+        "type": "object"
+      },
+      "DemoRunOut": {
+        "properties": {
+          "elapsed_s": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elapsed S"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "scenario",
+              "restore"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "phase": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Phase"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requested_at": {
+            "format": "date-time",
+            "title": "Requested At",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "requested_at",
+          "started_at",
+          "finished_at",
+          "phase",
+          "elapsed_s"
+        ],
+        "title": "DemoRunOut",
+        "type": "object"
+      },
       "Direction": {
         "enum": [
           "up",
@@ -1404,9 +1534,20 @@
           "contacts:view_details",
           "contacts:manage",
           "policies:manage",
-          "audit:view"
+          "audit:view",
+          "demo:run"
         ],
         "title": "Permission",
+        "type": "string"
+      },
+      "Phase": {
+        "enum": [
+          "normal",
+          "drop",
+          "silence",
+          "done"
+        ],
+        "title": "Phase",
         "type": "string"
       },
       "PointOut": {
@@ -2511,6 +2652,23 @@
           "params"
         ],
         "title": "ThresholdRuleIn",
+        "type": "object"
+      },
+      "TimelineStepOut": {
+        "properties": {
+          "at_s": {
+            "title": "At S",
+            "type": "integer"
+          },
+          "phase": {
+            "$ref": "#/components/schemas/Phase"
+          }
+        },
+        "required": [
+          "phase",
+          "at_s"
+        ],
+        "title": "TimelineStepOut",
         "type": "object"
       },
       "ValidationError": {
@@ -3666,6 +3824,64 @@
         "summary": "Single-use link for the contact to link their Telegram (shown once)",
         "tags": [
           "alerts"
+        ]
+      }
+    },
+    "/v1/demo": {
+      "get": {
+        "operationId": "get_demo_v1_demo_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Whether the public demo is on for the user's organization, and its run",
+        "tags": [
+          "demo"
+        ]
+      }
+    },
+    "/v1/demo/scenario": {
+      "post": {
+        "operationId": "start_scenario_v1_demo_scenario_post",
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoRunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "The demo is off, or this is not its organization"
+          },
+          "409": {
+            "description": "A run is already in progress"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Start the Rímac scenario: the demo worker plays it within seconds",
+        "tags": [
+          "demo"
         ]
       }
     },

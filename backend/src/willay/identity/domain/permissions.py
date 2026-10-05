@@ -22,6 +22,7 @@ class Permission(StrEnum):
     MANAGE_CONTACTS = "contacts:manage"  # contacts and groups
     MANAGE_POLICIES = "policies:manage"
     VIEW_AUDIT_LOG = "audit:view"
+    RUN_DEMO = "demo:run"  # the public demo's Rímac scenario (VIG-43)
 
 
 _EVERYONE = frozenset(Role)
@@ -41,6 +42,7 @@ GRANTS: Mapping[Permission, frozenset[Role]] = MappingProxyType(
         Permission.MANAGE_CONTACTS: _ADMINS,
         Permission.MANAGE_POLICIES: _ADMINS,
         Permission.VIEW_AUDIT_LOG: _ADMINS,
+        Permission.RUN_DEMO: _ADMINS,
     }
 )
 
