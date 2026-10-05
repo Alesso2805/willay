@@ -8,6 +8,7 @@ from datetime import UTC, datetime, timedelta
 import asyncpg
 import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
+from uuid_utils.compat import uuid7
 
 from tests.integration.api import ensure_seed
 from tests.integration.conftest import Database
@@ -71,6 +72,18 @@ async def _run(owner: asyncpg.Connection, run_id: int) -> asyncpg.Record:
     row = await owner.fetchrow("SELECT * FROM core.demo_runs WHERE id = $1", run_id)
     assert row is not None
     return row
+
+
+async def test_before_the_seed_it_waits_instead_of_failing(
+    engines: tuple[AsyncEngine, AsyncEngine], owner: asyncpg.Connection
+) -> None:
+    app, owner_engine = engines
+    # A new server runs `make up` before `make seed`: no demo organization yet.
+    worker = DemoWorker(
+        app, owner_engine, FakeClock(T), uuid7(), restore_hour=4, hasher=FAST_HASHER
+    )
+    assert await worker.tick() is False
+    assert await owner.fetchval("SELECT count(*) FROM core.demo_runs") == 0
 
 
 async def test_every_station_reports_every_10_s_without_a_run(

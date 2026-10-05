@@ -75,18 +75,30 @@ class DemoWorker:
         self._since = clock.now()
         # The last step sent: (run id or None outside a run, step). Not repeated within a run.
         self._sent: tuple[int | None, int] | None = None
+        self._waiting = False  # the demo organization does not exist yet
 
     async def tick(self) -> bool:
         now = self._clock.now()
-        await self._schedule_restore(now)
+        async with self._app.connect() as conn:
+            timezone: str | None = await conn.scalar(
+                _TIMEZONE, {"organization_id": self._organization_id}
+            )
+        if timezone is None:
+            # A new server runs `make up` before `make seed`: until then there is nothing to
+            # play, and waiting is not a failure.
+            if not self._waiting:
+                log.info("demo_waiting_for_seed", organization_id=str(self._organization_id))
+                self._waiting = True
+            return False
+        self._waiting = False
+        await self._schedule_restore(now, timezone)
         run = await self._play(now)
         await self._send_readings(run, now)
         return False
 
-    async def _schedule_restore(self, now: datetime) -> None:
+    async def _schedule_restore(self, now: datetime, timezone: str) -> None:
         async with self._app.begin() as conn:
             runs = SqlDemoRuns(conn)
-            timezone: str = await conn.scalar(_TIMEZONE, {"organization_id": self._organization_id})
             last = await runs.last_restore(self._organization_id) or self._since
             if now >= live.next_restore(last, timezone, self._restore_hour):
                 # While a scenario plays the insert does nothing: the restore waits for it.
