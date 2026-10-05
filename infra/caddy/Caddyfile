@@ -1,0 +1,31 @@
+# Willay behind one hostname (VIG-42, ADR-0010). Caddy gets and renews its certificate from
+# Let's Encrypt on its own; with WILLAY_HOSTNAME=localhost it uses a local one instead.
+
+{$WILLAY_HOSTNAME} {
+	encode zstd gzip
+
+	handle /auth/* {
+		# Keycloak's admin console and its master realm never face the internet: to administer
+		# it, open an SSH tunnel to the server (docs/runbooks/deploy.md). Inside this block,
+		# because Caddy runs `respond` after `handle` but before `reverse_proxy`.
+		@keycloak_admin path /auth/admin /auth/admin/* /auth/realms/master /auth/realms/master/*
+		respond @keycloak_admin 404
+		reverse_proxy keycloak:8080
+	}
+
+	# The API sees its own paths (/v1/..., /confirmar/...). Live events (SSE) go out as they come.
+	handle_path /api/* {
+		reverse_proxy api:8000 {
+			flush_interval -1
+		}
+	}
+
+	redir /correo /correo/
+	handle /correo/* {
+		reverse_proxy mailpit:8025
+	}
+
+	handle {
+		reverse_proxy dashboard:80
+	}
+}

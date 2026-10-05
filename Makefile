@@ -15,7 +15,7 @@ endif
 # Git Bash would rewrite container paths such as /secrets as Windows paths; elsewhere it is unused.
 export MSYS_NO_PATHCONV := 1
 
-.PHONY: help up down lint lint-backend lint-dashboard test test-backend test-dashboard openapi migrate seed simulate latency loadtest demo
+.PHONY: help up down lint lint-backend lint-dashboard test test-backend test-dashboard openapi migrate seed simulate latency loadtest demo secrets
 
 help: ## List the available commands
 ifeq ($(OS),Windows_NT)
@@ -35,6 +35,10 @@ up: .env ## Start the whole stack (migrate runs before api and workers)
 
 down: ## Stop the stack (keeps the volumes)
 	$(COMPOSE) down
+
+# On a server only (docs/runbooks/deploy.md): there is no .env yet, and this one is not for local use.
+secrets: ## Server: write .env with new credentials for HOST (HOST=willay.example.org)
+	sh infra/scripts/production-env.sh "$(HOST)"
 
 lint: lint-backend lint-dashboard ## Ruff, Mypy and ESLint
 

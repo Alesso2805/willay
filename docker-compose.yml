@@ -1,4 +1,5 @@
 # Willay local stack. `make up` creates .env from .env.example if it is missing.
+# On a server, docker-compose.prod.yml goes on top of it (see docs/runbooks/deploy.md).
 # Startup order: postgres -> (keycloak, migrate) -> api, workers, dashboard.
 
 name: willay
@@ -59,6 +60,8 @@ services:
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       # ${WILLAY_DEV_USER_PASSWORD} placeholder in realm-willay.json
       WILLAY_DEV_USER_PASSWORD: ${WILLAY_DEV_USER_PASSWORD:?}
+      # ${WILLAY_DASHBOARD_URL}: where the dashboard may send users back after signing in or out.
+      WILLAY_DASHBOARD_URL: http://localhost:${WILLAY_DASHBOARD_PORT:-4200}
     volumes:
       - ./infra/keycloak:/opt/keycloak/data/import:ro
     ports:
