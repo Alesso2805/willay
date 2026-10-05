@@ -60,7 +60,8 @@
     "geometry_out_of_range": "Coordinate out of range: [{{lon}}, {{lat}}] (longitude and latitude swapped?).",
     "geometry_invalid": "{{reason}}",
     "demo_unavailable": "The public demo is not active for your organization.",
-    "demo_run_active": "A demo run is already in progress: wait for it to finish."
+    "demo_run_active": "A demo run is already in progress: wait for it to finish.",
+    "organization_timezone_unknown": "“{{timezone}}” is not a known time zone: use a name such as America/Lima."
   },
   "incident_status": {
     "open": "open",

@@ -419,14 +419,15 @@
         "type": "string"
       },
       "EntityType": {
-        "description": "What the audit log records (SPEC: zones, stations, rules, policies and contacts).",
+        "description": "What the audit log records (SPEC: zones, stations, rules, policies and contacts, and\nthe organization's own settings).",
         "enum": [
           "risk_zone",
           "station",
           "rule",
           "escalation_policy",
           "contact",
-          "contact_group"
+          "contact_group",
+          "organization"
         ],
         "title": "EntityType",
         "type": "string"
@@ -1523,6 +1524,59 @@
         "title": "Operator",
         "type": "string"
       },
+      "OrganizationIn": {
+        "additionalProperties": false,
+        "properties": {
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "timezone": {
+            "examples": [
+              "America/Lima"
+            ],
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "language",
+          "timezone"
+        ],
+        "title": "OrganizationIn",
+        "type": "object"
+      },
+      "OrganizationOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language",
+            "description": "The language of the alerts of its contacts that chose none."
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "timezone": {
+            "description": "IANA name: every time Willay writes for it uses it.",
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "language",
+          "timezone"
+        ],
+        "title": "OrganizationOut",
+        "type": "object"
+      },
       "Permission": {
         "enum": [
           "view",
@@ -1535,6 +1589,7 @@
           "contacts:manage",
           "policies:manage",
           "audit:view",
+          "organization:manage",
           "demo:run"
         ],
         "title": "Permission",
@@ -4747,6 +4802,69 @@
           }
         ],
         "summary": "Save the dashboard language the user chose",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/v1/organization": {
+      "get": {
+        "operationId": "get_organization_v1_organization_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The user's organization: its language and time zone",
+        "tags": [
+          "identity"
+        ]
+      },
+      "put": {
+        "operationId": "put_organization_v1_organization_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "The time zone is not an IANA name"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Change the organization's language and time zone (audited)",
         "tags": [
           "identity"
         ]
