@@ -187,6 +187,52 @@
 }
 
 /*
+ * The same tiles in dark mode (VIG-41): inverted and turned back to their hues, then muted and
+ * dimmed. No other provider, account or license; land ends up close to --map-canvas, which
+ * the map colors are tested against.
+ */
+.dark .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) saturate(0.35) brightness(0.9) contrast(0.9);
+}
+.dark .leaflet-container {
+  background: var(--map-canvas);
+}
+
+/* Leaflet's own tooltips and controls, on the theme's surfaces. */
+.dark .leaflet-tooltip {
+  background: var(--color-surface);
+  border-color: var(--color-line-strong);
+  color: var(--color-ink);
+}
+.dark .leaflet-tooltip-top::before {
+  border-top-color: var(--color-line-strong);
+}
+.dark .leaflet-tooltip-bottom::before {
+  border-bottom-color: var(--color-line-strong);
+}
+.dark .leaflet-tooltip-left::before {
+  border-left-color: var(--color-line-strong);
+}
+.dark .leaflet-tooltip-right::before {
+  border-right-color: var(--color-line-strong);
+}
+.dark .leaflet-control-zoom a {
+  background: var(--color-surface);
+  border-bottom-color: var(--color-line);
+  color: var(--color-ink);
+}
+.dark .leaflet-control-zoom a:hover {
+  background: var(--color-surface-muted);
+}
+.dark .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  color: var(--color-ink-muted);
+}
+.dark .leaflet-control-attribution a {
+  color: var(--color-accent);
+}
+
+/*
  * Leaflet draws zones as SVG paths with `stroke` and `fill` attributes, which cannot take a
  * CSS variable. A tone class overrides them from CSS instead (CSS beats presentation
  * attributes), so zones change color with the theme too. See toneClass().

@@ -15,7 +15,7 @@ import { IncidentsApi } from './incidents.api';
   template: `
     @if (allowed()) {
       <form class="mb-6" (submit)="$event.preventDefault(); submit()">
-        <label for="comment-text" class="text-sm font-medium text-slate-700">
+        <label for="comment-text" class="text-sm font-medium text-ink-soft">
           {{ t('incidents.comment.label') }}
         </label>
         <textarea
@@ -28,7 +28,7 @@ import { IncidentsApi } from './incidents.api';
           (input)="text.set($any($event.target).value)"
         ></textarea>
         <div class="mt-2 flex items-center justify-between gap-2">
-          <span id="comment-count" class="text-xs text-slate-500">
+          <span id="comment-count" class="text-xs text-ink-subtle">
             {{ t('incidents.comment.count', { length: length(), max }) }}
           </span>
           <button type="submit" class="btn-primary" [disabled]="length() === 0 || busy()">
@@ -38,7 +38,7 @@ import { IncidentsApi } from './incidents.api';
         @if (problem(); as message) {
           <app-notice class="mt-3">{{ message }}</app-notice>
         }
-        <p class="mt-2 text-sm text-slate-700" role="status">{{ done() }}</p>
+        <p class="mt-2 text-sm text-ink-soft" role="status">{{ done() }}</p>
       </form>
     }
   `,

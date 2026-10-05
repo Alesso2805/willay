@@ -2,12 +2,12 @@
 
 <form class="card mb-4 flex flex-wrap gap-x-8 gap-y-3 p-4 text-sm" [attr.aria-label]="t('incidents.filters')">
   <fieldset class="flex flex-wrap items-center gap-x-4 gap-y-2">
-    <legend class="mb-1.5 font-medium text-slate-700">{{ t('incidents.statusLegend') }}</legend>
+    <legend class="mb-1.5 font-medium text-ink-soft">{{ t('incidents.statusLegend') }}</legend>
     @for (option of statusOptions; track option) {
-      <label class="flex items-center gap-2 text-slate-700">
+      <label class="flex items-center gap-2 text-ink-soft">
         <input
           type="checkbox"
-          class="size-4 rounded border-slate-300 accent-brand-700"
+          class="size-4 rounded border-line-strong accent-brand-700"
           [checked]="filter().statuses.includes(option)"
           [disabled]="isLastStatus(option)"
           (change)="toggleStatus(option, $any($event.target).checked)"
@@ -17,12 +17,12 @@
     }
   </fieldset>
   <fieldset class="flex flex-wrap items-center gap-x-4 gap-y-2">
-    <legend class="mb-1.5 font-medium text-slate-700">{{ t('incidents.severityLegend') }}</legend>
+    <legend class="mb-1.5 font-medium text-ink-soft">{{ t('incidents.severityLegend') }}</legend>
     @for (option of severityOptions; track option) {
-      <label class="flex items-center gap-2 text-slate-700">
+      <label class="flex items-center gap-2 text-ink-soft">
         <input
           type="checkbox"
-          class="size-4 rounded border-slate-300 accent-brand-700"
+          class="size-4 rounded border-line-strong accent-brand-700"
           [checked]="filter().severities.includes(option)"
           (change)="toggleSeverity(option, $any($event.target).checked)"
         />
@@ -46,7 +46,7 @@
 
 @if (incidents(); as list) {
   @if (list.length > 0) {
-    <p class="mb-3 text-sm text-slate-600">
+    <p class="mb-3 text-sm text-ink-muted">
       {{ summary() }}
       @if (list.length === limit) {
         · {{ t('incidents.newestShown', { count: limit }) }}
@@ -64,9 +64,9 @@
         <div class="flex flex-wrap items-center gap-2">
           <app-state-badge [state]="incidentStates[state]" />
           <app-state-badge [state]="severities[incident.severity]" />
-          <span class="ml-auto text-xs text-slate-500">{{ t('incidents.level', { level: incident.current_level }) }}</span>
+          <span class="ml-auto text-xs text-ink-subtle">{{ t('incidents.level', { level: incident.current_level }) }}</span>
         </div>
-        <p class="mt-2 font-semibold text-slate-900">
+        <p class="mt-2 font-semibold text-ink">
           <a [routerLink]="['/incidentes', incident.id]" class="hover:underline">
             {{ cause(incident.rule_type) }}
             @if (incident.station_code) {
@@ -74,8 +74,8 @@
             }
           </a>
         </p>
-        <p class="text-sm text-slate-600">{{ incident.zone_name }}</p>
-        <p class="mt-1 text-xs text-slate-500">
+        <p class="text-sm text-ink-muted">{{ incident.zone_name }}</p>
+        <p class="mt-1 text-xs text-ink-subtle">
           {{ t('incidents.openedOn') }}
           <time [attr.datetime]="incident.opened_at">{{ time(incident.opened_at) }}</time>
           ({{ age(incident.opened_at) }})

@@ -12,15 +12,15 @@
 <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
   <div class="card overflow-hidden lg:sticky lg:top-8 lg:self-start">
     <app-live-map [zones]="zones()" [stations]="stations()" />
-    <div class="flex flex-col gap-2 border-t border-slate-100 p-3 text-xs">
+    <div class="flex flex-col gap-2 border-t border-line-soft p-3 text-xs">
       <p class="flex flex-wrap items-center gap-1.5">
-        <span class="mr-1 font-medium text-slate-700">{{ t('map.legendIncidents') }}</span>
+        <span class="mr-1 font-medium text-ink-soft">{{ t('map.legendIncidents') }}</span>
         @for (state of zoneLegend; track state) {
           <app-state-badge [state]="zoneStates[state]" />
         }
       </p>
       <p class="flex flex-wrap items-center gap-1.5">
-        <span class="mr-1 font-medium text-slate-700">{{ t('map.legendStations') }}</span>
+        <span class="mr-1 font-medium text-ink-soft">{{ t('map.legendStations') }}</span>
         @for (state of stationLegend; track state) {
           <app-state-badge [state]="stationStates[state]" />
         }
@@ -30,26 +30,26 @@
 
   <div class="flex flex-col gap-6">
     <section aria-labelledby="live-zones-title">
-      <h2 id="live-zones-title" class="mb-3 font-semibold text-slate-900">{{ t('map.zonesTitle') }}</h2>
+      <h2 id="live-zones-title" class="mb-3 font-semibold text-ink">{{ t('map.zonesTitle') }}</h2>
       <ul class="flex flex-col gap-3">
         @for (view of zones(); track view.zone.id) {
           <li class="card p-4">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
-                <p class="font-semibold text-slate-900">{{ view.zone.name }}</p>
-                <p class="text-xs text-slate-500">{{ t('map.risk', { risk: risk(view.zone) }) }}</p>
+                <p class="font-semibold text-ink">{{ view.zone.name }}</p>
+                <p class="text-xs text-ink-subtle">{{ t('map.risk', { risk: risk(view.zone) }) }}</p>
               </div>
               <app-state-badge class="shrink-0" [state]="zoneStates[view.state]" />
             </div>
             @if (incidentsByZone().get(view.zone.id); as incidents) {
-              <ul class="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3 text-sm text-slate-700">
+              <ul class="mt-3 flex flex-col gap-2 border-t border-line-soft pt-3 text-sm text-ink-soft">
                 @for (incident of incidents; track incident.id) {
                   <li class="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <app-state-badge [state]="incidentStates[stateOf(incident)]" />
                     <a [routerLink]="['/incidentes', incident.id]" class="hover:underline">
                       {{ cause(incident.rule_type) }}
                       @if (incident.station_code) {
-                        · <span class="font-mono text-xs text-slate-500">{{ incident.station_code }}</span>
+                        · <span class="font-mono text-xs text-ink-subtle">{{ incident.station_code }}</span>
                       }
                     </a>
                   </li>
@@ -62,13 +62,13 @@
     </section>
 
     <section aria-labelledby="live-stations-title">
-      <h2 id="live-stations-title" class="mb-3 font-semibold text-slate-900">{{ t('map.stationsTitle') }}</h2>
+      <h2 id="live-stations-title" class="mb-3 font-semibold text-ink">{{ t('map.stationsTitle') }}</h2>
       <ul class="flex flex-col gap-2">
         @for (view of stations(); track view.station.id) {
           <li class="card flex items-start justify-between gap-3 p-3">
             <div class="min-w-0">
-              <p class="font-mono text-xs font-medium text-slate-500">{{ view.station.code }}</p>
-              <p class="truncate text-sm font-semibold text-slate-900">{{ view.station.name }}</p>
+              <p class="font-mono text-xs font-medium text-ink-subtle">{{ view.station.code }}</p>
+              <p class="truncate text-sm font-semibold text-ink">{{ view.station.name }}</p>
               <p class="mt-1.5 flex flex-wrap gap-1">
                 <app-state-badge [state]="stationStates[view.marker]" />
                 @if (view.secondary) {
@@ -82,13 +82,13 @@
             @if (view.station.heartbeat; as heartbeat) {
               <div class="shrink-0 text-right">
                 @if (heartbeat.last_value !== null) {
-                  <p class="font-semibold tabular-nums text-slate-900">
+                  <p class="font-semibold tabular-nums text-ink">
                     {{ number(heartbeat.last_value) }}
-                    <span class="text-xs font-normal text-slate-500">{{ view.station.unit }}</span>
+                    <span class="text-xs font-normal text-ink-subtle">{{ view.station.unit }}</span>
                   </p>
                 }
                 <time
-                  class="text-xs text-slate-500"
+                  class="text-xs text-ink-subtle"
                   [attr.datetime]="heartbeat.last_measured_at"
                   [title]="time(heartbeat.last_measured_at)"
                   >{{ age(heartbeat.last_measured_at) }}</time

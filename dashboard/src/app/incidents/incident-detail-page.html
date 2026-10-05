@@ -4,7 +4,7 @@
 
 @switch (state().status) {
   @case ('loading') {
-    <p role="status" class="text-sm text-slate-600">{{ t('incidents.detail.loading') }}</p>
+    <p role="status" class="text-sm text-ink-muted">{{ t('incidents.detail.loading') }}</p>
   }
   @case ('not-found') {
     <app-page-header [title]="t('incidents.detail.fallbackTitle')" />
@@ -30,13 +30,13 @@
   </p>
 
   <section class="card mb-6 p-5" aria-labelledby="actions-title">
-    <h2 id="actions-title" class="font-semibold text-slate-900">{{ t('incidents.detail.actions') }}</h2>
+    <h2 id="actions-title" class="font-semibold text-ink">{{ t('incidents.detail.actions') }}</h2>
     <app-incident-actions class="mt-3 block" [incident]="incident" (changed)="retry()" />
   </section>
 
   @if (readings(); as chart) {
     <section class="card mb-6 p-5" aria-labelledby="chart-title">
-      <h2 id="chart-title" class="font-semibold text-slate-900">{{ t('incidents.detail.readings') }}</h2>
+      <h2 id="chart-title" class="font-semibold text-ink">{{ t('incidents.detail.readings') }}</h2>
       @if (chart.source === 'evidence') {
         <app-notice tone="info" class="mt-3">{{ t('incidents.detail.expired') }}</app-notice>
       }
@@ -45,14 +45,14 @@
   }
 
   <section class="card mb-6 p-5" aria-labelledby="alerts-title">
-    <h2 id="alerts-title" class="font-semibold text-slate-900">{{ t('incidents.detail.alerts') }}</h2>
+    <h2 id="alerts-title" class="font-semibold text-ink">{{ t('incidents.detail.alerts') }}</h2>
     @if (alerts().length === 0) {
-      <p class="mt-3 text-sm text-slate-600">{{ t('incidents.detail.noAlerts') }}</p>
+      <p class="mt-3 text-sm text-ink-muted">{{ t('incidents.detail.noAlerts') }}</p>
     } @else {
       <!-- From md up a real table; narrower, the same alerts as cards. Only one is ever
            displayed, so screen readers do not hear them twice. -->
       <table class="mt-4 hidden w-full text-left text-sm md:table">
-        <thead class="border-b border-slate-200 text-xs text-slate-500">
+        <thead class="border-b border-line text-xs text-ink-subtle">
           <tr>
             <th scope="col" class="py-2 pr-4 font-medium">{{ t('incidents.detail.level') }}</th>
             <th scope="col" class="py-2 pr-4 font-medium">{{ t('incidents.detail.recipient') }}</th>
@@ -62,20 +62,20 @@
             <th scope="col" class="py-2 font-medium">{{ t('incidents.detail.reason') }}</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100">
+        <tbody class="divide-y divide-line-soft">
           @for (alert of alerts(); track alert.id) {
             <tr class="align-top">
-              <td class="py-2 pr-4 tabular-nums text-slate-700">{{ alert.level_order }}</td>
+              <td class="py-2 pr-4 tabular-nums text-ink-soft">{{ alert.level_order }}</td>
               <td class="py-2 pr-4">
-                <p class="font-medium text-slate-900">{{ alert.contact_name }}</p>
+                <p class="font-medium text-ink">{{ alert.contact_name }}</p>
                 @if (alert.email) {
-                  <p class="text-xs break-all text-slate-600">{{ alert.email }}</p>
+                  <p class="text-xs break-all text-ink-muted">{{ alert.email }}</p>
                 }
               </td>
-              <td class="py-2 pr-4 text-slate-700">{{ t(channels[alert.channel]) }}</td>
+              <td class="py-2 pr-4 text-ink-soft">{{ t(channels[alert.channel]) }}</td>
               <td class="py-2 pr-4"><app-state-badge [state]="alertStates[alert.status]" /></td>
-              <td class="py-2 pr-4 text-xs whitespace-nowrap text-slate-600">{{ when(alert) ?? '—' }}</td>
-              <td class="py-2 text-xs text-slate-600">{{ skipReason(alert) ?? '—' }}</td>
+              <td class="py-2 pr-4 text-xs whitespace-nowrap text-ink-muted">{{ when(alert) ?? '—' }}</td>
+              <td class="py-2 text-xs text-ink-muted">{{ skipReason(alert) ?? '—' }}</td>
             </tr>
           }
         </tbody>
@@ -83,27 +83,27 @@
 
       <div class="md:hidden">
         @for (group of alertLevels(); track group.level) {
-          <h3 class="mt-4 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          <h3 class="mt-4 text-xs font-semibold tracking-wide text-ink-subtle uppercase">
             {{ t('incidents.detail.levelHeading', { level: group.level }) }}
           </h3>
-          <ul class="mt-2 flex flex-col divide-y divide-slate-100">
+          <ul class="mt-2 flex flex-col divide-y divide-line-soft">
             @for (alert of group.alerts; track alert.id) {
               <li class="py-2 text-sm">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                  <p class="font-medium text-slate-900">
+                  <p class="font-medium text-ink">
                     {{ alert.contact_name }}
-                    <span class="font-normal text-slate-500">· {{ t(channels[alert.channel]) }}</span>
+                    <span class="font-normal text-ink-subtle">· {{ t(channels[alert.channel]) }}</span>
                   </p>
                   <app-state-badge [state]="alertStates[alert.status]" />
                 </div>
                 @if (alert.email) {
-                  <p class="text-xs break-all text-slate-600">{{ alert.email }}</p>
+                  <p class="text-xs break-all text-ink-muted">{{ alert.email }}</p>
                 }
                 @if (skipReason(alert); as reason) {
-                  <p class="text-xs text-slate-600">{{ reason }}</p>
+                  <p class="text-xs text-ink-muted">{{ reason }}</p>
                 }
                 @if (when(alert); as when) {
-                  <p class="text-xs text-slate-500">{{ when }}</p>
+                  <p class="text-xs text-ink-subtle">{{ when }}</p>
                 }
               </li>
             }
@@ -115,27 +115,27 @@
 
   <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:items-start">
     <section class="card p-5" aria-labelledby="summary-title">
-      <h2 id="summary-title" class="font-semibold text-slate-900">{{ t('incidents.detail.summary') }}</h2>
+      <h2 id="summary-title" class="font-semibold text-ink">{{ t('incidents.detail.summary') }}</h2>
       <dl class="mt-4 grid gap-y-3 text-sm">
         <div>
-          <dt class="text-slate-500">{{ t('incidents.detail.zone') }}</dt>
-          <dd class="font-medium text-slate-900">{{ incident.zone_name }}</dd>
+          <dt class="text-ink-subtle">{{ t('incidents.detail.zone') }}</dt>
+          <dd class="font-medium text-ink">{{ incident.zone_name }}</dd>
         </div>
         @if (incident.station_code) {
           <div>
-            <dt class="text-slate-500">{{ t('incidents.detail.station') }}</dt>
-            <dd class="font-mono font-medium text-slate-900">{{ incident.station_code }}</dd>
+            <dt class="text-ink-subtle">{{ t('incidents.detail.station') }}</dt>
+            <dd class="font-mono font-medium text-ink">{{ incident.station_code }}</dd>
           </div>
         }
         <div>
-          <dt class="text-slate-500">{{ t('incidents.detail.opened') }}</dt>
-          <dd class="font-medium text-slate-900">
+          <dt class="text-ink-subtle">{{ t('incidents.detail.opened') }}</dt>
+          <dd class="font-medium text-ink">
             <time [attr.datetime]="incident.opened_at">{{ time(incident.opened_at) }}</time>
           </dd>
         </div>
         <div>
-          <dt class="text-slate-500">{{ t('incidents.detail.escalationLevel') }}</dt>
-          <dd class="font-medium text-slate-900">
+          <dt class="text-ink-subtle">{{ t('incidents.detail.escalationLevel') }}</dt>
+          <dd class="font-medium text-ink">
             {{ incident.current_level }}
             @if (incident.escalation_exhausted_at) {
               · {{ t('incidents.detail.exhausted') }}
@@ -143,8 +143,8 @@
           </dd>
         </div>
         <div>
-          <dt class="text-slate-500">{{ t('incidents.detail.acknowledged') }}</dt>
-          <dd class="font-medium text-slate-900">
+          <dt class="text-ink-subtle">{{ t('incidents.detail.acknowledged') }}</dt>
+          <dd class="font-medium text-ink">
             @if (incident.acknowledged_at) {
               {{ time(incident.acknowledged_at) }}
               @if (acknowledgedBy(); as name) {
@@ -157,12 +157,12 @@
         </div>
         @if (incident.resolved_at) {
           <div>
-            <dt class="text-slate-500">
+            <dt class="text-ink-subtle">
               {{
                 t(incident.resolution === 'false_alarm' ? 'incidents.detail.falseAlarm' : 'incidents.detail.resolved')
               }}
             </dt>
-            <dd class="font-medium text-slate-900">
+            <dd class="font-medium text-ink">
               <time [attr.datetime]="incident.resolved_at">{{ time(incident.resolved_at) }}</time>
             </dd>
           </div>
@@ -172,21 +172,21 @@
 
 
     <section class="card p-5" aria-labelledby="timeline-title">
-      <h2 id="timeline-title" class="font-semibold text-slate-900">{{ t('incidents.detail.timeline') }}</h2>
+      <h2 id="timeline-title" class="font-semibold text-ink">{{ t('incidents.detail.timeline') }}</h2>
       <app-incident-comment class="mt-4 block" [incidentId]="incident.id" (changed)="retry()" />
-      <ol class="mt-4 flex flex-col gap-4 border-l-2 border-slate-200 pl-4">
+      <ol class="mt-4 flex flex-col gap-4 border-l-2 border-line pl-4">
         @for (event of incident.timeline; track event.id) {
           @let line = text(event);
           <li class="relative">
             <span
-              class="absolute top-1.5 -left-[1.4rem] size-2.5 rounded-full bg-slate-400"
+              class="absolute top-1.5 -left-[1.4rem] size-2.5 rounded-full bg-ink-subtle"
               aria-hidden="true"
             ></span>
-            <p class="text-sm font-medium text-slate-900">{{ line.title }}</p>
+            <p class="text-sm font-medium text-ink">{{ line.title }}</p>
             @if (line.detail) {
-              <p class="text-sm text-slate-600">{{ line.detail }}</p>
+              <p class="text-sm text-ink-muted">{{ line.detail }}</p>
             }
-            <time class="text-xs text-slate-500" [attr.datetime]="event.occurred_at">{{
+            <time class="text-xs text-ink-subtle" [attr.datetime]="event.occurred_at">{{
               time(event.occurred_at, true)
             }}</time>
           </li>
