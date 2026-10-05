@@ -5,28 +5,51 @@ import { IconName } from './icon';
  * Single catalog of the dashboard's visual states (VIG-33). No page defines state colors on
  * its own: they come from here.
  *
- * Every state is conveyed with text and an icon, never by color alone (WCAG 1.4.1). Colors
- * are hex rather than Tailwind classes so a test can measure their contrast:
+ * Every state is conveyed with text and an icon, never by color alone (WCAG 1.4.1). A state
+ * names a tone, whose shades live in styles.css as CSS variables, one set per theme (VIG-41):
+ * switching themes recolors every badge, notice and marker without redrawing anything. The
+ * catalog test reads styles.css and measures both themes:
  * - `foreground` on `background`: ≥ 4.5:1 (label text and icon);
- * - `map` on white: ≥ 3:1 (strokes and markers on the map).
+ * - `map` on the base map and under a white icon: ≥ 3:1 (strokes and markers).
  */
+export type Tone = 'red' | 'orange' | 'amber' | 'green' | 'blue' | 'slate' | 'alarm';
+
 export interface VisualState {
   /** Translated where it is drawn: `t(state.labelKey)`. */
   labelKey: TranslationKey;
   icon: IconName;
+  tone: Tone;
+  /** CSS colors for inline styles, in the current theme: `var(--tone-…)`. */
   foreground: string;
   background: string;
   map: string;
 }
 
-const RED = { foreground: '#991b1b', background: '#fee2e2', map: '#b91c1c' };
-const ORANGE = { foreground: '#9a3412', background: '#ffedd5', map: '#c2410c' };
-const AMBER = { foreground: '#92400e', background: '#fef3c7', map: '#a16207' };
-const GREEN = { foreground: '#166534', background: '#dcfce7', map: '#15803d' };
-const BLUE = { foreground: '#1e40af', background: '#dbeafe', map: '#1d4ed8' };
-const SLATE = { foreground: '#334155', background: '#f1f5f9', map: '#475569' };
+function tone(name: Tone): Pick<VisualState, 'tone' | 'foreground' | 'background' | 'map'> {
+  return {
+    tone: name,
+    foreground: `var(--tone-${name}-fg)`,
+    background: `var(--tone-${name}-bg)`,
+    map: `var(--tone-${name}-map)`,
+  };
+}
+
+/**
+ * The class that colors a Leaflet path (a zone) in its state's tone. SVG `stroke` and `fill`
+ * attributes cannot take a CSS variable, so styles.css colors these classes instead.
+ */
+export function toneClass(state: VisualState): string {
+  return `tone-${state.tone}`;
+}
+
+const RED = tone('red');
+const ORANGE = tone('orange');
+const AMBER = tone('amber');
+const GREEN = tone('green');
+const BLUE = tone('blue');
+const SLATE = tone('slate');
 /** Inverted: the one thing that must stand out even with red all around. */
-const ALARM = { foreground: '#ffffff', background: '#991b1b', map: '#7f1d1d' };
+const ALARM = tone('alarm');
 
 export type IncidentState = 'open' | 'acknowledged' | 'resolved' | 'exhausted';
 export type Severity = 'info' | 'warning' | 'critical';
@@ -120,10 +143,18 @@ export type NoticeTone = 'error' | 'warning' | 'info';
 export const NOTICE_TONES: Readonly<
   Record<NoticeTone, { foreground: string; background: string; border: string }>
 > = {
-  error: { foreground: '#7f1d1d', background: '#fef2f2', border: '#fca5a5' },
-  warning: { foreground: '#78350f', background: '#fffbeb', border: '#fbbf24' },
-  info: { foreground: '#1e293b', background: '#f8fafc', border: '#cbd5e1' },
+  error: notice('error'),
+  warning: notice('warning'),
+  info: notice('info'),
 };
+
+function notice(name: NoticeTone): { foreground: string; background: string; border: string } {
+  return {
+    foreground: `var(--notice-${name}-fg)`,
+    background: `var(--notice-${name}-bg)`,
+    border: `var(--notice-${name}-border)`,
+  };
+}
 
 export const ALL_CATALOGS = {
   incident: INCIDENT_STATES,

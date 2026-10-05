@@ -157,7 +157,7 @@ describe('live map presentation', () => {
     const badged = markerHtml('silent', 'acknowledged');
     expect(plain.match(/<svg/g)).toHaveLength(1);
     expect(badged.match(/<svg/g)).toHaveLength(2);
-    expect(badged).toContain('#1d4ed8'); // the acknowledged color
+    expect(badged).toContain('var(--tone-blue-map)'); // the acknowledged color, in the current theme
     expect(badged).toContain('M5 12l5 5L20 7'); // and its check icon, readable without color
   });
 

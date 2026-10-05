@@ -6,7 +6,13 @@
     "connection": "Connection:",
     "logout": "Sign out",
     "reconnecting": "No live connection to Willay. Retrying… Meanwhile, the data refreshes every 15 s.",
-    "language": "Language"
+    "language": "Language",
+    "theme": "Theme",
+    "themes": {
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    }
   },
   "login": {
     "loading": "Loading your session…",

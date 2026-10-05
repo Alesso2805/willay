@@ -9,6 +9,8 @@ import { NewIncidents } from './incidents/new-incidents';
 import { visibleNavItems } from './navigation';
 import { LiveEvents } from './realtime/live-events';
 import { Session, roleLabels } from './session';
+import { ThemeService } from './theme/theme';
+import { ThemePicker } from './theme/theme-picker';
 import { Icon } from './ui/icon';
 import { Notice } from './ui/notice';
 import { StateBadge } from './ui/state-badge';
@@ -25,6 +27,7 @@ import { CONNECTION_STATES } from './ui/visual-states';
     NewIncidents,
     FailedReadingsNotice,
     LanguagePicker,
+    ThemePicker,
     RedrawOn,
   ],
   selector: 'app-root',
@@ -35,6 +38,8 @@ export class App {
   protected readonly session = inject(Session);
   protected readonly live = inject(LiveEvents);
   protected readonly languages = inject(LanguageService);
+  // Created here so it follows the system's theme from the start (VIG-41).
+  private readonly theme = inject(ThemeService);
   protected readonly t = t;
   protected readonly connection = computed(() => {
     const status = this.live.status();

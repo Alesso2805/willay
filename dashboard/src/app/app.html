@@ -2,7 +2,9 @@
 <ng-container *appRedrawOn="languages.current()">
   @if (session.me(); as me) {
     <div class="min-h-screen lg:flex">
-      <aside class="bg-night-900 text-night-300 lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
+      <aside
+        class="bg-night-900 text-night-300 lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col lg:dark:border-r lg:dark:border-night-800"
+      >
         <div class="flex items-center justify-between gap-3 px-4 py-3 lg:px-5 lg:py-6">
           <a routerLink="/" class="flex min-w-0 items-center gap-3" (click)="menuOpen.set(false)">
             <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-600 text-white">
@@ -58,8 +60,9 @@
           <div class="mt-6 border-t border-night-700 pt-4 lg:mt-auto">
             <p class="truncate px-3 text-sm font-medium text-white">{{ me.full_name }}</p>
             <p class="truncate px-3 text-xs">{{ roles(me.roles) }}</p>
-            <div class="mt-3 px-3">
+            <div class="mt-3 flex flex-wrap gap-2 px-3">
               <app-language-picker [signedIn]="true" />
+              <app-theme-picker />
             </div>
             <button
               type="button"
@@ -83,7 +86,7 @@
           <!-- Routes only exist with a valid session: no per-page guard is needed. -->
           <router-outlet />
         </main>
-        <footer class="mx-auto flex w-full max-w-7xl items-start gap-2 px-4 pb-6 text-xs text-slate-500 lg:px-8">
+        <footer class="mx-auto flex w-full max-w-7xl items-start gap-2 px-4 pb-6 text-xs text-ink-subtle lg:px-8">
           <app-icon name="info" [size]="14" />
           <p>{{ t('app.disclaimer') }}</p>
         </footer>
@@ -105,33 +108,36 @@
           <app-language-picker />
         </div>
 
-        <main class="rounded-2xl bg-white p-6 shadow-xl">
+        <main class="rounded-2xl bg-surface p-6 shadow-xl dark:ring-1 dark:ring-line">
           @switch (session.state().status) {
             @case ('loading') {
-              <p class="text-slate-600" role="status" aria-live="polite">{{ t('login.loading') }}</p>
+              <p class="text-ink-muted" role="status" aria-live="polite">{{ t('login.loading') }}</p>
             }
             @case ('anonymous') {
-              <h1 class="text-lg font-semibold text-slate-900">{{ t('login.title') }}</h1>
-              <p class="mt-1 text-sm text-slate-600">{{ t('login.hint') }}</p>
+              <h1 class="text-lg font-semibold text-ink">{{ t('login.title') }}</h1>
+              <p class="mt-1 text-sm text-ink-muted">{{ t('login.hint') }}</p>
               <button type="button" class="btn-primary mt-5 w-full" (click)="session.login()">
                 {{ t('login.submit') }}
               </button>
             }
             @case ('forbidden') {
-              <h1 class="text-lg font-semibold text-slate-900">{{ t('login.forbiddenTitle') }}</h1>
+              <h1 class="text-lg font-semibold text-ink">{{ t('login.forbiddenTitle') }}</h1>
               <app-notice class="mt-3">{{ t('login.forbidden') }}</app-notice>
               <button type="button" class="btn-secondary mt-4 w-full" (click)="session.logout()">
                 {{ t('app.logout') }}
               </button>
             }
             @default {
-              <h1 class="text-lg font-semibold text-slate-900">{{ t('login.offlineTitle') }}</h1>
+              <h1 class="text-lg font-semibold text-ink">{{ t('login.offlineTitle') }}</h1>
               <app-notice class="mt-3">{{ t('login.offline') }}</app-notice>
             }
           }
         </main>
 
-        <p class="mt-6 text-center text-xs leading-relaxed text-night-300">{{ t('app.disclaimer') }}</p>
+        <div class="mt-6 flex justify-center">
+          <app-theme-picker />
+        </div>
+        <p class="mt-4 text-center text-xs leading-relaxed text-night-300">{{ t('app.disclaimer') }}</p>
       </div>
     </div>
   }
