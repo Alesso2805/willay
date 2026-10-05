@@ -1,8 +1,8 @@
 <app-page-header [title]="t('stations.title')" [subtitle]="subtitle()">
-  <label class="flex items-center gap-2 text-sm text-slate-600">
+  <label class="flex items-center gap-2 text-sm text-ink-muted">
     <input
       type="checkbox"
-      class="size-4 rounded border-slate-300 accent-brand-700"
+      class="size-4 rounded border-line-strong accent-brand-700"
       [checked]="includeInactive()"
       (change)="toggleInactive($any($event.target).checked)"
     />
@@ -16,7 +16,7 @@
   }
 </app-page-header>
 
-<p class="-mt-3 mb-3 text-sm text-slate-600" aria-live="polite">{{ status() }}</p>
+<p class="-mt-3 mb-3 text-sm text-ink-muted" aria-live="polite">{{ status() }}</p>
 
 @if (issued(); as key) {
   <app-notice tone="warning" aria-labelledby="issued-key-title" class="mb-6">
@@ -30,7 +30,7 @@
         readonly
         [value]="key.key"
         aria-label="API key"
-        class="field min-w-0 flex-1 bg-white font-mono"
+        class="field min-w-0 flex-1 bg-surface font-mono"
         (focus)="$any($event.target).select()"
       />
       <button type="button" class="btn-secondary" (click)="copyKey()">
@@ -56,7 +56,7 @@
   <div class="flex flex-col gap-4">
     @if (editing(); as current) {
       <form class="card flex flex-col gap-4 p-5" [formGroup]="form" (ngSubmit)="save()">
-        <h2 class="font-semibold text-slate-900">
+        <h2 class="font-semibold text-ink">
           {{
             current.kind === 'new'
               ? t('stations.new')
@@ -65,19 +65,19 @@
         </h2>
 
         @if (current.kind === 'new') {
-          <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+          <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
             {{ t('stations.code') }}
             <input formControlName="code" class="field font-mono uppercase" placeholder="RIM-CHA-02" />
           </label>
         }
 
-        <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+        <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
           {{ t('stations.name') }}
           <input formControlName="name" class="field" />
         </label>
 
         <div class="grid grid-cols-2 gap-3">
-          <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+          <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
             {{ t('stations.variable') }}
             <select formControlName="variable" class="field">
               @for (variable of variables; track variable) {
@@ -85,35 +85,35 @@
               }
             </select>
           </label>
-          <p class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+          <p class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
             {{ t('stations.unit') }}
-            <span class="py-1.5 font-mono font-normal text-slate-900">{{ units[form.controls.variable.value] }}</span>
+            <span class="py-1.5 font-mono font-normal text-ink">{{ units[form.controls.variable.value] }}</span>
           </p>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
-          <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+          <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
             {{ t('stations.longitude') }}
             <input type="number" step="any" formControlName="lon" (change)="onCoordinatesTyped()" class="field" />
           </label>
-          <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+          <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
             {{ t('stations.latitude') }}
             <input type="number" step="any" formControlName="lat" (change)="onCoordinatesTyped()" class="field" />
           </label>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
-          <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+          <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
             {{ t('stations.interval') }}
             <input type="number" min="5" formControlName="expected_interval_s" class="field" />
           </label>
-          <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+          <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
             {{ t('stations.silenceAfter') }}
             <input type="number" min="1" max="20" formControlName="silence_multiplier" class="field" />
           </label>
         </div>
 
-        <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+        <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
           {{ t('stations.source') }}
           <select formControlName="source" class="field">
             <option value="sensor">{{ t('stations.sourceSensor') }}</option>
@@ -122,9 +122,9 @@
         </label>
 
         <fieldset class="flex flex-col gap-2 text-sm">
-          <legend class="mb-1 font-medium text-slate-700">{{ t('stations.zonesLegend') }}</legend>
+          <legend class="mb-1 font-medium text-ink-soft">{{ t('stations.zonesLegend') }}</legend>
           @for (zone of zones(); track zone.id) {
-            <label class="flex items-center justify-between gap-2 text-slate-700">
+            <label class="flex items-center justify-between gap-2 text-ink-soft">
               <span>{{ zone.name }}</span>
               <select
                 class="field"
@@ -138,7 +138,7 @@
               </select>
             </label>
           } @empty {
-            <span class="text-slate-500">{{ t('stations.noActiveZones') }}</span>
+            <span class="text-ink-subtle">{{ t('stations.noActiveZones') }}</span>
           }
         </fieldset>
 
@@ -170,8 +170,8 @@
           <li class="card p-4" [class.opacity-60]="station.status === 'inactive'">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
-                <p class="font-mono text-xs font-medium text-slate-500">{{ station.code }}</p>
-                <p class="truncate font-semibold text-slate-900">{{ station.name }}</p>
+                <p class="font-mono text-xs font-medium text-ink-subtle">{{ station.code }}</p>
+                <p class="truncate font-semibold text-ink">{{ station.name }}</p>
               </div>
               <div class="flex shrink-0 flex-col items-end gap-1">
                 @if (stateOf(station); as state) {
@@ -185,21 +185,21 @@
 
             @if (station.heartbeat?.last_value !== null && station.heartbeat?.last_value !== undefined) {
               <div class="mt-3 flex items-baseline justify-between gap-3">
-                <p class="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                  {{ number(station.heartbeat!.last_value!) }} <span class="text-sm font-normal text-slate-500">{{ station.unit }}</span>
+                <p class="text-2xl font-semibold tracking-tight text-ink tabular-nums">
+                  {{ number(station.heartbeat!.last_value!) }} <span class="text-sm font-normal text-ink-subtle">{{ station.unit }}</span>
                 </p>
                 <time
-                  class="text-xs text-slate-500"
+                  class="text-xs text-ink-subtle"
                   [attr.datetime]="station.heartbeat!.last_measured_at"
                   [title]="time(station.heartbeat!.last_measured_at)"
                   >{{ age(station.heartbeat!.last_measured_at) }}</time
                 >
               </div>
             } @else {
-              <p class="mt-3 text-sm text-slate-500">{{ t('stations.noReadings') }}</p>
+              <p class="mt-3 text-sm text-ink-subtle">{{ t('stations.noReadings') }}</p>
             }
 
-            <p class="mt-1 text-xs text-slate-500">
+            <p class="mt-1 text-xs text-ink-subtle">
               {{ variableLabel(station.variable) }}
               @if (station.has_zone) {
                 · {{ zoneSummary(station) }}
@@ -207,7 +207,7 @@
             </p>
 
             @if (canManage() && !editing()) {
-              <div class="mt-3 flex flex-wrap gap-4 border-t border-slate-100 pt-3 text-sm">
+              <div class="mt-3 flex flex-wrap gap-4 border-t border-line-soft pt-3 text-sm">
                 @if (station.status === 'active') {
                   <button type="button" class="link-action" (click)="startEdit(station)">{{ t('ui.edit') }}</button>
                   <button type="button" class="link-action" (click)="rotate(station)">{{ t('stations.rotate') }}</button>

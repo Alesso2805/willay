@@ -1,8 +1,8 @@
 <app-page-header [title]="t('rules.title')" [subtitle]="subtitle()">
-  <label class="flex items-center gap-2 text-sm text-slate-600">
+  <label class="flex items-center gap-2 text-sm text-ink-muted">
     <input
       type="checkbox"
-      class="size-4 rounded border-slate-300 accent-brand-700"
+      class="size-4 rounded border-line-strong accent-brand-700"
       [checked]="includeInactive()"
       (change)="toggleInactive($any($event.target).checked)"
     />
@@ -16,28 +16,28 @@
   }
 </app-page-header>
 
-<p class="-mt-3 mb-3 text-sm text-slate-600" aria-live="polite">{{ status() }}</p>
+<p class="-mt-3 mb-3 text-sm text-ink-muted" aria-live="polite">{{ status() }}</p>
 
 @if (editing(); as current) {
   <form class="card mb-6 flex flex-col gap-5 p-5" [formGroup]="form" (ngSubmit)="save()" novalidate>
-    <h2 class="font-semibold text-slate-900">
+    <h2 class="font-semibold text-ink">
       {{ t(current.kind === 'new' ? 'rules.new' : 'rules.editTitle') }}
     </h2>
 
     <div class="grid gap-4 md:grid-cols-3">
       <div class="flex flex-col gap-1.5">
-        <label for="rule-type" class="text-sm font-medium text-slate-700">{{ t('rules.type') }}</label>
+        <label for="rule-type" class="text-sm font-medium text-ink-soft">{{ t('rules.type') }}</label>
         <select id="rule-type" formControlName="type" class="field">
           @for (type of ruleTypes; track type) {
             <option [value]="type">{{ typeLabel(type) }}</option>
           }
         </select>
         @if (current.kind === 'edit') {
-          <p class="text-xs text-slate-500">{{ t('rules.typeFixed') }}</p>
+          <p class="text-xs text-ink-subtle">{{ t('rules.typeFixed') }}</p>
         }
       </div>
       <div class="flex flex-col gap-1.5">
-        <label for="rule-zone" class="text-sm font-medium text-slate-700">{{ t('rules.zone') }}</label>
+        <label for="rule-zone" class="text-sm font-medium text-ink-soft">{{ t('rules.zone') }}</label>
         <select
           id="rule-zone"
           formControlName="zone_id"
@@ -51,11 +51,11 @@
           }
         </select>
         @if (error('zone_id'); as e) {
-          <p id="rule-zone-error" class="text-xs text-red-700">{{ e }}</p>
+          <p id="rule-zone-error" class="text-xs text-danger">{{ e }}</p>
         }
       </div>
       <div class="flex flex-col gap-1.5">
-        <label for="rule-station" class="text-sm font-medium text-slate-700">{{ t('rules.station') }}</label>
+        <label for="rule-station" class="text-sm font-medium text-ink-soft">{{ t('rules.station') }}</label>
         <select
           id="rule-station"
           formControlName="station_id"
@@ -73,7 +73,7 @@
           }
         </select>
         @if (error('station_id'); as e) {
-          <p id="rule-station-error" class="text-xs text-red-700">{{ e }}</p>
+          <p id="rule-station-error" class="text-xs text-danger">{{ e }}</p>
         }
       </div>
     </div>
@@ -81,9 +81,9 @@
     @switch (draftType()) {
       @case ('threshold') {
         <fieldset class="grid gap-4 md:grid-cols-3">
-          <legend class="mb-2 text-sm font-medium text-slate-700">{{ t('rules.condition') }}</legend>
+          <legend class="mb-2 text-sm font-medium text-ink-soft">{{ t('rules.condition') }}</legend>
           <div class="flex flex-col gap-1.5">
-            <label for="rule-operator" class="text-sm text-slate-700">{{ t('rules.value') }}</label>
+            <label for="rule-operator" class="text-sm text-ink-soft">{{ t('rules.value') }}</label>
             <select id="rule-operator" formControlName="operator" class="field">
               @for (operator of operators; track operator) {
                 <option [value]="operator">{{ operatorLabel(operator) }}</option>
@@ -91,7 +91,7 @@
             </select>
           </div>
           <div class="flex flex-col gap-1.5">
-            <label for="rule-value" class="text-sm text-slate-700">
+            <label for="rule-value" class="text-sm text-ink-soft">
               {{ draftStation() ? t('rules.limitUnit', { unit: draftStation()!.unit }) : t('rules.limit') }}
             </label>
             <input
@@ -104,11 +104,11 @@
               [attr.aria-describedby]="error('value') ? 'rule-value-error' : null"
             />
             @if (error('value'); as e) {
-              <p id="rule-value-error" class="text-xs text-red-700">{{ e }}</p>
+              <p id="rule-value-error" class="text-xs text-danger">{{ e }}</p>
             }
           </div>
           <div class="flex flex-col gap-1.5">
-            <label for="rule-consecutive" class="text-sm text-slate-700"
+            <label for="rule-consecutive" class="text-sm text-ink-soft"
               >{{ t('rules.consecutive') }}</label
             >
             <input
@@ -122,23 +122,23 @@
               [attr.aria-describedby]="error('consecutive') ? 'rule-consecutive-error' : null"
             />
             @if (error('consecutive'); as e) {
-              <p id="rule-consecutive-error" class="text-xs text-red-700">{{ e }}</p>
+              <p id="rule-consecutive-error" class="text-xs text-danger">{{ e }}</p>
             }
           </div>
         </fieldset>
       }
       @case ('rate_of_change') {
         <fieldset class="grid gap-4 md:grid-cols-3">
-          <legend class="mb-2 text-sm font-medium text-slate-700">{{ t('rules.condition') }}</legend>
+          <legend class="mb-2 text-sm font-medium text-ink-soft">{{ t('rules.condition') }}</legend>
           <div class="flex flex-col gap-1.5">
-            <label for="rule-direction" class="text-sm text-slate-700">{{ t('rules.theValue') }}</label>
+            <label for="rule-direction" class="text-sm text-ink-soft">{{ t('rules.theValue') }}</label>
             <select id="rule-direction" formControlName="direction" class="field">
               <option value="down">{{ t('rules.down') }}</option>
               <option value="up">{{ t('rules.up') }}</option>
             </select>
           </div>
           <div class="flex flex-col gap-1.5">
-            <label for="rule-delta" class="text-sm text-slate-700">
+            <label for="rule-delta" class="text-sm text-ink-soft">
               {{ draftStation() ? t('rules.moreThanUnit', { unit: draftStation()!.unit }) : t('rules.moreThan') }}
             </label>
             <input
@@ -152,11 +152,11 @@
               [attr.aria-describedby]="error('delta') ? 'rule-delta-error' : null"
             />
             @if (error('delta'); as e) {
-              <p id="rule-delta-error" class="text-xs text-red-700">{{ e }}</p>
+              <p id="rule-delta-error" class="text-xs text-danger">{{ e }}</p>
             }
           </div>
           <div class="flex flex-col gap-1.5">
-            <label for="rule-window" class="text-sm text-slate-700"
+            <label for="rule-window" class="text-sm text-ink-soft"
               >{{ t('rules.window') }}</label
             >
             <input
@@ -170,13 +170,13 @@
               [attr.aria-describedby]="error('window_minutes') ? 'rule-window-error' : null"
             />
             @if (error('window_minutes'); as e) {
-              <p id="rule-window-error" class="text-xs text-red-700">{{ e }}</p>
+              <p id="rule-window-error" class="text-xs text-danger">{{ e }}</p>
             }
           </div>
         </fieldset>
       }
       @case ('silence') {
-        <p class="rounded-md bg-slate-50 p-3 text-sm text-slate-700">
+        <p class="rounded-md bg-surface-muted p-3 text-sm text-ink-soft">
           @if (draftStation(); as station) {
             {{
               t('rules.silenceOneStation', {
@@ -195,7 +195,7 @@
 
     <div class="grid gap-4 md:grid-cols-3">
       <div class="flex flex-col gap-1.5">
-        <label for="rule-severity" class="text-sm font-medium text-slate-700">{{ t('rules.severity') }}</label>
+        <label for="rule-severity" class="text-sm font-medium text-ink-soft">{{ t('rules.severity') }}</label>
         <select id="rule-severity" formControlName="severity" class="field">
           @for (severity of severityOrder; track severity) {
             <option [value]="severity">{{ t(severities[severity].labelKey) }}</option>
@@ -203,7 +203,7 @@
         </select>
       </div>
       <div class="flex flex-col gap-1.5">
-        <label for="rule-policy" class="text-sm font-medium text-slate-700"
+        <label for="rule-policy" class="text-sm font-medium text-ink-soft"
           >{{ t('rules.policy') }}</label
         >
         <select
@@ -219,11 +219,11 @@
           }
         </select>
         @if (error('escalation_policy_id'); as e) {
-          <p id="rule-policy-error" class="text-xs text-red-700">{{ e }}</p>
+          <p id="rule-policy-error" class="text-xs text-danger">{{ e }}</p>
         }
       </div>
       <div class="flex flex-col gap-1.5">
-        <label for="rule-cooldown" class="text-sm font-medium text-slate-700"
+        <label for="rule-cooldown" class="text-sm font-medium text-ink-soft"
           >{{ t('rules.cooldown') }}</label
         >
         <input
@@ -239,9 +239,9 @@
           "
         />
         @if (error('cooldown_min'); as e) {
-          <p id="rule-cooldown-error" class="text-xs text-red-700">{{ e }}</p>
+          <p id="rule-cooldown-error" class="text-xs text-danger">{{ e }}</p>
         } @else {
-          <p id="rule-cooldown-hint" class="text-xs text-slate-500">
+          <p id="rule-cooldown-hint" class="text-xs text-ink-subtle">
             {{ t('rules.cooldownHint') }}
           </p>
         }
@@ -265,19 +265,19 @@
     @if (preview(); as result) {
       <section
         aria-labelledby="rule-preview-title"
-        class="flex flex-col gap-4 border-t border-slate-100 pt-4"
+        class="flex flex-col gap-4 border-t border-line-soft pt-4"
       >
         <div>
-          <h3 id="rule-preview-title" class="font-semibold text-slate-900">
+          <h3 id="rule-preview-title" class="font-semibold text-ink">
             {{ t('rules.previewTitle') }}
           </h3>
-          <p class="text-xs text-slate-500">
+          <p class="text-xs text-ink-subtle">
             {{ t('rules.previewHint') }}
           </p>
         </div>
         @for (station of result.stations; track station.station.id) {
           <div>
-            <p class="text-sm text-slate-900" role="status">
+            <p class="text-sm text-ink" role="status">
               <span class="font-medium">{{ station.station.code }}</span
               >: {{ previewText(station) }}
             </p>
@@ -290,13 +290,13 @@
               />
             }
             @if (station.truncated) {
-              <p class="mt-1 text-xs text-slate-500">
+              <p class="mt-1 text-xs text-ink-subtle">
                 {{ t('rules.truncated') }}
               </p>
             }
           </div>
         } @empty {
-          <p class="text-sm text-slate-600">{{ t('rules.noStations') }}</p>
+          <p class="text-sm text-ink-muted">{{ t('rules.noStations') }}</p>
         }
       </section>
     }
@@ -314,7 +314,7 @@
     (retry)="load()"
   />
   @for (group of byZone(); track group.zone.id) {
-    <h3 class="mt-6 mb-3 text-sm font-semibold text-slate-600 first:mt-0">
+    <h3 class="mt-6 mb-3 text-sm font-semibold text-ink-muted first:mt-0">
       {{ t('rules.zoneHeading', { zone: group.zone.name }) }}
     </h3>
     <ul class="grid gap-3 md:grid-cols-2">
@@ -322,8 +322,8 @@
         <li class="card flex flex-col p-4">
           <div class="flex flex-wrap items-start justify-between gap-2">
             <div class="min-w-0">
-              <p class="font-semibold text-slate-900">{{ typeLabel(rule.type) }}</p>
-              <p class="text-sm text-slate-600">
+              <p class="font-semibold text-ink">{{ typeLabel(rule.type) }}</p>
+              <p class="text-sm text-ink-muted">
                 {{ rule.station ? rule.station.code + ' · ' + rule.station.name : t('rules.wholeZone') }}
               </p>
             </div>
@@ -334,8 +334,8 @@
               }
             </div>
           </div>
-          <p class="mt-3 text-sm text-slate-900">{{ summary(rule) }}</p>
-          <p class="mt-1 mb-3 text-xs text-slate-500">
+          <p class="mt-3 text-sm text-ink">{{ summary(rule) }}</p>
+          <p class="mt-1 mb-3 text-xs text-ink-subtle">
             {{
               t('rules.policyLine', {
                 policy: rule.escalation_policy.name,
@@ -345,7 +345,7 @@
           </p>
           @if (canManage() && !editing()) {
             <div
-              class="mt-auto flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-sm"
+              class="mt-auto flex flex-wrap gap-x-4 gap-y-2 border-t border-line-soft pt-3 text-sm"
             >
               @if (rule.is_active) {
                 <button type="button" class="link-action" (click)="startEdit(rule)">{{ t('ui.edit') }}</button>

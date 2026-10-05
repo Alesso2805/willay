@@ -9,20 +9,20 @@
   }
 </app-page-header>
 
-<p class="-mt-3 mb-3 text-sm text-slate-600" aria-live="polite">{{ status() }}</p>
+<p class="-mt-3 mb-3 text-sm text-ink-muted" aria-live="polite">{{ status() }}</p>
 
 @if (editing(); as current) {
   <form class="card mb-6 flex max-w-xl flex-col gap-4 p-5" [formGroup]="form" (ngSubmit)="save()">
-    <h2 class="font-semibold text-slate-900">
+    <h2 class="font-semibold text-ink">
       {{
         current.kind === 'new' ? t('groups.new') : t('groups.editTitle', { name: current.group.name })
       }}
     </h2>
-    <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+    <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
       {{ t('groups.name') }}
       <input formControlName="name" class="field" autocomplete="off" />
     </label>
-    <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+    <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
       {{ t('groups.zone') }}
       <select formControlName="zone_id" class="field">
         <option value="">{{ t('groups.noZone') }}</option>
@@ -30,29 +30,29 @@
           <option [value]="zone.id">{{ zone.name }}</option>
         }
       </select>
-      <span class="font-normal text-slate-500"
+      <span class="font-normal text-ink-subtle"
         >{{ t('groups.zoneHint') }}</span
       >
     </label>
     <fieldset class="flex flex-col gap-2 text-sm">
-      <legend class="mb-1 font-medium text-slate-700">{{ t('groups.members') }}</legend>
+      <legend class="mb-1 font-medium text-ink-soft">{{ t('groups.members') }}</legend>
       @for (contact of contacts(); track contact.id) {
-        <label class="flex items-center gap-2 text-slate-700">
+        <label class="flex items-center gap-2 text-ink-soft">
           <input
             type="checkbox"
-            class="size-4 rounded border-slate-300 accent-brand-700"
+            class="size-4 rounded border-line-strong accent-brand-700"
             [checked]="members().has(contact.id)"
             (change)="toggleMember(contact.id, $any($event.target).checked)"
           />
           <span>
             {{ contact.full_name }}
             @if (unreachable(contact)) {
-              <span class="text-amber-800">{{ t('groups.unreachable') }}</span>
+              <span class="text-warning">{{ t('groups.unreachable') }}</span>
             }
           </span>
         </label>
       } @empty {
-        <span class="text-slate-500">{{ t('groups.noContacts') }}</span>
+        <span class="text-ink-subtle">{{ t('groups.noContacts') }}</span>
       }
     </fieldset>
     @if (problem(); as p) {
@@ -83,8 +83,8 @@
     <ul class="grid gap-3 md:grid-cols-2">
       @for (group of groups(); track group.id) {
         <li class="card flex flex-col p-4">
-          <p class="font-semibold text-slate-900">{{ group.name }}</p>
-          <p class="text-sm text-slate-600">
+          <p class="font-semibold text-ink">{{ group.name }}</p>
+          <p class="text-sm text-ink-muted">
             {{ group.zone ? t('groups.zoneLine', { zone: group.zone.name }) : t('groups.noZone') }}
           </p>
           @if (states(group).length > 0) {
@@ -96,27 +96,27 @@
           }
           <dl class="mt-3 mb-3 flex flex-col gap-1 text-sm">
             <div>
-              <dt class="inline text-slate-500">{{ t('groups.membersLabel') }}</dt>
-              <dd class="inline text-slate-700">
+              <dt class="inline text-ink-subtle">{{ t('groups.membersLabel') }}</dt>
+              <dd class="inline text-ink-soft">
                 {{ group.members.length > 0 ? names(group.members) : t('groups.none') }}
               </dd>
             </div>
             <div>
-              <dt class="inline text-slate-500">{{ t('groups.notifiedBy') }}</dt>
-              <dd class="inline text-slate-700">
+              <dt class="inline text-ink-subtle">{{ t('groups.notifiedBy') }}</dt>
+              <dd class="inline text-ink-soft">
                 {{ group.policies.length > 0 ? names(group.policies) : t('groups.noPolicy') }}
               </dd>
             </div>
           </dl>
           @if (canManage() && !editing()) {
             <div
-              class="mt-auto flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-sm"
+              class="mt-auto flex flex-wrap gap-x-4 gap-y-2 border-t border-line-soft pt-3 text-sm"
             >
               <button type="button" class="link-action" (click)="startEdit(group)">{{ t('ui.edit') }}</button>
               @if (group.policies.length === 0) {
                 <button type="button" class="link-danger" (click)="remove(group)">{{ t('groups.delete') }}</button>
               } @else {
-                <span class="text-slate-500">{{ t('groups.usedByPolicy') }}</span>
+                <span class="text-ink-subtle">{{ t('groups.usedByPolicy') }}</span>
               }
             </div>
           }

@@ -35,11 +35,12 @@ function tone(name: Tone): Pick<VisualState, 'tone' | 'foreground' | 'background
 }
 
 /**
- * The class that colors a Leaflet path (a zone) in its state's tone. SVG `stroke` and `fill`
- * attributes cannot take a CSS variable, so styles.css colors these classes instead.
+ * The class that colors a Leaflet path (a zone, a circle marker) in a state's tone, or in a
+ * tone itself. SVG `stroke` and `fill` attributes cannot take a CSS variable, so styles.css
+ * colors these classes instead.
  */
-export function toneClass(state: VisualState): string {
-  return `tone-${state.tone}`;
+export function toneClass(state: VisualState | Tone): string {
+  return `tone-${typeof state === 'string' ? state : state.tone}`;
 }
 
 const RED = tone('red');

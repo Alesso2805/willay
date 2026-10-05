@@ -9,7 +9,7 @@
   }
 </app-page-header>
 
-<p class="-mt-3 mb-3 text-sm text-slate-600" aria-live="polite">{{ status() }}</p>
+<p class="-mt-3 mb-3 text-sm text-ink-muted" aria-live="polite">{{ status() }}</p>
 
 @if (link(); as issued) {
   <app-notice tone="warning" aria-labelledby="telegram-link-title" class="mb-6">
@@ -25,7 +25,7 @@
         readonly
         [value]="issued.url"
         [attr.aria-label]="t('contacts.linkLabel')"
-        class="field min-w-0 flex-1 bg-white font-mono"
+        class="field min-w-0 flex-1 bg-surface font-mono"
         (focus)="$any($event.target).select()"
       />
       <button type="button" class="btn-secondary" (click)="copyLink()">
@@ -38,25 +38,25 @@
 
 @if (editing(); as current) {
   <form class="card mb-6 flex max-w-xl flex-col gap-4 p-5" [formGroup]="form" (ngSubmit)="save()">
-    <h2 class="font-semibold text-slate-900">
+    <h2 class="font-semibold text-ink">
       {{
         current.kind === 'new'
           ? t('contacts.new')
           : t('contacts.editTitle', { name: current.contact.full_name })
       }}
     </h2>
-    <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+    <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
       {{ t('contacts.name') }}
       <input formControlName="full_name" class="field" autocomplete="off" />
     </label>
-    <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+    <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
       {{ t('contacts.email') }}
       <input type="email" formControlName="email" class="field" autocomplete="off" />
-      <span class="font-normal text-slate-500"
+      <span class="font-normal text-ink-subtle"
         >{{ t('contacts.noChannelHint') }}</span
       >
     </label>
-    <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+    <label class="flex flex-col gap-1.5 text-sm font-medium text-ink-soft">
       {{ t('contacts.language') }}
       <select formControlName="language" class="field">
         <option value="">{{ t('contacts.languageDefault') }}</option>
@@ -93,34 +93,34 @@
     <ul class="grid gap-3 md:grid-cols-2">
       @for (contact of contacts(); track contact.id) {
         <li class="card flex flex-col p-4">
-          <p class="font-semibold text-slate-900">{{ contact.full_name }}</p>
-          <p class="text-sm wrap-anywhere text-slate-600">{{ contact.email ?? t('contacts.noEmail') }}</p>
+          <p class="font-semibold text-ink">{{ contact.full_name }}</p>
+          <p class="text-sm wrap-anywhere text-ink-muted">{{ contact.email ?? t('contacts.noEmail') }}</p>
           <div class="mt-2 flex flex-wrap gap-1">
             @for (channel of channels(contact); track channel) {
               <app-state-badge [state]="channelLabels[channel]" />
             }
           </div>
           @if (contact.language; as language) {
-            <p class="mt-1 text-xs text-slate-500">
+            <p class="mt-1 text-xs text-ink-subtle">
               {{ t('contacts.messagesIn', { language: languageNames[language] }) }}
             </p>
           }
           @if (contact.telegram_link_expires_at; as until) {
-            <p class="mt-1 text-xs text-slate-500">{{ t('contacts.linkExpires', { time: time(until) }) }}</p>
+            <p class="mt-1 text-xs text-ink-subtle">{{ t('contacts.linkExpires', { time: time(until) }) }}</p>
           }
 
-          <p class="mt-3 mb-3 text-sm text-slate-700">
+          <p class="mt-3 mb-3 text-sm text-ink-soft">
             @if (contact.groups.length > 0) {
-              <span class="text-slate-500">{{ t('contacts.groups') }}</span>
+              <span class="text-ink-subtle">{{ t('contacts.groups') }}</span>
               {{ groupNames(contact) }}
             } @else {
-              <span class="text-slate-500">{{ t('contacts.noGroups') }}</span>
+              <span class="text-ink-subtle">{{ t('contacts.noGroups') }}</span>
             }
           </p>
 
           @if (canManage() && !editing()) {
             <div
-              class="mt-auto flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-sm"
+              class="mt-auto flex flex-wrap gap-x-4 gap-y-2 border-t border-line-soft pt-3 text-sm"
             >
               <button type="button" class="link-action" (click)="startEdit(contact)">{{ t('ui.edit') }}</button>
               @if (contact.telegram_linked) {
@@ -143,7 +143,7 @@
                   {{ t('contacts.removeFromGroups') }}
                 </button>
               } @else {
-                <span class="text-slate-500">{{ t('contacts.keptWithHistory') }}</span>
+                <span class="text-ink-subtle">{{ t('contacts.keptWithHistory') }}</span>
               }
             </div>
           }

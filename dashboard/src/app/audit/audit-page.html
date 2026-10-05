@@ -8,7 +8,7 @@
     (submit)="$event.preventDefault()"
   >
     <div class="flex flex-col gap-1.5">
-      <label for="audit-type" class="text-sm font-medium text-slate-700">{{ t('audit.what') }}</label>
+      <label for="audit-type" class="text-sm font-medium text-ink-soft">{{ t('audit.what') }}</label>
       <!-- [selected] per option, not [value] on the select: the select's value would be set
            before its options exist, and a filter read from the URL would show "Todo". -->
       <select id="audit-type" class="field" (change)="setFilter('tipo', $any($event.target).value)">
@@ -19,7 +19,7 @@
       </select>
     </div>
     <div class="flex flex-col gap-1.5">
-      <label for="audit-author" class="text-sm font-medium text-slate-700">{{ t('audit.author') }}</label>
+      <label for="audit-author" class="text-sm font-medium text-ink-soft">{{ t('audit.author') }}</label>
       <!-- The authors arrive after the filters: each option says whether it is the chosen one. -->
       <select
         id="audit-author"
@@ -35,7 +35,7 @@
       </select>
     </div>
     <div class="flex flex-col gap-1.5">
-      <label for="audit-since" class="text-sm font-medium text-slate-700">{{ t('audit.since') }}</label>
+      <label for="audit-since" class="text-sm font-medium text-ink-soft">{{ t('audit.since') }}</label>
       <input
         id="audit-since"
         type="date"
@@ -46,7 +46,7 @@
       />
     </div>
     <div class="flex flex-col gap-1.5">
-      <label for="audit-until" class="text-sm font-medium text-slate-700">{{ t('audit.until') }}</label>
+      <label for="audit-until" class="text-sm font-medium text-ink-soft">{{ t('audit.until') }}</label>
       <input
         id="audit-until"
         type="date"
@@ -58,7 +58,7 @@
         (change)="setFilter('hasta', $any($event.target).value)"
       />
       @if (dateProblem(); as problem) {
-        <p id="audit-until-error" class="text-xs text-red-700">{{ problem }}</p>
+        <p id="audit-until-error" class="text-xs text-danger">{{ problem }}</p>
       }
     </div>
     <div class="flex items-end">
@@ -72,7 +72,7 @@
       </button>
     </div>
     @if (filters().entidad) {
-      <p class="text-sm text-slate-600 sm:col-span-2 lg:col-span-5">
+      <p class="text-sm text-ink-muted sm:col-span-2 lg:col-span-5">
         {{ t('audit.oneEntity') }}
         <button type="button" class="link-action" (click)="setFilter('entidad', '')">
           {{ t('audit.seeAll') }}
@@ -100,7 +100,7 @@
         <div class="card hidden overflow-x-auto md:block">
           <table class="w-full text-left text-sm">
             <caption class="sr-only">{{ t('audit.caption') }}</caption>
-            <thead class="border-b border-slate-200 text-xs text-slate-500 uppercase">
+            <thead class="border-b border-line text-xs text-ink-subtle uppercase">
               <tr>
                 <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.date') }}</th>
                 <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.author') }}</th>
@@ -108,14 +108,14 @@
                 <th scope="col" class="px-4 py-3 font-medium">{{ t('audit.changes') }}</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+            <tbody class="divide-y divide-line-soft">
               @for (entry of entries(); track entry.id) {
                 <tr class="align-top">
-                  <td class="px-4 py-3 whitespace-nowrap text-slate-700 tabular-nums">
+                  <td class="px-4 py-3 whitespace-nowrap text-ink-soft tabular-nums">
                     <time [attr.datetime]="entry.at">{{ time(entry.at) }}</time>
                   </td>
-                  <td class="px-4 py-3 text-slate-900">{{ actor(entry) }}</td>
-                  <td class="px-4 py-3 text-slate-900">{{ action(entry) }}</td>
+                  <td class="px-4 py-3 text-ink">{{ actor(entry) }}</td>
+                  <td class="px-4 py-3 text-ink">{{ action(entry) }}</td>
                   <td class="px-4 py-3">
                     <app-field-changes [changes]="changes(entry)" />
                   </td>
@@ -128,10 +128,10 @@
         <ul class="flex flex-col gap-3 md:hidden">
           @for (entry of entries(); track entry.id) {
             <li class="card p-4 text-sm">
-              <p class="text-xs text-slate-500 tabular-nums">
+              <p class="text-xs text-ink-subtle tabular-nums">
                 <time [attr.datetime]="entry.at">{{ time(entry.at) }}</time> · {{ actor(entry) }}
               </p>
-              <p class="mt-1 font-medium text-slate-900">{{ action(entry) }}</p>
+              <p class="mt-1 font-medium text-ink">{{ action(entry) }}</p>
               <app-field-changes class="mt-2 block" [changes]="changes(entry)" />
             </li>
           }

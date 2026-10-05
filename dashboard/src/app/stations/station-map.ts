@@ -12,6 +12,7 @@ import {
 import * as L from 'leaflet';
 import { t } from '../i18n/i18n';
 import { createBaseMap, plainText } from '../map/base-map';
+import { STATION_STATES, toneClass } from '../ui/visual-states';
 import { Zone } from '../zones/zones.api';
 import { Station } from './stations.api';
 
@@ -75,7 +76,7 @@ export class StationMap {
       // interactive: false → the click goes through the zone to the map (location picking).
       L.geoJSON(zone.geometry, {
         interactive: false,
-        style: { color: '#64748b', weight: 1, dashArray: '3 4', fillOpacity: 0.05 },
+        style: { className: toneClass('slate'), weight: 1, dashArray: '3 4', fillOpacity: 0.05 },
       }).addTo(this.zoneLayer);
     }
   }
@@ -88,7 +89,9 @@ export class StationMap {
       const active = station.status === 'active';
       const marker = L.circleMarker([lat, lon], {
         radius: station.id === selectedId ? 11 : 8,
-        color: !active ? '#64748b' : station.has_zone ? '#1d4ed8' : '#a16207',
+        className: toneClass(
+          !active ? STATION_STATES.inactive : station.has_zone ? 'blue' : STATION_STATES.unzoned,
+        ),
         weight: station.id === selectedId ? 4 : 2,
         // No zone: dashed border as well as color (state is never conveyed by color alone).
         dashArray: station.has_zone ? undefined : '3 3',
@@ -112,7 +115,8 @@ export class StationMap {
     this.pendingMarker = undefined;
     if (point) {
       const [lon, lat] = point;
-      this.pendingMarker = L.circleMarker([lat, lon], { radius: 10, color: '#15803d', weight: 3 })
+      const style = { radius: 10, className: toneClass('green'), weight: 3 };
+      this.pendingMarker = L.circleMarker([lat, lon], style)
         .bindTooltip(t('stations.newLocation'), { permanent: true, direction: 'top' })
         .addTo(this.map);
     }

@@ -45,7 +45,7 @@ export class LanguagePicker {
   protected readonly t = t;
 
   protected frame(): string {
-    return this.tone() === 'dark' ? 'ring-night-700' : 'ring-slate-300';
+    return this.tone() === 'dark' ? 'ring-night-700' : 'ring-line-strong';
   }
 
   protected selected(): string {
@@ -55,7 +55,7 @@ export class LanguagePicker {
   protected idle(): string {
     return this.tone() === 'dark'
       ? 'text-night-300 hover:text-white'
-      : 'text-slate-600 hover:text-slate-900';
+      : 'text-ink-muted hover:text-ink';
   }
 
   protected choose(language: Language): void {

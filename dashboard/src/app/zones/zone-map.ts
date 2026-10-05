@@ -12,6 +12,7 @@ import {
 import * as L from 'leaflet';
 import { currentLanguage, t } from '../i18n/i18n';
 import { createBaseMap, plainText } from '../map/base-map';
+import { toneClass } from '../ui/visual-states';
 import { RISK_STYLES, riskLabel } from './zone-presentation';
 import { MultiPolygonGeometry, PolygonGeometry, Position, Zone } from './zones.api';
 
@@ -86,7 +87,7 @@ export class ZoneMap {
     for (const zone of zones) {
       const style = zone.is_active
         ? RISK_STYLES[zone.risk_level]
-        : { color: '#64748b', dashArray: '4 4', weight: 1 };
+        : { className: toneClass('slate'), dashArray: '4 4', weight: 1 };
       const layer = L.geoJSON(zone.geometry, { style: { ...style, fillOpacity: 0.15 } })
         .getLayers()[0] as L.Polygon;
       const label = t(zone.is_active ? 'zones.tooltip' : 'zones.tooltipInactive', {
@@ -133,7 +134,7 @@ export class ZoneMap {
       const [lon, lat] = point; // GeoJSON is [lon, lat]; Leaflet uses [lat, lon]
       this.problemMarker = L.circleMarker([lat, lon], {
         radius: 9,
-        color: '#b91c1c',
+        className: toneClass('red'),
         weight: 3,
         fillOpacity: 0.4,
       })
