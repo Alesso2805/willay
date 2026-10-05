@@ -103,6 +103,29 @@ describe('DemoPanel', () => {
     );
   });
 
+  it('follows a run every 3 s from the moment it starts, not after the idle 30 s', () => {
+    vi.useFakeTimers();
+    try {
+      const { fixture, http, button } = setup();
+      http.expectOne(URL).flush(demo());
+      fixture.detectChanges();
+      button()?.click();
+      http.expectOne({ method: 'POST', url: `${URL}/scenario` }).flush(run({ status: 'queued' }));
+      const queued = run({ status: 'queued', started_at: null, phase: null, elapsed_s: null });
+      http.expectOne(URL).flush(demo({ run: queued }));
+      vi.advanceTimersByTime(3_000);
+      http.expectOne(URL).flush(demo({ run: run() })); // asked again after 3 s
+      vi.advanceTimersByTime(3_000);
+      http.expectOne(URL).flush(demo({ run: run({ status: 'done', phase: null }) }));
+      vi.advanceTimersByTime(3_000);
+      http.expectNone(URL); // nothing playing: back to every 30 s
+      vi.advanceTimersByTime(27_000);
+      http.expectOne(URL).flush(demo());
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('shows a viewer the progress but no button', async () => {
     const { button, text, answer } = setup();
     await answer(demo({ can_run: false, run: run() }));
