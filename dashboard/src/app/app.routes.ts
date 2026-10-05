@@ -52,6 +52,11 @@ export const routes: Routes = [
       import('./failed/failed-readings-page').then((m) => m.FailedReadingsPage),
   },
   {
+    path: 'contactos/politicas',
+    title: 'Políticas · Willay',
+    loadComponent: () => import('./contacts/policies-page').then((m) => m.PoliciesPage),
+  },
+  {
     path: 'organizacion',
     title: 'Organización · Willay',
     loadComponent: () =>

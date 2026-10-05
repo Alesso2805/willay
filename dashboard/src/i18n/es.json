@@ -629,7 +629,8 @@
     "checkGroup": "Revisa los datos del grupo.",
     "language": "Idioma de sus alertas",
     "languageDefault": "El de la organización",
-    "messagesIn": "Sus alertas, en {{language}}"
+    "messagesIn": "Sus alertas, en {{language}}",
+    "tabPolicies": "Políticas"
   },
   "groups": {
     "title": "Grupos",
@@ -852,5 +853,49 @@
     "readOnly": "Solo un administrador cambia esta configuración.",
     "forbidden": "Tu rol no permite cambiar la organización.",
     "saveFailed": "No se pudo guardar. Inténtalo de nuevo."
+  },
+  "policies": {
+    "title": "Políticas de escalamiento",
+    "count_one": "{{count}} política",
+    "count_many": "{{count}} políticas",
+    "count_other": "{{count}} políticas",
+    "new": "Nueva política",
+    "editTitle": "Editar {{name}}",
+    "name": "Nombre",
+    "appliesToOngoing": "Los cambios también se aplican a los incidentes en curso: su próximo escalamiento usará esta versión.",
+    "level": "Nivel {{n}}",
+    "wait": "Si nadie confirma en estos minutos",
+    "waitHintNext": "se avisa al nivel {{n}}",
+    "waitHintLast": "el escalamiento se agota",
+    "group": "Grupo",
+    "channels": {
+      "email": "Correo",
+      "telegram": "Telegram"
+    },
+    "targetLabel": "Nivel {{n}}: {{group}} por {{channel}}",
+    "targetsCaption": "A quién avisa el nivel {{n}}, por canal",
+    "noGroups": "Todavía no hay grupos: créalos en la pestaña Grupos.",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "removeLevel": "Quitar nivel",
+    "addLevel": "Agregar nivel",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "confirmDelete": "¿Eliminar la política {{name}}?",
+    "created": "Política {{name}} creada.",
+    "updated": "Política {{name}} guardada.",
+    "deleted": "Política {{name}} eliminada.",
+    "loading": "Cargando políticas…",
+    "empty": "Todavía no hay políticas.",
+    "loadFailed": "No se pudieron cargar las políticas.",
+    "notifies": "avisa a {{targets}}",
+    "waitThenNext": "Si nadie confirma en {{minutes}} min, se avisa al nivel {{next}}.",
+    "waitThenExhausted": "Si nadie confirma en {{minutes}} min, el escalamiento se agota.",
+    "check": "Revisa este dato.",
+    "forbidden": "Tu rol no permite cambiar políticas.",
+    "gone": "Esa política ya no existe.",
+    "waitRange": "Nivel {{n}}: la espera va de 1 segundo a 24 horas. Escríbela en minutos, por ejemplo 2 o 0,5."
   }
 }

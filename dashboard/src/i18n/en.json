@@ -609,7 +609,8 @@
     "checkGroup": "Check the group's details.",
     "language": "Language of their alerts",
     "languageDefault": "The organization's",
-    "messagesIn": "Their alerts, in {{language}}"
+    "messagesIn": "Their alerts, in {{language}}",
+    "tabPolicies": "Policies"
   },
   "groups": {
     "title": "Groups",
@@ -831,5 +832,48 @@
     "readOnly": "Only an admin changes these settings.",
     "forbidden": "Your role does not allow changing the organization.",
     "saveFailed": "It could not be saved. Try again."
+  },
+  "policies": {
+    "title": "Escalation policies",
+    "count_one": "{{count}} policy",
+    "count_other": "{{count}} policies",
+    "new": "New policy",
+    "editTitle": "Edit {{name}}",
+    "name": "Name",
+    "appliesToOngoing": "Changes also apply to ongoing incidents: their next escalation uses this version.",
+    "level": "Level {{n}}",
+    "wait": "If nobody acknowledges within these minutes",
+    "waitHintNext": "level {{n}} is alerted",
+    "waitHintLast": "the escalation is exhausted",
+    "group": "Group",
+    "channels": {
+      "email": "Email",
+      "telegram": "Telegram"
+    },
+    "targetLabel": "Level {{n}}: {{group}} by {{channel}}",
+    "targetsCaption": "Who level {{n}} alerts, per channel",
+    "noGroups": "There are no groups yet: create them in the Groups tab.",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "removeLevel": "Remove level",
+    "addLevel": "Add level",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Delete the policy {{name}}?",
+    "created": "Policy {{name}} created.",
+    "updated": "Policy {{name}} saved.",
+    "deleted": "Policy {{name}} deleted.",
+    "loading": "Loading policies…",
+    "empty": "There are no policies yet.",
+    "loadFailed": "The policies could not be loaded.",
+    "notifies": "alerts {{targets}}",
+    "waitThenNext": "If nobody acknowledges within {{minutes}} min, level {{next}} is alerted.",
+    "waitThenExhausted": "If nobody acknowledges within {{minutes}} min, the escalation is exhausted.",
+    "check": "Check this value.",
+    "forbidden": "Your role does not allow changing policies.",
+    "gone": "That policy no longer exists.",
+    "waitRange": "Level {{n}}: the wait goes from 1 second to 24 hours. Write it in minutes, such as 2 or 0.5."
   }
 }
