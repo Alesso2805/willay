@@ -8,10 +8,12 @@ from sqlalchemy import Row, text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from willay.alerts.application.telegram_link import ContactLinkState
+from willay.shared.languages import Language
 
 _SELECT = """
     SELECT c.id, c.organization_id, c.full_name, o.name AS organization_name,
-           c.telegram_chat_id IS NOT NULL AS telegram_linked, c.telegram_link_expires_at
+           c.telegram_chat_id IS NOT NULL AS telegram_linked, c.telegram_link_expires_at,
+           COALESCE(c.language, o.language) AS language
     FROM core.contacts c
     JOIN core.organizations o ON o.id = c.organization_id
 """
@@ -68,4 +70,5 @@ def _state(row: Row[Any]) -> ContactLinkState:
         organization_name=row.organization_name,
         telegram_linked=row.telegram_linked,
         link_expires_at=row.telegram_link_expires_at,
+        language=Language(row.language),
     )

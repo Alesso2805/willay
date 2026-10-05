@@ -24,7 +24,7 @@ from willay.alerts.application.telegram_bot import TelegramError
 from willay.alerts.domain.alerts import Channel
 from willay.alerts.domain.delivery import AckToken, new_ack_token, retry_at
 from willay.alerts.domain.email import AlertMessage, EmailContent, compose_email
-from willay.alerts.domain.telegram import compose_alert_text
+from willay.alerts.domain.telegram import compose_alert_text, confirm_button
 from willay.shared.clock import Clock
 
 log = structlog.get_logger()
@@ -116,7 +116,7 @@ class EmailChannel:
 
 
 class TelegramSender(Protocol):
-    async def send_alert(self, chat_id: int, text: str, callback_data: str) -> None:
+    async def send_alert(self, chat_id: int, text: str, callback_data: str, button: str) -> None:
         """Raises TelegramError if Telegram did not accept the message."""
         ...
 
@@ -132,7 +132,12 @@ class TelegramChannel:
 
     async def deliver(self, destination: str, message: AlertMessage, token: str) -> None:
         try:
-            await self._api.send_alert(int(destination), compose_alert_text(message), token)
+            await self._api.send_alert(
+                int(destination),
+                compose_alert_text(message),
+                token,
+                confirm_button(message.language),
+            )
         except TelegramError as exc:
             raise DeliveryError(str(exc)) from None
 

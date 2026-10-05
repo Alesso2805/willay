@@ -17,15 +17,16 @@ from uuid import UUID
 from willay.alerts.application.policies import Actor
 from willay.alerts.domain.delivery import hash_ack_token, new_token
 from willay.alerts.domain.telegram import (
-    HOW_TO_LINK,
-    INVALID_LINK,
     LINK_TTL,
-    LINKED,
     deep_link,
+    how_to_link,
+    invalid_link,
+    linked,
     start_parameter,
 )
 from willay.shared.audit import AuditEntry, AuditLog
 from willay.shared.clock import Clock
+from willay.shared.languages import Language
 
 ENTITY_TYPE = "contact"
 
@@ -38,6 +39,7 @@ class ContactLinkState:
     organization_name: str
     telegram_linked: bool
     link_expires_at: datetime | None
+    language: Language  # of their alerts: theirs, or else the organization's
 
 
 class ContactLinkRepository(Protocol):
@@ -106,16 +108,23 @@ async def create_telegram_link(
 
 
 async def handle_start(
-    chat_id: int, text: str, *, contacts: ContactLinkRepository, audit: AuditLog, clock: Clock
+    chat_id: int,
+    text: str,
+    *,
+    sender_language: Language,
+    contacts: ContactLinkRepository,
+    audit: AuditLog,
+    clock: Clock,
 ) -> str:
-    """The bot's reply to a private message."""
+    """The bot's reply to a private message: in the language of the contact's alerts once
+    linked, so it reads like the alerts that follow; until then, in the sender's."""
     token = start_parameter(text)
     if token is None:
-        return HOW_TO_LINK
+        return how_to_link(sender_language)
     contact = await contacts.by_link_hash(hash_ack_token(token))
     now = clock.now()
     if contact is None or contact.link_expires_at is None or now >= contact.link_expires_at:
-        return INVALID_LINK
+        return invalid_link(sender_language)
     await contacts.link_chat(contact.contact_id, chat_id)
     await audit.record(
         AuditEntry(
@@ -129,4 +138,4 @@ async def handle_start(
             at=now,
         )
     )
-    return LINKED.format(name=contact.full_name, organization=contact.organization_name)
+    return linked(contact.full_name, contact.organization_name, contact.language)

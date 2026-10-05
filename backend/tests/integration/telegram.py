@@ -34,12 +34,14 @@ class FakeBot:
         self.failures, self.down = failures, down
         self.calls = 0
         self.sent: list[tuple[int, str, str]] = []
+        self.buttons: list[str] = []
 
-    async def send_alert(self, chat_id: int, text: str, callback_data: str) -> None:
+    async def send_alert(self, chat_id: int, text: str, callback_data: str, button: str) -> None:
         self.calls += 1
         if self.down or self.calls <= self.failures:
             raise TelegramError("sendMessage: 502 Bad Gateway")
         self.sent.append((chat_id, text, callback_data))
+        self.buttons.append(button)
 
 
 class FakeTelegram:
@@ -101,12 +103,16 @@ async def clear_pending_alerts(owner: asyncpg.Connection) -> None:
     await owner.execute("DELETE FROM core.alerts WHERE status = 'pending'")
 
 
-async def telegram_incident(engine: AsyncEngine, owner: asyncpg.Connection) -> Graph:
-    """An incident whose level 1 notifies Ana by Telegram (linked) and by email."""
+async def telegram_incident(
+    engine: AsyncEngine, owner: asyncpg.Connection, *, language: str | None = None
+) -> Graph:
+    """An incident whose level 1 notifies Ana by Telegram (linked) and by email; `language`
+    is the one Ana chose for her alerts."""
     graph = await create_graph(owner)
     await link_station(owner, graph)
     await create_rule(owner, graph, "threshold", GT_35_ONCE, station_id=graph.station_id)
     ana = await create_contact(owner, graph, "Ana", email=EMAIL, telegram_chat_id=CHAT)
+    await owner.execute("UPDATE core.contacts SET language = $1 WHERE id = $2", language, ana)
     group = await create_group(owner, graph, ana)
     await add_level(owner, graph, 1, (group, "telegram"), (group, "email"))
     await Station(engine, graph).send(3.6)

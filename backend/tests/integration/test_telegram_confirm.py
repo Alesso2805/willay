@@ -20,10 +20,11 @@ from tests.integration.telegram import (
 from willay.alerts.application.dispatch import TelegramDispatcher
 from willay.alerts.application.telegram_bot import Click, Update
 from willay.alerts.domain.confirmation import ConfirmOutcome
-from willay.alerts.domain.telegram import CLICK_ANSWER, ESCALATION_NOTE
+from willay.alerts.domain.telegram import click_answer, escalation_note
 from willay.alerts.infrastructure.sql_dispatch import SqlDispatchQueue
 from willay.shared.clock import SystemClock
 from willay.shared.db import create_engine
+from willay.shared.languages import Language
 
 pytestmark = pytest.mark.integration
 
@@ -47,9 +48,14 @@ async def _alert_sent(engine: AsyncEngine, owner: asyncpg.Connection) -> tuple[G
     return graph, text, token
 
 
-def _click(update_id: int, token: str, text: str, *, by: int = CHAT) -> Update:
-    click = Click(f"c{update_id}", by, token, CHAT, MESSAGE_ID, text)
+def _click(
+    update_id: int, token: str, text: str, *, by: int = CHAT, app_language: str | None = None
+) -> Update:
+    click = Click(f"c{update_id}", by, token, CHAT, MESSAGE_ID, text, app_language)
     return Update(update_id, click=click)
+
+
+ESCALATION_NOTE = escalation_note(Language.ES)
 
 
 async def _state(owner: asyncpg.Connection, graph: Graph) -> asyncpg.Record:
@@ -90,8 +96,8 @@ async def test_the_recipient_confirms_with_the_button(
     )
     assert state["acknowledgements"] == 1
     assert api.answers == [
-        ("c600", CLICK_ANSWER[ConfirmOutcome.CONFIRMED]),
-        ("c601", CLICK_ANSWER[ConfirmOutcome.USED]),
+        ("c600", click_answer(ConfirmOutcome.CONFIRMED, Language.ES)),
+        ("c601", click_answer(ConfirmOutcome.USED, Language.ES)),
     ]
     chat, message_id, edited = api.edits[0]
     assert (chat, message_id) == (CHAT, MESSAGE_ID)
@@ -106,7 +112,8 @@ async def test_someone_else_cannot_confirm_with_the_button(
     engine: AsyncEngine, owner: asyncpg.Connection, database: Database, tmp_path: Path
 ) -> None:
     graph, text, token = await _alert_sent(engine, owner)
-    api = FakeTelegram(_click(700, token, text, by=999))
+    # A stranger whose Telegram app is in English: nothing about the incident, in English.
+    api = FakeTelegram(_click(700, token, text, by=999, app_language="en"))
 
     async def answered() -> bool:
         return 701 in api.offsets
@@ -119,7 +126,7 @@ async def test_someone_else_cannot_confirm_with_the_button(
         "sent",
         0,
     )
-    assert api.answers == [("c700", CLICK_ANSWER[ConfirmOutcome.NOT_YOURS])]
+    assert api.answers == [("c700", click_answer(ConfirmOutcome.NOT_YOURS, Language.EN))]
     assert api.edits == []
 
 
