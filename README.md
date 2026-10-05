@@ -61,8 +61,13 @@ http://localhost:4200, with the demo users `rimac-admin`, `rimac-operator`, `rim
 - **Contactos:** contacts and their groups, with the channels each can be reached by; admin manages them and generates Telegram links.
 - **Auditoría** (admin): who changed what and when, each field before and after.
 - New incidents are announced on every page, and so are readings the evaluator could not process (with a link to reprocess them); everything updates live.
+- **Language and theme:** each user picks Español or English, saved for them on any device. The theme follows the system unless they pick Light or Dark, a choice kept in that browser. Alert emails, Telegram messages and the confirmation page speak each contact's language.
 
 ![Live map](docs/images/live-map.png)
+
+![The live map in dark mode](docs/images/live-map-dark.png)
+
+![The incident inbox in English](docs/images/incident-inbox-en.png)
 
 ![Incident inbox](docs/images/incident-inbox.png)
 
