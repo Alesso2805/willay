@@ -1,6 +1,7 @@
-import { bootstrapApplication } from '@angular/platform-browser';
-import { appConfig } from './app/app.config';
-import { App } from './app/app';
+import { loadSettings } from './app/settings';
 
-bootstrapApplication(App, appConfig)
+// The deployment's URLs first (VIG-42): the app's modules read them as they load, so the app is
+// imported only once they are known.
+loadSettings()
+  .then(() => import('./bootstrap'))
   .catch((err) => console.error(err));
