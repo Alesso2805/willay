@@ -116,6 +116,8 @@ services:
       WILLAY_OIDC_AUDIENCE: willay-api
       # To build the Telegram linking links (without it, the API answers 503).
       WILLAY_TELEGRAM_BOT_USERNAME: ${WILLAY_TELEGRAM_BOT_USERNAME:-}
+      # Public demo (VIG-43): GET /v1/demo says whether it is on, POST starts the scenario.
+      WILLAY_DEMO_MODE: ${WILLAY_DEMO_MODE:-false}
     ports:
       - "${WILLAY_API_PORT:-8000}:8000"
     depends_on:
@@ -176,6 +178,21 @@ services:
     healthcheck:
       <<: *worker-healthcheck
       test: ["CMD", "python", "-m", "willay.workers.healthcheck", "telegram"]
+
+  # Public demo (VIG-43): only with COMPOSE_PROFILES=demo (make secrets DEMO=1 sets it), so a
+  # normal deployment never hands the owner's credentials to a long-running process.
+  worker-demo:
+    <<: *backend
+    profiles: ["demo"]
+    command: ["python", "-m", "willay.workers.demo"]
+    environment:
+      <<: *backend-env
+      WILLAY_DEMO_MODE: ${WILLAY_DEMO_MODE:-false}
+      # Restoring the demo organization deletes incident events, append-only for willay_app.
+      WILLAY_MIGRATE_DATABASE_URL: postgresql+asyncpg://willay_owner:${WILLAY_OWNER_PASSWORD:?}@postgres:5432/willay
+    healthcheck:
+      <<: *worker-healthcheck
+      test: ["CMD", "python", "-m", "willay.workers.healthcheck", "demo"]
 
   dashboard:
     build: ./dashboard
