@@ -75,6 +75,8 @@ class ErrorCode(StrEnum):
     GEOMETRY_NOT_NUMBERS = "geometry_not_numbers"
     GEOMETRY_OUT_OF_RANGE = "geometry_out_of_range"
     GEOMETRY_INVALID = "geometry_invalid"
+    # organization (VIG-44)
+    ORGANIZATION_TIMEZONE_UNKNOWN = "organization_timezone_unknown"
     # public demo (VIG-43)
     DEMO_UNAVAILABLE = "demo_unavailable"
     DEMO_RUN_ACTIVE = "demo_run_active"

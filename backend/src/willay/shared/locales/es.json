@@ -60,7 +60,8 @@
     "geometry_out_of_range": "Coordenada fuera de rango: [{{lon}}, {{lat}}] (¿longitud y latitud invertidas?).",
     "geometry_invalid": "{{reason}}",
     "demo_unavailable": "La demo pública no está activa para tu organización.",
-    "demo_run_active": "Ya hay una corrida de la demo en curso: espera a que termine."
+    "demo_run_active": "Ya hay una corrida de la demo en curso: espera a que termine.",
+    "organization_timezone_unknown": "«{{timezone}}» no es una zona horaria conocida: usa un nombre como America/Lima."
   },
   "incident_status": {
     "open": "abierto",

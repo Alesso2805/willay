@@ -16,7 +16,8 @@ MAX_PAGE = 100
 
 
 class EntityType(StrEnum):
-    """What the audit log records (SPEC: zones, stations, rules, policies and contacts)."""
+    """What the audit log records (SPEC: zones, stations, rules, policies and contacts, and
+    the organization's own settings)."""
 
     RISK_ZONE = "risk_zone"
     STATION = "station"
@@ -24,6 +25,7 @@ class EntityType(StrEnum):
     ESCALATION_POLICY = "escalation_policy"
     CONTACT = "contact"
     CONTACT_GROUP = "contact_group"
+    ORGANIZATION = "organization"  # its language and time zone (VIG-44)
 
 
 @dataclass(frozen=True)
