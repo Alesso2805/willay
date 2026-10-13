@@ -105,6 +105,8 @@ async def test_rotating_the_key_revokes_the_old_one_at_once(
 ) -> None:
     created = await _create(client, operator)
     old_key, station_id = created["api_key"], created["station"]["id"]
+    # The API remembers verified keys: rotation must beat that memory, not just a cold start.
+    assert await _send_reading(client, old_key) == 202
 
     response = await client.post(f"/v1/stations/{station_id}/api-key", headers=operator)
 
