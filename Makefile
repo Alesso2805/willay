@@ -40,10 +40,10 @@ down: ## Stop the stack (keeps the volumes)
 secrets: ## Server: write .env with new credentials for HOST (HOST=willay.example.org DEMO=1)
 	sh infra/scripts/production-env.sh "$(HOST)" "$(DEMO)"
 
-lint: lint-backend lint-dashboard ## Ruff, Mypy and ESLint
+lint: lint-backend lint-dashboard ## Ruff, Mypy, import contracts and ESLint
 
 lint-backend:
-	cd backend && uv run ruff check . && uv run ruff format --check . && uv run mypy
+	cd backend && uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run lint-imports
 
 lint-dashboard:
 	cd dashboard && npm run lint

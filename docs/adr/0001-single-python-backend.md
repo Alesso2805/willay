@@ -26,6 +26,6 @@ Workers never run inside the FastAPI lifespan. In Docker Compose, a single image
 
 - **Pro:** a single `pyproject.toml`, a single `uv.lock`, a single CI pipeline, and refactors that cross modules in one commit. Each process scales and fails on its own. `SKIP LOCKED` spreads the work across replicas of the same worker.
 - **Pro:** the code of the predictive phase can import the domain without an intermediate API.
-- **Con:** the boundaries between modules depend on discipline. Future mitigation: an import-contracts tool (for example import-linter) in CI once there is real domain code.
+- **Con:** the boundaries between modules depend on discipline. Mitigation, since 2026-10-13: import-linter contracts in `backend/pyproject.toml`, run by `make lint` and CI. The domain imports neither FastAPI nor SQLAlchemy, each module's layers only import the layers below, no API reaches into another module's infrastructure, alerts never depend on rules, and the API never imports the workers.
 - **Con:** the workers do not expose HTTP. Their healthcheck is a heartbeat file that the worker touches on every cycle, and `python -m willay.workers.healthcheck <name>` checks that it is less than 30 s old.
 - **Way out:** if a module needs to be split off, its database schema and its interfaces (for example `EvaluationQueue`) already mark the cut.

@@ -32,6 +32,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "asyncpg-stubs>=0.31.3",
+    "import-linter>=2.15",
     "mypy>=2.3.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
@@ -84,3 +85,54 @@ addopts = "-ra --strict-markers"
 markers = [
     "integration: requires a real Postgres via Docker (testcontainers)",
 ]
+
+# Architecture rules of CLAUDE.md and ADR-0001, checked by `lint-imports` (make lint, CI).
+[tool.importlinter]
+root_package = "willay"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "The domain imports neither FastAPI nor SQLAlchemy"
+type = "forbidden"
+source_modules = ["willay.*.domain"]
+forbidden_modules = ["fastapi", "starlette", "sqlalchemy", "asyncpg"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Within a module, each layer only imports the layers below it"
+type = "layers"
+containers = [
+    "willay.identity", "willay.ingestion", "willay.territory", "willay.rules",
+    "willay.incidents", "willay.alerts", "willay.realtime",
+]
+layers = ["api", "infrastructure", "application", "domain"]
+
+[[tool.importlinter.contracts]]
+name = "No module's API reaches into another module's infrastructure"
+type = "forbidden"
+source_modules = ["willay.*.api"]
+forbidden_modules = ["willay.*.infrastructure"]
+allow_indirect_imports = true
+# Its own infrastructure is fine; not every module's API uses it.
+unmatched_ignore_imports_alerting = "none"
+ignore_imports = [
+    "willay.identity.api.** -> willay.identity.infrastructure.**",
+    "willay.ingestion.api.** -> willay.ingestion.infrastructure.**",
+    "willay.territory.api.** -> willay.territory.infrastructure.**",
+    "willay.rules.api.** -> willay.rules.infrastructure.**",
+    "willay.incidents.api.** -> willay.incidents.infrastructure.**",
+    "willay.alerts.api.** -> willay.alerts.infrastructure.**",
+    "willay.realtime.api.** -> willay.realtime.infrastructure.**",
+]
+
+[[tool.importlinter.contracts]]
+name = "Alerts do not depend on rules: rules call alerts, never the other way round"
+type = "forbidden"
+source_modules = ["willay.alerts"]
+forbidden_modules = ["willay.rules"]
+
+[[tool.importlinter.contracts]]
+name = "Workers never run inside the API process"
+type = "forbidden"
+source_modules = ["willay.api"]
+forbidden_modules = ["willay.workers"]
