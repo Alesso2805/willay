@@ -56,7 +56,7 @@ select = [
 ]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
-# CLAUDE.md rule: time comes in only through the Clock protocol.
+# SPEC's engineering rules: time comes in only through the Clock protocol.
 "datetime.datetime.now".msg = "Use willay.shared.clock.Clock; datetime.now() only lives in SystemClock."
 "datetime.datetime.utcnow".msg = "Use willay.shared.clock.Clock."
 "datetime.datetime.today".msg = "Use willay.shared.clock.Clock."
@@ -86,7 +86,7 @@ markers = [
     "integration: requires a real Postgres via Docker (testcontainers)",
 ]
 
-# Architecture rules of CLAUDE.md and ADR-0001, checked by `lint-imports` (make lint, CI).
+# SPEC's architecture rules (Engineering rules, ADR-0001), checked by `lint-imports` (make lint, CI).
 [tool.importlinter]
 root_package = "willay"
 include_external_packages = true
