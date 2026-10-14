@@ -1,5 +1,5 @@
-"""List, acknowledge and resolve incidents (VIG-19), always scoped to the actor's organization
-(another tenant's incident is a 404, not a 403).
+"""List, acknowledge, resolve and comment on incidents (VIG-19, VIG-35), always scoped to the
+actor's organization (another tenant's incident is a 404, not a 403).
 
 Each transition locks the incident FOR UPDATE in the request transaction, so a concurrent
 operator waits, sees the new status and gets a 409 instead of overwriting it. Both platform
