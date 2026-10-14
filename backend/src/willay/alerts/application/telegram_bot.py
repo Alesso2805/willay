@@ -24,9 +24,9 @@ from willay.alerts.application.telegram_link import ContactLinkRepository, handl
 from willay.alerts.domain.confirmation import ConfirmOutcome
 from willay.alerts.domain.telegram import click_answer, closed_text, closing_note
 from willay.incidents.application.lifecycle import IncidentRepository
-from willay.rules.application.evaluate import Transaction
 from willay.shared.audit import AuditLog
 from willay.shared.clock import Clock
+from willay.shared.db import Transaction
 from willay.shared.i18n import negotiate
 
 log = structlog.get_logger()

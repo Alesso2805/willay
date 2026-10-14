@@ -26,9 +26,9 @@ from willay.incidents.application.open_incident import (
 )
 from willay.incidents.application.station_recovery import Recovery, RecoveryLog
 from willay.incidents.domain.incidents import EvidenceReading, dedup_key
-from willay.rules.application.evaluate import Transaction
 from willay.rules.domain.silence import is_silent, silence_threshold
 from willay.shared.clock import Clock
+from willay.shared.db import Transaction
 
 log = structlog.get_logger()
 

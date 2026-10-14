@@ -6,8 +6,6 @@ marked failed on the fifth attempt). CancelledError (process shutdown) is not ca
 stays claimed and reappears when its timeout expires.
 """
 
-from collections.abc import Callable
-from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -15,10 +13,9 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from willay.rules.application.queue import EvaluationQueue, LostClaimError, QueuedReading
+from willay.shared.db import Transaction
 
 log = structlog.get_logger()
-
-Transaction = Callable[[], AbstractAsyncContextManager[AsyncConnection]]
 
 
 class ReadingEvaluator(Protocol):
