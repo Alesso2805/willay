@@ -131,7 +131,7 @@ Notation: `u/` = `backend/tests/unit`, `i/` = `backend/tests/integration`, `FE` 
 
 - **VIG-25** (OK 6, P 1). Zones by status, stations with value and age → `FE map/live-map-page.spec.ts`, `live-map-presentation.spec.ts`. SSE with JWT in header → `FE realtime/live-events.spec.ts "sends the token in the Authorization header, never in the URL"`. SSE isolation → `i/test_events_api.py::test_each_organization_only_hears_its_own_events_within_two_seconds`. **Update < 2 s** → measured on the server leg only, not rendering (P). Catalog and no-colour distinction → `live-map-presentation.spec.ts`, `ui/visual-states.spec.ts`. New-incident announcement on every page → `FE app.spec.ts`, `incidents/new-incidents.spec.ts`.
 - **VIG-26** (OK 5, P 1). Chart and `opened` copy → `FE incidents/readings-chart.spec.ts`, `incident-detail-page.spec.ts`. Timeline, alerts per recipient → `i/test_incident_alerts_api.py`. Email only for admin and operator → `test_each_role_sees_the_alerts_and_only_operator_and_admin_the_email`. `chat_id` never shown → asserted in `i/test_contacts_api.py` but not in the alerts-per-recipient test (P). The detail page's axe test was not confirmed.
-- **VIG-33** (OK 6, P 2, NO 1). Single catalog → `ui/visual-states.spec.ts`, no test scans pages for hard-coded status colours (P). No colour alone → same spec (OK). Contrast ≥ 4.5:1 → same spec, both themes (OK). Contrast ≥ 3:1 → measured for map markers only, not UI icons and borders (P). Header per permissions → `FE app.spec.ts` (OK). Shared loading, empty, error → `ui/load-state.spec.ts` (OK). Formats → `ui/formats.spec.ts` (OK). **360 px without horizontal scroll → no test**: jsdom has no layout, the only narrow-screen test checks a CSS class (NO). axe per view → present in all views seen (OK).
+- **VIG-33** (OK 7, P 2). Single catalog → `ui/visual-states.spec.ts`, no test scans pages for hard-coded status colours (P). No colour alone → same spec (OK). Contrast ≥ 4.5:1 → same spec, both themes (OK). Contrast ≥ 3:1 → measured for map markers only, not UI icons and borders (P). Header per permissions → `FE app.spec.ts` (OK). Shared loading, empty, error → `ui/load-state.spec.ts` (OK). Formats → `ui/formats.spec.ts` (OK). 360 px without horizontal scroll → `e2e/narrow-screens.spec.ts` (OK, added on 2026-10-13): Playwright signs in as an admin and measures the sign-in screen, the twelve main pages and an incident at 360 px, in Spanish and English, against the running stack (`make e2e`, CI's full-stack job). axe per view → present in all views seen (OK).
 - **VIG-34** (OK 6, P 1). List, filters in the URL, SSE reload, aria-live, empty state → `FE incidents/incidents-page.spec.ts`, `inbox-filter.spec.ts`, `new-incidents.spec.ts`; backend `i/test_incidents_api.py::test_the_list_filters_by_status_and_shows_the_newest_first`. "Escalamiento agotado" in red → the text is asserted, the red only indirectly through the tone (P).
 - **VIG-35** (OK 5). Buttons per permission, resolve with choice and confirmation, 409 explained, comments 1 to 2000, isolation → `FE incidents/incident-actions.spec.ts`, `incident-comment.spec.ts`; `i/test_incidents_api.py` (`test_each_transition_needs_its_permission`, `test_a_comment_of_exactly_2000_characters_is_accepted`, `test_another_organization_cannot_comment`).
 
@@ -168,7 +168,7 @@ Notation: `u/` = `backend/tests/unit`, `i/` = `backend/tests/integration`, `FE` 
 
 ### Totals for section 3
 
-198 criteria examined (VIG-06, 07, 31, 32 and 45 excluded): **149 OK · 33 partial · 16 without a test.** Backend and infra: 105 / 23 / 12. Dashboard: 44 / 10 / 4.
+198 criteria examined (VIG-06, 07, 31, 32 and 45 excluded): **150 OK · 33 partial · 15 without a test.** Backend and infra: 105 / 23 / 12. Dashboard: 45 / 10 / 3.
 
 ---
 
@@ -274,7 +274,7 @@ Section 8: 4 Cumple · 0 Parcial · 0 No cumple · 2 No verificado.
 | --- | ---: | ---: | ---: | ---: |
 | 1. Structure | 6 | 0 | 0 | 0 |
 | 2. Architecture rules | 20 | 1 | 0 | 2 |
-| 3. Acceptance criteria (OK / partial / no test) | 149 | 33 | 16 | 5 stories |
+| 3. Acceptance criteria (OK / partial / no test) | 150 | 33 | 15 | 5 stories |
 | 4. Data | 8 | 1 | 0 | 0 |
 | 5. ADRs | 9 | 0 | 0 | 1 |
 | 6. Deviations | 7 | 3 | 1 | 0 |
@@ -288,7 +288,7 @@ Section 8: 4 Cumple · 0 Parcial · 0 No cumple · 2 No verificado.
 ### Blocking
 
 1. **Resolved: the four failing integration tests** (section 2.1). With nothing else on Docker the suite passed 977/977, and 982/982 with the API key cache; the four failed only while another project competed for the same resources. One run each way, so keep an eye on CI.
-2. **Two Must stories have an explicit criterion with no evidence:** VIG-33 "usable at 360 px without horizontal scrolling" (needs a real-browser test; jsdom has no layout) and VIG-30 "README with video" (no video link).
+2. **Two Must stories have an explicit criterion with no evidence:** VIG-33 "usable at 360 px without horizontal scrolling" (needs a real-browser test; jsdom has no layout) and VIG-30 "README with video" (no video link). **VIG-33 resolved on 2026-10-13** with a Playwright test; VIG-30's video is still open.
 3. **Resolved: VIG-29 evidence** (section 3). The 30-minute run passed on machine B with its Docker limited like machine A's (0 rejected, p95 0.17 s), and the cause of machine A's client timeouts, an uncached Argon2id check per batch, was fixed. The 16-batch stall seen once on machine A did not recur and has no proven cause.
 
 ### Important
