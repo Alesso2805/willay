@@ -33,7 +33,7 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run mypy
-      # The architecture rules of CLAUDE.md and ADR-0001, as import contracts (pyproject.toml).
+      # SPEC's architecture rules (Engineering rules, ADR-0001), as import contracts (pyproject.toml).
       - run: uv run lint-imports
       # The integration tests use testcontainers; the GitHub runner already has Docker.
       # Includes the test that fails if docs/openapi.json is not up to date.
