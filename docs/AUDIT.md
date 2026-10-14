@@ -24,12 +24,12 @@ SPEC tree (`docs/SPEC.md`, "Repository, conventions and living documentation") a
 | --- | --- | --- |
 | Top-level layout (`backend/`, `dashboard/`, `infra/`, `docs/`, compose, Makefile, CLAUDE.md, CHANGELOG, README) | Cumple | All present. |
 | Seven modules each with `domain/application/infrastructure/api` | Cumple | No module lacks a layer. Some are thin: `realtime/` has one file per layer, `incidents/api` has only `routes.py`. |
-| `shared/` content | Parcial | SPEC says "Clock, config, db, tenancy, logging". There is no `shared/tenancy`; tenancy lives in `identity` (`identity/domain/principal.py`). `shared/` also holds `audit, i18n, languages, notifications, pg_listen, web, errors`, which SPEC does not list. |
+| `shared/` content | Cumple | SPEC says "Clock, config, db, tenancy, logging". There is no `shared/tenancy`; tenancy lives in `identity` (`identity/domain/principal.py`). `shared/` also holds `audit, i18n, languages, notifications, pg_listen, web, errors`, which SPEC does not list. **Update, 2026-10-13:** SPEC now says so. |
 | Runbooks | Parcial | SPEC promises reprocess, rotate API keys and restore the DB. Only `deploy.md` and `reprocess-failed-readings.md` exist. **Missing:** rotate API keys, restore the DB. |
 | `docs/research/` | Cumple | Only `.gitkeep`. Consistent with the 2026-09-30 decision to postpone interviews. |
-| Things in the repo that SPEC's tree does not show | Parcial | `backend/src/willay/{demo,loadtest,seed}/` and `api/openapi.py` (no layering), `backend/tests/support/`, `docker-compose.prod.yml`, `infra/caddy/`, `infra/scripts/production-env.sh`, `.env.example`, `.github/workflows/ci.yml`, `docs/openapi.json`, `docs/images/`, ADRs 0005 to 0010, `backend/Dockerfile`, `alembic.ini`, `uv.lock`. Most are explained by later stories (VIG-42/43) but the SPEC tree was not updated. |
+| Things in the repo that SPEC's tree does not show | Cumple | `backend/src/willay/{demo,loadtest,seed}/` and `api/openapi.py` (no layering), `backend/tests/support/`, `docker-compose.prod.yml`, `infra/caddy/`, `infra/scripts/production-env.sh`, `.env.example`, `.github/workflows/ci.yml`, `docs/openapi.json`, `docs/images/`, ADRs 0005 to 0010, `backend/Dockerfile`, `alembic.ini`, `uv.lock`. Most are explained by later stories (VIG-42/43) but the SPEC tree was not updated. **Update, 2026-10-13:** SPEC now says so. |
 
-Section 1: 3 Cumple · 3 Parcial · 0 No cumple.
+Section 1: 5 Cumple · 1 Parcial · 0 No cumple.
 
 ---
 
@@ -186,9 +186,9 @@ SPEC "Database schema" and "Database roles" against `backend/migrations/versions
 | REVOKE on append-only tables | Cumple | `0002:329-331` (UPDATE, DELETE, TRUNCATE); tested. |
 | `NOTIFY willay_events` triggers | Cumple | `0008`, `0009`; payload carries organization and type only. |
 | Direct test of the init script (roles, extensions) | Parcial | Only exercised indirectly. |
-| SPEC schema tables are current | Parcial | The migrations add objects the SPEC tables do not list: `correlation_id` (`evaluation_queue`, `incidents`), `trigger_received_at`, `incident_events_one_recovery` unique index, `alerts.destination` nullable with a CHECK, `lower(email)` unique index on `users`, extra CHECKs and indexes, an FK from `evaluation_queue` to `core.stations`. Additive and documented in migration docstrings, but SPEC and the ADRs were not updated. |
+| SPEC schema tables are current | Cumple | The migrations add objects the SPEC tables do not list: `correlation_id` (`evaluation_queue`, `incidents`), `trigger_received_at`, `incident_events_one_recovery` unique index, `alerts.destination` nullable with a CHECK, `lower(email)` unique index on `users`, extra CHECKs and indexes, an FK from `evaluation_queue` to `core.stations`. Additive and documented in migration docstrings, but SPEC and the ADRs were not updated. **Update, 2026-10-13:** SPEC's tables now list them. |
 
-Section 4: 7 Cumple · 2 Parcial · 0 No cumple.
+Section 4: 8 Cumple · 1 Parcial · 0 No cumple.
 
 ---
 
@@ -218,18 +218,18 @@ Section 5: 9 Cumple · 0 Parcial · 1 No verificado.
 | # | Deviation | ADR justifies it? | Status |
 | --- | --- | --- | --- |
 | 1 | Alembic used only as a runner with raw SQL, no autogenerate | Yes, ADR-0006 | Cumple |
-| 2 | A sixth worker, `demo` (off unless `WILLAY_DEMO_MODE`) | No ADR for it; SPEC documents VIG-43 and `demo_runs`, but ADR-0001 and SPEC's "five workers" are stale | Parcial |
-| 3 | Schema objects beyond the SPEC tables (section 4) | No; migration docstrings only | Parcial |
-| 4 | Packages `demo`, `loadtest`, `seed` outside the four-layer scheme and missing from the SPEC tree | No | Parcial |
+| 2 | A sixth worker, `demo` (off unless `WILLAY_DEMO_MODE`) | No ADR for it; SPEC documents VIG-43 and `demo_runs`, but ADR-0001 and SPEC's "five workers" are stale | Cumple (SPEC and ADR-0001 updated on 2026-10-13) |
+| 3 | Schema objects beyond the SPEC tables (section 4) | No; migration docstrings only | Cumple (SPEC and ADR-0001 updated on 2026-10-13) |
+| 4 | Packages `demo`, `loadtest`, `seed` outside the four-layer scheme and missing from the SPEC tree | No | Cumple (SPEC and ADR-0001 updated on 2026-10-13) |
 | 5 | `application` layers import SQLAlchemy's `AsyncConnection` (9 files: `alerts/application/{escalation,planning,telegram_bot}.py`, `incidents/application/{open_incident,station_recovery}.py`, `rules/application/{evaluate,queue,rule_evaluator,silence_check}.py`). CLAUDE.md forbids it only in the domain | No | Parcial |
 | 6 | `received_to_alert_seconds` is a log field, an SQL function and a CLI, not a metric | No | Parcial |
 | 7 | CI runs the underlying commands, not `make lint` and `make test`; OpenAPI freshness is a pytest test, not a CI step | No (SPEC says "CI fails if not up to date", which the test satisfies) | Parcial |
 | 8 | OpenAPI contract is guarded | n/a, `u/test_openapi_contract.py` | Cumple |
 | 9 | README without the video VIG-30 requires | No | No cumple |
 | 10 | All ADRs "Proposed" after implementation | Resolved: all Accepted on 2026-10-13 | Cumple |
-| 11 | No `shared/tenancy` (lives in identity) | No | Parcial |
+| 11 | No `shared/tenancy` (lives in identity) | No | Cumple (SPEC and ADR-0001 updated on 2026-10-13) |
 
-Section 6: 3 Cumple · 7 Parcial · 1 No cumple.
+Section 6: 7 Cumple · 3 Parcial · 1 No cumple.
 
 Stack versions: Python `>=3.12,<3.13`, Node `^24.15.0` (README and `.nvmrc` agree), Angular 22.2, TypeScript ~6.0, Keycloak 26.7.4, `timescale/timescaledb-ha:pg16-ts2.30`. I did not check against the vendors' release calendars that Angular 22 and the others are still supported today; the SPEC asks for that review in sprint 0 and I found no record of it.
 
@@ -272,12 +272,12 @@ Section 8: 4 Cumple · 0 Parcial · 0 No cumple · 2 No verificado.
 
 | Section | Cumple | Parcial | No cumple | No verificado |
 | --- | ---: | ---: | ---: | ---: |
-| 1. Structure | 3 | 3 | 0 | 0 |
+| 1. Structure | 5 | 1 | 0 | 0 |
 | 2. Architecture rules | 18 | 2 | 1 | 2 |
 | 3. Acceptance criteria (OK / partial / no test) | 149 | 33 | 16 | 5 stories |
-| 4. Data | 7 | 2 | 0 | 0 |
+| 4. Data | 8 | 1 | 0 | 0 |
 | 5. ADRs | 9 | 0 | 0 | 1 |
-| 6. Deviations | 3 | 7 | 1 | 0 |
+| 6. Deviations | 7 | 3 | 1 | 0 |
 | 7. Scalability | 2 | 4 | 2 | 1 |
 | 8. Reproducibility | 4 | 0 | 0 | 2 |
 
@@ -298,7 +298,7 @@ Section 8: 4 Cumple · 0 Parcial · 0 No cumple · 2 No verificado.
 6. Test the untested parts of VIG-42 and VIG-43: Keycloak admin console unreachable, `make secrets`, demo accounts unable to change their password, the Mailpit route, multi-arch images.
 7. Missing tests: VIG-37 "applies to ongoing incidents" notice, VIG-40 "no hard-coded strings" (an ESLint rule for templates would do), VIG-27 rate-of-change form, VIG-41 dark base map and form-survives-theme-switch, VIG-44 default language and time zone reaching an email.
 8. **Done on 2026-10-13:** the ADRs are Accepted, ADR-0001 says six workers and ADR-0002 sends failed rows to the dashboard. Still open: decide whether `demo`, the extra schema objects and the API key cache (VIG-29) deserve an ADR.
-9. Update SPEC: schema tables (section 4), repository tree (demo, loadtest, seed, `tests/support`), worker count. Write the two missing runbooks (rotate API keys, restore the DB).
+9. **SPEC done on 2026-10-13:** schema tables (section 4), repository tree (demo, loadtest, seed, `tests/support`) and the demo worker. Still open: the two missing runbooks (rotate API keys, restore the DB).
 10. Create `docs/BACKLOG.md` and `docs/ARCHITECTURE_RULES.md`, or drop them from the audit brief, so the references stop dangling.
 11. Verify a fresh-clone `make up` once and record it (section 8).
 
