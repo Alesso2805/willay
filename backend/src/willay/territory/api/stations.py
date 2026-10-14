@@ -10,12 +10,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from willay.identity.api.dependencies import require
 from willay.identity.domain.permissions import Permission
 from willay.identity.domain.principal import Principal
-from willay.ingestion.api.dependencies import get_api_key_hasher
-from willay.ingestion.infrastructure.api_keys import ApiKeyHasher, Argon2ApiKeyIssuer
+from willay.ingestion.api.dependencies import get_api_key_issuer
 from willay.shared.audit import SqlAuditLog
 from willay.shared.errors import ErrorCode
 from willay.shared.web import ApiError, ClockDep, DbConnection, invalid_field
 from willay.territory.application.stations import (
+    ApiKeyIssuer,
     DuplicateStationCodeError,
     IssuedStation,
     Station,
@@ -49,7 +49,7 @@ router = APIRouter(prefix="/v1/stations", tags=["territory"])
 
 CanView = Annotated[Principal, Depends(require(Permission.VIEW))]
 CanManage = Annotated[Principal, Depends(require(Permission.MANAGE_TERRITORY))]
-Hasher = Annotated[ApiKeyHasher, Depends(get_api_key_hasher)]
+Issuer = Annotated[ApiKeyIssuer, Depends(get_api_key_issuer)]
 
 _NOT_FOUND = ApiError(status.HTTP_404_NOT_FOUND, ErrorCode.STATION_NOT_FOUND)
 # A response carrying a plaintext key must never be cached.
@@ -148,7 +148,7 @@ async def post_station(
     principal: CanManage,
     conn: DbConnection,
     clock: ClockDep,
-    hasher: Hasher,
+    issuer: Issuer,
     response: Response,
 ) -> IssuedKeyOut:
     try:
@@ -157,7 +157,7 @@ async def post_station(
             normalize_code(body.code),
             _data(body),
             stations=SqlStationRepository(conn),
-            issuer=Argon2ApiKeyIssuer(hasher),
+            issuer=issuer,
             audit=SqlAuditLog(conn),
             clock=clock,
         )
@@ -226,7 +226,7 @@ async def post_api_key(
     principal: CanManage,
     conn: DbConnection,
     clock: ClockDep,
-    hasher: Hasher,
+    issuer: Issuer,
     response: Response,
 ) -> IssuedKeyOut:
     try:
@@ -234,7 +234,7 @@ async def post_api_key(
             _actor(principal),
             station_id,
             stations=SqlStationRepository(conn),
-            issuer=Argon2ApiKeyIssuer(hasher),
+            issuer=issuer,
             audit=SqlAuditLog(conn),
             clock=clock,
         )

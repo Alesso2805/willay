@@ -14,7 +14,7 @@ from structlog import get_logger
 from willay.alerts.api.pages import page_language, render_preview, render_result
 from willay.alerts.application.confirmation import confirm_alert, preview_confirmation
 from willay.alerts.infrastructure.sql_confirmation import SqlConfirmationRepository
-from willay.incidents.infrastructure.incidents_repository import SqlIncidentRepository
+from willay.incidents.api.dependencies import IncidentRepositoryDep
 from willay.shared.web import ClockDep, DbConnection
 
 router = APIRouter(tags=["confirmation"])
@@ -66,12 +66,13 @@ async def post_confirmation(
     token: str,
     conn: DbConnection,
     clock: ClockDep,
+    incidents: IncidentRepositoryDep,
     accept_language: Annotated[str | None, Header()] = None,
 ) -> HTMLResponse:
     view = await confirm_alert(
         token,
         confirmations=SqlConfirmationRepository(conn),
-        incidents=SqlIncidentRepository(conn),
+        incidents=incidents,
         clock=clock,
     )
     if view.alert is not None:  # never log the token: the alert id is enough
