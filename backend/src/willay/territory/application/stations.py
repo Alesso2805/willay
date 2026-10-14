@@ -126,7 +126,7 @@ async def create_station(
     await _check_zones(actor, data, stations)
     now = clock.now()
     station_id = uuid7()
-    # Argon2id takes tens of ms: run it in a thread to keep the event loop free.
+    # Argon2id takes 50 to 130 ms: run it in a thread to keep the event loop free.
     api_key, api_key_hash = await asyncio.to_thread(issuer.issue, station_id)
     station = await stations.add(station_id, actor.organization_id, code, data, api_key_hash, now)
     await audit.record(_entry(actor, station.id, "create", None, station.snapshot(), now))
@@ -192,7 +192,7 @@ async def rotate_api_key(
     if current is None:
         raise StationNotFoundError(station_id)
     now = clock.now()
-    # Argon2id takes tens of ms: run it in a thread to keep the event loop free.
+    # Argon2id takes 50 to 130 ms: run it in a thread to keep the event loop free.
     api_key, api_key_hash = await asyncio.to_thread(issuer.issue, station_id)
     station = await stations.set_api_key_hash(actor.organization_id, station_id, api_key_hash, now)
     await audit.record(
