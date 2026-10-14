@@ -240,12 +240,13 @@ describe('StationsPage', () => {
     loaded([]);
     await fixture.whenStable();
 
-    const key = element.querySelector<HTMLInputElement>('input[aria-label="API key"]');
+    const key = element.querySelector<HTMLInputElement>('input[aria-label^="API key de "]');
     expect(key?.value).toBe('s1.secreto');
+    expect(key?.getAttribute('aria-label')).toBe('API key de RIM-CHA-02'); // in the user's language
     expect(element.textContent).toContain('no se volverá a mostrar');
     button('Ya la guardé')?.click();
     await fixture.whenStable();
-    expect(element.querySelector('input[aria-label="API key"]')).toBeNull();
+    expect(element.querySelector('input[aria-label^="API key de "]')).toBeNull();
   });
 
   it('asks for a location before saving', async () => {
@@ -275,6 +276,6 @@ describe('StationsPage', () => {
     loaded([STATION]);
     await fixture.whenStable();
 
-    expect(element.querySelector<HTMLInputElement>('input[aria-label="API key"]')?.value).toBe('s1.nueva');
+    expect(element.querySelector<HTMLInputElement>('input[aria-label^="API key de "]')?.value).toBe('s1.nueva');
   });
 });

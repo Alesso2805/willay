@@ -29,7 +29,7 @@
       <input
         readonly
         [value]="key.key"
-        aria-label="API key"
+        [attr.aria-label]="t('stations.keyTitle', { code: key.code })"
         class="field min-w-0 flex-1 bg-surface font-mono"
         (focus)="$any($event.target).select()"
       />
