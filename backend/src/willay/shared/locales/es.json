@@ -106,8 +106,7 @@
       "subject": "[Willay] {{severity}} · {{cause}} en {{place}}",
       "greeting": "Hola {{name}}:",
       "opened": "Willay abrió {{incident}} en la zona {{zone}}.",
-      "confirm": "Confirma que lo viste en este enlace (vale 24 horas):",
-      "disclaimer": "Herramienta de apoyo para operadores: no reemplaza los avisos oficiales\n(INDECI, COER, SISMATE)."
+      "confirm": "Confirma que lo viste en este enlace (vale 24 horas):"
     },
     "page": {
       "greeting": "Hola {{name}}:",
@@ -128,13 +127,11 @@
       "expired_title": "Este enlace venció",
       "expired": "Los enlaces de confirmación valen 24 horas. Si el incidente sigue abierto, comunícate con el equipo de operaciones.",
       "invalid_title": "Enlace no válido",
-      "invalid": "Revisa que copiaste el enlace completo desde el mensaje.",
-      "disclaimer": "Willay es una herramienta de apoyo para operadores: no reemplaza los avisos oficiales (INDECI, COER, SISMATE)."
+      "invalid": "Revisa que copiaste el enlace completo desde el mensaje."
     },
     "telegram": {
       "title": "Willay · {{severity}}: {{cause}} en {{zone}}",
       "button": "Confirmar que lo vi",
-      "disclaimer": "Herramienta de apoyo: no reemplaza los avisos oficiales (INDECI, COER, SISMATE).",
       "linked": "Listo, {{name}}: desde ahora recibirás aquí las alertas de Willay de {{organization}}.",
       "invalid_link": "Este enlace no es válido o ya venció. Pide uno nuevo a quien administra Willay en tu organización.",
       "how_to_link": "Este bot solo envía alertas de Willay. Para recibirlas, abre el enlace que te compartió quien administra Willay en tu organización.",

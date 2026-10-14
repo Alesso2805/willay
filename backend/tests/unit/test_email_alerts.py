@@ -70,7 +70,6 @@ def test_the_email_has_zone_severity_value_local_time_and_link() -> None:
     assert "Valor:     35.11 m3/s" in body
     assert "Abierto:   20/11/2026 09:00 (America/Lima)" in body  # local time, not UTC
     assert "http://localhost:8000/confirmar/abc" in body
-    assert "no reemplaza los avisos oficiales" in body
 
 
 @pytest.mark.parametrize(
@@ -102,7 +101,6 @@ def test_an_english_contact_gets_the_email_in_english() -> None:
     assert "Station:  RIM-CHA-01 · Chaclacayo (aguas abajo)" in body
     assert "Opened:   Nov 20, 2026, 09:00 (America/Lima)" in body
     assert "If nobody acknowledges it, Willay will alert the next level." in body
-    assert "it does not replace official warnings" in body
     silence = replace(MESSAGE, language=Language.EN, rule_type="silence", trigger_value=None)
     assert "Last value:  no data" in compose_email(silence, "http://x").body
 

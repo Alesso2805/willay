@@ -1,8 +1,7 @@
 """Alert email template (VIG-20): zone, severity, value, local time and confirmation link.
 
 Plain text so it reads in any client, even a basic phone, without images or styles that
-may be blocked. Times use the organization's timezone (the database stores UTC). The
-footer states Willay does not replace official warnings (SPEC: Explicit ethical risk).
+may be blocked. Times use the organization's timezone (the database stores UTC).
 Written in the contact's language (VIG-40); the texts live in the backend's catalogs.
 """
 
@@ -115,7 +114,6 @@ def compose_email(message: AlertMessage, confirm_url: str) -> EmailContent:
         "",
         "--",
         f"Willay · {message.organization_name}",
-        translate("alerts.email.disclaimer", language),
     ]
     subject = translate(
         "alerts.email.subject",

@@ -27,17 +27,15 @@ button { font-size: 1.1rem; padding: .75rem 1.25rem; border: 0; border-radius: .
          background: #0b4f9c; color: #fff; cursor: pointer; }
 button:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
 .note { border-left: 4px solid #0b4f9c; padding: .25rem .75rem; background: #f1f5fb; }
-footer { margin-top: 2rem; font-size: .85rem; color: #4a4a4a; }
 :root { color-scheme: light dark; }
 @media (prefers-color-scheme: dark) {
   body { color: #e8eef5; background: #0f2132; }
   button { background: #5fd4e8; color: #0b1d2e; }
   .note { border-left-color: #5fd4e8; background: #15293e; }
-  footer { color: #b2c1d1; }
 }
 """
 # Dark mode (VIG-41) follows the device, the only signal a page without login has. As in the
-# dashboard, every pair keeps ≥ 4.5:1 (text 14:1, button 9.8:1, footer 8.9:1).
+# dashboard, every pair keeps ≥ 4.5:1 (text 14:1, button 9.8:1).
 
 
 def page_language(view: ConfirmationView, accept_language: str | None) -> Language:
@@ -120,6 +118,5 @@ def _page(title: str, body: list[str], language: Language) -> str:
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         '<meta name="robots" content="noindex">'
         f"<title>{title} · Willay</title><style>{_STYLE}</style></head>"
-        f"<body><main><h1>{title}</h1>{''.join(body)}</main>"
-        f"<footer>{_text('disclaimer', language)}</footer></body></html>"
+        f"<body><main><h1>{title}</h1>{''.join(body)}</main></body></html>"
     )

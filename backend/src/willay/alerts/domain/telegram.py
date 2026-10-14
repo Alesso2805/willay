@@ -74,7 +74,6 @@ def compose_alert_text(message: AlertMessage) -> str:
             *details,
             "",
             escalation_note(language),
-            translate("alerts.telegram.disclaimer", language),
         ]
     )
 

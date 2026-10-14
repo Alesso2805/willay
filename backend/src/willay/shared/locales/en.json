@@ -106,8 +106,7 @@
       "subject": "[Willay] {{severity}} · {{cause}} in {{place}}",
       "greeting": "Hello {{name}},",
       "opened": "Willay opened {{incident}} in the {{zone}} zone.",
-      "confirm": "Acknowledge that you saw it at this link (valid for 24 hours):",
-      "disclaimer": "A support tool for operators: it does not replace official warnings\n(INDECI, COER, SISMATE)."
+      "confirm": "Acknowledge that you saw it at this link (valid for 24 hours):"
     },
     "page": {
       "greeting": "Hello {{name}},",
@@ -128,13 +127,11 @@
       "expired_title": "This link expired",
       "expired": "Acknowledgement links are valid for 24 hours. If the incident is still open, contact the operations team.",
       "invalid_title": "Invalid link",
-      "invalid": "Check that you copied the whole link from the message.",
-      "disclaimer": "Willay is a support tool for operators: it does not replace official warnings (INDECI, COER, SISMATE)."
+      "invalid": "Check that you copied the whole link from the message."
     },
     "telegram": {
       "title": "Willay · {{severity}}: {{cause}} in {{zone}}",
       "button": "Acknowledge: I saw it",
-      "disclaimer": "A support tool: it does not replace official warnings (INDECI, COER, SISMATE).",
       "linked": "Done, {{name}}: from now on you will receive the Willay alerts of {{organization}} here.",
       "invalid_link": "This link is not valid or has expired. Ask whoever runs Willay in your organization for a new one.",
       "how_to_link": "This bot only sends Willay alerts. To receive them, open the link that whoever runs Willay in your organization shared with you.",
