@@ -1,0 +1,15 @@
+{
+  "name": "willay-e2e",
+  "private": true,
+  "description": "Checks in a real browser against a running stack (VIG-33: the main views at 360 px).",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "~1.64.0"
+  }
+}
