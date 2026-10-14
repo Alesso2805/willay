@@ -261,12 +261,12 @@ Section 7: 5 Cumple · 3 Parcial · 0 No cumple · 1 No verificado.
 | --- | --- | --- |
 | `make up` on this working tree | Cumple | I ran it: all 12 containers reached healthy and `migrate` exited 0. This tree already had a `.env` and no containers or volumes. On machine B the first `make up` failed: a Postgres container from 2026-10-02 had lost its network when Compose recreated the network, so `migrate` could not resolve `postgres`. `make down` and `make up` fixed it: an old container, not a defect of the repository. |
 | `make seed` | Cumple | I ran it: 2 organizations seeded, 10 API keys printed and saved to `.secrets/station-keys.json`. |
-| From a fresh `git clone` with the documented command | No verificado | Not executed. The Makefile creates `.env` from `.env.example` (`Makefile:33-36`) and the CI `compose` job starts from a clean runner (`docker compose up --wait`, migrate exit 0, seed and simulator smoke test), but I did not run that path. |
+| From a fresh `git clone` with the documented command | Cumple | Not executed. The Makefile creates `.env` from `.env.example` (`Makefile:33-36`) and the CI `compose` job starts from a clean runner (`docker compose up --wait`, migrate exit 0, seed and simulator smoke test), but I did not run that path. **Update, 2026-10-13:** a fresh clone of `main` at `5fe2728` came up with `make up` alone (it wrote `.env` from the example; every service healthy, `migrate` exited 0), `make seed` saved the keys, and `make e2e`'s checks passed (26, plus the incident detail skipped on a database with no incident yet). |
 | Local `make lint` / `make test` for the dashboard | Cumple | They need Node `^24.15.0`, as the README says. Machine A has 22.16, so the commands behind them ran on machine B in a `node:24` container (Node 24.21): lint clean, 331 tests passed, build complete. |
 | `make loadtest` | Cumple | Ran on both machines; results in section 3, VIG-29. |
 | `make demo`, production deploy | No verificado | Not executed. |
 
-Section 8: 4 Cumple · 0 Parcial · 0 No cumple · 2 No verificado.
+Section 8: 5 Cumple · 0 Parcial · 0 No cumple · 1 No verificado.
 
 ---
 
@@ -281,7 +281,7 @@ Section 8: 4 Cumple · 0 Parcial · 0 No cumple · 2 No verificado.
 | 5. ADRs | 9 | 0 | 0 | 1 |
 | 6. Deviations | 7 | 3 | 1 | 0 |
 | 7. Scalability | 5 | 3 | 0 | 1 |
-| 8. Reproducibility | 4 | 0 | 0 | 2 |
+| 8. Reproducibility | 5 | 0 | 0 | 1 |
 
 ---
 
@@ -302,7 +302,7 @@ Section 8: 4 Cumple · 0 Parcial · 0 No cumple · 2 No verificado.
 8. **Done on 2026-10-13:** the ADRs are Accepted, ADR-0001 says six workers and ADR-0002 sends failed rows to the dashboard. Still open: decide whether `demo`, the extra schema objects and the API key cache (VIG-29) deserve an ADR.
 9. **SPEC done on 2026-10-13:** schema tables (section 4), repository tree (demo, loadtest, seed, `tests/support`) and the demo worker. The two missing runbooks followed the same day (rotate API keys; back up and restore the DB), tested on a throwaway stack.
 10. Create `docs/BACKLOG.md` and `docs/ARCHITECTURE_RULES.md`, or drop them from the audit brief, so the references stop dangling.
-11. Verify a fresh-clone `make up` once and record it (section 8).
+11. **Done on 2026-10-13.** Verify a fresh-clone `make up` once and record it (section 8).
 
 ### Minor
 
