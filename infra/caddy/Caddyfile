@@ -10,8 +10,12 @@
 		# account console, where a visitor could change the public demo accounts' shared
 		# password (VIG-43); the dashboard never uses it. Inside this block, because Caddy runs
 		# `respond` after `handle` but before `reverse_proxy`.
-		@keycloak_closed path /auth/admin /auth/admin/* /auth/realms/master /auth/realms/master/* /auth/realms/*/account /auth/realms/*/account/*
+		@keycloak_closed path /auth/admin /auth/admin/* /auth/realms/master /auth/realms/master/*
 		respond @keycloak_closed 404
+		# A regular expression, not `/auth/realms/*/account/*`: a `*` in the middle of a path
+		# pattern does not cross a slash, so that pattern let /account/credentials/password through.
+		@account_console path_regexp ^/auth/realms/[^/]+/account(/|$)
+		respond @account_console 404
 		reverse_proxy keycloak:8080
 	}
 
