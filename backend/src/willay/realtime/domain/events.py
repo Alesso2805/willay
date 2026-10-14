@@ -1,7 +1,7 @@
 """Live events for the dashboard (VIG-25).
 
-The database sends a JSON payload via NOTIFY (migration 0008); each one belongs to a single
-organization and only reaches that organization's connections (SPEC). Types: `incident` (the
+The database sends a JSON payload via NOTIFY (migrations 0008 and 0009); each one belongs to a
+single organization and only reaches that organization's connections (SPEC). Types: `incident` (the
 dashboard refetches it over REST, so the viewer's permissions apply), `station` (a heartbeat
 with its last value), `failed_readings` (a reading failed evaluation or went back to the queue:
 the dashboard refetches the count, VIG-39) and `resync` (a notification may have been lost:
