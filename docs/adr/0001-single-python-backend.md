@@ -1,6 +1,6 @@
 # ADR-0001: Single Python backend with separate modules and workers
 
-- **Status:** Proposed (Sprint 0 draft)
+- **Status:** Accepted on 2026-10-13
 - **Date:** 2026-09-26
 - **Related:** SPEC.md › Architecture; Repository, conventions and living documentation
 
@@ -14,13 +14,13 @@ The processes have very different profiles: the API answers in milliseconds, the
 
 1. **Three services** (ingestion, rules/incidents, alerts), each with its own repository or image, communicating over the network.
 2. **A monolith** with the workers as tasks inside the FastAPI lifespan.
-3. **A single Python package (`willay`) deployed as several processes**: the API and 5 workers with the same code and image, run with `python -m willay.workers.<name>`.
+3. **A single Python package (`willay`) deployed as several processes**: the API and the workers with the same code and image, run with `python -m willay.workers.<name>`.
 
 ## Decision
 
 Option 3. A `willay` package with the modules `identity`, `ingestion`, `territory`, `rules`, `incidents`, `alerts` and `realtime`. Each module has the layers `domain`, `application`, `infrastructure` and `api`, and the domain does not import FastAPI or SQLAlchemy. The database schemas `ingest` and `core` mark the boundary between modules.
 
-Workers never run inside the FastAPI lifespan. In Docker Compose, a single image (`willay-backend`) serves `api`, `migrate` and the 5 workers, and only the command changes.
+Workers never run inside the FastAPI lifespan. In Docker Compose, a single image (`willay-backend`) serves `api`, `migrate` and the workers, and only the command changes. There are six: `evaluator`, `silence`, `dispatcher`, `escalation` and `telegram`, plus `demo`, which only runs for the public demo (VIG-43, Compose profile `demo`).
 
 ## Consequences
 

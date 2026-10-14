@@ -1,6 +1,6 @@
 # ADR-0007: Live events emitted by Postgres triggers
 
-- **Status:** Proposed
+- **Status:** Accepted on 2026-10-13
 - **Date:** 2026-09-30
 - **Related:** SPEC.md › Architecture › Real time to the dashboard; VIG-25; ADR-0002
 

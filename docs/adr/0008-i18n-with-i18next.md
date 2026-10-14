@@ -1,6 +1,6 @@
 # ADR-0008: The dashboard in several languages with i18next
 
-- **Status:** Proposed
+- **Status:** Accepted on 2026-10-13
 - **Date:** 2026-10-04
 - **Related:** SPEC.md › Backlog › VIG-40; SPEC.md › Database schema (`users.language`)
 
