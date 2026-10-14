@@ -422,6 +422,7 @@ willay/
 │   ├── migrations/               # Alembic (ingest and core schemas)
 │   └── tests/{unit,integration,support}/
 ├── dashboard/                    # Angular
+├── e2e/                          # Playwright against the running stack (VIG-33: 360 px)
 ├── infra/
 │   ├── caddy/Caddyfile           # the server's reverse proxy (VIG-42)
 │   ├── keycloak/realm-willay.json
