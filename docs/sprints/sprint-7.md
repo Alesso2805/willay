@@ -36,17 +36,6 @@ Also merged during the sprint:
   - the contrast tests read `styles.css` and measure both themes;
   - the choice is kept in the browser, not the database, because it must apply before the app loads and often depends on the device.
 
-## Picking it up again
-
-```bash
-git switch main
-make up && make seed
-make lint test
-make demo
-```
-
-The dashboard is at http://localhost:4200 (users `rimac-operator`, `rimac-responder`, `rimac-viewer` and `rimac-admin`, with `WILLAY_DEV_USER_PASSWORD` from `.env`) and the emails at http://localhost:8025. A database from before this sprint needs the migrate container to reach migration 0013 (`make migrate`).
-
 ## Changes to the specification in this sprint
 
 - `23cd950` docs(spec): users keep their dashboard language (VIG-40)
@@ -54,16 +43,6 @@ The dashboard is at http://localhost:4200 (users `rimac-operator`, `rimac-respon
 - `7155b08` docs(spec): contacts and organizations have a language for their alerts (VIG-40)
 - `b9f0001` docs(spec): who gets which language when no contact is known (VIG-40)
 - `ad07bb7` docs(spec): light and dark mode as VIG-41 (Sprint 7)
-
-## To do
-
-- [ ] **VIG-30:** record the demo video for the README.
-- [ ] **Accept ADRs 0001–0009**, all still Proposed.
-- [ ] **Organization language:** it can only be changed in the database; no screen or endpoint yet.
-- [ ] **Visibility:** a worker without `LISTEN` still keeps a green healthcheck (it polls).
-- [ ] **Lock pattern:** contacts, groups and rules still read subqueries inside a `SELECT … FOR UPDATE`. Only audit snapshots are affected, but they deserve the same two-statement form.
-- [ ] **CI:** the full-stack job failed once because Keycloak did not start within 5 minutes on a slow runner. A rerun passed.
-- [ ] Delete the local branches `feat/VIG-01` to `feat/VIG-11` and `refs/backup/*`.
 
 ## Retro
 

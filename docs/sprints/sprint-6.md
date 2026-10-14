@@ -25,32 +25,10 @@ Also merged during the sprint:
 - **Preview:** it marks the start of each episode in which the draft would have opened an incident, with the evaluator's own functions; it does not simulate the cooldown, which depends on when someone resolves.
 - **Audit:** admin only; the read side lives in the `identity` module (who did what); the entity filter works by URL, without "Historial" links on the other screens.
 
-## Picking it up again
-
-```bash
-git switch main
-make up && make seed
-make lint test
-make simulate ARGS="--scenario rimac --seed 42"
-```
-
-The dashboard is at http://localhost:4200 (users `rimac-operator`, `rimac-responder`, `rimac-viewer`, `rimac-admin`, with `WILLAY_DEV_USER_PASSWORD` from `.env`) and the emails at http://localhost:8025. A database from before this sprint needs the migrate container to reach migration 0009 (`make migrate`).
-
 ## Changes to the specification in this sprint
 
 - `ac4e6b7` docs(spec): failed readings also notify the dashboard live (VIG-39)
 - `8a76245` docs(spec): only silence rules may cover a whole zone (VIG-27)
-
-## To do
-
-- [ ] **Relink Telegram** after the rename: no contact has a chat, so every Telegram alert is skipped.
-- [ ] **Accept ADRs 0001–0007** (0007, live events from triggers, now also covers failed readings).
-- [ ] **Ports:** the other local project (`keycloak_custom` on 8080 and `pgsql_keycloak` on 5433) still clashes with Willay.
-- [ ] **VIG-30:** `make demo` must reset the demo data (the 30 min cooldown prevents repeating the scenario right away).
-- [ ] **Visibility:** a worker without `LISTEN` still keeps a green healthcheck (it polls).
-- [ ] **Review the same lock pattern elsewhere:** contacts, groups and rules also read subqueries in a `SELECT … FOR UPDATE`; there a stale value only affects an audit "before" or a check the database also enforces, but it is worth the same two-statement form.
-- [ ] The rule the product owner created while reviewing ("Baja más de 9999 mm" on RIM-CHO-02) is deactivated in the local database; remove it if it gets in the way.
-- [ ] Delete the local branches `feat/VIG-01` to `feat/VIG-11` and `refs/backup/*`.
 
 ## Retro
 
