@@ -85,6 +85,7 @@ describe('IncidentsPage', () => {
     const cards = [...element.querySelectorAll('li')];
     expect(cards[0].textContent).toContain('Escalamiento agotado');
     expect(cards[0].classList).toContain('border-l-4'); // highlighted, not only by its badge
+    expect(cards[0].getAttribute('style')).toContain('var(--tone-alarm-bg)'); // red: see the catalog's spec
     expect(cards[0].textContent?.replace(/\s+/g, ' ')).toContain('Estación sin reportar · RIM-SEU-01');
     expect(cards[0].textContent).toContain('Chosica');
     expect(cards[0].textContent).toContain('Nivel 2');

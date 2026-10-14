@@ -149,6 +149,58 @@ describe('RulesPage', () => {
     expect(text()).toContain('Regla de RIM-CHO-01 creada.');
   });
 
+  it('creates a rate-of-change rule: more than a change, in the unit of its station, within a window', async () => {
+    const { fixture, http, element, text, button, select, type, loaded } = setup(MANAGE);
+    await loaded([]);
+    button('Nueva regla')?.click();
+    await fixture.whenStable();
+    select('rule-type', 'rate_of_change');
+    select('rule-zone', 'z1');
+    await fixture.whenStable();
+    select('rule-station', 's1');
+    await fixture.whenStable();
+    expect(element.querySelector('label[for="rule-delta"]')?.textContent).toContain('Más de (m)');
+    select('rule-direction', 'up');
+    type('rule-delta', '1.5');
+    type('rule-window', '5');
+    button('Guardar')?.click();
+
+    const request = http.expectOne({ method: 'POST', url: `${API}/v1/rules` });
+    expect(request.request.body).toEqual({
+      type: 'rate_of_change',
+      zone_id: 'z1',
+      station_id: 's1',
+      params: { direction: 'up', delta: 1.5, window_minutes: 5 },
+      severity: 'warning',
+      escalation_policy_id: 'p1',
+      cooldown_s: 1800,
+      is_active: true,
+    });
+    request.flush({ ...THRESHOLD, type: 'rate_of_change', params: request.request.body.params });
+    http.expectOne(`${API}/v1/rules?include_inactive=false`).flush([]);
+    await fixture.whenStable();
+    expect(text()).toContain('Regla de RIM-CHO-01 creada.');
+  });
+
+  it('asks a rate of change for a positive change and a window of 1 to 60 minutes', async () => {
+    const { fixture, http, element, button, select, type, loaded } = setup(MANAGE);
+    await loaded([]);
+    button('Nueva regla')?.click();
+    await fixture.whenStable();
+    select('rule-type', 'rate_of_change');
+    select('rule-zone', 'z1');
+    await fixture.whenStable();
+    select('rule-station', 's1');
+    type('rule-delta', '0');
+    type('rule-window', '61');
+    button('Guardar')?.click();
+    await fixture.whenStable();
+
+    http.expectNone({ method: 'POST', url: `${API}/v1/rules` });
+    expect(element.querySelector('#rule-delta-error')?.textContent).toContain('Un cambio mayor que cero.');
+    expect(element.querySelector('#rule-window-error')?.textContent).toContain('Entre 1 y 60 minutos.');
+  });
+
   it('marks what is missing before asking the API', async () => {
     const { fixture, http, element, button, loaded } = setup(MANAGE);
     await loaded([]);
