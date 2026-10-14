@@ -73,6 +73,16 @@ jobs:
           make simulate ARGS="--scenario normal --stations 2 --seed 1 --steps 2 --interval 1" | tee simulate.log
           # _format_tick marks any response other than 202 with "failed: {...}".
           ! grep -q 'failed:' simulate.log
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: dashboard/.nvmrc
+      # VIG-33: the main views at 360 px, in a real browser, against this stack and its seed.
+      - name: Main views at 360 px (Playwright)
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test
       - name: Diagnostics
         if: failure()
         run: docker compose ps -a && docker compose logs --tail 100

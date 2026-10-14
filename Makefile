@@ -15,7 +15,7 @@ endif
 # Git Bash would rewrite container paths such as /secrets as Windows paths; elsewhere it is unused.
 export MSYS_NO_PATHCONV := 1
 
-.PHONY: help up down lint lint-backend lint-dashboard test test-backend test-dashboard openapi migrate seed simulate latency loadtest demo secrets
+.PHONY: help up down lint lint-backend lint-dashboard test test-backend test-dashboard openapi migrate seed simulate latency loadtest e2e demo secrets
 
 help: ## List the available commands
 ifeq ($(OS),Windows_NT)
@@ -74,6 +74,10 @@ latency: .env ## p50/p95 of reading received -> first alert sent (ARGS="--minute
 
 loadtest: .env ## Load test: 50 stations x 1 reading/10 s, checks SPEC (ARGS="--minutes 30")
 	$(COMPOSE) run --rm migrate python -m willay.loadtest $(ARGS)
+
+# Playwright's own Chromium, downloaded once; WILLAY_E2E_CHANNEL=msedge uses an installed Edge.
+e2e: ## The main views at 360 px in a real browser, against the running stack (VIG-33)
+	cd e2e && npm ci && npx playwright install chromium && npx playwright test
 
 # The keys file is mounted read-only: the demo only reads the keys `make seed` saved.
 demo: .env ## Guided Rímac scenario, narrated; PASS when level 2 acknowledges both incidents
