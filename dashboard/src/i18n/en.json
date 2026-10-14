@@ -1,7 +1,6 @@
 {
   "app": {
     "tagline": "Early warning for operators and community leaders",
-    "disclaimer": "A support tool to detect, decide and warn. It does not replace the official warning systems (INDECI, regional COERs, SISMATE).",
     "menu": "Menu",
     "connection": "Connection:",
     "logout": "Sign out",

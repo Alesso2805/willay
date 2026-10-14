@@ -1,7 +1,6 @@
 {
   "app": {
     "tagline": "Alerta temprana para operadores y líderes comunales",
-    "disclaimer": "Herramienta de apoyo para detectar, decidir y avisar. No reemplaza a los sistemas oficiales de alerta (INDECI, COER regionales, SISMATE).",
     "menu": "Menú",
     "connection": "Conexión:",
     "logout": "Cerrar sesión",

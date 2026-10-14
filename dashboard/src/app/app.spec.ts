@@ -52,12 +52,6 @@ function setup(isAuthenticated: boolean) {
 }
 
 describe('App', () => {
-  it('states that it does not replace official warning systems', async () => {
-    const { fixture, text } = setup(false);
-    await fixture.whenStable();
-    expect(text()).toContain('No reemplaza a los sistemas oficiales de alerta');
-  });
-
   it('offers login when there is no session', async () => {
     const { fixture, oidc } = setup(false);
     await fixture.whenStable();
@@ -223,7 +217,6 @@ describe('App', () => {
     await fixture.whenStable();
 
     expect(text()).toContain('Operations');
-    expect(text()).toContain('does not replace the official warning systems');
     const nav = (fixture.nativeElement as HTMLElement).querySelectorAll('nav[aria-label="Main"] a');
     expect([...nav].map((a) => a.textContent?.trim())).toEqual(['Home', 'Live map', 'Incidents', 'Zones', 'Stations', 'Rules']);
     expect(document.documentElement.lang).toBe('en');
