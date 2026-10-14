@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
 import { type Page, expect, test } from '@playwright/test';
+import { signIn } from './session';
 
 /**
  * VIG-33: the main views are usable at 360 px without horizontal scrolling. jsdom has no layout,
@@ -21,15 +21,6 @@ const PAGES = [
   '/auditoria',
   '/organizacion',
 ];
-
-function devPassword(): string {
-  if (process.env.WILLAY_DEV_USER_PASSWORD) return process.env.WILLAY_DEV_USER_PASSWORD;
-  const line = readFileSync(new URL('../.env', import.meta.url), 'utf8')
-    .split(/\r?\n/)
-    .find((l) => l.startsWith('WILLAY_DEV_USER_PASSWORD='));
-  if (!line) throw new Error('WILLAY_DEV_USER_PASSWORD is neither set nor in .env');
-  return line.slice(line.indexOf('=') + 1).trim();
-}
 
 /** How much wider than the screen the page is, and the first elements that stick out. */
 async function overflow(page: Page): Promise<{ excess: number; culprits: string[] }> {
@@ -80,15 +71,10 @@ test.afterAll(async () => {
 test('the sign-in screen, then signing in', async ({}, testInfo) => {
   const language = testInfo.project.use.locale?.slice(0, 2);
   await page.goto('/');
-  const signIn = page.getByRole('button', { name: /^(Iniciar sesión|Sign in)$/ });
-  await signIn.waitFor();
+  await page.getByRole('button', { name: /^(Iniciar sesión|Sign in)$/ }).waitFor();
   await expectNoHorizontalScroll(page, 'the sign-in screen');
 
-  await signIn.click();
-  await page.locator('#username').fill('rimac-admin');
-  await page.locator('#username').press('Enter');
-  await page.locator('#password').fill(devPassword());
-  await page.locator('#password').press('Enter');
+  await signIn(page, 'rimac-admin');
   // Below 1024 px the navigation folds into a menu button.
   await page.getByRole('button', { name: /^(Menú|Menu)$/ }).waitFor({ timeout: 30_000 });
 
