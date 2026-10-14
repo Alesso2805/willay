@@ -163,6 +163,20 @@ async def test_pages_neither_repeat_nor_skip_while_new_entries_arrive(
     assert seen == expected
 
 
+async def test_filters_by_entity(
+    client: httpx2.AsyncClient, owner: asyncpg.Connection, admin: dict[str, str]
+) -> None:
+    one, other = uuid4(), uuid4()
+    now = SystemClock().now()
+    first = await _record(owner, one, now - timedelta(minutes=1))
+    await _record(owner, other, now)
+    second = await _record(owner, one, now)
+
+    response = await client.get(URL, params={"entity_id": str(one)}, headers=admin)
+    assert response.status_code == 200, response.text
+    assert [e["id"] for e in response.json()["items"]] == [second, first]
+
+
 async def test_filters_by_type_author_and_dates(
     client: httpx2.AsyncClient, owner: asyncpg.Connection, admin: dict[str, str]
 ) -> None:

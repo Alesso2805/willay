@@ -123,6 +123,27 @@ async def test_telegram_failing_twice_delivers_on_the_third_attempt(
     assert events[0]["error"] == "sendMessage: 502 Bad Gateway"
 
 
+async def test_after_three_retries_a_telegram_alert_is_failed_for_good(
+    engine: AsyncEngine, owner: asyncpg.Connection
+) -> None:
+    graph = await telegram_incident(engine, owner)
+    clock = FakeClock(SystemClock().now() + timedelta(seconds=1))
+    dispatcher = TelegramDispatcher(SqlDispatchQueue(engine), FakeBot(down=True), clock)
+    for wait in (0, 5, 10, 20, 60):  # the last one finds nothing left to retry
+        clock.advance(timedelta(seconds=wait))
+        await dispatcher.dispatch(10)
+
+    alert = await _alert(owner, graph, "telegram")
+    assert (alert["status"], alert["attempts"]) == ("failed", 4)
+    events = await _events(owner, alert["id"])
+    assert [(e["type"], e["attempt"], e["final"]) for e in events] == [
+        ("alert_failed", 1, False),
+        ("alert_failed", 2, False),
+        ("alert_failed", 3, False),
+        ("alert_failed", 4, True),
+    ]
+
+
 async def test_a_telegram_outage_does_not_stop_the_email(
     engine: AsyncEngine, owner: asyncpg.Connection, database: Database, tmp_path: Path
 ) -> None:

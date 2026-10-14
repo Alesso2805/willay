@@ -13,7 +13,12 @@ from willay.alerts.application.telegram_link import (
     handle_start,
 )
 from willay.alerts.domain.delivery import hash_ack_token
-from willay.alerts.domain.telegram import how_to_link, invalid_link, start_parameter
+from willay.alerts.domain.telegram import (
+    MAX_START_PARAMETER,
+    how_to_link,
+    invalid_link,
+    start_parameter,
+)
 from willay.shared.audit import AuditEntry
 from willay.shared.clock import FakeClock
 from willay.shared.languages import Language
@@ -105,6 +110,13 @@ async def test_a_link_stores_only_the_hash_and_is_audited_without_the_token() ->
     [entry] = audit.entries
     assert (entry.action, entry.actor_id) == ("telegram_link_created", ACTOR.user_id)
     assert token not in str(entry.after)
+
+
+async def test_the_token_fits_telegram_start_parameter() -> None:
+    # Telegram passes at most 64 characters after ?start= to the bot (VIG-21).
+    token = await _link(Contacts(ACTOR.organization_id), Audit(), FakeClock(T0))
+    assert len(token) <= MAX_START_PARAMETER
+    assert start_parameter(f"/start {token}") == token
 
 
 async def test_a_link_needs_the_bot_and_a_contact_of_the_organization() -> None:
