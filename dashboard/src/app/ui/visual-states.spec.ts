@@ -139,6 +139,18 @@ describe.each(catalogs)('visual states: %s', (_name, states) => {
   );
 });
 
+describe('an exhausted escalation', () => {
+  // SPEC (VIG-34): it is shown in red, with its label too (never color alone).
+  it.each(THEMES)('is red in the %s theme, on its badge and on the map', (theme) => {
+    expect(INCIDENT_STATES.exhausted.tone).toBe('alarm');
+    for (const part of ['bg', 'map'] as const) {
+      const hex = tone(theme, 'alarm', part);
+      const [red, green, blue] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+      expect(red, `${part} ${hex}`).toBeGreaterThan(2 * Math.max(green, blue));
+    }
+  });
+});
+
 describe('notice tones', () => {
   it.each(THEMES)('every notice is readable (≥ 4.5:1), %s theme', (theme) => {
     for (const name of Object.keys(NOTICE_TONES) as NoticeTone[]) {
