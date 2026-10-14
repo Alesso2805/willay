@@ -52,7 +52,16 @@ In the Rasuwa flood (Nepal, August 2026), the Bhote Koshi–Syafrubesi hydrologi
   - Angular with signals; Spanish and English, and so are the alerts each contact receives.
   - Light and dark themes, and no status is conveyed by colour alone.
   - axe-core checks every view, and Playwright checks the main ones at 360 px in a real browser.
-- **Tested:** 982 backend tests (unit, and integration against a real Postgres in Docker), 331 dashboard tests and 28 browser checks.
+
+## Quality
+
+- **Checked against its own specification.** An audit went through the 198 acceptance criteria of the MVP's stories: 172 are proved by an automated test, and the rest in part or by review.
+- **Architecture rules that fail the build.** Five import contracts keep the domain free of FastAPI and SQLAlchemy, keep each module out of the others' infrastructure, and keep workers out of the API. Ruff bans the system clock outside the injected `Clock`.
+- **Tests:**
+  - 990 backend tests: unit, and integration against a real Postgres in Docker;
+  - 336 dashboard tests, including one that fails on any text not taken from the translation files;
+  - 32 checks in a real browser: every main page at 360 px, in Spanish and English, and the theme switch;
+  - 14 checks of a deployed server: one hostname, Keycloak's admin and account consoles closed.
 
 ## Architecture
 
@@ -85,7 +94,6 @@ flowchart LR
 - [docs/SPEC.md](docs/SPEC.md): vision, scope, architecture, schema, backlog and engineering rules.
 - [docs/adr/](docs/adr/): the technical decisions.
 - [docs/runbooks/](docs/runbooks/): deploy, back up and restore, rotate API keys, reprocess failed readings.
-- [docs/AUDIT.md](docs/AUDIT.md): an architecture audit against the specification.
 
 | | |
 | --- | --- |
@@ -160,7 +168,7 @@ make simulate ARGS="--scenario rimac --seed 42"   # real readings into the local
 | `dashboard/` | The Angular dashboard |
 | `e2e/` | Browser checks with Playwright |
 | `infra/` | Keycloak realm, Postgres init, Caddy and the server's `.env` script |
-| `docs/` | Specification, ADRs, runbooks, sprint notes and the audit |
+| `docs/` | Specification, ADRs, runbooks and sprint notes |
 
 ## About
 

@@ -16,6 +16,10 @@ e2e/playwright-report/
 CLAUDE.md
 .claude/
 
+# Internal working notes: an architecture audit and the comments awaiting a decision
+docs/AUDIT.md
+docs/COMMENTS_REVIEW.md
+
 # OS and editors
 .DS_Store
 Thumbs.db
