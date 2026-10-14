@@ -113,6 +113,6 @@ async def test_an_up_rule_fires_on_a_sudden_rise(
     await station.send(2.0, 2.1, 3.0)
     assert await incidents(owner, station.graph) == []
 
-    await station.send(3.6)  # 2.0 → 3.6 m in 30 s
+    await station.send(3.6)  # 2.0 → 3.6 m3/s in 30 s
     [incident] = await incidents(owner, station.graph)
     assert incident["trigger_value"] == 3.6

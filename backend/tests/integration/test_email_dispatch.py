@@ -204,7 +204,8 @@ async def test_the_worker_emails_level_one_and_the_link_confirms_it(
 
 
 class FailsTwice:
-    """Simulated channel that fails twice and then delivers (SPEC: reliability NFR)."""
+    """Simulated channel that fails its first `failures` sends (two by default), then delivers
+    (SPEC: reliability NFR)."""
 
     def __init__(self, failures: int = 2) -> None:
         self.failures = failures
