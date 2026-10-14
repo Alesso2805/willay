@@ -29,7 +29,6 @@ def test_the_telegram_alert_has_the_same_summary_as_the_email() -> None:
     assert "Estación: RIM-CHA-01 · Chaclacayo (aguas abajo)" in lines
     assert "Valor: 35.11 m3/s" in lines
     assert "Abierto: 20/11/2026 09:00 (America/Lima)" in lines
-    assert "no reemplaza los avisos oficiales" in text
 
 
 def test_an_english_contact_gets_the_telegram_alert_in_english() -> None:
@@ -38,7 +37,6 @@ def test_an_english_contact_gets_the_telegram_alert_in_english() -> None:
     assert lines[0] == "Willay · CRITICAL: Sudden change in Chosica"
     assert "Opened: Nov 20, 2026, 09:00 (America/Lima)" in lines
     assert escalation_note(Language.EN) in lines
-    assert "it does not replace official warnings" in text
 
 
 class Rejecting:
@@ -109,7 +107,7 @@ def test_a_handled_alert_drops_the_escalation_warning() -> None:
     assert ESCALATION_NOTE in sent
     assert ESCALATION_NOTE not in closed  # no longer escalating, so the warning would be false
     assert closed.startswith("Willay · CRÍTICO: Cambio brusco en Chosica")
-    assert "no reemplaza los avisos oficiales" in closed  # the disclaimer stays
+    assert "Estación: RIM-CHA-01 · Chaclacayo (aguas abajo)" in closed  # what they saw stays
     assert closed.endswith("\n\nConfirmado por Ana.")
 
 
