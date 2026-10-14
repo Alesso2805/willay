@@ -1,4 +1,4 @@
-# A single image for api, migrate and the 5 workers: only the command changes.
+# A single image for api, migrate and every worker: only the command changes.
 
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS build
 ENV UV_COMPILE_BYTECODE=1 \
