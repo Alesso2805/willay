@@ -134,7 +134,7 @@ Notation: `u/` = `backend/tests/unit`, `i/` = `backend/tests/integration`, `FE` 
 - **VIG-25** (OK 6, P 1). Zones by status, stations with value and age → `FE map/live-map-page.spec.ts`, `live-map-presentation.spec.ts`. SSE with JWT in header → `FE realtime/live-events.spec.ts "sends the token in the Authorization header, never in the URL"`. SSE isolation → `i/test_events_api.py::test_each_organization_only_hears_its_own_events_within_two_seconds`. **Update < 2 s** → measured on the server leg only, not rendering (P). Catalog and no-colour distinction → `live-map-presentation.spec.ts`, `ui/visual-states.spec.ts`. New-incident announcement on every page → `FE app.spec.ts`, `incidents/new-incidents.spec.ts`.
 - **VIG-26** (OK 6). Chart and `opened` copy → `FE incidents/readings-chart.spec.ts`, `incident-detail-page.spec.ts`. Timeline, alerts per recipient → `i/test_incident_alerts_api.py`. Email only for admin and operator → `test_each_role_sees_the_alerts_and_only_operator_and_admin_the_email`. `chat_id` never shown → `i/test_contacts_api.py`, and the alerts-per-recipient test asserts `CHAT_ID not in response.text` for every role (OK: the first pass missed it). The detail page's axe test was not confirmed.
 - **VIG-33** (OK 7, P 2). Single catalog → `ui/visual-states.spec.ts`, no test scans pages for hard-coded status colours (P). No colour alone → same spec (OK). Contrast ≥ 4.5:1 → same spec, both themes (OK). Contrast ≥ 3:1 → measured for map markers only, not UI icons and borders (P). Header per permissions → `FE app.spec.ts` (OK). Shared loading, empty, error → `ui/load-state.spec.ts` (OK). Formats → `ui/formats.spec.ts` (OK). 360 px without horizontal scroll → `e2e/narrow-screens.spec.ts` (OK, added on 2026-10-13): Playwright signs in as an admin and measures the sign-in screen, the twelve main pages and an incident at 360 px, in Spanish and English, against the running stack (`make e2e`, CI's full-stack job). axe per view → present in all views seen (OK).
-- **VIG-34** (OK 6, P 1). List, filters in the URL, SSE reload, aria-live, empty state → `FE incidents/incidents-page.spec.ts`, `inbox-filter.spec.ts`, `new-incidents.spec.ts`; backend `i/test_incidents_api.py::test_the_list_filters_by_status_and_shows_the_newest_first`. "Escalamiento agotado" in red → the text is asserted, the red only indirectly through the tone (P).
+- **VIG-34** (OK 7). List, filters in the URL, SSE reload, aria-live, empty state → `FE incidents/incidents-page.spec.ts`, `inbox-filter.spec.ts`, `new-incidents.spec.ts`; backend `i/test_incidents_api.py::test_the_list_filters_by_status_and_shows_the_newest_first`. "Escalamiento agotado" in red → the text, the card painted with the alarm tone (`incidents-page.spec.ts`), and the alarm tone measured as red in both themes (`ui/visual-states.spec.ts`, OK since 2026-10-14).
 - **VIG-35** (OK 5). Buttons per permission, resolve with choice and confirmation, 409 explained, comments 1 to 2000, isolation → `FE incidents/incident-actions.spec.ts`, `incident-comment.spec.ts`; `i/test_incidents_api.py` (`test_each_transition_needs_its_permission`, `test_a_comment_of_exactly_2000_characters_is_accepted`, `test_another_organization_cannot_comment`).
 
 ### Sprint 6
@@ -142,7 +142,7 @@ Notation: `u/` = `backend/tests/unit`, `i/` = `backend/tests/integration`, `FE` 
 - **VIG-36** (OK 6, P 2). Contacts and groups CRUD, permissions, audit, `chat_id` never leaves the API, 409 for a contact with history, 409 naming the policy → `i/test_contacts_api.py`, `i/test_groups_api.py`. Telegram link generation and unlinking → use cases tested, the HTTP endpoints for creating and unlinking the link are not tested directly (P). "Flags contacts without a channel" → dashboard test exists (`contacts-page.spec.ts`), the backend asserts nothing about it (P).
 - **VIG-38** (OK 5). Admin only, cursor pagination, author and before/after, isolation → `i/test_audit_api.py`. Filter by a specific entity id → `i/test_audit_api.py::test_filters_by_entity` (OK, added on 2026-10-14).
 - **VIG-39** (OK 4, NO 1). List, header count, reprocess with NOTIFY and audit, reprocessed reading ends evaluated → `i/test_failed_readings_api.py`, `FE failed/failed-readings-page.spec.ts`, `i/test_realtime_triggers.py`. Runbook uses the dashboard → documentation only (NO).
-- **VIG-27** (OK 5, P 1). REST CRUD with params validated per type, audit, permissions, preview → `i/test_rules_api.py`, `i/test_rule_preview_api.py`. Forms per type → only the threshold and silence forms are tested in `FE rules/rules-page.spec.ts`, **not rate-of-change** (P).
+- **VIG-27** (OK 6). REST CRUD with params validated per type, audit, permissions, preview → `i/test_rules_api.py`, `i/test_rule_preview_api.py`. Forms per type → `FE rules/rules-page.spec.ts`: threshold and silence, and since 2026-10-14 rate of change too, with its validation (OK).
 
 ### Sprint 7
 
@@ -157,7 +157,7 @@ Notation: `u/` = `backend/tests/unit`, `i/` = `backend/tests/integration`, `FE` 
 
   The 16-batch stall did not recur. It stays an isolated event with no proven cause.
 - **VIG-30** (P 2). `make demo` reaches both incidents acknowledged at level 2 → the story logic is unit-tested (`u/test_demo_story.py`, `u/test_demo_mailbox.py`, `i/test_demo.py`), the full run is not in CI and I did not run it (P). README with video and screenshots → screenshots present, **no video link** (P).
-- **VIG-40** (OK 3, P 1, NO 1). Missing key fails a test → `FE i18n/translations.spec.ts`, `u/test_i18n.py` (OK). Nothing hard-coded → no lint rule or test (NO). Dashboard language → `FE i18n/language.spec.ts`, `i/test_identity_api.py` (OK). Contact language → the confirmation page is tested, email and Telegram language was not confirmed (P). API errors with `code` → `u/test_api_errors.py` (OK).
+- **VIG-40** (OK 4, P 1). Missing key fails a test → `FE i18n/translations.spec.ts`, `u/test_i18n.py` (OK). Nothing hard-coded → `FE i18n/hardcoded-text.spec.ts` (OK, added on 2026-10-14): every template, in its own file or inline, parsed with Angular's parser; any text node or read-aloud attribute with a letter that does not go through `t()` fails. It found one: the API key field's `aria-label="API key"`, now translated. Dashboard language → `FE i18n/language.spec.ts`, `i/test_identity_api.py` (OK). Contact language → the confirmation page is tested, email and Telegram language was not confirmed (P). API errors with `code` → `u/test_api_errors.py` (OK).
 - **VIG-41** (OK 4, P 3, NO 1). Follows the system → `FE theme/theme.spec.ts` (OK). Kept in the browser → same (OK). Applied before load → the script's logic is tested, not the absence of a flash (P). Semantic colours, never a fixed gray → no scan (P). Dark shade per state, same contrast tests → `ui/visual-states.spec.ts` (OK). Switching redraws nothing → no test types in a form and switches (P). **Dark base map → no test** (NO). Confirmation page follows the system mode → `i/test_confirmation_page.py` (OK).
 
 ### Sprint 8
@@ -170,7 +170,7 @@ Notation: `u/` = `backend/tests/unit`, `i/` = `backend/tests/integration`, `FE` 
 
 ### Totals for section 3
 
-198 criteria examined (VIG-06, 07, 31, 32 and 45 excluded): **159 OK · 25 partial · 14 without a test.** Backend and infra: 113 / 15 / 12. Dashboard: 46 / 10 / 2.
+198 criteria examined (VIG-06, 07, 31, 32 and 45 excluded): **162 OK · 23 partial · 13 without a test.** Backend and infra: 113 / 15 / 12. Dashboard: 49 / 8 / 1.
 
 ---
 
@@ -276,7 +276,7 @@ Section 8: 5 Cumple · 0 Parcial · 0 No cumple · 1 No verificado.
 | --- | ---: | ---: | ---: | ---: |
 | 1. Structure | 6 | 0 | 0 | 0 |
 | 2. Architecture rules | 20 | 1 | 0 | 2 |
-| 3. Acceptance criteria (OK / partial / no test) | 159 | 25 | 14 | 5 stories |
+| 3. Acceptance criteria (OK / partial / no test) | 162 | 23 | 13 | 5 stories |
 | 4. Data | 8 | 1 | 0 | 0 |
 | 5. ADRs | 9 | 0 | 0 | 1 |
 | 6. Deviations | 7 | 3 | 1 | 0 |
@@ -298,7 +298,7 @@ Section 8: 5 Cumple · 0 Parcial · 0 No cumple · 1 No verificado.
 4. **Done on 2026-10-13.** Add architecture tests (import-linter or an AST test) for: domain imports no FastAPI or SQLAlchemy; no API layer imports another module's infrastructure; no workers in the lifespan.
 5. **Done on 2026-10-13.** Remove the layering violations in section 7: the three API → other-infrastructure imports, the `rules` ↔ `alerts` cycle (move `Transaction` to `shared`).
 6. Test the untested parts of VIG-42 and VIG-43: Keycloak admin console unreachable, `make secrets`, demo accounts unable to change their password, the Mailpit route, multi-arch images.
-7. Missing tests: VIG-37 "applies to ongoing incidents" notice, VIG-40 "no hard-coded strings" (an ESLint rule for templates would do), VIG-27 rate-of-change form, VIG-41 dark base map and form-survives-theme-switch, VIG-44 default language and time zone reaching an email.
+7. **Mostly done on 2026-10-14** (VIG-37 was already tested; VIG-40, VIG-27 and VIG-44 now are). Still open: VIG-41's dark base map and form-survives-theme-switch. Missing tests: VIG-37 "applies to ongoing incidents" notice, VIG-40 "no hard-coded strings" (an ESLint rule for templates would do), VIG-27 rate-of-change form, VIG-41 dark base map and form-survives-theme-switch, VIG-44 default language and time zone reaching an email.
 8. **Done on 2026-10-13:** the ADRs are Accepted, ADR-0001 says six workers and ADR-0002 sends failed rows to the dashboard. Still open: decide whether `demo`, the extra schema objects and the API key cache (VIG-29) deserve an ADR.
 9. **SPEC done on 2026-10-13:** schema tables (section 4), repository tree (demo, loadtest, seed, `tests/support`) and the demo worker. The two missing runbooks followed the same day (rotate API keys; back up and restore the DB), tested on a throwaway stack.
 10. Create `docs/BACKLOG.md` and `docs/ARCHITECTURE_RULES.md`, or drop them from the audit brief, so the references stop dangling.
@@ -307,7 +307,7 @@ Section 8: 5 Cumple · 0 Parcial · 0 No cumple · 1 No verificado.
 ### Minor
 
 12. CI should call `make lint` and `make test` (or the Makefile and CI should be declared equivalent).
-13. Small assertion gaps: VIG-04 one-level isolation policy, VIG-21 link length, VIG-22 give-up after retries for Telegram, VIG-17 15 s interval, VIG-38 filter by entity id, VIG-26 `chat_id` absent from alerts-per-recipient, VIG-34 the red tone.
+13. **Done on 2026-10-14.** Small assertion gaps: VIG-04 one-level isolation policy, VIG-21 link length, VIG-22 give-up after retries for Telegram, VIG-17 15 s interval, VIG-38 filter by entity id, VIG-26 `chat_id` absent from alerts-per-recipient, VIG-34 the red tone.
 14. Split `rules/rules-page.ts` (398 lines plus a 366-line template) before it grows.
 15. Check Angular, Node, Postgres and Keycloak against their support calendars and record it.
 16. Audit VIG-06, VIG-07, VIG-31, VIG-32 and VIG-45, which this audit did not cover.
