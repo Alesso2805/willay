@@ -12,7 +12,7 @@ Willay cuts from minutes to seconds the time between an anomalous data point app
 
 **The proposal.** A web platform that ingests sensor data, evaluates configurable rules and dispatches multichannel alerts with automatic escalation. It treats the silence of a sensor in a risk zone as a possible event, not as a maintenance failure.
 
-**Positioning.** Willay is a support tool for operators and community leaders: detect, decide and warn. It does not replace official dissemination to the public (INDECI, regional COERs, the MTC's SISMATE) and is designed to integrate with it later through the CAP standard.
+**Positioning.** Willay is the modern early warning layer between sensors and people. Today, between a sensor that detects an anomaly and the person who must act, there is a phone chain, a WhatsApp group and minutes lost; monitoring portals show the data, but nobody decides or escalates. Willay replaces that chain: it evaluates every reading as it arrives, opens the incident, alerts the right people in seconds and escalates on its own until someone acknowledges. Its incidents will also speak the CAP standard (phase 2), so they can reach any public alerting channel.
 
 **Target users.** Risk management offices of small and medium-sized municipalities (first market: Peru, because of huaicos and the Niño costero, i.e. debris flows and coastal El Niño), prevention NGOs and critical infrastructure operators (hydroelectric plants, mines).
 
@@ -340,7 +340,7 @@ In an alerting system, a lost alert is worse than a duplicate one: every design 
 | See the audit log | | | | ✔ |
 | Run the Rímac scenario of the public demo (only with `WILLAY_DEMO_MODE`, VIG-43) | | | | ✔ |
 
-**Explicit ethical risk.** A false alarm erodes trust and a lost alert can cost lives. Willay is a support tool for operators and does not replace the official warning systems; the product, the documentation and the demo must say so.
+**Explicit ethical risk.** A false alarm erodes trust and a lost alert can cost lives. That is why delivery is at least once, with retries and escalation; every alert and acknowledgement is traced in the incident's timeline; and a rule can be previewed against the last 24 h of readings before it goes live.
 
 ## Engineering rules
 
