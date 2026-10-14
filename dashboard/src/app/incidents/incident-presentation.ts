@@ -3,7 +3,7 @@ import { TranslationKey, t } from '../i18n/i18n';
 import { IncidentState } from '../ui/visual-states';
 import { Incident } from './incidents.api';
 
-/** The same wording as the alert emails and Telegram messages (alerts/domain/email.py). */
+/** The same wording as the alert emails and Telegram messages (backend locales, `alerts.cause`). */
 const CAUSES: Readonly<Record<string, TranslationKey>> = {
   threshold: 'causes.threshold',
   rate_of_change: 'causes.rate_of_change',

@@ -2,8 +2,9 @@
 
 /*
  * Light and dark mode (VIG-41): ThemeService (and, before the app loads, the script in
- * index.html) puts `dark` on <html>. Every color below is a CSS variable that `:root.dark`
- * redefines, so switching themes repaints without redrawing anything. ADR-0009.
+ * index.html) puts `dark` on <html>. Every color below is a CSS variable; `:root.dark`
+ * redefines those that follow the theme (night and brand blue do not), so switching themes
+ * repaints without redrawing anything. ADR-0009.
  */
 @custom-variant dark (&:where(.dark, .dark *));
 

@@ -4,7 +4,8 @@ import { FieldChange } from './audit-presentation';
 
 /**
  * Each changed field, before and after. On creation only the new value; on deletion only the
- * old one, struck through. Strikethrough is not the only cue: screen readers hear "cambió a".
+ * old one, struck through. Strikethrough is not the only cue: screen readers also hear
+ * `audit.changedTo` on a change and `audit.removed` on a deletion.
  */
 @Component({
   selector: 'app-field-changes',

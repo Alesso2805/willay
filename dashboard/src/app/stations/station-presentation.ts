@@ -24,9 +24,11 @@ export function positionLabel(position: ZonePosition): string {
 
 /**
  * Whether the station is reporting or silent, with the same rule as the `silence` worker: no
- * batches for K × expected interval. It is an approximate view using the browser clock; the
- * worker opens the incident. A station that never reported is not silent (SPEC: it has not
- * started transmitting yet), so it has no state: returns null.
+ * batches for K × expected interval, judged at `now`, which callers take from `dataTime`: the
+ * browser clock while the live channel is up, the newest data otherwise. It is an approximate
+ * view; the worker opens the incident. An inactive station is `inactive`. A station that never
+ * reported is not silent (SPEC: it has not started transmitting yet), so it has no state:
+ * returns null.
  */
 export function stationState(station: Station, now: number): StationState | null {
   if (station.status === 'inactive') return 'inactive';
