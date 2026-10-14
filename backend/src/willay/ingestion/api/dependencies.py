@@ -20,7 +20,7 @@ from willay.ingestion.application.authenticate_station import (
 )
 from willay.ingestion.application.rate_limit import enforce_rate_limit
 from willay.ingestion.domain.rate_limit import MAX_BATCHES_PER_MINUTE, RateLimitExceededError
-from willay.ingestion.infrastructure.api_keys import ApiKeyHasher
+from willay.ingestion.infrastructure.api_keys import ApiKeyHasher, Argon2ApiKeyIssuer
 from willay.ingestion.infrastructure.repositories import SqlBatchCounter, SqlStationCredentials
 from willay.shared.errors import ErrorCode
 from willay.shared.web import ApiError, ClockDep, EngineDep
@@ -35,6 +35,14 @@ _api_key = APIKeyHeader(
 def get_api_key_hasher(request: Request) -> ApiKeyHasher:
     hasher: ApiKeyHasher = request.app.state.api_key_hasher
     return hasher
+
+
+def get_api_key_issuer(
+    hasher: Annotated[ApiKeyHasher, Depends(get_api_key_hasher)],
+) -> Argon2ApiKeyIssuer:
+    """New station keys (territory: create a station, rotate its key), hashed like the ones
+    this API verifies."""
+    return Argon2ApiKeyIssuer(hasher)
 
 
 async def current_station(
