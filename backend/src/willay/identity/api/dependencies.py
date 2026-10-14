@@ -96,7 +96,8 @@ def require(permission: Permission) -> Callable[[Principal], Awaitable[Principal
 
 def _ensure(principal: Principal, permission: Permission) -> None:
     if not can(principal, permission):
-        # Different message from the tenant 403, so the dashboard can tell them apart.
+        # Its own code (permission_denied), apart from the tenant 403 (organization_required),
+        # so a client can tell them apart.
         raise ApiError(
             status.HTTP_403_FORBIDDEN, ErrorCode.PERMISSION_DENIED, permission=permission.value
         )
