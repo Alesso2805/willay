@@ -1,8 +1,10 @@
 # Willay
 
-**An early warning platform for floods and debris flows.** Willay ingests sensor readings, evaluates rules per risk zone, opens incidents without duplicates and alerts people by email and Telegram, escalating level by level until someone acknowledges. It treats a sensor that goes silent in a risk zone as a possible event, not a maintenance chore.
+**The modern early warning layer for floods and debris flows.**
 
-> **Support tool.** Willay helps operators and community leaders detect, decide and warn. It does not replace the official public warning systems (in Peru: INDECI, the regional COERs, SISMATE).
+Today, between a sensor that detects an anomaly and the person who must act, there is a phone chain, a WhatsApp group and minutes lost. Monitoring portals show the data, but nobody decides or escalates.
+
+Willay replaces that chain. It evaluates every reading as it arrives, opens the incident without duplicates, alerts the right people by email and Telegram in seconds, and escalates level by level until someone acknowledges. Even a sensor that goes silent in a risk zone is a signal, not a maintenance chore.
 
 "Willay" is Quechua for "to warn, to inform".
 
