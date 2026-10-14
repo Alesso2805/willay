@@ -69,6 +69,10 @@ async def test_seed_creates_expected_data_and_is_idempotent(
         "SELECT count(*) FROM core.escalation_levels WHERE policy_id = $1", data.P_RIMAC
     )
     assert rimac_levels == 3
+    isolation_levels = await owner.fetchval(
+        "SELECT count(*) FROM core.escalation_levels WHERE policy_id = $1", data.P_ISOLATION
+    )
+    assert isolation_levels == 1  # every rule needs a policy, and one level is enough there
 
     # The station without a zone exists and has no rows in zone_stations.
     assert not await owner.fetchval(

@@ -14,6 +14,7 @@ from willay.incidents.domain.incidents import EvidenceReading
 from willay.rules.application.silence_check import SilenceChecker, SilenceCycle, WatchedStation
 from willay.rules.domain.silence import is_silent, silence_threshold
 from willay.shared.clock import FakeClock
+from willay.workers.silence import INTERVAL_S
 
 T0 = datetime(2026, 11, 9, 8, 50, tzinfo=UTC)  # last heartbeat
 THIRTY_S = timedelta(seconds=30)  # K = 3 times a 10 s interval
@@ -154,3 +155,8 @@ async def test_a_recovery_recorded_by_another_worker_is_not_counted() -> None:
         Repository(recoveries=(_recovery(),)), incidents, FakeClock(T0 + timedelta(minutes=6))
     ).run()
     assert cycle.recovered == 0
+
+
+def test_the_worker_looks_for_silent_stations_every_15_seconds() -> None:
+    # SPEC (VIG-17): with that cycle, an incident opens within K x interval + 30 s.
+    assert INTERVAL_S == 15.0

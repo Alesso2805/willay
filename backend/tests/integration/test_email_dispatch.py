@@ -11,6 +11,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
+from zoneinfo import ZoneInfo
 
 import asyncpg
 import httpx2
@@ -215,6 +216,41 @@ class FailsTwice:
         self.calls += 1
         if self.calls <= self.failures:
             raise DeliveryError("SMTPServerDisconnected")
+
+
+class Captures:
+    """Simulated channel that delivers and keeps what it sent."""
+
+    def __init__(self) -> None:
+        self.sent: list[tuple[str, EmailContent]] = []
+
+    async def send(self, to: str, content: EmailContent) -> None:
+        self.sent.append((to, content))
+
+
+async def test_a_contact_without_a_language_gets_the_organization_s_language_and_time(
+    engine: AsyncEngine, owner: asyncpg.Connection
+) -> None:
+    # VIG-44: what an admin sets for the organization reaches the alerts of the contacts who
+    # chose no language; the message is composed when it is sent, so a change applies at once.
+    station, (ana,) = await _incident_alerting(engine, owner, "Ana")
+    await owner.execute(
+        "UPDATE core.organizations SET language = 'en', timezone = 'Asia/Tokyo' WHERE id = $1",
+        station.graph.organization_id,
+    )
+    sender = Captures()
+    clock = FakeClock(SystemClock().now() + timedelta(seconds=1))
+    await EmailDispatcher(SqlDispatchQueue(engine), sender, clock, "http://x").dispatch(10)
+
+    [content] = [content for to, content in sender.sent if to == ana]
+    assert content.subject == "[Willay] WARNING · Value out of bounds in Zona (EST-1)"
+    assert content.body.startswith("Hello Ana,")
+    opened_at = await owner.fetchval(
+        "SELECT opened_at FROM core.incidents WHERE organization_id = $1",
+        station.graph.organization_id,
+    )
+    tokyo = opened_at.astimezone(ZoneInfo("Asia/Tokyo"))
+    assert f"{tokyo:%H:%M} (Asia/Tokyo)" in content.body
 
 
 async def test_a_channel_failing_twice_delivers_on_the_third_attempt(
