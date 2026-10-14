@@ -61,7 +61,8 @@ class AlertRepository(Protocol):
 
 
 class IncidentAlerting(Protocol):
-    """What the evaluator and the silence worker need: alerting a level."""
+    """What the evaluator, the silence worker and the escalation worker need: alerting a
+    level."""
 
     async def alert_level(
         self, tx: AsyncConnection, incident_id: UUID, level_order: int, now: datetime
