@@ -194,12 +194,12 @@ Section 4: 7 Cumple · 2 Parcial · 0 No cumple.
 
 ## 5. Decisions (ADRs)
 
-All ten ADRs exist (`docs/adr/0001` to `0010`, plus an index). **Every one has status "Proposed"**, including 0001 to 0004, although the code is built on them; the ADR README defines the Proposed → Accepted step and none was promoted.
+All ten ADRs exist (`docs/adr/0001` to `0010`, plus an index). **Every one has status "Proposed"**, including 0001 to 0004, although the code is built on them; the ADR README defines the Proposed → Accepted step and none was promoted. **Update, 2026-10-13:** all ten are now Accepted.
 
 | ADR | Status | Matches the code? |
 | --- | --- | --- |
-| 0001 single backend | Parcial | Layout and processes match. It says five workers; there are six (`demo`). |
-| 0002 Postgres as queue | Parcial | `pg_queue.py:16-47` matches. SPEC says it covers poison rows and criteria for migrating; "poison" does not appear in it and the migration criteria were not verified. |
+| 0001 single backend | Cumple | Layout and processes match. It said five workers; corrected to six (`demo`) on 2026-10-13. |
+| 0002 Postgres as queue | Cumple | `pg_queue.py:16-47` matches. Its "Poison rows" point and its criteria for migrating were there all along: the first pass searched for "poison" in lower case and missed them. Since 2026-10-13 it says failed rows are reprocessed from the dashboard (VIG-39). |
 | 0003 TimescaleDB | Cumple | Chunk, columnstore and retention settings match; TSL license and no-RDS constraint are written (lines 36-37). |
 | 0004 Keycloak organizations | Cumple | `principal.py:63-81` parses the object, rejects zero or several, resolves by id. 403 mapping not read. |
 | 0005 init script | Cumple | Matches `01-init.sh`. |
@@ -209,7 +209,7 @@ All ten ADRs exist (`docs/adr/0001` to `0010`, plus an index). **Every one has s
 | 0009 light and dark with CSS variables | Cumple | `@custom-variant dark` and `:root.dark` in `styles.css`. |
 | 0010 deploy behind Caddy | No verificado | Files exist; routing and `!reset` port removal not checked. |
 
-Section 5: 7 Cumple · 2 Parcial · 1 No verificado.
+Section 5: 9 Cumple · 0 Parcial · 1 No verificado.
 
 ---
 
@@ -226,10 +226,10 @@ Section 5: 7 Cumple · 2 Parcial · 1 No verificado.
 | 7 | CI runs the underlying commands, not `make lint` and `make test`; OpenAPI freshness is a pytest test, not a CI step | No (SPEC says "CI fails if not up to date", which the test satisfies) | Parcial |
 | 8 | OpenAPI contract is guarded | n/a, `u/test_openapi_contract.py` | Cumple |
 | 9 | README without the video VIG-30 requires | No | No cumple |
-| 10 | All ADRs "Proposed" after implementation | No | Parcial |
+| 10 | All ADRs "Proposed" after implementation | Resolved: all Accepted on 2026-10-13 | Cumple |
 | 11 | No `shared/tenancy` (lives in identity) | No | Parcial |
 
-Section 6: 2 Cumple · 8 Parcial · 1 No cumple.
+Section 6: 3 Cumple · 7 Parcial · 1 No cumple.
 
 Stack versions: Python `>=3.12,<3.13`, Node `^24.15.0` (README and `.nvmrc` agree), Angular 22.2, TypeScript ~6.0, Keycloak 26.7.4, `timescale/timescaledb-ha:pg16-ts2.30`. I did not check against the vendors' release calendars that Angular 22 and the others are still supported today; the SPEC asks for that review in sprint 0 and I found no record of it.
 
@@ -276,8 +276,8 @@ Section 8: 4 Cumple · 0 Parcial · 0 No cumple · 2 No verificado.
 | 2. Architecture rules | 18 | 2 | 1 | 2 |
 | 3. Acceptance criteria (OK / partial / no test) | 149 | 33 | 16 | 5 stories |
 | 4. Data | 7 | 2 | 0 | 0 |
-| 5. ADRs | 7 | 2 | 0 | 1 |
-| 6. Deviations | 2 | 8 | 1 | 0 |
+| 5. ADRs | 9 | 0 | 0 | 1 |
+| 6. Deviations | 3 | 7 | 1 | 0 |
 | 7. Scalability | 2 | 4 | 2 | 1 |
 | 8. Reproducibility | 4 | 0 | 0 | 2 |
 
@@ -297,7 +297,7 @@ Section 8: 4 Cumple · 0 Parcial · 0 No cumple · 2 No verificado.
 5. Remove the layering violations in section 7: the three API → other-infrastructure imports, the `rules` ↔ `alerts` cycle (move `Transaction` to `shared`).
 6. Test the untested parts of VIG-42 and VIG-43: Keycloak admin console unreachable, `make secrets`, demo accounts unable to change their password, the Mailpit route, multi-arch images.
 7. Missing tests: VIG-37 "applies to ongoing incidents" notice, VIG-40 "no hard-coded strings" (an ESLint rule for templates would do), VIG-27 rate-of-change form, VIG-41 dark base map and form-survives-theme-switch, VIG-44 default language and time zone reaching an email.
-8. Promote the ADRs that are in force to Accepted; update ADR-0001 (six workers) and ADR-0002 (poison rows, criteria for migrating); decide whether `demo`, the extra schema objects and the API key cache (VIG-29) deserve an ADR.
+8. **Done on 2026-10-13:** the ADRs are Accepted, ADR-0001 says six workers and ADR-0002 sends failed rows to the dashboard. Still open: decide whether `demo`, the extra schema objects and the API key cache (VIG-29) deserve an ADR.
 9. Update SPEC: schema tables (section 4), repository tree (demo, loadtest, seed, `tests/support`), worker count. Write the two missing runbooks (rotate API keys, restore the DB).
 10. Create `docs/BACKLOG.md` and `docs/ARCHITECTURE_RULES.md`, or drop them from the audit brief, so the references stop dangling.
 11. Verify a fresh-clone `make up` once and record it (section 8).
