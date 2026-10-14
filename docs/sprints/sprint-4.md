@@ -25,22 +25,6 @@
   - The `chat_id` never leaves the API.
   - A sprint 7 is added.
 
-## Picking it up again
-
-```bash
-git switch main
-make up && make seed
-make lint test
-make simulate ARGS="--scenario rimac --seed 42"
-```
-
-To receive alerts via Telegram:
-1. Create a bot with @BotFather.
-2. Put `WILLAY_TELEGRAM_BOT_TOKEN` and `WILLAY_TELEGRAM_BOT_USERNAME` (without `@`) in `.env`.
-3. Generate a contact's link with `POST /v1/contacts/{id}/telegram-link` using an admin token (see README).
-
-The emails can be seen in Mailpit: http://localhost:8025.
-
 ## Changes to the specification in this sprint
 
 - `249eaa0` docs(spec): confirmation outcomes and no alerts after confirmation (PR #13)
@@ -50,21 +34,8 @@ The emails can be seen in Mailpit: http://localhost:8025.
 - `35d6223` docs(spec): a contact's chat_id never leaves the API (PR #17)
 - `8e5847e` docs(spec): add panel and admin stories VIG-33 to VIG-39 with a sprint 7 (PR #17)
 
-## To do
-
-- [ ] **Validation interviews:** SPEC asked for at least 3 before Sprint 4 and for adjusting the backlog before Sprint 5; `docs/research/` is still empty. Sprint 5 builds the dashboard, precisely what they should shape the most.
-- [ ] **WSL environment:** enable the Ubuntu WSL integration in Docker Desktop and install `make`. The live test was done from Windows because WSL had neither of the two.
-- [ ] **Ports:** the other local project (`keycloak_custom` on 8080 and `pgsql_keycloak` on 5433) clashes with Vigía and leaves its containers in `Created`; it has to be stopped before `make up`. Decide whether to make the Keycloak ports configurable end to end, since its URL also lives in the realm, the dashboard and token validation.
-- [ ] When confirming from Telegram, the message keeps the line "Si nadie lo confirma, Vigía avisará al siguiente nivel." ("If nobody confirms it, Vigía will notify the next level."), which no longer applies: remove it when editing.
-- [ ] VIG-30 (`make demo`) needs to reset the demo data without losing the linked contacts: the 30 min cooldown prevents repeating the scenario right away.
-- [ ] From previous sprints:
-  - accept ADRs 0001–0006;
-  - Node 24 in WSL and move the repo to the WSL file system;
-  - decide whether to delete `refs/backup/*` and the local branches `feat/VIG-01` to `feat/VIG-11`.
-  - The organization's name in the dashboard moved to VIG-33.
-
 ## Retro
 
 - **Went well:** VIG-22 was delivered in two parts, each committed as soon as its tests passed, as the previous retro asked. The test with the real bot worked on the first try as far as the code was concerned: all the problems came from the environment.
-- **To improve:** the live test guide assumed a WSL with Docker and `make`, and free ports, and did not warn that confirming the level 1 email stops the escalation before it reaches Telegram. Every test guide must start with an environment check.
+- **To improve:** the live test guide did not warn that confirming the level 1 email stops the escalation before it reaches Telegram. Every test guide must start with an environment check.
 - **To try:** in VIG-30, have `make demo` check the environment (Docker, ports) and reset the demo data before launching the scenario.

@@ -21,32 +21,14 @@ In addition, PR #1 got CI green on GitHub: `setup-uv` pinned by SHA and a separa
 - **Stations:** the unit is fixed per variable, the code does not change and a rotated key stops working instantly.
 - **Incidents:** basic opening was brought forward to VIG-15 and VIG-16. VIG-18 keeps the cooldown, the `reading_added` events and the race test.
 - **Rate of change:** it is measured from peak to trough, respecting the order. The window ends at the evaluated reading and both ends are included.
-- **History:** it was rewritten to remove Claude's co-author trailer. All the SHAs changed, and the earlier sprint notes already point to the new ones.
-
-## Picking it up again
-
-```bash
-git switch main
-make up && make seed
-make lint test
-make simulate ARGS="--scenario rimac --seed 42"   # opens the drop incident on RIM-CHA-01
-```
 
 ## Changes to the specification in this sprint
 
 - `0517a1b` docs(spec): station unit per variable, fixed code, immediate key rotation
 - `f723e5b` docs(spec): define how threshold and rate-of-change rules are measured
 
-## To do
-
-- [ ] Accept ADRs 0001–0006.
-- [ ] Show the organization's name (not its uuid) in `/v1/me` and in the dashboard.
-- [ ] Node 24 in WSL and move the repo to the WSL file system.
-- [ ] Decide whether to delete the backup refs `refs/backup/*` and the local branches `feat/VIG-01` to `feat/VIG-11`, which keep the commits from before the rewrite.
-- [ ] PRs #1 to #4 still show the old commits in their "Commits" tab; only GitHub support can remove them.
-
 ## Retro
 
 - **Went well:** one PR per story with a three-job CI validated each delivery, and the live tests measured real latencies (13 ms from reading to incident). Breaking the query on purpose confirmed that the window tests catch the errors.
-- **To improve:** rewriting the history to remove the attribution took time and broke references in the notes. Configuring it from the first commit would have avoided it. Docker Desktop being off also held up the integration tests.
+- **To improve:** rewriting the history took time and broke references in the notes; settling the commit conventions from the first commit would have avoided it. Docker Desktop being off also held up the integration tests.
 - **To try:** in the sprint notes, also cite each change by its PR, because the PR number survives a history rewrite.

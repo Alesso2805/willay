@@ -24,17 +24,6 @@ Also merged during the sprint: the codebase and documentation in English (#22–
 - **Actions:** resolving asks how it ended in a panel inside the card (not a modal), and it is final; comments are allowed on resolved incidents.
 - **Product and code:** the product is called Willay; code, comments and docs are in English, user-facing text stays in Spanish until VIG-40.
 
-## Picking it up again
-
-```bash
-git switch main
-make up && make seed
-make lint test
-make simulate ARGS="--scenario rimac --seed 42"
-```
-
-The dashboard is at http://localhost:4200 (users `rimac-operator`, `rimac-responder`, `rimac-viewer`, `rimac-admin`, with `WILLAY_DEV_USER_PASSWORD` from `.env`) and the emails at http://localhost:8025. `make` now works from PowerShell and Git Bash as well as WSL.
-
 ## Changes to the specification in this sprint
 
 - `52443ee` docs(spec): validation interviews postponed past the MVP (PR #19)
@@ -51,16 +40,6 @@ The dashboard is at http://localhost:4200 (users `rimac-operator`, `rimac-respon
 - `8adfb35` docs(spec): new incidents are announced on every page (PR #30)
 - `e7a6e9c` docs(spec): station markers carry their incident's status (PR #33)
 - `c384576` docs(spec): what the incident's readings chart shows (PR #36)
-
-## To do
-
-- [ ] **Relink Telegram** after the rename: no contact has a chat in the new database, so every Telegram alert is skipped ("el contacto no vinculó Telegram").
-- [ ] **Accept ADRs 0001–0007** (0007, live events from triggers, is still Proposed).
-- [ ] **Ports:** the other local project (`keycloak_custom` on 8080 and `pgsql_keycloak` on 5433) still clashes with Willay.
-- [ ] **VIG-30:** `make demo` must reset the demo data (the 30 min cooldown prevents repeating the scenario right away).
-- [ ] **Watch:** once, `docker compose up -d --build dashboard` recreated the Postgres container (clean shutdown, data kept); the cause was not found because Docker Desktop keeps no event history.
-- [ ] **Visibility:** a worker without `LISTEN` still keeps a green healthcheck (it polls); #38 retries and logs it, but consider showing it in the healthcheck.
-- [ ] Delete the local branches `feat/VIG-01` to `feat/VIG-11` and `refs/backup/*`.
 
 ## Retro
 

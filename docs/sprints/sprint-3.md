@@ -20,31 +20,12 @@
 - **Email:** plain text with the organization's local time; retries after 5, 10 and 20 s; the timeline never stores the email address or the `chat_id`.
 - **Confirmation:** the link opens an API page without login with a button (POST). Opening it never confirms, because email scanners open links on their own.
 
-## Picking it up again
-
-```bash
-git switch main
-make up && make seed
-make lint test
-make simulate ARGS="--scenario rimac --seed 42"   # drop on RIM-CHA-01 and, 4 min later, silence on RIM-SEU-01
-```
-
-The alert emails can be seen in Mailpit: http://localhost:8025.
-
 ## Changes to the specification in this sprint
 
 - `c753099` docs(spec): silence ignores stations that never reported (PR #8)
 - `23c3f5a` docs(spec): reading_added only when the trigger value worsens (PR #9)
 - `7c531e3` docs(spec): an open incident can be resolved without acknowledging (PR #10)
 - `db11f26` docs(spec): email content, retry timing and a confirmation page (PR #11)
-
-## To do
-
-- [ ] The confirmation link in the emails answers 404 until VIG-23, which brings the page and the POST.
-- [ ] Telegram alerts are created but stay pending until VIG-22.
-- [ ] A level with no deliveries at all must escalate immediately (VIG-24).
-- [ ] Decide with VIG-23/24 whether a pending alert is still sent when the incident has already been acknowledged.
-- [ ] From previous sprints: accept ADRs 0001–0006; show the organization's name in `/v1/me` and in the dashboard; Node 24 in WSL and move the repo to the WSL file system; decide whether to delete `refs/backup/*` and the local branches `feat/VIG-01` to `feat/VIG-11`.
 
 ## Retro
 
