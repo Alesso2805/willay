@@ -16,8 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from willay.alerts.application.planning import IncidentAlerting
 from willay.alerts.domain.escalation import LevelState, Step, decide
-from willay.rules.application.evaluate import Transaction
 from willay.shared.clock import Clock
+from willay.shared.db import Transaction
 
 log = structlog.get_logger()
 
