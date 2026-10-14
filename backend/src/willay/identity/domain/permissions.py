@@ -18,7 +18,7 @@ class Permission(StrEnum):
     MANAGE_TERRITORY = "territory:manage"  # zones, stations, API key rotation
     MANAGE_RULES = "rules:manage"
     REPROCESS_READINGS = "readings:reprocess"  # see and reprocess readings that failed evaluation
-    VIEW_CONTACT_DETAILS = "contacts:view_details"  # email and chat_id (personal data)
+    VIEW_CONTACT_DETAILS = "contacts:view_details"  # email, Telegram linked or not; never chat_id
     MANAGE_CONTACTS = "contacts:manage"  # contacts and groups
     MANAGE_POLICIES = "policies:manage"
     VIEW_AUDIT_LOG = "audit:view"
