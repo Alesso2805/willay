@@ -18,7 +18,7 @@ from willay.shared.clock import Clock
 ISSUER = "http://keycloak.test/realms/willay"
 AUDIENCE = "willay-api"
 
-# Realm users (infra/keycloak/realm-willay.json).
+# Realm organizations and users (infra/keycloak/realm-willay.json).
 KC_RIMAC = UUID("1d44f4b3-b1df-457f-b717-20926a20166e")
 KC_ISOLATION = UUID("d32ffb77-666e-4986-8234-9f1db8437302")
 SUB_RIMAC_ADMIN = UUID("0cd6135c-8fd4-4a14-89f5-cfa4499a71ff")
