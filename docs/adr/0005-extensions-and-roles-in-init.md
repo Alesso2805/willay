@@ -1,6 +1,6 @@
 # ADR-0005: DB extensions and roles in the Postgres init, not in Alembic
 
-- **Status:** Proposed (Sprint 0 draft)
+- **Status:** Accepted on 2026-10-13
 - **Date:** 2026-09-26
 - **Related:** SPEC.md › Database roles; VIG-02, VIG-03; `infra/postgres/init/01-init.sh`
 

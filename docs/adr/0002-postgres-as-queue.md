@@ -1,6 +1,6 @@
 # ADR-0002: PostgreSQL as queue, notification channel and rate limit
 
-- **Status:** Proposed (Sprint 0 draft)
+- **Status:** Accepted on 2026-10-13
 - **Date:** 2026-09-26
 - **Related:** SPEC.md › Architecture (No-loss guarantee, Rate limit); VIG-08, VIG-09, VIG-14
 
@@ -24,7 +24,7 @@ Option 3, behind an `EvaluationQueue` interface so it can be replaced without to
 - **Two transactions per row in the evaluator:**
   1. A short transaction claims the row (`available_at <= now`, `SKIP LOCKED`), increments `attempts`, sets `available_at = now + 60 s` (visibility timeout) and commits. The counter survives even if the worker dies.
   2. Another transaction evaluates, writes incidents and alerts, sets `readings.evaluated_at` and deletes the row. If the worker dies here, everything is rolled back and the row reappears when the timeout expires.
-- **Poison rows:** with `attempts >= 5`, `failed_at` is set. The row leaves the partial index (`WHERE failed_at IS NULL`) and the operator sees it in the dashboard. A runbook will document how to reprocess it.
+- **Poison rows:** with `attempts >= 5`, `failed_at` is set. The row leaves the partial index (`WHERE failed_at IS NULL`); the operator sees it in the dashboard and sends it back to the queue from there (VIG-39, `docs/runbooks/reprocess-failed-readings.md`).
 - **Wake-up:** `NOTIFY` on enqueue and when alerts are created. Since `NOTIFY` is not durable (if nobody is listening, it is lost), the workers poll the queue every 5 s as a fallback.
 - **Rate limit:** `ingest.rate_limit_windows` with one counter per station and minute, updated with an atomic upsert. It works with several API replicas. The `silence` worker purges windows older than 1 h.
 - **Idempotency:** `UNIQUE (station_id, measured_at)` on the queue and the PK of `readings` prevent processing the same reading twice.

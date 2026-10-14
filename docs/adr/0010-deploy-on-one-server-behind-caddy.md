@@ -1,6 +1,6 @@
 # ADR-0010: Deploy on one server, behind Caddy, on one hostname
 
-- **Status:** Proposed
+- **Status:** Accepted on 2026-10-13
 - **Date:** 2026-10-04
 - **Related:** SPEC.md › Backlog › VIG-42 and VIG-43; docs/runbooks/deploy.md; ADR-0001; ADR-0004
 

@@ -1,6 +1,6 @@
 # ADR-0004: Keycloak 26 Organizations as the source of tenant and roles
 
-- **Status:** Proposed (Sprint 0 draft). Claim format verified with Keycloak 26.7.4.
+- **Status:** Accepted on 2026-10-13. Claim format verified with Keycloak 26.7.4.
 - **Date:** 2026-09-26
 - **Related:** SPEC.md › Architecture (Tenant and roles); VIG-02, VIG-06, VIG-07; `infra/keycloak/realm-willay.json`
 

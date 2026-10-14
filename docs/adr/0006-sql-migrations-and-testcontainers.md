@@ -1,6 +1,6 @@
 # ADR-0006: Migrations in explicit SQL and integration tests with testcontainers
 
-- **Status:** Proposed (Sprint 0 draft)
+- **Status:** Accepted on 2026-10-13
 - **Date:** 2026-09-26
 - **Related:** SPEC.md › Database schema; Definition of done; VIG-03
 

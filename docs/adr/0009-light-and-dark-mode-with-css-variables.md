@@ -1,6 +1,6 @@
 # ADR-0009: Light and dark mode with CSS variables
 
-- **Status:** Proposed
+- **Status:** Accepted on 2026-10-13
 - **Date:** 2026-10-04
 - **Related:** SPEC.md › Backlog › VIG-41; SPEC.md › Non-functional requirements › Accessibility; ADR-0008
 
