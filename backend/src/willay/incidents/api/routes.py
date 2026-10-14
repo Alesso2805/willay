@@ -1,4 +1,5 @@
-"""Incidents REST API (VIG-19): list, view, acknowledge and resolve."""
+"""Incidents REST API (VIG-19, VIG-26, VIG-35): list, view with its readings, acknowledge,
+resolve and comment."""
 
 from datetime import datetime
 from typing import Annotated, Any, Literal
@@ -39,7 +40,8 @@ CanAcknowledge = Annotated[Principal, Depends(require(Permission.ACKNOWLEDGE_INC
 CanResolve = Annotated[Principal, Depends(require(Permission.RESOLVE_INCIDENTS))]
 
 _NOT_FOUND = ApiError(status.HTTP_404_NOT_FOUND, ErrorCode.INCIDENT_NOT_FOUND)
-# The dashboard shows the 409 detail verbatim: Spanish labels, not the internal values.
+# The dashboard shows the 409 detail verbatim: the status and action as translated words
+# (VIG-40), not the internal values.
 _TRANSITION_RESPONSES: dict[int | str, dict[str, Any]] = {
     404: {"description": "Not found"},
     409: {"description": "Invalid transition for the current status"},
