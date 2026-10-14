@@ -65,8 +65,9 @@ def _fields(message: AlertMessage) -> list[tuple[str, str]]:
 
 
 def summary(message: AlertMessage) -> list[tuple[str, str]]:
-    """Incident data as (label, value) pairs, shared by the email and the confirmation page
-    so both show the same thing."""
+    """Incident data as translated (label, value) pairs, for the confirmation page and the
+    Telegram message; the email lays out the same fields, so all three show the same
+    thing."""
     return [
         (translate(f"alerts.field.{field}", message.language), value)
         for field, value in _fields(message)
