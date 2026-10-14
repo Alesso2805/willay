@@ -90,7 +90,7 @@ make seed                                     # the demo data
   - `demo-admin` sees and manages everything, and runs the scenario;
   - `demo-operator` manages zones, stations, rules and incidents;
   - `demo-viewer` only looks.
-- **No way to change that password.** Caddy closes Keycloak's account console, which the dashboard never uses.
+- **No way to change that password.** Caddy closes Keycloak's account console and its API, every path under `/account`; the dashboard never uses them.
 - **Live stations.** The demo worker keeps every Rímac station reporting every 10 s, so the map is live from the first visit.
 - **The scenario button.** "Correr el escenario" on Inicio plays SPEC's Rímac story in 9 minutes, one run at a time, with its progress on screen. Every run starts from a clean slate.
 - **The emails** Willay sends, readable at `/correo` (Mailpit). Nothing leaves the server.
@@ -99,6 +99,17 @@ make seed                                     # the demo data
 The private accounts (`rimac-admin`, `rimac-operator`, `rimac-responder` and `rimac-viewer`) keep the random password `WILLAY_DEV_USER_PASSWORD` that `make secrets` wrote into `.env` (`grep WILLAY_DEV_USER_PASSWORD .env`). Without `DEMO=1`, they are the only accounts.
 
 The demo accounts exist in Keycloak's realm file, so they are created on Keycloak's first start. To turn the demo on later on a running server, add the three demo lines to `.env` and run `make up`. Keycloak, however, keeps the demo accounts' password from its first start: the development one if the demo was off then.
+
+### Check it from your machine
+
+From the repository on your own machine, not on the server. These checks run in Node 20+ and need no browser:
+
+```bash
+cd e2e && npm ci
+WILLAY_E2E_DEPLOYED=1 WILLAY_DASHBOARD_URL=https://willay.duckdns.org npx playwright test deployed.spec.ts
+```
+
+They check that the dashboard, the API, the sign-in and the mailbox answer on the one hostname, and that `config.json` holds the demo's shared password and nothing else. They also check that Keycloak's admin console, its master realm and the account console answer 404 from the internet. In PowerShell, set the two variables with `$env:WILLAY_E2E_DEPLOYED=1` and `$env:WILLAY_DASHBOARD_URL="https://..."` first.
 
 ## 6. Update
 
