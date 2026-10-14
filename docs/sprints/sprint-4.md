@@ -41,7 +41,7 @@ To receive alerts via Telegram:
 
 The emails can be seen in Mailpit: http://localhost:8025.
 
-## Changes to SPEC.md and CLAUDE.md in this sprint
+## Changes to the specification in this sprint
 
 - `249eaa0` docs(spec): confirmation outcomes and no alerts after confirmation (PR #13)
 - `035bc16` docs(spec): escalation timing and live policies (PR #14)

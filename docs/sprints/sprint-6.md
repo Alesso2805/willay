@@ -36,7 +36,7 @@ make simulate ARGS="--scenario rimac --seed 42"
 
 The dashboard is at http://localhost:4200 (users `rimac-operator`, `rimac-responder`, `rimac-viewer`, `rimac-admin`, with `WILLAY_DEV_USER_PASSWORD` from `.env`) and the emails at http://localhost:8025. A database from before this sprint needs the migrate container to reach migration 0009 (`make migrate`).
 
-## Changes to SPEC.md and CLAUDE.md in this sprint
+## Changes to the specification in this sprint
 
 - `ac4e6b7` docs(spec): failed readings also notify the dashboard live (VIG-39)
 - `8a76245` docs(spec): only silence rules may cover a whole zone (VIG-27)

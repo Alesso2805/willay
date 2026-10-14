@@ -47,7 +47,7 @@ make demo
 
 The dashboard is at http://localhost:4200 (users `rimac-operator`, `rimac-responder`, `rimac-viewer` and `rimac-admin`, with `WILLAY_DEV_USER_PASSWORD` from `.env`) and the emails at http://localhost:8025. A database from before this sprint needs the migrate container to reach migration 0013 (`make migrate`).
 
-## Changes to SPEC.md and CLAUDE.md in this sprint
+## Changes to the specification in this sprint
 
 - `23cd950` docs(spec): users keep their dashboard language (VIG-40)
 - `0accc24` docs(spec): API errors answer with a code and a localized message (VIG-40)

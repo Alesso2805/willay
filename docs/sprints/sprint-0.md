@@ -25,7 +25,7 @@ make down       # when you are done
 ## To do before Sprint 1
 
 - [ ] Create the repo on GitHub, push and merge the branches in order (or open one PR per story). Confirm CI is green.
-- [ ] Decide whether to align CLAUDE.md with SPEC: the `organization` claim is an object `{alias: {id}}`, and the roles and extensions live in the Postgres init.
+- [ ] Decide whether to align the coding agent's instructions with SPEC: the `organization` claim is an object `{alias: {id}}`, and the roles and extensions live in the Postgres init.
 - [ ] Review ADRs 0001–0006 and move them to "Accepted".
 - [ ] Install Node 24 in WSL (`nvm install` reads `dashboard/.nvmrc`).
 
