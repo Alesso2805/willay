@@ -25,11 +25,11 @@ SPEC tree (`docs/SPEC.md`, "Repository, conventions and living documentation") a
 | Top-level layout (`backend/`, `dashboard/`, `infra/`, `docs/`, compose, Makefile, CLAUDE.md, CHANGELOG, README) | Cumple | All present. |
 | Seven modules each with `domain/application/infrastructure/api` | Cumple | No module lacks a layer. Some are thin: `realtime/` has one file per layer, `incidents/api` has only `routes.py`. |
 | `shared/` content | Cumple | SPEC says "Clock, config, db, tenancy, logging". There is no `shared/tenancy`; tenancy lives in `identity` (`identity/domain/principal.py`). `shared/` also holds `audit, i18n, languages, notifications, pg_listen, web, errors`, which SPEC does not list. **Update, 2026-10-13:** SPEC now says so. |
-| Runbooks | Parcial | SPEC promises reprocess, rotate API keys and restore the DB. Only `deploy.md` and `reprocess-failed-readings.md` exist. **Missing:** rotate API keys, restore the DB. |
+| Runbooks | Cumple | SPEC promises reprocess, rotate API keys and restore the DB. Only `deploy.md` and `reprocess-failed-readings.md` exist. **Missing:** rotate API keys, restore the DB. **Update, 2026-10-13:** both written, `rotate-api-keys.md` and `backup-and-restore.md`, and tested on a throwaway stack. |
 | `docs/research/` | Cumple | Only `.gitkeep`. Consistent with the 2026-09-30 decision to postpone interviews. |
 | Things in the repo that SPEC's tree does not show | Cumple | `backend/src/willay/{demo,loadtest,seed}/` and `api/openapi.py` (no layering), `backend/tests/support/`, `docker-compose.prod.yml`, `infra/caddy/`, `infra/scripts/production-env.sh`, `.env.example`, `.github/workflows/ci.yml`, `docs/openapi.json`, `docs/images/`, ADRs 0005 to 0010, `backend/Dockerfile`, `alembic.ini`, `uv.lock`. Most are explained by later stories (VIG-42/43) but the SPEC tree was not updated. **Update, 2026-10-13:** SPEC now says so. |
 
-Section 1: 5 Cumple · 1 Parcial · 0 No cumple.
+Section 1: 6 Cumple · 0 Parcial · 0 No cumple.
 
 ---
 
@@ -272,7 +272,7 @@ Section 8: 4 Cumple · 0 Parcial · 0 No cumple · 2 No verificado.
 
 | Section | Cumple | Parcial | No cumple | No verificado |
 | --- | ---: | ---: | ---: | ---: |
-| 1. Structure | 5 | 1 | 0 | 0 |
+| 1. Structure | 6 | 0 | 0 | 0 |
 | 2. Architecture rules | 18 | 2 | 1 | 2 |
 | 3. Acceptance criteria (OK / partial / no test) | 149 | 33 | 16 | 5 stories |
 | 4. Data | 8 | 1 | 0 | 0 |
@@ -298,7 +298,7 @@ Section 8: 4 Cumple · 0 Parcial · 0 No cumple · 2 No verificado.
 6. Test the untested parts of VIG-42 and VIG-43: Keycloak admin console unreachable, `make secrets`, demo accounts unable to change their password, the Mailpit route, multi-arch images.
 7. Missing tests: VIG-37 "applies to ongoing incidents" notice, VIG-40 "no hard-coded strings" (an ESLint rule for templates would do), VIG-27 rate-of-change form, VIG-41 dark base map and form-survives-theme-switch, VIG-44 default language and time zone reaching an email.
 8. **Done on 2026-10-13:** the ADRs are Accepted, ADR-0001 says six workers and ADR-0002 sends failed rows to the dashboard. Still open: decide whether `demo`, the extra schema objects and the API key cache (VIG-29) deserve an ADR.
-9. **SPEC done on 2026-10-13:** schema tables (section 4), repository tree (demo, loadtest, seed, `tests/support`) and the demo worker. Still open: the two missing runbooks (rotate API keys, restore the DB).
+9. **SPEC done on 2026-10-13:** schema tables (section 4), repository tree (demo, loadtest, seed, `tests/support`) and the demo worker. The two missing runbooks followed the same day (rotate API keys; back up and restore the DB), tested on a throwaway stack.
 10. Create `docs/BACKLOG.md` and `docs/ARCHITECTURE_RULES.md`, or drop them from the audit brief, so the references stop dangling.
 11. Verify a fresh-clone `make up` once and record it (section 8).
 
