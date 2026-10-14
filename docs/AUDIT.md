@@ -37,7 +37,7 @@ Section 1: 6 Cumple · 0 Parcial · 0 No cumple.
 
 ### 2.1 Architecture tests: result
 
-There are **no architecture tests**. No import-linter, pytest-archon, grimp or AST-based test exists in `pyproject.toml`, the Makefile, CI or `backend/tests`. The only mechanically enforced rule is the clock ban, done by Ruff (`backend/pyproject.toml:52-65`, rules `DTZ` and `TID251`, with a per-file ignore for `shared/clock.py`). So "run the architecture tests" has no answer: I ran the whole suite instead.
+There are **no architecture tests**. No import-linter, pytest-archon, grimp or AST-based test exists in `pyproject.toml`, the Makefile, CI or `backend/tests`. The only mechanically enforced rule is the clock ban, done by Ruff (`backend/pyproject.toml:52-65`, rules `DTZ` and `TID251`, with a per-file ignore for `shared/clock.py`). So "run the architecture tests" has no answer: I ran the whole suite instead. **Update, 2026-10-13:** there are now five import-linter contracts, listed in section 2.2 (rows 2, 5, 21 and 22) and in ADR-0001.
 
 **Real test results (`uv run pytest`, full suite, machine A, Windows + Docker Desktop):**
 
@@ -58,7 +58,7 @@ The four failures appeared only while another project competed for the same 4 CP
 | # | Rule | Status | Evidence |
 | --- | --- | --- | --- |
 | 1 | One `willay` package, modules with four layers | Cumple | Directory listing, section 1. |
-| 2 | The domain does not import FastAPI or SQLAlchemy | Cumple (not enforced by a test) | Grep of every `*/domain` found no `fastapi/sqlalchemy/starlette/asyncpg/psycopg` import. Nothing prevents a regression. |
+| 2 | The domain does not import FastAPI or SQLAlchemy | Cumple | Grep of every `*/domain` found no `fastapi/sqlalchemy/starlette/asyncpg/psycopg` import. Nothing prevents a regression. **Update, 2026-10-13:** enforced by an import-linter contract. |
 | 3 | Schemas `ingest` and `core`, single migration history | Cumple | `migrations/versions/0001..0014`; `test_schema.py::test_all_tables_exist` (core 17, ingest 4). |
 | 4 | No FK to `ingest.readings` | Cumple (grep only) | No `REFERENCES ... readings` in migrations (grep; I did not read every migration in full). `evaluation_queue` has no FK to readings (`0003:75-76`). |
 | 5 | API and workers are separate processes; never workers in the FastAPI lifespan | Cumple | `api/main.py:49-72` starts only a `PgEventListener` (SSE feed, `:64`), no worker. Workers in `workers/` with `_runner.py`. |
@@ -77,11 +77,11 @@ The four failures appeared only while another project competed for the same 4 CP
 | 18 | Migrations as `willay_owner`; `ALTER DEFAULT PRIVILEGES` | Cumple | `0001:36-39`; `test_db_privileges.py::test_table_created_later_by_owner_is_granted_to_app`. |
 | 19 | Configuration via environment; no secrets in the repo | No verificado | `.env` is untracked and `.secrets/` is ignored (git status was clean). I did not scan history or the realm JSON for secrets. `.env.example` carries development-only credentials by design. |
 | 20 | Mandatory stack (Python 3.12, FastAPI, SQLAlchemy async, Pydantic v2, uv, Ruff, Mypy strict, Postgres 16 + Timescale, Keycloak 26.7.4, Mailpit, `eventsource`) | Cumple | `requires-python >=3.12,<3.13`; `docker-compose.yml:26,48`; Angular 22.2, `eventsource ^5.1.2`. Mypy "strict" setting itself was not opened; mypy passes. |
-| 21 | Architecture tests for these rules | No cumple | Section 2.1. |
-| 22 | Cross-module layering (no layer reaches into another module's internals) | Parcial | Not an explicit CLAUDE.md rule, but the module/layer scheme implies it. Violations in section 7. |
+| 21 | Architecture tests for these rules | Cumple | Section 2.1. **Update, 2026-10-13:** five import-linter contracts in `backend/pyproject.toml`, run by `make lint` and CI. |
+| 22 | Cross-module layering (no layer reaches into another module's internals) | Cumple | Not an explicit CLAUDE.md rule, but the module/layer scheme implies it. Violations in section 7. **Update, 2026-10-13:** the violations of section 7 are fixed and a contract keeps them out. |
 | 23 | DoD: green CI (Ruff, Mypy, Pytest, Angular lint and build) | Cumple | Ruff, Mypy and Pytest green (982/982 with nothing else on Docker, section 2.1). Angular lint, tests (331) and build green on machine B with Node 24.21. |
 
-Section 2: 18 Cumple · 2 Parcial · 1 No cumple · 2 No verificado (23 items).
+Section 2: 20 Cumple · 1 Parcial · 0 No cumple · 2 No verificado (23 items).
 
 ---
 
@@ -239,9 +239,9 @@ Stack versions: Python `>=3.12,<3.13`, Node `^24.15.0` (README and `.nvmrc` agre
 
 | # | Finding | Status |
 | --- | --- | --- |
-| 1 | **API reaches into another module's infrastructure** (3 imports): `territory/api/stations.py:13-14` imports `ingestion.api.dependencies` and `ingestion.infrastructure.api_keys`; `alerts/api/confirm_page.py:17` imports `incidents.infrastructure.incidents_repository.SqlIncidentRepository`. | No cumple |
-| 2 | **Application-layer cycle `rules` ↔ `alerts`**: `rules/application/{rule_evaluator,silence_check}.py` import `alerts.application.planning`; `alerts/application/{escalation,telegram_bot}.py` import `rules.application.evaluate.Transaction`. `incidents` is the hub, `rules` the orchestrator. It works because they import distinct submodules. | No cumple |
-| 3 | `Transaction` protocol lives in `rules` and is borrowed by `alerts`; it belongs in `shared`. | Parcial |
+| 1 | **API reaches into another module's infrastructure** (3 imports): `territory/api/stations.py:13-14` imports `ingestion.api.dependencies` and `ingestion.infrastructure.api_keys`; `alerts/api/confirm_page.py:17` imports `incidents.infrastructure.incidents_repository.SqlIncidentRepository`. **Update, 2026-10-13:** fixed: two of the three were API → infrastructure (the third, API → API, is allowed); `territory` gets its key issuer and `alerts` its incidents repository from the other module's API. | Cumple |
+| 2 | **Application-layer cycle `rules` ↔ `alerts`**: `rules/application/{rule_evaluator,silence_check}.py` import `alerts.application.planning`; `alerts/application/{escalation,telegram_bot}.py` import `rules.application.evaluate.Transaction`. `incidents` is the hub, `rules` the orchestrator. It works because they import distinct submodules. **Update, 2026-10-13:** fixed: `alerts` no longer imports `rules`, and a contract keeps it so. | Cumple |
+| 3 | `Transaction` protocol lives in `rules` and is borrowed by `alerts`; it belongs in `shared`. **Update, 2026-10-13:** moved to `shared/db.py`. | Cumple |
 | 4 | Infrastructure importing another module's application or domain: `rules/infrastructure/sql_silence.py:6` (incidents application), `rules/domain/rules.py:12` and `rules/infrastructure/rules_repository.py:11` (`incidents.domain.severity`), `alerts/infrastructure/sql_confirmation.py:15`. | Parcial |
 | 5 | 11 API files import `identity.api.dependencies.require`. Acceptable as a shared dependency, but it couples every module's API to identity's API layer. | Parcial |
 | 6 | Biggest dashboard unit: `rules/rules-page.ts` (398 lines) and its 366-line template. | Parcial |
@@ -249,7 +249,7 @@ Stack versions: Python `>=3.12,<3.13`, Node `^24.15.0` (README and `.nvmrc` agre
 | 8 | Class size: largest are `SqlStationRepository` (149 lines), `DemoWorker` (136), `TelegramPoller` (93). | Cumple |
 | 9 | Code duplicated between modules | No verificado (no systematic scan; repositories in territory, alerts and incidents have a similar shape but were not diffed) |
 
-Section 7: 2 Cumple · 4 Parcial · 2 No cumple · 1 No verificado.
+Section 7: 5 Cumple · 3 Parcial · 0 No cumple · 1 No verificado.
 
 ---
 
@@ -273,12 +273,12 @@ Section 8: 4 Cumple · 0 Parcial · 0 No cumple · 2 No verificado.
 | Section | Cumple | Parcial | No cumple | No verificado |
 | --- | ---: | ---: | ---: | ---: |
 | 1. Structure | 6 | 0 | 0 | 0 |
-| 2. Architecture rules | 18 | 2 | 1 | 2 |
+| 2. Architecture rules | 20 | 1 | 0 | 2 |
 | 3. Acceptance criteria (OK / partial / no test) | 149 | 33 | 16 | 5 stories |
 | 4. Data | 8 | 1 | 0 | 0 |
 | 5. ADRs | 9 | 0 | 0 | 1 |
 | 6. Deviations | 7 | 3 | 1 | 0 |
-| 7. Scalability | 2 | 4 | 2 | 1 |
+| 7. Scalability | 5 | 3 | 0 | 1 |
 | 8. Reproducibility | 4 | 0 | 0 | 2 |
 
 ---
@@ -293,8 +293,8 @@ Section 8: 4 Cumple · 0 Parcial · 0 No cumple · 2 No verificado.
 
 ### Important
 
-4. Add architecture tests (import-linter or an AST test) for: domain imports no FastAPI or SQLAlchemy; no API layer imports another module's infrastructure; no workers in the lifespan.
-5. Remove the layering violations in section 7: the three API → other-infrastructure imports, the `rules` ↔ `alerts` cycle (move `Transaction` to `shared`).
+4. **Done on 2026-10-13.** Add architecture tests (import-linter or an AST test) for: domain imports no FastAPI or SQLAlchemy; no API layer imports another module's infrastructure; no workers in the lifespan.
+5. **Done on 2026-10-13.** Remove the layering violations in section 7: the three API → other-infrastructure imports, the `rules` ↔ `alerts` cycle (move `Transaction` to `shared`).
 6. Test the untested parts of VIG-42 and VIG-43: Keycloak admin console unreachable, `make secrets`, demo accounts unable to change their password, the Mailpit route, multi-arch images.
 7. Missing tests: VIG-37 "applies to ongoing incidents" notice, VIG-40 "no hard-coded strings" (an ESLint rule for templates would do), VIG-27 rate-of-change form, VIG-41 dark base map and form-survives-theme-switch, VIG-44 default language and time zone reaching an email.
 8. **Done on 2026-10-13:** the ADRs are Accepted, ADR-0001 says six workers and ADR-0002 sends failed rows to the dashboard. Still open: decide whether `demo`, the extra schema objects and the API key cache (VIG-29) deserve an ADR.
