@@ -36,7 +36,7 @@ import { LanguageService } from './language';
 export class LanguagePicker {
   /** Signed in: the choice is saved for the user, not only in this browser. */
   readonly signedIn = input(false);
-  /** The dark sidebar or the light sign-in card. */
+  /** `dark` on night blue (the sidebar and the sign-in screen); `light` on a page's surface. */
   readonly tone = input<'dark' | 'light'>('dark');
 
   protected readonly service = inject(LanguageService);

@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { HomePage } from './home-page';
 
+// Every page but Home is lazy loaded: Leaflet and Geoman only download with a page that has
+// a map.
 export const routes: Routes = [
   { path: '', component: HomePage, title: 'Willay' },
   {
@@ -22,7 +24,6 @@ export const routes: Routes = [
   {
     path: 'zonas',
     title: 'Zonas de riesgo · Willay',
-    // Lazy loaded: Leaflet and Geoman are only downloaded when the map is opened.
     loadComponent: () => import('./zones/zones-page').then((m) => m.ZonesPage),
   },
   {
