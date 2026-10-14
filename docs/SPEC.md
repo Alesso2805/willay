@@ -138,7 +138,7 @@ The MVP covers the full data → rule → incident → alert → acknowledgement
 
 ## Architecture
 
-A Python backend with an API and five workers as separate processes on a single PostgreSQL database, which also serves as queue, notification channel and rate limit store.
+A Python backend with an API and five workers as separate processes (a sixth, `demo`, runs only for the public demo), on a single PostgreSQL database, which also serves as queue, notification channel and rate limit store.
 
 ```mermaid
 flowchart LR
@@ -168,6 +168,7 @@ flowchart LR
 | `worker dispatcher` | Python, httpx2, aiosmtplib | Wakes up with `NOTIFY` when alerts are created; sends with 3 exponential retries |
 | `worker escalation` | Python | Every 15 s escalates incidents whose level expired without acknowledgement |
 | `worker telegram` | Python, long polling | Links contacts' `chat_id` and receives acknowledgement clicks |
+| `worker demo` | Python | Only with `WILLAY_DEMO_MODE` (VIG-43): plays the Rímac scenario a visitor asks for, keeps the demo stations reporting and restores the demo organization every night |
 | `dashboard` | Angular + Leaflet | Live map and incidents with their actions; management of territory, rules and contacts; audit and failed readings |
 | PostgreSQL 16 | PostGIS + TimescaleDB | Data, geometries, time series, queue, notifications and rate limit |
 | Keycloak 26 | OIDC + Organizations | Users, each user's organization and roles |
@@ -224,7 +225,7 @@ erDiagram
 | Table | Main columns | Key constraints |
 | --- | --- | --- |
 | `organizations` | id, keycloak\_org\_id, name, timezone, language, created\_at | `keycloak_org_id` unique; the `organization` claim is resolved only against this id; language ∈ es, en, `es` by default (the language of the alerts of its contacts that have none) |
-| `users` | id (= Keycloak `sub`), organization\_id, email, full\_name, language, is\_active, created\_at | `email` unique (one user, one organization); no role column: roles live only in Keycloak; language ∈ es, en, NULL until the user chooses one in the dashboard (meanwhile it follows the browser) |
+| `users` | id (= Keycloak `sub`), organization\_id, email, full\_name, language, is\_active, created\_at | `email` unique, ignoring case (one user, one organization); no role column: roles live only in Keycloak; language ∈ es, en, NULL until the user chooses one in the dashboard (meanwhile it follows the browser) |
 | `risk_zones` | id, organization\_id, name, description, risk\_level, geom `geometry(MultiPolygon,4326)`, population\_estimate, is\_active, created\_at, updated\_at | GIST index on `geom`; risk\_level ∈ low, medium, high, critical |
 | `stations` | id, organization\_id, code, name, variable, unit, location `geometry(Point,4326)`, source, expected\_interval\_s, silence\_multiplier, status, api\_key\_hash, api\_key\_rotated\_at, created\_at | `(organization_id, code)` unique; variable ∈ water\_level, discharge, rainfall; source ∈ sensor, simulator; status ∈ active, inactive; `silence_multiplier` defaults to 3 (single source of K) |
 | `zone_stations` | zone\_id, station\_id, position | PK `(zone_id, station_id)`; position ∈ upstream, in\_zone, downstream |
@@ -235,9 +236,9 @@ erDiagram
 | `escalation_levels` | id, policy\_id, level\_order, wait\_s | `(policy_id, level_order)` unique; level\_order ≥ 1 |
 | `level_targets` | id, level\_id, contact\_group\_id, channel | channel ∈ email, telegram; `(level_id, contact_group_id, channel)` unique |
 | `rules` | id, organization\_id, zone\_id, station\_id (nullable), type, params `jsonb`, severity, escalation\_policy\_id, cooldown\_s, is\_active, created\_by, created\_at, updated\_at | type ∈ threshold, rate\_of\_change, silence; severity ∈ info, warning, critical; `params` validated per type with Pydantic |
-| `incidents` | id, organization\_id, zone\_id, rule\_id, station\_id, status, severity, current\_level, level\_started\_at, trigger\_value, dedup\_key, opened\_at, escalation\_exhausted\_at, acknowledged\_at, acknowledged\_by\_user\_id, acknowledged\_by\_contact\_id, resolved\_at, resolution | status ∈ open, acknowledged, resolved; resolution ∈ resolved, false\_alarm; partial unique index on `dedup_key` WHERE status IN (open, acknowledged); CHECK: if status = open, both `acknowledged_by_*` null; if status = acknowledged, exactly one not null |
-| `incident_events` | id, incident\_id, organization\_id, occurred\_at, event\_type, actor\_type, actor\_id, payload `jsonb` | append-only; index `(incident_id, occurred_at)` |
-| `alerts` | id, incident\_id, level\_order, contact\_id, channel, destination, status, attempts, next\_attempt\_at, sent\_at, ack\_token\_hash, ack\_token\_expires\_at, acknowledged\_at, last\_error | status ∈ pending, sent, failed, skipped, acknowledged; index `(status, next_attempt_at)` |
+| `incidents` | id, organization\_id, zone\_id, rule\_id, station\_id, status, severity, current\_level, level\_started\_at, trigger\_value, trigger\_received\_at, correlation\_id, dedup\_key, opened\_at, escalation\_exhausted\_at, acknowledged\_at, acknowledged\_by\_user\_id, acknowledged\_by\_contact\_id, resolved\_at, resolution | status ∈ open, acknowledged, resolved; resolution ∈ resolved, false\_alarm; partial unique index on `dedup_key` WHERE status IN (open, acknowledged); CHECK: if status = open, both `acknowledged_by_*` null; if status = acknowledged, exactly one not null; `trigger_received_at` is when the reading that opened it was received, where the latency metric starts (VIG-28; empty for silence, which no reading triggers), and `correlation_id` ties the incident to that reading's logs |
+| `incident_events` | id, incident\_id, organization\_id, occurred\_at, event\_type, actor\_type, actor\_id, payload `jsonb` | append-only; index `(incident_id, occurred_at)`; at most one `station_recovered` per incident (partial unique index) |
+| `alerts` | id, incident\_id, level\_order, contact\_id, channel, destination, status, attempts, next\_attempt\_at, sent\_at, ack\_token\_hash, ack\_token\_expires\_at, acknowledged\_at, last\_error | status ∈ pending, sent, failed, skipped, acknowledged; index `(status, next_attempt_at)`; `destination` is empty only on a skipped alert (the contact has no address for the channel) |
 | `audit_log` | id, organization\_id, actor\_id, entity\_type, entity\_id, action, before `jsonb`, after `jsonb`, at | append-only |
 | `demo_runs` | id, organization\_id, kind, requested\_by, requested\_at, started\_at, finished\_at, outcome, error | Only with `WILLAY_DEMO_MODE` (VIG-43); kind ∈ scenario, restore; outcome ∈ done, failed, set with `finished_at`; a partial unique index allows one unfinished run per organization |
 
@@ -246,7 +247,7 @@ erDiagram
 | Table | Main columns | Key constraints |
 | --- | --- | --- |
 | `readings` | station\_id, organization\_id, measured\_at, received\_at, value `double precision`, quality, evaluated\_at | PK `(station_id, measured_at)`; FK to `core.stations` (from the hypertable to a regular table, supported); hypertable by `measured_at` (1-day chunks); compression after 7 days and 180-day retention; quality ∈ ok, late (a suspect quality from range validation is left for after the MVP) |
-| `evaluation_queue` | id, station\_id, measured\_at, organization\_id, enqueued\_at, available\_at, attempts, last\_error, failed\_at | no FK to `readings` (Timescale restricts FKs that point to hypertables); partial index on available\_at WHERE failed\_at IS NULL (60 s visibility timeout) |
+| `evaluation_queue` | id, station\_id, measured\_at, organization\_id, correlation\_id, enqueued\_at, available\_at, attempts, last\_error, failed\_at | no FK to `readings` (Timescale restricts FKs that point to hypertables), FK to `core.stations`; `(station_id, measured_at)` unique, so enqueuing a reading twice adds no row; partial index on available\_at WHERE failed\_at IS NULL (60 s visibility timeout) |
 | `station_heartbeats` | station\_id, last\_seen\_at, last\_measured\_at, last\_value, updated\_at | PK `station_id`; `last_seen_at` = `received_at` of the last batch with at least one non-late reading (even if it was a duplicate: the station is communicating); `last_value` is the value of the most recent non-late measurement and `last_measured_at` its `measured_at`, to show the age of the data; neither of the two goes backwards with concurrent batches or old resends |
 | `rate_limit_windows` | station\_id, window\_start, request\_count | PK `(station_id, window_start)`; atomic upsert per batch; the silence worker purges windows older than 1 h in every cycle |
 
@@ -405,36 +406,46 @@ A monorepo with a modular Python backend, the Angular dashboard and the document
 willay/
 ├── backend/
 │   ├── src/willay/
-│   │   ├── shared/               # Clock, config, db, tenancy, logging
-│   │   ├── identity/
+│   │   ├── shared/               # Clock, config, db, logging, errors, i18n, audit, NOTIFY
+│   │   ├── identity/             # tenant and roles, users, audit log, organization settings
 │   │   ├── ingestion/            # readings API, rate limit, simulator
 │   │   ├── territory/            # zones and stations
 │   │   ├── rules/
 │   │   ├── incidents/
-│   │   ├── alerts/               # channels, acknowledgement, escalation
+│   │   ├── alerts/               # channels, acknowledgement, escalation, contacts, policies
 │   │   ├── realtime/             # LISTEN/NOTIFY → SSE
 │   │   ├── api/main.py           # FastAPI app
-│   │   └── workers/              # evaluator, silence, dispatcher, escalation, telegram
+│   │   ├── workers/              # evaluator, silence, dispatcher, escalation, telegram, demo
+│   │   ├── demo/                 # make demo and the public demo (VIG-30, VIG-43)
+│   │   ├── loadtest/             # make loadtest (VIG-29)
+│   │   └── seed/                 # make seed (VIG-04)
 │   ├── migrations/               # Alembic (ingest and core schemas)
-│   └── tests/{unit,integration}/
+│   └── tests/{unit,integration,support}/
 ├── dashboard/                    # Angular
 ├── infra/
+│   ├── caddy/Caddyfile           # the server's reverse proxy (VIG-42)
 │   ├── keycloak/realm-willay.json
-│   └── postgres/init/            # creation of the willay_owner and willay_app roles
+│   ├── postgres/init/            # creation of the willay_owner and willay_app roles
+│   └── scripts/                  # make secrets (VIG-42)
 ├── docs/
 │   ├── SPEC.md                   # this document
+│   ├── openapi.json              # REST contract, generated
+│   ├── AUDIT.md                  # architecture audit (October 2026)
 │   ├── adr/
+│   ├── images/                   # README screenshots
 │   ├── research/                 # validation interviews
 │   ├── sprints/
 │   └── runbooks/
+├── .github/workflows/ci.yml
 ├── docker-compose.yml            # includes the migrate service
+├── docker-compose.prod.yml       # a server, on top of the previous one (VIG-42)
 ├── Makefile
 ├── CLAUDE.md                     # master prompt (single copy)
 ├── CHANGELOG.md
 └── README.md
 ```
 
-Each module in `src/willay/` follows the layers `domain`, `application`, `infrastructure` and `api`. The package is called `willay`, like the product.
+Each module in `src/willay/` follows the layers `domain`, `application`, `infrastructure` and `api`; `demo`, `loadtest` and `seed` are tools around the product, not modules, and have no layers. The package is called `willay`, like the product.
 
 | Artifact | Purpose | When it is updated |
 | --- | --- | --- |
