@@ -201,7 +201,10 @@ services:
     image: willay-dashboard:dev
     restart: unless-stopped
     environment:
-      # Written into /config.json when the container starts (docker/40-willay-config.sh).
+      # Written into /config.json when the container starts (docker/40-willay-config.sh), so the
+      # dashboard follows the ports in .env.
+      WILLAY_API_URL: http://localhost:${WILLAY_API_PORT:-8000}
+      WILLAY_OIDC_AUTHORITY: http://localhost:${WILLAY_KEYCLOAK_PORT:-8080}/realms/willay
       WILLAY_MAIL_URL: http://localhost:${WILLAY_MAILPIT_UI_PORT:-8025}
       # The public demo (VIG-43): the sign-in screen shows its accounts and shared password.
       WILLAY_DEMO_MODE: ${WILLAY_DEMO_MODE:-false}

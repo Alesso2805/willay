@@ -110,7 +110,7 @@ make demo    # the Rímac scenario, narrated in the terminal (about 8 minutes)
 - **Dashboard:** http://localhost:4200. Sign in as `rimac-admin`, `rimac-operator`, `rimac-responder` or `rimac-viewer`; the password is `WILLAY_DEV_USER_PASSWORD` in `.env`.
 - **Emails:** in Mailpit, http://localhost:8025.
 
-The ports in `.env` must be free: 5433 (Postgres), 8080 (Keycloak), 8000 (API), 4200 (dashboard) and 8025 (Mailpit). If another project uses one of them, Willay's containers stay in `Created`. With WSL, clone inside the WSL file system rather than `/mnt/c`, which is slow for bind mounts.
+The ports in `.env` must be free: 5433 (Postgres), 8080 (Keycloak), 8000 (API), 4200 (dashboard) and 8025 (Mailpit). If another project uses one, change it in `.env` (`WILLAY_API_PORT`, `WILLAY_KEYCLOAK_PORT`…) before `make up`: the dashboard follows. With WSL, clone inside the WSL file system rather than `/mnt/c`, which is slow for bind mounts.
 
 To put it on a server for others to try, follow [docs/runbooks/deploy.md](docs/runbooks/deploy.md).
 
