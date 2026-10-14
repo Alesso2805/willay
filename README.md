@@ -1,35 +1,120 @@
 # Willay
 
-Multi-tenant early warning system: it ingests sensor readings, evaluates rules per risk zone (threshold, rate of change, silent sensor), opens incidents without duplicates and dispatches alerts by email and Telegram, with automatic escalation if nobody confirms.
+**An early warning platform for floods and debris flows.** Willay ingests sensor readings, evaluates rules per risk zone, opens incidents without duplicates and alerts people by email and Telegram, escalating level by level until someone acknowledges. It treats a sensor that goes silent in a risk zone as a possible event, not a maintenance chore.
 
-> **Support tool.** Willay helps operators and community leaders detect, decide and warn. It does not replace the official public warning systems (INDECI, regional COERs, SISMATE).
+> **Support tool.** Willay helps operators and community leaders detect, decide and warn. It does not replace the official public warning systems (in Peru: INDECI, the regional COERs, SISMATE).
 
-"Willay" is Quechua for "to warn, to inform". "Vigía" was the code name during the first sprints; story IDs keep its `VIG-` prefix. The full specification is in [docs/SPEC.md](docs/SPEC.md) and the technical decisions in [docs/adr/](docs/adr/).
+"Willay" is Quechua for "to warn, to inform".
 
-## Requirements
+![The live map: zones coloured by their most urgent incident, stations with their last value](docs/images/live-map.png)
 
-- Linux, or Windows: the commands run in WSL2 (Ubuntu), PowerShell or Git Bash.
-- Docker Engine on Linux, or Docker Desktop on Windows (with the WSL integration enabled if you use WSL).
-- [uv](https://docs.astral.sh/uv/) for the backend (it installs Python 3.12 if missing).
-- Node.js 24 LTS for the dashboard (`nvm install` reads `dashboard/.nvmrc`).
-- GNU `make`. On Windows without WSL: `winget install ezwinports.make`.
+## Try it
 
-Before the first `make up`, check that `docker info` and `make --version` respond in the shell you will use. The ports in `.env` must also be free: 5433 (Postgres), 8080 (Keycloak), 8000 (API), 4200 (dashboard) and 8025 (Mailpit). If another project is using any of them, Willay's containers stay in `Created` and `make up` fails.
+**Live demo:** _the link goes here once it is deployed._
 
-With WSL, clone the repo inside the WSL file system (for example `~/code/willay`), not in `/mnt/c`. Bind mounts and `node_modules` on `/mnt/c` are slow.
+The demo runs with simulated data. Sign in with one of these accounts. The password, `willay-demo`, is also shown on the sign-in screen.
 
-## Starting it
+| Account | Can |
+| --- | --- |
+| `demo-admin` | See and manage everything, and run the scenario |
+| `demo-operator` | Manage zones, stations, rules and incidents |
+| `demo-viewer` | Only look |
 
-```bash
-cp .env.example .env    # and fill in the values
-make up                 # postgres, keycloak, mailpit, migrate, api, 5 workers, dashboard
-make seed               # demo data; prints the simulator's API keys
-make demo               # the Rímac scenario, narrated (about 8 minutes)
+What to try:
+
+1. **Run the scenario.** Sign in as `demo-admin` and press **Run the scenario** on Home. It plays SPEC's Rímac story in 9 minutes: discharge drops at Chaclacayo, and 4 minutes later the Santa Eulalia station stops reporting.
+2. **Watch the live map.** The first incident opens within a minute, and the zone changes colour. No reload is needed: the dashboard listens to the database over SSE.
+3. **Read the alerts.** **See the emails sent** opens the mailbox that catches every alert. Nobody acknowledged? Two minutes later the next level is alerted.
+4. **Acknowledge.** Do it from the incident, or with the link in its email. The escalation stops, and the timeline records who did it and how.
+5. **Look around:** the incident's readings chart and timeline, the rules in plain words with a 24-hour preview, the audit log, English or Spanish, light or dark, and a 360 px phone screen.
+
+Every night at 04:00 (Lima time) the demo goes back to its initial state.
+
+## Why it exists
+
+In the Rasuwa flood (Nepal, August 2026), the Bhote Koshi–Syafrubesi hydrological station stopped transmitting about ten minutes after the river overflowed, and downstream warnings went out 25 minutes later. The station's silence was the first available signal. Having sensors is not having a system: what is missing is the layer that connects data, rules and people. That layer is Willay. The first market is risk management offices of Peruvian municipalities facing huaicos (debris flows) and the coastal El Niño.
+
+## Highlights
+
+- **No reading is lost.** Postgres is the queue (ADR-0002). The reading and its queue row are written in the same transaction. Workers claim rows with `FOR UPDATE SKIP LOCKED`, commit their attempt before evaluating, and set aside a row that fails five times so it cannot block the rest. `LISTEN/NOTIFY` wakes them, with polling as a fallback.
+- **Measured.** 50 stations, one reading every 10 s, for 30 minutes (`make loadtest`): 9,000 batches, none lost, every reading evaluated, and a p95 under 0.2 s from reading received to first alert sent, against a 30 s target.
+- **Silence is a signal.** A station that stops reporting opens its own incident after K times its expected interval, and records when it comes back.
+- **Incidents without duplicates.** One active incident per cause, held by a partial unique index even with several evaluators racing. A cooldown keeps a resolved cause from reopening, and the timeline is append-only at the database permission level.
+- **Multi-tenant.** Organizations come from Keycloak 26 Organizations, and every query and every live event is scoped to one. Isolation is tested on every endpoint and on the SSE channel.
+- **Escalation by levels.** Each level alerts groups by channel and waits; nobody acknowledging moves it up. Acknowledging takes one click from the email (a page with a Confirm button, so mail scanners cannot acknowledge) or from a Telegram button that only works for the recipient.
+- **Architecture that holds.**
+  - One Python package deployed as an API and separate workers (ADR-0001).
+  - Each module has domain, application, infrastructure and API layers, and import contracts fail the build if a boundary is crossed.
+  - Time is injected, so silence and escalation are tested without waiting.
+- **An accessible, bilingual dashboard.**
+  - Angular with signals; Spanish and English, and so are the alerts each contact receives.
+  - Light and dark themes, and no status is conveyed by colour alone.
+  - axe-core checks every view, and Playwright checks the main ones at 360 px in a real browser.
+- **Tested:** 982 backend tests (unit, and integration against a real Postgres in Docker), 331 dashboard tests and 28 browser checks.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  S[Sensors / Simulator] -->|HTTP batch| API[willay.api<br/>FastAPI]
+  API -->|1 transaction: reading + queue| DB[(PostgreSQL<br/>PostGIS + Timescale)]
+  DB -->|NOTIFY / SKIP LOCKED| EV[worker evaluator]
+  EV -->|incidents + alerts| DB
+  SI[worker silence] --> DB
+  DB -->|NOTIFY| DI[worker dispatcher]
+  DI -->|SMTP / Bot API| CH[Email · Telegram]
+  TG[worker telegram<br/>getUpdates] -->|linking and acknowledgements| DB
+  ES[worker escalation] --> DB
+  DB -->|LISTEN/NOTIFY| API
+  API -->|SSE per organization| D[dashboard<br/>Angular]
+  D -->|REST + JWT| API
+  K[Keycloak 26] -.OIDC / JWT.-> API
+  K -.OIDC.-> D
 ```
 
-## The demo
+**Stack:**
+- **Backend:** Python 3.12, FastAPI, SQLAlchemy 2 async, Alembic, structlog.
+- **Database:** PostgreSQL 16 with PostGIS and TimescaleDB.
+- **Identity:** Keycloak 26 with Organizations.
+- **Dashboard:** Angular, Leaflet and Tailwind CSS.
+- **Infrastructure:** Docker Compose; on a server, Caddy with automatic HTTPS on one hostname (ADR-0010).
 
-`make demo` plays SPEC's scenario: something dams the Rímac, the downstream station in Chaclacayo records a sudden discharge drop and, 4 minutes later, the upstream station in Santa Eulalia stops reporting. The terminal tells each step of both incidents' timelines as it happens, with links to the dashboard:
+**Documentation:**
+- [docs/SPEC.md](docs/SPEC.md): vision, scope, architecture, schema, backlog and engineering rules.
+- [docs/adr/](docs/adr/): the technical decisions.
+- [docs/runbooks/](docs/runbooks/): deploy, back up and restore, rotate API keys, reprocess failed readings.
+- [docs/AUDIT.md](docs/AUDIT.md): an architecture audit against the specification.
+
+| | |
+| --- | --- |
+| ![The incident inbox in English](docs/images/incident-inbox-en.png) | ![The live map in dark mode](docs/images/live-map-dark.png) |
+| ![An incident: readings chart, alerts by recipient and timeline](docs/images/incident-detail.png) | ![A rule's preview over the last 24 h](docs/images/rule-preview.png) |
+
+## Run it locally
+
+You need:
+- Docker: Docker Engine on Linux, or Docker Desktop on Windows.
+- GNU `make`. On Windows without WSL: `winget install ezwinports.make`.
+- [uv](https://docs.astral.sh/uv/) for the backend. It installs Python 3.12 if missing.
+- Node.js 24 for the dashboard. `nvm install` reads `dashboard/.nvmrc`.
+
+```bash
+make up      # creates .env from .env.example, then brings up Postgres, Keycloak, Mailpit,
+             # the migrations, the API, the workers and the dashboard
+make seed    # two organizations with zones, stations, rules, contacts and a 3-level policy
+make demo    # the Rímac scenario, narrated in the terminal (about 8 minutes)
+```
+
+- **Dashboard:** http://localhost:4200. Sign in as `rimac-admin`, `rimac-operator`, `rimac-responder` or `rimac-viewer`; the password is `WILLAY_DEV_USER_PASSWORD` in `.env`.
+- **Emails:** in Mailpit, http://localhost:8025.
+
+The ports in `.env` must be free: 5433 (Postgres), 8080 (Keycloak), 8000 (API), 4200 (dashboard) and 8025 (Mailpit). If another project uses one of them, Willay's containers stay in `Created`. With WSL, clone inside the WSL file system rather than `/mnt/c`, which is slow for bind mounts.
+
+To put it on a server for others to try, follow [docs/runbooks/deploy.md](docs/runbooks/deploy.md).
+
+### The guided demo
+
+`make demo` plays the scenario and tells each step of both incidents' timelines as it happens, with links to the dashboard:
 
 | Time | What happens |
 | --- | --- |
@@ -38,98 +123,45 @@ make demo               # the Rímac scenario, narrated (about 8 minutes)
 | 5:00 | Santa Eulalia goes silent: a second incident, which climbs the same levels |
 
 Level 2 acknowledges both incidents:
+- **With Telegram linked:** you press «Confirmar que lo vi» on each message.
+- **Without it:** the demo acknowledges as Rosa Brigada through the page her email links to (`make demo ARGS="--confirm email"`).
 
-- **With Telegram:** if someone at level 2 has Telegram linked (see [Telegram alerts](#telegram-alerts-optional)), you press «Confirmar que lo vi» on each message.
-- **Without Telegram:** the demo acknowledges as Rosa Brigada itself. It presses Confirm on the page her email links to, the same POST a person makes, so the whole story runs without a bot. `make demo ARGS="--confirm email"` forces this mode.
-
-Watch the dashboard as `rimac-viewer`: a viewer cannot acknowledge, so a click there cannot end the story at level 1. The demo ends with PASS when both are acknowledged at level 2, and with FAIL if one is acknowledged at level 1 or escalates to level 3. After a PASS the stations keep reporting until Ctrl+C, so the dashboard stays live.
+The demo ends with PASS when both are acknowledged at level 2. Watch it as `rimac-viewer`, who cannot acknowledge and so cannot end the story early. Each run starts from a clean slate and keeps the configuration.
 
 <img src="docs/images/demo-telegram.png" alt="Both level-2 alerts in Telegram, each acknowledged with its button" width="300">
 
-![The drop incident after the demo: readings, alerts by recipient and the timeline up to Rosa's acknowledgement](docs/images/demo-incident.png)
-
-Each run starts from a clean slate: it deletes the demo organization's readings, incidents, events and alerts, and keeps its configuration (zones, stations, rules, policy and contacts, with their Telegram link). It connects as `willay_owner` for that, because the API and the workers cannot delete incident events. When it ends, the stations count as not reporting yet, so no silence incident opens after the demo.
-
-## The dashboard
-
-http://localhost:4200, with the demo users `rimac-admin`, `rimac-operator`, `rimac-responder` and `rimac-viewer` (password: `WILLAY_DEV_USER_PASSWORD` in `.env`). Each sees what their role allows.
-
-- **Mapa en vivo:** zones by their most urgent incident, stations with their last value, whether they report and a badge with their incident's state.
-- **Incidentes:** the inbox, filtered by status and severity in the URL.
-- **Incident detail:** readings chart, alerts by recipient and timeline; acknowledge, resolve and comment according to the role.
-- **Reglas:** the rules by zone, in words; operator and admin create, edit and deactivate them, with a preview of where a draft would have opened incidents over the last 24 h.
-- **Contactos:** contacts and their groups, with the channels each can be reached by; admin manages them and generates Telegram links.
-- **Auditoría** (admin): who changed what and when, each field before and after.
-- New incidents are announced on every page, and so are readings the evaluator could not process (with a link to reprocess them); everything updates live.
-- **Language and theme:** each user picks Español or English, saved for them on any device. The theme follows the system unless they pick Light or Dark, a choice kept in that browser. Alert emails, Telegram messages and the confirmation page speak each contact's language.
-
-![Live map](docs/images/live-map.png)
-
-![The live map in dark mode](docs/images/live-map-dark.png)
-
-![The incident inbox in English](docs/images/incident-inbox-en.png)
-
-![Incident inbox](docs/images/incident-inbox.png)
-
-![Incident detail](docs/images/incident-detail.png)
-
-![Rule preview over the last 24 h](docs/images/rule-preview.png)
-
-![Audit log](docs/images/audit-log.png)
-
-## Development
+### Development
 
 ```bash
-make help   # lists all the commands
-make lint   # Ruff, Mypy strict, ESLint
-make test   # Pytest (unit + integration with real Postgres via Docker) and Vitest
-make latency ARGS="--minutes 60"   # p50/p95 of reading received -> first alert sent (target < 30 s)
-make loadtest ARGS="--minutes 30"  # 50 stations x 1 reading/10 s against the running stack; checks SPEC
-make e2e    # the main views at 360 px in a real browser, against the running stack (Node 20+)
+make help    # lists all the commands
+make lint    # Ruff, Mypy strict, import contracts, ESLint
+make test    # Pytest (unit + integration with a real Postgres via Docker) and Vitest
+make e2e     # the main views at 360 px in a real browser, against the running stack
+make latency ARGS="--minutes 60"   # p50/p95 of reading received -> first alert sent
+make loadtest ARGS="--minutes 30"  # 50 stations x 1 reading/10 s against the running stack
+make simulate ARGS="--scenario rimac --seed 42"   # real readings into the local API
 ```
 
-## Station simulator
+**The simulator.** It sends readings with the API keys that `make seed` saved in `.secrets/station-keys.json`, and the same seed always gives the same series.
+- **Scenarios:** `normal`, `rise`, `drop`, `silence` and `rimac`.
+- **With the seed data:** `rise` triggers RIM-CHO-01's threshold rule, and `rimac` triggers RIM-CHA-01's discharge drop and, 4 minutes later, RIM-SEU-01's silence.
 
-It sends real readings to `POST /v1/readings` with the API keys that `make seed` left in `.secrets/station-keys.json`. The same seed always produces the same series of values. It runs in real time (one batch per station every 10 s) because silence detection measures with the real clock.
-
-```bash
-make simulate ARGS="--scenario normal --stations 3 --seed 7 --steps 12"
-make simulate ARGS="--scenario rimac --seed 42"   # demo: drop downstream and, 4 min later, silence upstream
-```
-
-Scenarios: `normal`, `rise` (the value doubles in 5 min), `drop` (falls to 40 %), `silence` (stops reporting) and `rimac`. `--event-after` sets when the event starts (60 s by default).
-
-With the seed data, Willay opens incidents and alerts: `rise` triggers the threshold rule of RIM-CHO-01, and `rimac` the discharge drop of RIM-CHA-01 and, 4 minutes later, the silence of RIM-SEU-01.
-
-The Rímac policy has 3 levels:
-- Level 1: email to Óscar.
-- Level 2, if nobody confirms within 2 min: email and Telegram to Brigada Chosica.
-- Level 3, 3 min later: Jefatura COE.
-
-Confirming any alert, either with the email link or with the Telegram button, stops the escalation. The emails can be seen in Mailpit (http://localhost:8025).
-
-A cause that was just resolved or acknowledged does not open a new incident while it is still active or during its cooldown (30 min in the seed). `make demo` repeats the scenario right away: it clears the demo organization's readings and incidents first.
-
-## Telegram alerts (optional)
-
-Without a bot, the `telegram` worker starts disabled and Telegram alerts stay pending; email works the same. To enable it:
-
-1. Create a bot with [@BotFather](https://t.me/BotFather) (`/newbot`).
-2. Put its token and its username (without `@`) in `.env`: `WILLAY_TELEGRAM_BOT_TOKEN` and `WILLAY_TELEGRAM_BOT_USERNAME`. The token is a secret: it never goes into the repository.
-3. Run `make up` so that the API and the workers read it.
-4. Link a contact's Telegram. For the demo, link Rosa Brigada, who is on level 2 of the seed:
-   1. Log in to the dashboard as `rimac-admin`.
-   2. In **Contactos**, press **Generar enlace de Telegram** on Rosa's card, then **Copiar**. The link is shown only once.
-   3. Open the link where your Telegram is and press **Start** in the bot's chat.
-   4. The bot answers "Listo, Rosa Brigada…". Rosa's card now offers **Desvincular Telegram**.
-
-The link is valid for 7 days and can be used only once; a new one cancels the previous one. Only the person who received an alert can confirm it with its button.
-
-## Structure
+**Telegram (optional).** Without a bot, Telegram alerts stay pending and email works the same. To enable it:
+1. Create a bot with [@BotFather](https://t.me/BotFather).
+2. Put `WILLAY_TELEGRAM_BOT_TOKEN` and `WILLAY_TELEGRAM_BOT_USERNAME` in `.env`. The token is a secret.
+3. Run `make up` again.
+4. In **Contactos**, generate a contact's link and open it in Telegram. The link is single use and valid for 7 days, and only an alert's recipient can confirm it with its button.
 
 | Folder | Contents |
 | --- | --- |
-| `backend/` | Python package `willay`: FastAPI API, workers, Alembic migrations and tests |
-| `dashboard/` | Angular dashboard |
-| `infra/` | Keycloak realm and Postgres init scripts |
-| `docs/` | SPEC, ADRs, interviews, sprints and runbooks |
+| `backend/` | The `willay` Python package: API, workers, Alembic migrations and tests |
+| `dashboard/` | The Angular dashboard |
+| `e2e/` | Browser checks with Playwright |
+| `infra/` | Keycloak realm, Postgres init, Caddy and the server's `.env` script |
+| `docs/` | Specification, ADRs, runbooks, sprint notes and the audit |
+
+## About
+
+Built by [Alessandro David](https://github.com/Alesso2805) as a portfolio project: specification, architecture, backend, dashboard and deployment, in two-week sprints. Story IDs keep `VIG-`, from the project's code name, Vigía.
+
+Found a security issue? See [SECURITY.md](SECURITY.md). Licensed under the [MIT License](LICENSE).
