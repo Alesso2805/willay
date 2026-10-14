@@ -414,10 +414,8 @@ willay/
 ├── docs/
 │   ├── SPEC.md                   # this document
 │   ├── openapi.json              # REST contract, generated
-│   ├── AUDIT.md                  # architecture audit (October 2026)
 │   ├── adr/
 │   ├── images/                   # README screenshots
-│   ├── research/                 # validation interviews
 │   ├── sprints/
 │   └── runbooks/
 ├── .github/workflows/ci.yml
