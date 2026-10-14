@@ -1,6 +1,6 @@
 """Stations: data, unit per variable, code and zone assignment.
 
-Product decisions (SPEC.md, scope, "Territorio - Estaciones" row):
+Product decisions (SPEC.md, "MVP scope and features", Territory / Stations row):
 - The unit is not chosen: it follows from the variable, so a threshold rule never compares
   metres with centimetres.
 - The code identifies the station outside Willay (documents, field crews, simulator key file):
