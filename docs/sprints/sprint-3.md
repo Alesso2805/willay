@@ -31,7 +31,7 @@ make simulate ARGS="--scenario rimac --seed 42"   # drop on RIM-CHA-01 and, 4 mi
 
 The alert emails can be seen in Mailpit: http://localhost:8025.
 
-## Changes to SPEC.md and CLAUDE.md in this sprint
+## Changes to the specification in this sprint
 
 - `c753099` docs(spec): silence ignores stations that never reported (PR #8)
 - `23c3f5a` docs(spec): reading_added only when the trigger value worsens (PR #9)

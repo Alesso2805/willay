@@ -23,7 +23,7 @@ make lint test
 make simulate ARGS="--scenario rimac --seed 42"
 ```
 
-## Changes to SPEC.md and CLAUDE.md in this sprint
+## Changes to the specification in this sprint
 
 - `d14aea4` docs: align CLAUDE.md with SPEC on organization claim and DB init
 - `6eb3d39` docs(spec): role permission matrix

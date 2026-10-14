@@ -32,7 +32,7 @@ make lint test
 make simulate ARGS="--scenario rimac --seed 42"   # opens the drop incident on RIM-CHA-01
 ```
 
-## Changes to SPEC.md and CLAUDE.md in this sprint
+## Changes to the specification in this sprint
 
 - `0517a1b` docs(spec): station unit per variable, fixed code, immediate key rotation
 - `f723e5b` docs(spec): define how threshold and rate-of-change rules are measured

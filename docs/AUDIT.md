@@ -4,6 +4,8 @@ Date: 2026-10-12 · Commit audited: `1ff8e5f` (branch `main`, clean working tree
 
 Updated on 2026-10-13 with the runs made after the first pass (sections 2.1, 3 for VIG-08 and VIG-29, and 8). They come from two machines: **machine A**, where the audit was written (Docker Desktop with 4 CPUs and 3.8 GiB), and **machine B** (20 CPUs; for the load test its Docker was limited to 4 CPUs and 3.8 GiB, like machine A's).
 
+`CLAUDE.md`, the coding agent's instructions that this audit cites, left the repository with VIG-45 on 2026-10-13. Its rules now live in SPEC's "Engineering rules" section, and SPEC no longer carries the "Master prompt" copy.
+
 ## How this audit was done, and its limits
 
 - **Documents named in the brief that do not exist.** `docs/BACKLOG.md` and `docs/ARCHITECTURE_RULES.md` are not in the repository. I audited against what does exist: the backlog is the "Product backlog" table in `docs/SPEC.md`, and the architecture rules are the "Architecture rules" section of `CLAUDE.md` (the "Master prompt" section of SPEC repeats a slightly older copy). Either create those two files or correct the brief.

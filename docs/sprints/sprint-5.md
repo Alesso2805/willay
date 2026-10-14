@@ -35,7 +35,7 @@ make simulate ARGS="--scenario rimac --seed 42"
 
 The dashboard is at http://localhost:4200 (users `rimac-operator`, `rimac-responder`, `rimac-viewer`, `rimac-admin`, with `WILLAY_DEV_USER_PASSWORD` from `.env`) and the emails at http://localhost:8025. `make` now works from PowerShell and Git Bash as well as WSL.
 
-## Changes to SPEC.md and CLAUDE.md in this sprint
+## Changes to the specification in this sprint
 
 - `52443ee` docs(spec): validation interviews postponed past the MVP (PR #19)
 - `44cabe0` docs(spec): accessibility checked with axe-core in CI instead of Lighthouse (PR #20)
