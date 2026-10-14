@@ -49,7 +49,7 @@ async def authenticate_station(
         raise InvalidApiKeyError("API key missing or not in the <station_id>.<secret> format")
 
     credential = await credentials.find(parsed.station_id)
-    # Argon2id is slow on purpose (tens of ms), so it runs in a thread to keep the event loop
+    # Argon2id is slow on purpose (50 to 130 ms), so it runs in a thread to keep the event loop
     # free. Unknown stations are verified against a dummy hash so response time does not
     # reveal which station_ids exist.
     expected_hash = credential.api_key_hash if credential else verifier.dummy_hash

@@ -15,7 +15,7 @@ from willay.shared import notifications
 
 class SqlStationCredentials:
     """Reads on its own short connection, returned to the pool before verifying the Argon2id
-    hash (tens of ms) instead of holding it during the computation."""
+    hash (50 to 130 ms) instead of holding it during the computation."""
 
     def __init__(self, engine: AsyncEngine) -> None:
         self._engine = engine

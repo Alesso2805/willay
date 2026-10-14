@@ -59,8 +59,8 @@ async def rate_limited_station(
     engine: EngineDep,
     clock: ClockDep,
 ) -> AuthenticatedStation:
-    # Counted after authenticating: the limit is per station. Throttling keyless clients
-    # (which still cost an Argon2id) is the proxy's job, by IP.
+    # Counted after authenticating: the limit is per station. Throttling clients with a wrong
+    # key (a well-formed one still costs an Argon2id) is the proxy's job, by IP.
     try:
         await enforce_rate_limit(station.station_id, clock, SqlBatchCounter(engine))
     except RateLimitExceededError as exc:
