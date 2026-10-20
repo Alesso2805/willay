@@ -34,7 +34,44 @@ Every night at 04:00 (Lima time) the demo goes back to its initial state.
 
 ## Why it exists
 
-In the Rasuwa flood (Nepal, August 2026), the Bhote Koshi–Syafrubesi hydrological station stopped transmitting about ten minutes after the river overflowed, and downstream warnings went out 25 minutes later. The station's silence was the first available signal. Having sensors is not having a system: what is missing is the layer that connects data, rules and people. That layer is Willay. The first market is risk management offices of Peruvian municipalities facing huaicos (debris flows) and the coastal El Niño.
+### The inspiration
+
+In the Rasuwa flood (Nepal, August 2026), the Bhote Koshi–Syafrubesi hydrological station stopped transmitting about ten minutes after the river overflowed, and downstream warnings went out 25 minutes later. The station's silence was the first available signal. Having sensors is not having a system: what is missing is the layer that connects data, rules and people. That layer is Willay.
+
+The first market is closer to home: the risk management offices of Peruvian municipalities that face huaicos (debris flows) and the coastal El Niño. On October 16, 2026, Peru's ENFEN kept its El Niño Costero alert ([official statement 18-2026](https://enfen.imarpe.gob.pe/download/comunicado-oficial-enfen-n-18-2026/)). Senamhi expects an extraordinary event: intense rain on the coast from the last weeks of 2026 until at least February, and ravines that can turn into huaicos. It singled out Chosica and Chaclacayo ([Infobae](https://www.infobae.com/peru/2026/10/16/lluvias-extremas-comenzarian-desde-diciembre-senamhi-alerta-que-fenomeno-el-nino-entro-en-fase-extraordinaria/)). That is the stretch of the Rímac the demo plays: a dam between Santa Eulalia and Chaclacayo, with a community leader in Quirio among the people to alert.
+
+### Where it fits
+
+A warning goes through three moments:
+
+| Moment | Who | What it says | How fast |
+| --- | --- | --- | --- |
+| Forecast | ENFEN, Senamhi | How likely heavy rain is in a region | Weeks to days ahead |
+| **Detection** | Municipal risk offices, brigades, neighbours | That *this* river or ravine is acting up *now*, and who must act | Minutes, over phone calls and WhatsApp groups |
+| Mass broadcast | INDECI, with SISMATE | An alert on every phone in an area | Minutes, once someone has decided to send it |
+
+Forecasts and mass broadcast have their institutions. Detection, the moment in between, still runs on people watching charts and calling each other. Willay automates it: a sensor's reading becomes the right person's alert in seconds, and the alert keeps escalating until someone answers. With CAP export, planned for the next phase, the incident it opens can feed the broadcast channels directly instead of waiting to be relayed.
+
+### What it automates
+
+Today:
+- **Watching.** Every reading is evaluated the moment it arrives, day and night; nobody has to be looking at a chart.
+- **Recognising the danger.**
+  - A threshold crossed for a set number of readings in a row.
+  - A sudden rise or drop within a window. A drop downstream can mean the river is being dammed upstream.
+  - Silence: a station that stops reporting in a risk zone opens an incident, not a maintenance ticket.
+- **Deciding who hears first.** Each rule has an escalation policy: levels of contact groups, each with its channel.
+- **Telling them.** Email and Telegram within seconds, in each contact's language, with a one-click acknowledgement.
+- **Insisting.** When nobody acknowledges in time, the next level is alerted. When the last level runs out, the incident turns red on every dashboard.
+- **Stopping.** One acknowledgement stops the escalation for everyone, and alerts not yet sent are skipped.
+- **Keeping the record.** Who was alerted, by which channel and when, and who acknowledged: a timeline that outlives the readings, for the review afterwards.
+
+Next:
+- SMS.
+- A public page where residents subscribe to their zone.
+- CAP export to official alerting channels.
+- Discharge forecasts on the map, as context.
+- Later, predictive models, such as the probability of a huaico from accumulated rain and discharge.
 
 ## Highlights
 
