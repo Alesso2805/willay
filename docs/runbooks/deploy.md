@@ -1,6 +1,6 @@
 # Deploy Willay on a server
 
-This runbook puts Willay on a public server, with HTTPS, so anyone with the link can use it (VIG-42). It targets an **Oracle Cloud Always Free** ARM server and a free **DuckDNS** hostname, so it costs nothing. The same steps work on any Linux server with Docker, on x86 or ARM, as long as a hostname points to it.
+This runbook puts Willay on a public server, with HTTPS, so anyone with the link can use it (VIG-42). It targets an **Oracle Cloud Always Free** ARM server and a free **DuckDNS** hostname, so it costs nothing. The same steps work on any Linux server with Docker, on x86 or ARM, as long as a hostname points to it; [Google Cloud's free trial](#on-google-cloud-instead) is the alternative the public demo runs on.
 
 One hostname serves everything, behind Caddy (ADR-0010):
 
@@ -39,6 +39,23 @@ One hostname serves everything, behind Caddy (ADR-0010):
      sudo iptables -I INPUT -p udp --dport 443 -j ACCEPT
      sudo netfilter-persistent save
      ```
+
+### On Google Cloud instead
+
+Google Cloud's free trial gives $300 of credit for 90 days and charges nothing while it lasts. When the credit or the 90 days run out, the server stops; nothing is charged unless you upgrade the account yourself. The public demo runs this way since October 2026.
+
+1. **Start the free trial** at [console.cloud.google.com/freetrial](https://console.cloud.google.com/freetrial).
+   - The billing account must say **Cuenta de prueba gratuita** (free trial account). A paid account would charge the server to the card.
+   - With some cards, Google asks for a one-time prepayment (PEN 100 in Peru). It stays as account balance and is refundable when the billing account is closed. Until it is credited, the trial is not active and the account cannot be linked to a project.
+   - Never press **Upgrade** (*Actualizar*) on the trial banner: that turns the account into a paid one.
+2. **A project** named `willay`, linked to the trial billing account.
+3. **Compute Engine → VM instances → Create instance:**
+   - **Region:** `southamerica-west1` (Santiago), the closest to Peru.
+   - **Machine:** E2, `e2-medium` (2 vCPU, 4 GB), about US$40 a month of credit.
+   - **OS and storage:** Ubuntu 24.04 LTS for x86/64 (not *Minimal*, which lacks tools the next steps use), 30 GB.
+   - **Networking:** allow HTTP and HTTPS traffic, which opens ports 80 and 443. In the network interface, reserve a **static external IPv4 address**, so the IP survives a restart.
+   - **Observability:** leave the Ops Agent off: Willay does not need it, and it takes memory.
+4. **Connect** with the **SSH** button next to the instance, which opens a terminal in the browser. Ubuntu on Google Cloud has no firewall of its own to open, so go on to DuckDNS with the instance's external IP.
 
 ## 3. A free hostname with DuckDNS
 
