@@ -126,7 +126,7 @@ cd e2e && npm ci
 WILLAY_E2E_DEPLOYED=1 WILLAY_DASHBOARD_URL=https://willay.duckdns.org npx playwright test deployed.spec.ts
 ```
 
-They check that the dashboard, the API, the sign-in and the mailbox answer on the one hostname, and that `config.json` holds the demo's shared password and nothing else. They also check that Keycloak's admin console, its master realm and the account console answer 404 from the internet. In PowerShell, set the two variables with `$env:WILLAY_E2E_DEPLOYED=1` and `$env:WILLAY_DASHBOARD_URL="https://..."` first.
+They check that the dashboard, the API, the sign-in and the mailbox answer on the one hostname, that the sign-in page shows the Willay icon, and that `config.json` holds the demo's shared password and nothing else. They also check that Keycloak's admin console, its master realm and the account console answer 404 from the internet. In PowerShell, set the two variables with `$env:WILLAY_E2E_DEPLOYED=1` and `$env:WILLAY_DASHBOARD_URL="https://..."` first.
 
 ## 6. Update
 
@@ -137,6 +137,12 @@ make up
 ```
 
 The `migrate` container applies any new migration before the API and the workers start.
+
+A change to the realm file does not reach a running server on its own (see [Administer Keycloak](#administer-keycloak)). One did: since October 2026 the sign-in page uses Willay's login theme, which shows its icon in the browser tab. On a server started before that, set it once after `make up`:
+
+```bash
+docker compose exec keycloak bash -c '/opt/keycloak/bin/kcadm.sh config credentials --server http://localhost:8080/auth --realm master --user admin --password "$KC_BOOTSTRAP_ADMIN_PASSWORD" && /opt/keycloak/bin/kcadm.sh update realms/willay -s loginTheme=willay'
+```
 
 ## Administer Keycloak
 

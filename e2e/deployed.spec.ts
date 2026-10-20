@@ -41,6 +41,25 @@ test('the dashboard, the API, the sign-in and the mailbox answer on one hostname
   expect((await request.get('/correo/')).status()).toBe(200);
 });
 
+test('the dashboard and the sign-in page show the Willay icon', async ({ request, baseURL }) => {
+  const icon = await request.get('/icon.svg');
+  expect(icon.status()).toBe(200);
+  expect(icon.headers()['content-type']).toContain('image/svg+xml');
+  // The sign-in page itself, as the dashboard opens it: the realm's login theme sets the icon.
+  const { oidc } = await (await request.get('/config.json')).json();
+  const query = new URLSearchParams({
+    client_id: oidc.clientId,
+    redirect_uri: `${baseURL}/`,
+    response_type: 'code',
+    scope: 'openid',
+    code_challenge: 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
+    code_challenge_method: 'S256',
+  });
+  const signIn = await request.get(`/auth/realms/willay/protocol/openid-connect/auth?${query}`);
+  expect(signIn.status()).toBe(200);
+  expect(await signIn.text()).toMatch(/href="[^"]*\/login\/willay\/img\/favicon\.ico"/);
+});
+
 test('the public demo shows its shared password, and nothing else of the server', async ({
   request,
 }) => {
