@@ -7,9 +7,7 @@
       >
         <div class="flex items-center justify-between gap-3 px-4 py-3 lg:px-5 lg:py-6">
           <a routerLink="/" class="flex min-w-0 items-center gap-3" (click)="menuOpen.set(false)">
-            <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-600 text-white">
-              <app-icon name="eye" [size]="20" />
-            </span>
+            <img src="icon.svg" alt="" width="36" height="36" class="size-9 shrink-0" />
             <span class="min-w-0">
               <span class="block font-semibold tracking-tight text-white">Willay</span>
               <span class="block truncate text-xs">{{ me.organization_name }}</span>
@@ -93,9 +91,7 @@
       <div class="w-full max-w-md">
         <div class="mb-6 flex items-center justify-between gap-3">
           <div class="flex items-center gap-3">
-            <span class="grid size-11 place-items-center rounded-xl bg-brand-600 text-white">
-              <app-icon name="eye" [size]="24" />
-            </span>
+            <img src="icon.svg" alt="" width="44" height="44" class="size-11" />
             <div>
               <p class="text-xl font-semibold tracking-tight text-white">Willay</p>
               <p class="text-sm text-night-300">{{ t('app.tagline') }}</p>

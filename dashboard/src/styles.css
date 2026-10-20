@@ -10,9 +10,9 @@
 
 /*
  * "Monitoring center" identity (VIG-33): night blue for navigation and water blue as the
- * brand color, the same in both themes. Provisional: the final identity waits for the
- * commercial name (SPEC). Checked contrast: white on brand-700 5.4:1; night-300 on night-900
- * 7.9:1.
+ * brand color, the same in both themes. The logo (public/icon.svg, also the browser tab's icon)
+ * is a W drawn as waves with an amber warning dot, on night blue. Checked contrast: white on
+ * brand-700 5.4:1; night-300 on night-900 7.9:1.
  *
  * Semantic colors (VIG-41): pages use these, never a fixed gray, so they follow the theme.
  * Light values here, dark ones in `:root.dark`; ui/visual-states.spec.ts measures both.
