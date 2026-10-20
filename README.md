@@ -61,7 +61,7 @@ In the Rasuwa flood (Nepal, August 2026), the Bhote Koshi–Syafrubesi hydrologi
   - 990 backend tests: unit, and integration against a real Postgres in Docker;
   - 336 dashboard tests, including one that fails on any text not taken from the translation files;
   - 32 checks in a real browser: every main page at 360 px, in Spanish and English, and the theme switch;
-  - 14 checks of a deployed server: one hostname, Keycloak's admin and account consoles closed.
+  - 16 checks of a deployed server: one hostname, the Willay icon on the sign-in page, Keycloak's admin and account consoles closed.
 
 ## Architecture
 
@@ -167,7 +167,7 @@ make simulate ARGS="--scenario rimac --seed 42"   # real readings into the local
 | `backend/` | The `willay` Python package: API, workers, Alembic migrations and tests |
 | `dashboard/` | The Angular dashboard |
 | `e2e/` | Browser checks with Playwright |
-| `infra/` | Keycloak realm, Postgres init, Caddy and the server's `.env` script |
+| `infra/` | Keycloak realm and sign-in theme, Postgres init, Caddy and the server's `.env` script |
 | `docs/` | Specification, ADRs, runbooks and sprint notes |
 
 ## About
