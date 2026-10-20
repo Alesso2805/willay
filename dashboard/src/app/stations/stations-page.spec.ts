@@ -40,7 +40,7 @@ const ZONE: Zone = {
 const STATION: Station = {
   id: 's1',
   code: 'RIM-TMP-01',
-  name: 'Pluviómetro provisional, Santa Eulalia',
+  name: 'Pluviómetro provisional',
   variable: 'rainfall',
   unit: 'mm',
   location: { type: 'Point', coordinates: [-76.62, -11.88] },
