@@ -3,10 +3,25 @@
 from uuid import UUID
 
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from willay.identity.application.authenticate import Organization, UserProfile
 from willay.shared.languages import Language
+
+# The WHERE makes the upsert a no-op when nothing changed: no write or WAL on every
+# authenticated request, only when Keycloak changes the name, email or org.
+_UPSERT_USER = text("""
+    INSERT INTO core.users (id, organization_id, email, full_name)
+    VALUES (:id, :organization_id, :email, :full_name)
+    ON CONFLICT (id) DO UPDATE
+    SET organization_id = EXCLUDED.organization_id,
+        email = EXCLUDED.email,
+        full_name = EXCLUDED.full_name
+    WHERE (core.users.organization_id, core.users.email, core.users.full_name)
+          IS DISTINCT FROM
+          (EXCLUDED.organization_id, EXCLUDED.email, EXCLUDED.full_name)
+""")
 
 
 class SqlOrganizationRepository:
@@ -31,27 +46,23 @@ class SqlUserRepository:
         self._conn = conn
 
     async def upsert(self, profile: UserProfile) -> None:
-        # The WHERE makes the upsert a no-op when nothing changed: no write or WAL on every
-        # authenticated request, only when Keycloak changes the name, email or org.
-        await self._conn.execute(
-            text("""
-                INSERT INTO core.users (id, organization_id, email, full_name)
-                VALUES (:id, :organization_id, :email, :full_name)
-                ON CONFLICT (id) DO UPDATE
-                SET organization_id = EXCLUDED.organization_id,
-                    email = EXCLUDED.email,
-                    full_name = EXCLUDED.full_name
-                WHERE (core.users.organization_id, core.users.email, core.users.full_name)
-                      IS DISTINCT FROM
-                      (EXCLUDED.organization_id, EXCLUDED.email, EXCLUDED.full_name)
-            """),
-            {
-                "id": profile.user_id,
-                "organization_id": profile.organization_id,
-                "email": profile.email,
-                "full_name": profile.full_name,
-            },
-        )
+        params = {
+            "id": profile.user_id,
+            "organization_id": profile.organization_id,
+            "email": profile.email,
+            "full_name": profile.full_name,
+        }
+        # A new user's first requests often arrive together (a dashboard opening). Two inserts
+        # of the same row can both pass ON CONFLICT (id)'s check, and the second then trips over
+        # the email's unique index, which ON CONFLICT does not cover. In a savepoint, so that
+        # leaves the request's transaction usable; the retry finds the committed row and takes
+        # the ON CONFLICT path. An email that belongs to another user fails the retry too.
+        try:
+            async with self._conn.begin_nested():
+                await self._conn.execute(_UPSERT_USER, params)
+        except IntegrityError:
+            async with self._conn.begin_nested():
+                await self._conn.execute(_UPSERT_USER, params)
 
     async def language(self, user_id: UUID) -> Language | None:
         value = await self._conn.scalar(
