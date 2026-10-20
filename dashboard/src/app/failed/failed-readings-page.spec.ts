@@ -14,7 +14,7 @@ const RAIN: FailedReading = {
   id: 54,
   station_id: 's1',
   station_code: 'RIM-TMP-01',
-  station_name: 'Estación sin asignar',
+  station_name: 'Pluviómetro provisional, Santa Eulalia',
   measured_at: '2026-10-02T18:38:47Z',
   value: 7.25,
   unit: 'mm',

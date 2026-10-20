@@ -186,7 +186,7 @@ STATIONS = (
             "water_level", "m", -76.780, -11.985, zones=((Z_CHACLACAYO, "in_zone"),)),
     Station(S_HUACHIPA, RIMAC.id, "RIM-HUA-01", "Huachipa",
             "discharge", "m3/s", -76.930, -12.020, zones=((Z_CHACLACAYO, "downstream"),)),
-    Station(S_UNZONED, RIMAC.id, "RIM-TMP-01", "Estación sin asignar",
+    Station(S_UNZONED, RIMAC.id, "RIM-TMP-01", "Pluviómetro provisional, Santa Eulalia",
             "rainfall", "mm", -76.620, -11.880),
     Station(S_AIS_1, ISOLATION.id, "AIS-01", "Prueba 1",
             "water_level", "m", -77.180, -11.520, zones=((Z_TEST, "in_zone"),)),
