@@ -54,6 +54,7 @@ All notable changes are documented here. Format: [Keep a Changelog](https://keep
   - timeline reasons appear in each reader's language;
   - emails, Telegram and the confirmation page use each contact's language (new `contacts.language`, defaulting to the organization's).
 - Light and dark mode: the dashboard follows the system unless the user picks one in that browser, and the confirmation page follows the device (VIG-41).
+- Willay's own icon, a W drawn as waves with an amber warning dot: in the browser tab of the dashboard and of Keycloak's sign-in page (a login theme that changes only the icon), and as the dashboard's logo, instead of Angular's and Keycloak's icons and the provisional eye. A server started before it needs one command (docs/runbooks/deploy.md, Update).
 
 ### Security
 - Map tooltips no longer treat zone and station names as HTML, so a name with markup cannot run in the browser of whoever hovers over it.
