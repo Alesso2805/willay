@@ -137,7 +137,8 @@ async def _run(args: argparse.Namespace, run: _Run) -> int:
         problem = _not_ready(ready)
         by_email = [recipient.name for recipient in ready.email_at_ack_level]
         mode = choose_mode(args.confirm, ready.telegram_at_ack_level, by_email)
-        if problem is not None or isinstance(mode, str):
+        # Not isinstance(mode, str): AckMode is a StrEnum, so every chosen mode is a str too.
+        if problem is not None or not isinstance(mode, AckMode):
             _say(problem or str(mode))
             return 1
         acknowledger = None
