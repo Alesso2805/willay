@@ -12,7 +12,7 @@ Willay replaces that chain. It evaluates every reading as it arrives, opens the 
 
 ## Try it
 
-**Live demo:** _the link goes here once it is deployed._
+**Live demo: [willay.duckdns.org](https://willay.duckdns.org)**
 
 The demo runs with simulated data. Sign in with one of these accounts. The password, `willay-demo`, is also shown on the sign-in screen.
 
