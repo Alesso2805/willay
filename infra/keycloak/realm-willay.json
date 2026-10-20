@@ -1,6 +1,7 @@
 {
   "realm": "willay",
   "displayName": "Willay",
+  "loginTheme": "willay",
   "enabled": true,
   "organizationsEnabled": true,
   "sslRequired": "external",

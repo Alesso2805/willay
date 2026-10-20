@@ -66,6 +66,7 @@ services:
       WILLAY_DEMO_PASSWORD: ${WILLAY_DEMO_PASSWORD:-${WILLAY_DEV_USER_PASSWORD:?}}
     volumes:
       - ./infra/keycloak:/opt/keycloak/data/import:ro
+      - ./infra/keycloak/themes/willay:/opt/keycloak/themes/willay:ro
     ports:
       - "${WILLAY_KEYCLOAK_PORT:-8080}:8080"
     depends_on:
