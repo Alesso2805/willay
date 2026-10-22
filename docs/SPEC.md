@@ -371,7 +371,35 @@ The rules every change follows, whoever writes it. The import contracts in `back
 - **A plan first.** Each story starts from a short plan, what will change and which files, agreed with the product owner before any code.
 - **Raise contradictions.** If a request contradicts this specification, the contradiction is raised before the work starts. A change to this document goes in its own `docs(spec)` commit.
 - **Small commits.** Conventional Commits; work over about 300 lines is split into smaller pull requests.
-- **Explain decisions.** Non-obvious decisions are explained where they are made: a comment that says why, the pull request, or an ADR. Every technical decision this document does not cover gets an ADR in `docs/adr/NNNN-title.md`.
+- **Explain decisions.** Non-obvious decisions are explained where they are made: a comment that says why (under the rule below), the pull request, or an ADR. Every technical decision this document does not cover gets an ADR in `docs/adr/NNNN-title.md`.
+
+**Comments in the code** (product owner, 2026-10-22; VIG-46). This document holds the rule, because `CLAUDE.md` stays on each workstation (VIG-45); the coding agent's `CLAUDE.md` points here.
+
+- **No comment by default.** A comment exists only when it holds what the code cannot say, and losing it would make a competent reader misunderstand the code, break something, or dig through git or outside documents.
+- **The code says it first.** Before writing a comment, try a better name, a named constant, an extracted function, a type or an assert. History and the reasons for a change go in the commit or the pull request, never in the code.
+- **Allowed:**
+  - the why of something that looks like a mistake but is intended;
+  - outside constraints: a library's or a service's quirk, a spec or RFC, a workaround with its issue link, a business or legal rule;
+  - warnings and invariants: an order that matters, concurrency, security;
+  - a non-obvious algorithm with its source, and units a name does not carry;
+  - the contract of a public API a tool reads. A FastAPI route's docstring and a field's `description=` become OpenAPI, and a CLI module's docstring is its `--help`;
+  - a TODO with a story or an owner and a concrete action.
+- **Never:**
+  - comments that repeat the code;
+  - history or a changelog;
+  - commented-out code, templates included;
+  - separators, banners or decorative headings;
+  - docstrings or JSDoc that repeat parameter names or annotated types;
+  - comments addressed to the reviewer, or about instructions.
+- **Story IDs** (VIG-NN) stay in only three places, and git holds the rest:
+  - where they date a data boundary ("rows enqueued before VIG-28");
+  - where they name the requirement a test proves;
+  - where they point at the story that will fix a known limit.
+
+  ADR and SPEC references stay, since those documents state the current rules.
+- **Kept current.** A change to the code or the environment a comment describes updates or deletes that comment in the same change.
+- **Never deleted:** tool directives (`type: ignore`, `noqa`, `fmt: skip`, `@ts-expect-error`, `@ts-check`), shebangs, license headers, and text a tool reads at run time (FastAPI docstrings and descriptions, a CLI's help, Alembic's revision headers).
+- **Form:** one line where possible, in the present tense, next to the code it explains, in English.
 
 **Definition of done**
 
