@@ -24,7 +24,7 @@ Option 3. `ingest.readings` is a hypertable partitioned by `measured_at`:
 
 Rules that come with this decision:
 
-- **Nothing points to `readings` with an FK**, because Timescale restricts FKs to hypertables. `evaluation_queue` stores `(station_id, measured_at)` without an FK. The FK from `readings` to `core.stations` is supported.
+- **Nothing points to `readings` with an FK.** TimescaleDB 2.30 creates and enforces one, but while it exists the hypertable's chunks can be neither compressed nor dropped, even when no row points into them, so the columnstore and the retention above would fail (checked on `timescaledb-ha:pg16-ts2.30`, 2026-10-22). `evaluation_queue` stores `(station_id, measured_at)` without an FK. The FK from `readings` to `core.stations` is supported.
 - **Evidence:** the `opened` event of each incident copies into its `payload` the readings that triggered the rule, so the timeline survives retention.
 - **`evaluated_at`** makes it possible to verify that no `ok` reading was left unevaluated.
 
