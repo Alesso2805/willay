@@ -9,6 +9,7 @@
     "api_key_invalid": "Missing or invalid API key",
     "station_inactive": "Inactive station",
     "rate_limited": "Limit of {{max}} batches per minute per station",
+    "key_failures_limited": "Too many requests with a wrong API key from this address: the limit is {{max}} per minute",
     "reading_in_future": "measured_at is in the future (the station's clock is off)",
     "zone_not_found": "Zone not found",
     "station_not_found": "Station not found",

@@ -32,6 +32,20 @@ class KeyVerifier(Protocol):
 
     def verify(self, api_key_hash: str, api_key: str) -> bool: ...
 
+    def remembers(self, api_key_hash: str, api_key: str) -> bool:
+        """Whether `verify` would answer from memory, without running Argon2id."""
+        ...
+
+
+class CheckLimit(Protocol):
+    async def reserve(self) -> None:
+        """Before an Argon2id check; raises when the client is over its limit."""
+        ...
+
+    async def release(self) -> None:
+        """After a check whose key was right."""
+        ...
+
 
 class InvalidApiKeyError(Exception):
     """Key missing, malformed, for a nonexistent station, or not matching (401)."""
@@ -42,9 +56,13 @@ class InactiveStationError(Exception):
 
 
 async def authenticate_station(
-    raw_key: str | None, credentials: StationCredentials, verifier: KeyVerifier
+    raw_key: str | None,
+    credentials: StationCredentials,
+    verifier: KeyVerifier,
+    limit: CheckLimit | None = None,
 ) -> AuthenticatedStation:
-    parsed = parse_api_key(raw_key or "")
+    key = raw_key or ""
+    parsed = parse_api_key(key)
     if parsed is None:
         raise InvalidApiKeyError("API key missing or not in the <station_id>.<secret> format")
 
@@ -53,9 +71,17 @@ async def authenticate_station(
     # free. Unknown stations are verified against a dummy hash so response time does not
     # reveal which station_ids exist.
     expected_hash = credential.api_key_hash if credential else verifier.dummy_hash
-    matches = await asyncio.to_thread(verifier.verify, expected_hash, raw_key or "")
+    # Only a check that must run Argon2id counts toward the client's limit: a key this process
+    # already verified costs nothing, so its station never uses the limit up (ADR-0011).
+    reserved = None
+    if limit is not None and not verifier.remembers(expected_hash, key):
+        await limit.reserve()
+        reserved = limit
+    matches = await asyncio.to_thread(verifier.verify, expected_hash, key)
     if credential is None or not matches:
         raise InvalidApiKeyError("invalid API key")
+    if reserved is not None:
+        await reserved.release()
     if not credential.is_active:
         raise InactiveStationError(f"station {credential.station_id} is inactive")
     return AuthenticatedStation(credential.station_id, credential.organization_id)

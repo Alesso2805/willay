@@ -54,6 +54,11 @@ class ApiKeyHasher:
                     self._verified.popitem(last=False)
         return matches
 
+    def remembers(self, api_key_hash: str, api_key: str) -> bool:
+        entry = (api_key_hash, hashlib.sha256(api_key.encode()).digest())
+        with self._lock:
+            return entry in self._verified
+
     @cached_property
     def dummy_hash(self) -> str:
         """Hash of a key nobody has, with the same parameters as the real ones.

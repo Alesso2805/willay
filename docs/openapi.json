@@ -4911,7 +4911,7 @@
             "description": "Validation Error"
           },
           "429": {
-            "description": "More than 60 batches per minute; see the Retry-After header"
+            "description": "More than 60 batches a minute from the station, or more than 30 requests with a wrong API key a minute from the same address; see the Retry-After header"
           }
         },
         "security": [

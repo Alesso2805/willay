@@ -271,12 +271,33 @@ async def test_the_worker_process_opens_the_incident_and_purges_old_windows(
         )
         return [r["window_start"] for r in rows]
 
+    address = f"key-failures-{graph.station_id}"
+    for window in (old, recent):
+        await owner.execute(
+            "INSERT INTO ingest.key_failure_windows (client_address, window_start, failure_count)"
+            " VALUES ($1, $2, 1)",
+            address,
+            window,
+        )
+
+    async def key_failure_windows() -> list[datetime]:
+        rows = await owner.fetch(
+            "SELECT window_start FROM ingest.key_failure_windows WHERE client_address = $1"
+            " ORDER BY window_start",
+            address,
+        )
+        return [r["window_start"] for r in rows]
+
     settings = Settings(database_url=database.app_url, heartbeat_dir=tmp_path)
     stop = asyncio.Event()
     worker = asyncio.create_task(run_silence(settings, stop, clock=FakeClock(now), interval_s=0.05))
     try:
         deadline = asyncio.get_running_loop().time() + 10
-        while not await incidents(owner, graph) or len(await windows()) > 1:
+        while (
+            not await incidents(owner, graph)
+            or len(await windows()) > 1
+            or len(await key_failure_windows()) > 1
+        ):
             if asyncio.get_running_loop().time() > deadline:
                 raise AssertionError("the worker did not open the incident and purge in time")
             await asyncio.sleep(0.05)
@@ -284,4 +305,5 @@ async def test_the_worker_process_opens_the_incident_and_purges_old_windows(
         stop.set()
         await worker
     assert await windows() == [recent]  # only windows older than one hour are purged
+    assert await key_failure_windows() == [recent]
     assert (tmp_path / "silence.alive").exists()  # healthcheck heartbeat

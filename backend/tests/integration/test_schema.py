@@ -20,7 +20,7 @@ async def test_all_tables_exist(owner: asyncpg.Connection) -> None:
         """
     )
     # As SPEC says: core has 17 tables.
-    assert {r["table_schema"]: r["n"] for r in rows} == {"core": 17, "ingest": 4}
+    assert {r["table_schema"]: r["n"] for r in rows} == {"core": 17, "ingest": 5}
 
 
 async def test_readings_is_a_hypertable_with_columnstore_and_retention(

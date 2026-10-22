@@ -88,6 +88,9 @@ class FakeVerifier:
         self.verified_against.append(api_key_hash)
         return api_key_hash == f"hash:{api_key}"
 
+    def remembers(self, api_key_hash: str, api_key: str) -> bool:
+        return False
+
 
 class FakeCredentials:
     def __init__(self, *credentials: StationCredential) -> None:
