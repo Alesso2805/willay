@@ -1,4 +1,4 @@
-"""Contact groups (VIG-36): who a policy level notifies. A group may name the zone it covers;
+"""Contact groups: who a policy level notifies. A group may name the zone it covers;
 that zone is a label for the admin, alerting does not depend on it.
 """
 

@@ -1,4 +1,4 @@
-"""Audit log API (VIG-38): admin only (SPEC: "See the audit log")."""
+"""Audit log API: admin only (SPEC: "See the audit log")."""
 
 from datetime import datetime
 from typing import Annotated, Any

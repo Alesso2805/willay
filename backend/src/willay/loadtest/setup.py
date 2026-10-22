@@ -1,4 +1,4 @@
-"""The load test's own organization ("Carga") and a clean slate for each run (VIG-29).
+"""The load test's own organization ("Carga") and a clean slate for each run.
 
 Idempotent: the first run creates the organization, its zone, contact, policy, stations and
 rules; later runs only issue new API keys (they live in memory for the run, never on disk)

@@ -1,4 +1,4 @@
-"""Reading received → first alert sent (VIG-28): the latency the MVP promises, p95 < 30 s.
+"""Reading received → first alert sent: the latency the MVP promises, p95 < 30 s.
 
 Each incident opened by a reading contributes one value: from that reading's `received_at`
 to the first of its alerts that was sent. Silence incidents do not count (no reading opens

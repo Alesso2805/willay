@@ -1,4 +1,4 @@
-"""Rate-of-change rule (VIG-16): a rise or drop greater than delta within T minutes.
+"""Rate-of-change rule: a rise or drop greater than delta within T minutes.
 
 `params` in core.rules: {"direction": "down", "delta": 40.0, "window_minutes": 10}.
 

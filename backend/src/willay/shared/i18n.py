@@ -1,4 +1,4 @@
-"""The backend's texts in Spanish and English (VIG-40, ADR-0008).
+"""The backend's texts in Spanish and English (ADR-0008).
 
 One JSON file per language in `locales/`, with the same conventions as the dashboard's: nested
 keys and `{{name}}` placeholders, so translators work with a single format. A test holds every

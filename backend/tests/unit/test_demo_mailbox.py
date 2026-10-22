@@ -128,7 +128,6 @@ def test_it_explains_when_nobody_could_acknowledge_that_way() -> None:
 
 
 def test_a_reason_is_told_apart_from_a_mode_by_its_type_not_by_being_a_str() -> None:
-    """make demo stopped on every run when it took any str for a reason: modes are str too."""
     chosen = choose_mode(AckMode.EMAIL, [], ["Rosa"])
     reason = choose_mode(AckMode.EMAIL, ["Rosa"], [])
     assert isinstance(chosen, str)

@@ -1,4 +1,4 @@
-"""Silent sensor rule (VIG-17): a station that stopped reporting.
+"""Silent sensor rule: a station that stopped reporting.
 
 A station is silent once K * expected_interval_s have passed since its last heartbeat
 (`station_heartbeats.last_seen_at`). K comes only from `stations.silence_multiplier` (SPEC),

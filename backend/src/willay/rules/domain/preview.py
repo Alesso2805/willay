@@ -1,4 +1,4 @@
-"""Rule preview (VIG-27): when a draft rule would have opened an incident over past readings.
+"""Rule preview: when a draft rule would have opened an incident over past readings.
 
 It replays the readings in order with the evaluator's own functions and marks the start of
 each episode: the first reading at which the rule fires after one at which it did not. While

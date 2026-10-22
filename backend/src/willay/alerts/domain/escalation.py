@@ -1,4 +1,4 @@
-"""Level-based escalation (VIG-24): when an incident moves up a level or exhausts its policy.
+"""Level-based escalation: when an incident moves up a level or exhausts its policy.
 
 The current level expires when `wait_s` has passed since it was notified with no
 acknowledgement; when it reached nobody (all alerts skipped, SPEC: escalate immediately),

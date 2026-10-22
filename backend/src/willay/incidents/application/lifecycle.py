@@ -1,9 +1,9 @@
-"""List, acknowledge, resolve and comment on incidents (VIG-19, VIG-35), always scoped to the
+"""List, acknowledge, resolve and comment on incidents, always scoped to the
 actor's organization (another tenant's incident is a 404, not a 403).
 
 Each transition locks the incident FOR UPDATE in the request transaction, so a concurrent
 operator waits, sees the new status and gets a 409 instead of overwriting it. Both platform
-users and account-less contacts (alert link, VIG-23) can acknowledge.
+users and account-less contacts (alert link) can acknowledge.
 """
 
 from collections.abc import Mapping, Sequence
@@ -128,9 +128,7 @@ class IncidentRepository(Protocol):
         event_type: str,
         payload: Mapping[str, Any],
         now: datetime,
-    ) -> int:
-        """Appends a timeline event and returns its id."""
-        ...
+    ) -> int: ...
 
 
 async def acknowledge_incident(

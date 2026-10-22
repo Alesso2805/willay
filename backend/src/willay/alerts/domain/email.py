@@ -1,8 +1,8 @@
-"""Alert email template (VIG-20): zone, severity, value, local time and confirmation link.
+"""Alert email template: zone, severity, value, local time and confirmation link.
 
 Plain text so it reads in any client, even a basic phone, without images or styles that
 may be blocked. Times use the organization's timezone (the database stores UTC).
-Written in the contact's language (VIG-40); the texts live in the backend's catalogs.
+Written in the contact's language; the texts live in the backend's catalogs.
 """
 
 from dataclasses import dataclass

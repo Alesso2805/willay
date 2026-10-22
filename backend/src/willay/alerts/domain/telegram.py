@@ -1,11 +1,11 @@
-"""Telegram: linking a contact (VIG-21) and sending them alerts with a button (VIG-22).
+"""Telegram: linking a contact and sending them alerts with a button.
 
 Opening the `https://t.me/<bot>?start=<token>` link makes Telegram send `/start <token>`
 to the bot, which thus learns the person's `chat_id` without anyone copying it by hand.
 The 43-char base64url token fits the 64 chars `start` allows. It is valid for 7 days
 because a community leader may take a while to open it.
 
-Texts follow the contact's language (VIG-40). Someone the bot cannot tie to a contact (an
+Texts follow the contact's language. Someone the bot cannot tie to a contact (an
 unknown sender, a stranger pressing a button) gets their Telegram app's language instead.
 """
 

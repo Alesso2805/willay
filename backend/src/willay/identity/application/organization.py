@@ -1,4 +1,4 @@
-"""Reading and changing the organization's settings (VIG-44), audited like every other change.
+"""Reading and changing the organization's settings, audited like every other change.
 
 The change applies from the next message and the next page: emails, Telegram and the dashboard
 read the organization's time zone each time, and contacts without a language of their own read

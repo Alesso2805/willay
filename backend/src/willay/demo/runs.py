@@ -1,4 +1,4 @@
-"""The public demo's runs (VIG-43): a queue in Postgres, like the evaluator's (ADR-0002).
+"""The public demo's runs: a queue in Postgres, like the evaluator's (ADR-0002).
 
 The API inserts a scenario run when a visitor presses the button; the demo worker inserts a
 restore run every night. The worker takes the organization's only unfinished run, plays it and

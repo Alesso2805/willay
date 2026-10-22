@@ -1,4 +1,4 @@
-"""Readings and the opening evidence of an incident's station, for its chart (VIG-26)."""
+"""Readings and the opening evidence of an incident's station, for its chart."""
 
 from collections.abc import Mapping
 from datetime import datetime

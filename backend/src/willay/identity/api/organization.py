@@ -1,4 +1,4 @@
-"""The organization's settings (VIG-44): every role reads them, an admin changes them."""
+"""The organization's settings: every role reads them, an admin changes them."""
 
 from typing import Annotated
 from uuid import UUID

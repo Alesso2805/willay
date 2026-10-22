@@ -81,7 +81,7 @@ class FieldProblem:
 
 
 class ApiError(HTTPException):
-    """An API error by code (VIG-40): answered as `{"detail": text, "code": code}`, the text in
+    """An API error by code: answered as `{"detail": text, "code": code}`, the text in
     the request's language. With `fields`, a 422 whose detail lists them like FastAPI does."""
 
     def __init__(

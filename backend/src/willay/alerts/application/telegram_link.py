@@ -1,4 +1,4 @@
-"""Linking a contact's Telegram (VIG-21).
+"""Linking a contact's Telegram.
 
 - `create_telegram_link` (admin): single-use link; only its token hash is stored, so it is
   shown once. A new link invalidates the previous one.

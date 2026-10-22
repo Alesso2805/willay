@@ -1,4 +1,4 @@
-"""Readings the evaluator gave up on (VIG-39): after MAX_ATTEMPTS a queue row gets `failed_at`
+"""Readings the evaluator gave up on: after MAX_ATTEMPTS a queue row gets `failed_at`
 and leaves the queue so it does not block it (ADR-0002). Each one may be an alert that did not
 go out, so operators see them and, once the cause is fixed, send them back to the queue.
 

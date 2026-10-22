@@ -1,4 +1,4 @@
-"""Station REST API (VIG-13). Location travels as a GeoJSON Point [lon, lat]."""
+"""Station REST API. Location travels as a GeoJSON Point [lon, lat]."""
 
 from datetime import datetime
 from typing import Annotated, Any, Literal

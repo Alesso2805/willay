@@ -1,4 +1,4 @@
-"""Fans out database events to the open SSE connections (VIG-25).
+"""Fans out database events to the open SSE connections.
 
 Each connection has its own bounded queue, so a slow client never slows the others or grows
 memory. If its queue fills up it is drained and gets a `resync`: better for the dashboard to

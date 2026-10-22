@@ -38,14 +38,14 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     smtp_timeout_s: float = 10.0
 
-    # Telegram bot (VIG-21/22): created with @BotFather; its token lives only in .env.
+    # Telegram bot: created with @BotFather; its token lives only in .env.
     # SecretStr masks it if the settings get logged. Without a token the telegram worker
     # starts disabled and the API does not generate links.
     telegram_bot_token: SecretStr | None = None
     telegram_bot_username: str | None = None
     telegram_api_url: str = "https://api.telegram.org"
 
-    # Public demo (VIG-43): off unless set. The demo organization defaults to the seed's Rímac,
+    # Public demo: off unless set. The demo organization defaults to the seed's Rímac,
     # restored every night at this local hour. Only the demo worker needs willay_owner, because
     # restoring deletes incident events, which are append-only for willay_app.
     demo_mode: bool = False

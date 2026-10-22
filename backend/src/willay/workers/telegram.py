@@ -1,4 +1,4 @@
-"""Telegram worker (VIG-21, VIG-22): `python -m willay.workers.telegram`.
+"""Telegram worker: `python -m willay.workers.telegram`.
 
 Long polling with `getUpdates` to link contacts and receive alert confirmation button clicks.
 Without `WILLAY_TELEGRAM_BOT_TOKEN` it starts disabled and only beats, so `docker compose up`

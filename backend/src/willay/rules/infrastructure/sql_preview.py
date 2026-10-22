@@ -1,4 +1,4 @@
-"""PreviewRepository over core.stations and ingest.readings (VIG-27)."""
+"""PreviewRepository over core.stations and ingest.readings."""
 
 from datetime import datetime, timedelta
 from typing import Any

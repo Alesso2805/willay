@@ -22,8 +22,8 @@ class Permission(StrEnum):
     MANAGE_CONTACTS = "contacts:manage"  # contacts and groups
     MANAGE_POLICIES = "policies:manage"
     VIEW_AUDIT_LOG = "audit:view"
-    MANAGE_ORGANIZATION = "organization:manage"  # its language and time zone (VIG-44)
-    RUN_DEMO = "demo:run"  # the public demo's Rímac scenario (VIG-43)
+    MANAGE_ORGANIZATION = "organization:manage"  # its language and time zone
+    RUN_DEMO = "demo:run"  # the public demo's Rímac scenario
 
 
 _EVERYONE = frozenset(Role)

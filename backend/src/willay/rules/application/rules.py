@@ -1,4 +1,4 @@
-"""Rule use cases (VIG-27). Operator and admin manage them, audited in the same transaction
+"""Rule use cases. Operator and admin manage them, audited in the same transaction
 and scoped to the actor's organization (another organization's rule, zone, station or policy
 does not exist).
 

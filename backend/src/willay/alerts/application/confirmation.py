@@ -1,4 +1,4 @@
-"""Viewing and confirming an alert from its email link (VIG-23) or Telegram button (VIG-22).
+"""Viewing and confirming an alert from its email link or Telegram button.
 
 - `preview_confirmation` (GET) only reads: opening the link never confirms, because email
   scanners open links on their own (SPEC).

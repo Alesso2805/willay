@@ -1,4 +1,4 @@
-"""An incident's alerts, by recipient, for its detail page (VIG-26)."""
+"""An incident's alerts, by recipient, for its detail page."""
 
 from dataclasses import dataclass
 from datetime import datetime

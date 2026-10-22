@@ -1,4 +1,4 @@
-"""`make loadtest ARGS="--minutes 30"` (VIG-29).
+"""`make loadtest ARGS="--minutes 30"`.
 
 Prepares the "Carga" organization, sends one reading per station every interval to the API for
 the given minutes, waits until every reading should be evaluated and checks SPEC: every batch

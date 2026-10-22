@@ -1,4 +1,4 @@
-"""One cycle of the silence worker (VIG-17): watched stations → silence incidents.
+"""One cycle of the silence worker: watched stations → silence incidents.
 
 A silence rule watches a station if the rule, its zone and the station are active, the station
 is assigned to that zone (a station without a zone never alerts) and the rule targets that
@@ -104,7 +104,7 @@ class SilenceChecker:
         opened = 0
         for station in silent:
             # No reading opens a silence incident: it gets a correlation id of its own, which
-            # its alerts carry too (VIG-28).
+            # its alerts carry too.
             correlation_id = uuid7()
             with structlog.contextvars.bound_contextvars(correlation_id=str(correlation_id)):
                 # One transaction per station: if one fails, the others still open theirs.

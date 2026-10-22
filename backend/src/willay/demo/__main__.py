@@ -1,4 +1,4 @@
-"""`make demo` (VIG-30): SPEC's Rímac scenario, narrated, with a verdict.
+"""`make demo`: SPEC's Rímac scenario, narrated, with a verdict.
 
 It runs in the migrate container (`docker compose run`), like `make loadtest`: it reaches the
 database and the API (`http://api:8000`) over the compose network, and reads the stations' API

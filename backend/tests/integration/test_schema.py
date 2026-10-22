@@ -19,7 +19,7 @@ async def test_all_tables_exist(owner: asyncpg.Connection) -> None:
         GROUP BY table_schema
         """
     )
-    # As SPEC says: core has 17 tables since VIG-43 (demo_runs).
+    # As SPEC says: core has 17 tables.
     assert {r["table_schema"]: r["n"] for r in rows} == {"core": 17, "ingest": 4}
 
 

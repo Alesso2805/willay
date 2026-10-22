@@ -1,4 +1,4 @@
-"""Contacts API (VIG-21, VIG-36): the people Willay alerts.
+"""Contacts API: the people Willay alerts.
 
 Admin and operator read (SPEC: contact data is for them); only admin writes, audited. A
 contact's Telegram chat never leaves the API: only whether it is linked, and until when a

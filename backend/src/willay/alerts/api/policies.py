@@ -1,6 +1,6 @@
-"""Escalation policies REST API (VIG-24).
+"""Escalation policies REST API.
 
-Any role can read (the rules form, VIG-27, picks a policy; there is no personal data, only
+Any role can read (the rules form picks a policy; there is no personal data, only
 groups). Only admin can create, edit and delete (SPEC: Permissions by role). Levels are sent
 as a list: their order is their position.
 """
@@ -189,7 +189,7 @@ def _data(body: PolicyIn) -> PolicyData:
     )
 
 
-# The field of a level each code is about (VIG-37), so the dashboard shows it there.
+# The field of a level each code is about, so the dashboard shows it there.
 _LEVEL_FIELDS = {
     ErrorCode.POLICY_LEVEL_WAIT: "wait_s",
     ErrorCode.POLICY_LEVEL_NO_TARGET: "targets",

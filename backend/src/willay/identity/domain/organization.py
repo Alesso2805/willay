@@ -1,4 +1,4 @@
-"""An organization's own settings (VIG-44): the language of its contacts' alerts when they chose
+"""An organization's own settings: the language of its contacts' alerts when they chose
 none, and the time zone of every time Willay writes for it (emails, Telegram, the dashboard)."""
 
 from dataclasses import dataclass

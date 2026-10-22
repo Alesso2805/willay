@@ -1,4 +1,4 @@
-"""The API's LISTEN willay_events connection (VIG-25, ADR-0007).
+"""The API's LISTEN willay_events connection (ADR-0007).
 
 One per API process, however many dashboards are connected; events are fanned out in memory.
 On connection loss it retries with backoff and, once back, every connection gets a `resync`

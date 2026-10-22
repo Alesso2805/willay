@@ -1,4 +1,4 @@
-"""`GET /v1/events`: the organization's live events over SSE (VIG-25).
+"""`GET /v1/events`: the organization's live events over SSE.
 
 The JWT goes in the `Authorization` header, never in the URL (SPEC). On connect the client
 gets `ready` and reloads its state over REST, so a reconnect never leaves gaps. The stream

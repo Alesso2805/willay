@@ -1,4 +1,4 @@
-"""RuleRepository over core.rules (VIG-27)."""
+"""RuleRepository over core.rules."""
 
 import json
 from datetime import datetime

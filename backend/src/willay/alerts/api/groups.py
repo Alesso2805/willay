@@ -1,4 +1,4 @@
-"""Contact groups API (VIG-36): who each escalation level notifies.
+"""Contact groups API: who each escalation level notifies.
 
 Admin and operator read (members are contact data, which is theirs to see); only admin
 writes, audited. The member list is sent whole on every edit. Each group says which policies

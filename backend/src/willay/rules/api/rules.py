@@ -1,4 +1,4 @@
-"""Rules REST API (VIG-27).
+"""Rules REST API.
 
 Everyone with `view` reads them (SPEC); operator and admin manage them (`rules:manage`). The
 body says the rule's type and its params are validated for that type: Pydantic checks their

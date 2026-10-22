@@ -1,4 +1,4 @@
-"""What the load test reads back from the database once its readings have settled (VIG-29)."""
+"""What the load test reads back from the database once its readings have settled."""
 
 from datetime import datetime
 from uuid import UUID

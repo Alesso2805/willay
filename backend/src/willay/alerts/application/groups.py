@@ -1,4 +1,4 @@
-"""Contact group use cases (VIG-36). Admin only, audited in the same transaction and scoped to
+"""Contact group use cases. Admin only, audited in the same transaction and scoped to
 the actor's organization (another organization's group, zone or contact does not exist).
 
 A group that a policy notifies is not deleted (SPEC): the policy would lose a target without

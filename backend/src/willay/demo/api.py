@@ -1,4 +1,4 @@
-"""The public demo's API (VIG-43): whether it is on for the user's organization, the Rímac
+"""The public demo's API: whether it is on for the user's organization, the Rímac
 scenario's progress, and the button that starts it.
 
 GET answers every role, also outside the demo (`available: false`), so the dashboard asks

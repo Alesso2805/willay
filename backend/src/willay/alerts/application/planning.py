@@ -1,4 +1,4 @@
-"""Creating the alerts of an escalation level (VIG-20; VIG-24 reuses it to move up a level).
+"""Creating the alerts of an escalation level (escalation reuses it to move up a level).
 
 Created in the same transaction that opens (or escalates) the incident: one per contact
 and channel, even if the contact is in two groups of the level. Sendable ones stay pending

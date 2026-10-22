@@ -32,9 +32,6 @@ STATION = uuid4()
 ORG = uuid4()
 
 
-# --- domain ------------------------------------------------------------------------
-
-
 def test_readings_up_to_the_clock_skew_are_accepted() -> None:
     check_not_in_future(
         [Reading(NOW + MAX_CLOCK_SKEW, 1.0), Reading(NOW - timedelta(days=2), 1)], NOW
@@ -79,9 +76,6 @@ def test_a_batch_of_only_late_readings_does_not_beat() -> None:
     assert (
         heartbeat_reading([ClassifiedReading(NOW - timedelta(hours=3), 9.0, Quality.LATE)]) is None
     )
-
-
-# --- station authentication --------------------------------------------------------
 
 
 class FakeVerifier:
@@ -141,9 +135,6 @@ async def test_inactive_station_is_forbidden_even_with_the_right_key() -> None:
         await authenticate_station(
             key, FakeCredentials(_credential(key, active=False)), FakeVerifier()
         )
-
-
-# --- ingestion ---------------------------------------------------------------------
 
 
 class FakeWriter:

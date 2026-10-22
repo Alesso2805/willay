@@ -1,4 +1,4 @@
-"""ContactRepository over core.contacts and its group memberships (VIG-36)."""
+"""ContactRepository over core.contacts and its group memberships."""
 
 from typing import Any
 from uuid import UUID

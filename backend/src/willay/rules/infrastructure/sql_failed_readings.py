@@ -1,4 +1,4 @@
-"""FailedReadingRepository over ingest.evaluation_queue (VIG-39)."""
+"""FailedReadingRepository over ingest.evaluation_queue."""
 
 from datetime import datetime
 from typing import Any

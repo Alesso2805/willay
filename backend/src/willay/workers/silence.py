@@ -1,4 +1,4 @@
-"""Silence worker (VIG-17): `python -m willay.workers.silence`.
+"""Silence worker: `python -m willay.workers.silence`.
 
 Every 15 s it opens one incident per station that stopped reporting; with that cycle the
 incident arrives within K * interval + 30 s of the last heartbeat (SPEC). The same cycle

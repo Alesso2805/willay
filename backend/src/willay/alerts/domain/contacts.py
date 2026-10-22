@@ -1,4 +1,4 @@
-"""Contacts (VIG-36): the people Willay alerts, by email and/or Telegram, with or without an
+"""Contacts: the people Willay alerts, by email and/or Telegram, with or without an
 account. A contact may have no channel yet; the dashboard flags it, since nobody can reach it.
 """
 
@@ -19,7 +19,7 @@ _EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 class ContactData:
     full_name: str
     email: str | None
-    # The language of its alerts; None: the organization's (VIG-40).
+    # The language of its alerts; None: the organization's.
     language: Language | None = None
 
 

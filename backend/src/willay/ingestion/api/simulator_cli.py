@@ -1,4 +1,4 @@
-"""Station simulator CLI (VIG-11): `simulate` or `make simulate ARGS="..."`.
+"""Station simulator CLI: `simulate` or `make simulate ARGS="..."`.
 
 Examples:
     simulate --scenario normal --stations 3 --seed 7 --steps 12

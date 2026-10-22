@@ -107,7 +107,6 @@ def _id(value: str) -> UUID:
     return UUID(value)
 
 
-# --- Organizations ----------------------------------------------------------------
 RIMAC = Organization(
     id=_id("01a0dc43-cd2d-7522-8430-867cee8f89ce"),
     keycloak_org_id=_id("1d44f4b3-b1df-457f-b717-20926a20166e"),
@@ -122,7 +121,6 @@ ISOLATION = Organization(
 )
 ORGANIZATIONS = (RIMAC, ISOLATION)
 
-# --- Zones ------------------------------------------------------------------------
 Z_CHOSICA = _id("01a0dc43-cd2d-7522-8430-869f7d4b04fa")
 Z_CHACLACAYO = _id("01a0dc43-cd2d-7522-8430-86a5bc403e6e")
 Z_TEST = _id("01a0dc43-cd2d-7522-8430-86b19d2bd8fc")
@@ -160,7 +158,6 @@ ZONES = (
     ),
 )
 
-# --- Stations (7 Rímac + 3 isolation) ---------------------------------------------
 S_SANTA_EULALIA = _id("01a0dc43-cd2d-7522-8430-86ce1fd407cb")
 S_CHOSICA_BRIDGE = _id("01a0dc43-cd2d-7522-8430-86d81c73d681")
 S_QUIRIO = _id("01a0dc43-cd2d-7522-8430-86e05931cad1")
@@ -196,7 +193,6 @@ STATIONS = (
             "discharge", "m3/s", -77.160, -11.495, zones=((Z_TEST, "upstream"),)),
 )  # fmt: skip
 
-# --- Contacts and groups (4 Rímac + 1 isolation) ----------------------------------
 C_OPERATOR = _id("01a0dc43-cd2d-7522-8430-8804fa6454d1")
 C_BRIGADE = _id("01a0dc43-cd2d-7522-8430-8819717232b6")
 C_QUIRIO_LEADER = _id("01a0dc43-cd2d-7522-8430-8823784c9249")
@@ -224,7 +220,6 @@ CONTACT_GROUPS = (
     ContactGroup(G_TEST_TEAM, ISOLATION.id, "Equipo de prueba", (C_AIS,)),
 )
 
-# --- Escalation policies (one per organization) -----------------------------------
 # Short wait_s so the demo escalates in minutes, not hours.
 P_RIMAC = _id("01a0dc43-cd2d-7522-8430-8760070e4d96")
 P_ISOLATION = _id("01a0dc43-cd2d-7522-8430-8772cd3ff877")
@@ -250,7 +245,6 @@ POLICIES = (
     )),
 )  # fmt: skip
 
-# --- Rules (5 Rímac + 1 isolation) ------------------------------------------------
 RULES = (
     # Demo: sudden downstream discharge drop (possible damming).
     Rule(_id("01a0dc43-cd2d-7522-8430-885b797ba5ab"), RIMAC.id, Z_CHOSICA, S_CHACLACAYO,

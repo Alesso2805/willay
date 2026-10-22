@@ -1,5 +1,5 @@
-"""The telegram worker serves the bot: links contacts (VIG-21) and receives clicks on alert
-confirmation buttons (VIG-22).
+"""The telegram worker serves the bot: links contacts and receives clicks on alert
+confirmation buttons.
 
 Long polling with `getUpdates`; asking from `update_id + 1` acknowledges the previous update
 to Telegram, so each one is committed before the next is requested and a database failure

@@ -1,4 +1,4 @@
-"""Evaluator worker (VIG-14): `python -m willay.workers.evaluator`.
+"""Evaluator worker: `python -m willay.workers.evaluator`.
 
 Takes readings from ingest.evaluation_queue and applies their station's rules. Wakes on
 LISTEN willay_evaluation_queue when ingestion commits a batch and polls every 5 s for lost
