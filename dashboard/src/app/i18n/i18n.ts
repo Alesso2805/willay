@@ -41,7 +41,8 @@ function init(): Promise<unknown> {
     fallbackLng: false,
     supportedLngs: [...LANGUAGES],
     resources: {},
-    // Angular escapes interpolated text; pages that build HTML strings escape it themselves.
+    // Angular escapes interpolated text, and tooltips that carry names reach Leaflet through
+    // plainText() (map/base-map.ts).
     interpolation: { escapeValue: false },
   });
   return initialized;
