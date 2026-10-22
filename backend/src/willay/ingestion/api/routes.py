@@ -53,7 +53,11 @@ class ReadingBatchOut(BaseModel):
     responses={
         401: {"description": "Missing or invalid API key"},
         403: {"description": "Inactive station"},
-        429: {"description": "More than 60 batches per minute; see the Retry-After header"},
+        429: {
+            "description": "More than 60 batches a minute from the station, or more than 30 "
+            "requests with a wrong API key a minute from the same address; see the Retry-After "
+            "header"
+        },
     },
 )
 async def post_readings(

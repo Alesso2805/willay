@@ -70,6 +70,18 @@ def test_a_wrong_key_always_pays_the_full_cost() -> None:
     assert counting.verifications == 3
 
 
+def test_it_remembers_only_a_key_it_verified() -> None:
+    # The wrong-key limit counts a check only when this says Argon2id must run (ADR-0011).
+    hasher = ApiKeyHasher(CountingHasher())
+    key = generate_api_key(STATION)
+    hashed = hasher.hash(key)
+    assert not hasher.remembers(hashed, key)
+    assert not hasher.verify(hashed, generate_api_key(STATION))
+    assert not hasher.remembers(hashed, key)
+    assert hasher.verify(hashed, key)
+    assert hasher.remembers(hashed, key)
+
+
 def test_rotating_a_key_stops_the_old_one_at_once() -> None:
     # The use case reads the stored hash on every request: rotation changes it.
     hasher = ApiKeyHasher(CountingHasher())

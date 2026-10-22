@@ -18,6 +18,7 @@ class ErrorCode(StrEnum):
     API_KEY_INVALID = "api_key_invalid"
     STATION_INACTIVE = "station_inactive"
     RATE_LIMITED = "rate_limited"
+    KEY_FAILURES_LIMITED = "key_failures_limited"
     READING_IN_FUTURE = "reading_in_future"
     ZONE_NOT_FOUND = "zone_not_found"
     STATION_NOT_FOUND = "station_not_found"

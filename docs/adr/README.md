@@ -14,5 +14,6 @@ One technical decision per file: context, options, decision and consequences. An
 | [0008](0008-i18n-with-i18next.md) | The dashboard in several languages with i18next | Accepted |
 | [0009](0009-light-and-dark-mode-with-css-variables.md) | Light and dark mode with CSS variables | Accepted |
 | [0010](0010-deploy-on-one-server-behind-caddy.md) | Deploy on one server, behind Caddy, on one hostname | Accepted |
+| [0011](0011-wrong-api-keys-limited-in-the-api.md) | Wrong API keys limited per address, in the API | Accepted |
 
 Statuses: Proposed → Accepted → (Superseded by ADR-NNNN | Deprecated).

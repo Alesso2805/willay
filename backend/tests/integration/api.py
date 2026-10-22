@@ -36,6 +36,7 @@ async def api_client(
     tokens: TokenFactory,
     *extra_routers: APIRouter,
     clock: Clock | None = None,
+    client_address: str = "127.0.0.1",
     **settings: Any,
 ) -> AsyncIterator[httpx2.AsyncClient]:
     """One API instance. Calling it twice is like running two replicas: each has its own
@@ -48,7 +49,7 @@ async def api_client(
     async with app.router.lifespan_context(app):
         if clock is not None:
             app.state.clock = clock  # the lifespan sets SystemClock; replace it afterwards
-        transport = httpx2.ASGITransport(app=app)
+        transport = httpx2.ASGITransport(app=app, client=(client_address, 123))
         async with httpx2.AsyncClient(transport=transport, base_url="http://test") as client:
             yield client
 

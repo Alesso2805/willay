@@ -2,8 +2,8 @@
 
 Every 15 s it opens one incident per station that stopped reporting; with that cycle the
 incident arrives within K * interval + 30 s of the last heartbeat (SPEC). The same cycle
-records station_recovered for stations that came back and purges rate-limit windows older
-than one hour.
+records station_recovered for stations that came back and purges rate-limit and key-failure
+windows older than one hour.
 """
 
 import asyncio
@@ -12,7 +12,7 @@ from willay.alerts.application.planning import AlertPlanner
 from willay.alerts.infrastructure.sql_alerts import SqlAlertRepository
 from willay.incidents.infrastructure.sql_incidents import SqlIncidentStore
 from willay.ingestion.domain.rate_limit import WINDOW_RETENTION
-from willay.ingestion.infrastructure.repositories import SqlBatchCounter
+from willay.ingestion.infrastructure.repositories import SqlBatchCounter, SqlKeyFailureCounter
 from willay.rules.application.silence_check import SilenceChecker
 from willay.rules.infrastructure.sql_silence import SqlSilenceRepository
 from willay.shared.clock import Clock, SystemClock
@@ -41,10 +41,12 @@ async def run_silence(
         alerts=AlertPlanner(SqlAlertRepository()),
     )
     rate_limits = SqlBatchCounter(engine)
+    key_failures = SqlKeyFailureCounter(engine)
 
     async def tick() -> None:
         await checker.run()
         await rate_limits.purge(clock.now() - WINDOW_RETENTION)
+        await key_failures.purge(clock.now() - WINDOW_RETENTION)
 
     try:
         heartbeat = settings.heartbeat_dir / f"{NAME}.alive"

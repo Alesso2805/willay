@@ -72,6 +72,49 @@ class SqlBatchCounter:
         return result.rowcount
 
 
+class SqlKeyFailureCounter:
+    """Per-address, per-minute count of requests with a wrong API key, in
+    ingest.key_failure_windows. Each call is its own short transaction, atomic like
+    SqlBatchCounter's, so the count holds with several API replicas."""
+
+    def __init__(self, engine: AsyncEngine) -> None:
+        self._engine = engine
+
+    async def hit(self, client: str, window: datetime) -> int:
+        async with self._engine.begin() as conn:
+            count = await conn.scalar(
+                text("""
+                    INSERT INTO ingest.key_failure_windows
+                        (client_address, window_start, failure_count)
+                    VALUES (:client, :window, 1)
+                    ON CONFLICT (client_address, window_start)
+                    DO UPDATE SET failure_count = ingest.key_failure_windows.failure_count + 1
+                    RETURNING failure_count
+                """),
+                {"client": client, "window": window},
+            )
+        return int(count)
+
+    async def refund(self, client: str, window: datetime) -> None:
+        async with self._engine.begin() as conn:
+            await conn.execute(
+                text("""
+                    UPDATE ingest.key_failure_windows SET failure_count = failure_count - 1
+                    WHERE client_address = :client AND window_start = :window
+                      AND failure_count > 0
+                """),
+                {"client": client, "window": window},
+            )
+
+    async def purge(self, older_than: datetime) -> int:
+        async with self._engine.begin() as conn:
+            result = await conn.execute(
+                text("DELETE FROM ingest.key_failure_windows WHERE window_start < :older_than"),
+                {"older_than": older_than},
+            )
+        return result.rowcount
+
+
 # One statement: readings, queue and heartbeat are written together or not at all. The
 # `stored` CTE returns only rows actually inserted (ON CONFLICT DO NOTHING drops duplicates),
 # so an existing reading is never re-enqueued. Late readings are stored but not enqueued:
