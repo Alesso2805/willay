@@ -1,4 +1,4 @@
-// @ts-expect-error the dashboard has no Node types: only this test reads a file
+// @ts-expect-error the dashboard has no Node types: this test reads styles.css
 import { readFileSync } from 'node:fs';
 import { TestBed } from '@angular/core/testing';
 import { LANGUAGES, t, useLanguage } from '../i18n/i18n';

@@ -12,7 +12,7 @@ import { PageHeader } from '../ui/page-header';
 import { FailedReading, FailedReadingsApi } from './failed-readings.api';
 
 /**
- * VIG-39: readings the evaluator gave up on after 5 attempts. Each one may be an alert that did
+ * Readings the evaluator gave up on after 5 attempts. Each one may be an alert that did
  * not go out, so the operator reviews the error, fixes the cause and sends them back to the
  * queue. Reached from the notice every page shows while there is any.
  */

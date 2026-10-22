@@ -19,7 +19,7 @@ interface Announcement {
 }
 
 /**
- * Announces every new incident on every page (VIG-25), visibly and to screen readers, until
+ * Announces every new incident on every page, visibly and to screen readers, until
  * the operator closes it. The live event only carries the id: the incident is fetched over REST,
  * so the viewer's permissions apply. If that fails it is still announced: in an alerting tool,
  * silence would be worse than a notice without details.

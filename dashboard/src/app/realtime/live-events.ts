@@ -40,13 +40,13 @@ export const GRACE_MS = 5_000;
 export const POLL_MS = 15_000;
 
 /**
- * The organization's live channel (`GET /v1/events`, VIG-25): one connection per session.
+ * The organization's live channel (`GET /v1/events`): one connection per session.
  *
  * Pages reload over REST on `reload$`, which fires on every (re)connection (`ready`: what
  * happened while disconnected is never lost), when the server may have dropped a notification
  * (`resync`), and every 15 s while the channel is down. Incident events only say what changed:
  * pages refetch it over REST, so the viewer's permissions apply. Heartbeats carry their values.
- * `failedReadings$` only says that the set of readings that failed evaluation changed (VIG-39).
+ * `failedReadings$` only says that the set of readings that failed evaluation changed.
  */
 @Injectable({ providedIn: 'root' })
 export class LiveEvents {

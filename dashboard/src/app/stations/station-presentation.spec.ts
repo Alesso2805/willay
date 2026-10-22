@@ -3,7 +3,7 @@ import { useLanguage } from '../i18n/i18n';
 import {
   keepNewerHeartbeats,
   positionLabel,
-  stationProblem,
+  stationSaveProblem,
   stationState,
   variableLabel,
   withHeartbeat,
@@ -38,7 +38,7 @@ describe('station presentation', () => {
     expect(variableLabel('water_level')).toBe('Water level');
     expect(positionLabel('upstream')).toBe('Upstream');
     const duplicate = new HttpErrorResponse({ status: 409 });
-    expect(stationProblem(duplicate)).toBe(
+    expect(stationSaveProblem(duplicate)).toBe(
       'A station with that code already exists in your organization.',
     );
   });
@@ -77,11 +77,11 @@ describe('station presentation', () => {
   });
 
   it('explains a duplicate code and passes 422 reasons through', () => {
-    expect(stationProblem(new HttpErrorResponse({ status: 409 }))).toContain('ese código');
+    expect(stationSaveProblem(new HttpErrorResponse({ status: 409 }))).toContain('ese código');
     const unknownZone = new HttpErrorResponse({
       status: 422,
       error: { detail: [{ loc: ['body', 'zones'], msg: 'zonas desconocidas: [...]' }] },
     });
-    expect(stationProblem(unknownZone)).toBe('zonas desconocidas: [...]');
+    expect(stationSaveProblem(unknownZone)).toBe('zonas desconocidas: [...]');
   });
 });

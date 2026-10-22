@@ -3,7 +3,6 @@ import { t } from '../i18n/i18n';
 import { Icon } from './icon';
 import { VisualState } from './visual-states';
 
-/** Badge for a catalog state: icon + text on its color (VIG-33). */
 @Component({
   selector: 'app-state-badge',
   changeDetection: ChangeDetectionStrategy.OnPush,

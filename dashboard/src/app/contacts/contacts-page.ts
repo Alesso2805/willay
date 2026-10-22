@@ -15,7 +15,7 @@ import { Contact, ContactInput, ContactsApi } from './contacts.api';
 
 type Editing = { kind: 'new' } | { kind: 'edit'; contact: Contact };
 
-/** VIG-36: who Willay alerts and how. Admin and operator read; only admin changes anything. */
+/** Who Willay alerts and how. Admin and operator read; only admin changes anything. */
 @Component({
   selector: 'app-contacts-page',
   imports: [ReactiveFormsModule, LoadState, Notice, StateBadge, PageHeader, Icon, ContactTabs],

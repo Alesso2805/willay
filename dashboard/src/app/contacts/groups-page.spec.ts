@@ -124,7 +124,7 @@ describe('GroupsPage', () => {
     expect(text()).toContain('(sin canal: no le llegan alertas)'); // Lucho has no channel
     const boxes = [...element.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')];
     expect(boxes.map((b) => b.checked)).toEqual([true, true]);
-    boxes[1].click(); // Lucho out
+    boxes.find((box) => box.closest('label')?.textContent?.includes('Lucho'))?.click();
     const zone = element.querySelector<HTMLSelectElement>('select[formcontrolname="zone_id"]')!;
     zone.value = '';
     zone.dispatchEvent(new Event('change'));

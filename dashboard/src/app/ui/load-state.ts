@@ -4,7 +4,6 @@ import { Notice } from './notice';
 
 export type LoadStatus = 'loading' | 'error' | 'empty' | 'ready';
 
-/** A list's state from what is known about it. */
 export function loadStatus(loaded: boolean, failed: boolean, count: number): LoadStatus {
   if (failed) return 'error';
   if (!loaded) return 'loading';
@@ -12,7 +11,7 @@ export function loadStatus(loaded: boolean, failed: boolean, count: number): Loa
 }
 
 /**
- * Loading, empty and error states of a list, with the same component on every page (VIG-33).
+ * Loading, empty and error states of a list, with the same component on every page.
  * While loading it never says "nothing here": an empty list and one that has not arrived yet
  * are not the same to someone handling an emergency.
  */

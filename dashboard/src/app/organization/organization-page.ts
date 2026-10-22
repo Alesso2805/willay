@@ -22,7 +22,7 @@ function knownTimezones(): string[] {
 }
 
 /**
- * VIG-44: how Willay writes for the organization. Its language is the one of the alerts of its
+ * How Willay writes for the organization. Its language is the one of the alerts of its
  * contacts that chose none; its time zone, the one of every time in emails, Telegram and here.
  * Every role may read it; only an admin saves it.
  */

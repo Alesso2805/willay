@@ -30,7 +30,6 @@ export interface Demo {
   run: DemoRun | null;
 }
 
-/** The public demo (VIG-43). */
 @Injectable({ providedIn: 'root' })
 export class DemoApi {
   private readonly http = inject(HttpClient);

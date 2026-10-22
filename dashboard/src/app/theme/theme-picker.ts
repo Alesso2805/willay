@@ -10,7 +10,7 @@ const LOOKS: Readonly<Record<ThemeChoice, { icon: IconName; label: TranslationKe
 };
 
 /**
- * System / Light / Dark switch (VIG-41), drawn on night blue: the navigation and the sign-in
+ * System / Light / Dark switch, drawn on night blue: the navigation and the sign-in
  * screen. Each option says its name next to its icon: a sun or a moon alone is easy to misread.
  */
 @Component({

@@ -91,7 +91,7 @@ describe('IncidentActions', () => {
     expect(button('Resolver definitivamente')?.disabled).toBe(true); // nothing chosen yet
     expect(await seriousViolations(element)).toEqual([]);
 
-    radios[1].click(); // Falsa alarma
+    element.querySelector<HTMLInputElement>('input[value="false_alarm"]')?.click();
     await fixture.whenStable();
     button('Resolver definitivamente')?.click();
     const request = http.expectOne({ method: 'POST', url: `${URL}/resolve` });

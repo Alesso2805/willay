@@ -2,11 +2,11 @@ import { TranslationKey } from '../i18n/i18n';
 import { IconName } from './icon';
 
 /**
- * Single catalog of the dashboard's visual states (VIG-33). No page defines state colors on
+ * Single catalog of the dashboard's visual states. No page defines state colors on
  * its own: they come from here.
  *
  * Every state is conveyed with text and an icon, never by color alone (WCAG 1.4.1). A state
- * names a tone, whose shades live in styles.css as CSS variables, one set per theme (VIG-41):
+ * names a tone, whose shades live in styles.css as CSS variables, one set per theme:
  * switching themes recolors every badge, notice and marker without redrawing anything. The
  * catalog test reads styles.css and measures both themes:
  * - `foreground` on `background`: ≥ 4.5:1 (label text and icon);
@@ -93,7 +93,7 @@ export const STATION_STATES: Readonly<Record<StationState, VisualState>> = {
   waiting: { labelKey: 'states.station.waiting', icon: 'clock', ...SLATE },
 };
 
-/** A zone on the live map (VIG-25) shows its most urgent active incident. */
+/** A zone on the live map shows its most urgent active incident. */
 export const ZONE_STATES: Readonly<Record<ZoneState, VisualState>> = {
   calm: { labelKey: 'states.zone.calm', icon: 'check-circle', ...GREEN },
   acknowledged: { labelKey: 'states.zone.acknowledged', icon: 'check', ...BLUE },
@@ -101,7 +101,7 @@ export const ZONE_STATES: Readonly<Record<ZoneState, VisualState>> = {
   exhausted: { labelKey: 'states.zone.exhausted', icon: 'octagon-x', ...ALARM },
 };
 
-/** One alert to one recipient through one channel (VIG-26). */
+/** One alert to one recipient through one channel. */
 export const ALERT_STATES: Readonly<Record<AlertState, VisualState>> = {
   pending: { labelKey: 'states.alert.pending', icon: 'clock', ...SLATE },
   sent: { labelKey: 'states.alert.sent', icon: 'check', ...BLUE },
@@ -110,7 +110,7 @@ export const ALERT_STATES: Readonly<Record<AlertState, VisualState>> = {
   acknowledged: { labelKey: 'states.alert.acknowledged', icon: 'check-circle', ...GREEN },
 };
 
-/** How a contact can be reached (VIG-36); one that cannot is flagged, since no alert reaches it. */
+/** How a contact can be reached; one that cannot is flagged, since no alert reaches it. */
 export const CONTACT_CHANNEL_STATES: Readonly<Record<ContactChannelState, VisualState>> = {
   email: { labelKey: 'states.contactChannel.email', icon: 'mail', ...BLUE },
   telegram: { labelKey: 'states.contactChannel.telegram', icon: 'send', ...BLUE },
@@ -118,20 +118,20 @@ export const CONTACT_CHANNEL_STATES: Readonly<Record<ContactChannelState, Visual
   none: { labelKey: 'states.contactChannel.none', icon: 'triangle-alert', ...AMBER },
 };
 
-/** A group whose alerts reach nobody (VIG-36): no members, or no policy notifies it. */
+/** A group whose alerts reach nobody: no members, or no policy notifies it. */
 export const GROUP_STATES: Readonly<Record<GroupState, VisualState>> = {
   empty: { labelKey: 'states.group.empty', icon: 'triangle-alert', ...AMBER },
   unused: { labelKey: 'states.group.unused', icon: 'pause', ...SLATE },
 };
 
-/** A deactivated rule (VIG-27): kept because incidents point to it, but it no longer fires. */
+/** A deactivated rule: kept because incidents point to it, but it no longer fires. */
 export const RULE_STATES: Readonly<Record<RuleState, VisualState>> = {
   inactive: { labelKey: 'states.rule.inactive', icon: 'pause', ...SLATE },
 };
 
 export type ConnectionState = 'connecting' | 'live' | 'reconnecting';
 
-/** The live channel (VIG-25): while it is down, what the dashboard shows may be stale. */
+/** The live channel: while it is down, what the dashboard shows may be stale. */
 export const CONNECTION_STATES: Readonly<Record<ConnectionState, VisualState>> = {
   connecting: { labelKey: 'states.connection.connecting', icon: 'refresh', ...SLATE },
   live: { labelKey: 'states.connection.live', icon: 'broadcast', ...GREEN },

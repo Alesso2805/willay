@@ -76,7 +76,7 @@ export class Session {
     this.oidc.logoff().subscribe();
   }
 
-  /** After an admin changes the organization's time zone (VIG-44): every time on screen follows. */
+  /** After an admin changes the organization's time zone: every time on screen follows. */
   useOrganizationTimezone(timezone: string): void {
     const state = this._state();
     if (state.status !== 'ready') return;

@@ -6,7 +6,7 @@ import { MAX_COMMENT_LENGTH, actionProblem } from './incident-presentation';
 import { IncidentsApi } from './incidents.api';
 
 /**
- * Comment on an incident (VIG-35), responder and above, also once it is resolved: what
+ * Comment on an incident, responder and above, also once it is resolved: what
  * happened afterwards is worth recording. The comment appears in the timeline below.
  */
 @Component({

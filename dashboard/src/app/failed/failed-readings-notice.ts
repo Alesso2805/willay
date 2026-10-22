@@ -9,7 +9,7 @@ import { Notice } from '../ui/notice';
 import { FailedReadingsApi } from './failed-readings.api';
 
 /**
- * On every page, while any reading failed evaluation (VIG-39): each one may be an alert that
+ * On every page, while any reading failed evaluation: each one may be an alert that
  * did not go out. Only for those who can reprocess them. The count is refetched when the live
  * channel says it changed, and whenever pages reload (reconnection, or every 15 s offline).
  */

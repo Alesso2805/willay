@@ -1,7 +1,7 @@
 import i18next, { ParseKeys } from 'i18next';
 
 /**
- * Willay's languages and the translator every visible text goes through (VIG-40, ADR-0008).
+ * Willay's languages and the translator every visible text goes through (ADR-0008).
  *
  * The texts live in one JSON file per language (src/i18n), in i18next's format, which the
  * translation platforms read. Keys are typed from es.json: a key that does not exist does not
@@ -41,7 +41,8 @@ function init(): Promise<unknown> {
     fallbackLng: false,
     supportedLngs: [...LANGUAGES],
     resources: {},
-    // Angular escapes interpolated text; pages that build HTML strings escape it themselves.
+    // Angular escapes interpolated text, and tooltips that carry names reach Leaflet through
+    // plainText() (map/base-map.ts).
     interpolation: { escapeValue: false },
   });
   return initialized;
@@ -65,7 +66,6 @@ export function currentLanguage(): Language {
   return isLanguage(i18n.language) ? i18n.language : DEFAULT_LANGUAGE;
 }
 
-/** The Intl locale for dates and numbers in the current language. */
 export function currentLocale(): string {
   return LOCALES[currentLanguage()];
 }

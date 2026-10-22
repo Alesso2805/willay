@@ -24,7 +24,7 @@ export function groupStates(group: ContactGroup): GroupState[] {
   return states;
 }
 
-/** VIG-36: who each escalation level notifies. Admin and operator read; only admin changes. */
+/** Who each escalation level notifies. Admin and operator read; only admin changes. */
 @Component({
   selector: 'app-groups-page',
   imports: [ReactiveFormsModule, LoadState, Notice, StateBadge, PageHeader, Icon, ContactTabs],

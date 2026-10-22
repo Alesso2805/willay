@@ -16,7 +16,7 @@ export default defineConfig({
     // The smallest screen SPEC promises (VIG-33): a common Android phone held upright.
     viewport: { width: 360, height: 780 },
   },
-  // English labels are longer than Spanish ones, so both are measured.
+  // Some labels are longer in English, others in Spanish, so both are measured.
   projects: [
     { name: 'es', use: { locale: 'es-PE' } },
     { name: 'en', use: { locale: 'en-US' } },

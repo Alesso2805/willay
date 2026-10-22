@@ -1,7 +1,7 @@
 /**
  * Where the API and Keycloak are. Locally, the ports docker compose publishes on localhost. A
  * deployed dashboard reads them from /config.json, which its container writes from the
- * environment when it starts (VIG-42), so one image serves any hostname. It holds no secrets:
+ * environment when it starts, so one image serves any hostname. It holds no secrets:
  * the OIDC client is public.
  */
 export interface Settings {
@@ -9,7 +9,7 @@ export interface Settings {
   oidc: { authority: string; clientId: string };
   /** Where the emails Willay sent can be read (Mailpit). */
   mailUrl: string;
-  /** The public demo (VIG-43): its accounts' shared password, shown on the sign-in screen. */
+  /** The public demo: its accounts' shared password, shown on the sign-in screen. */
   demo: { password: string } | null;
 }
 

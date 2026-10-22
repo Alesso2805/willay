@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { t } from '../i18n/i18n';
 
-/** Contacts, their groups and the policies that notify them are one section with three tabs
- * (VIG-36, VIG-37), so the menu stays short. */
+/** Contacts, their groups and the policies that notify them are one section with three tabs,
+ * so the menu stays short. */
 @Component({
   selector: 'app-contact-tabs',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -25,7 +25,7 @@ import {
 } from './live-map-presentation';
 
 /**
- * "Mapa en vivo" (VIG-25): zones by the state of their active incidents and stations with their
+ * "Mapa en vivo": zones by the state of their active incidents and stations with their
  * last value and its age, kept current by the live channel. The lists next to the map say the
  * same in words, for keyboards, screen readers and narrow screens.
  */

@@ -39,7 +39,7 @@ export class App {
   protected readonly session = inject(Session);
   protected readonly live = inject(LiveEvents);
   protected readonly languages = inject(LanguageService);
-  // Created here so it follows the system's theme from the start (VIG-41).
+  // Created here so it follows the system's theme from the start.
   private readonly theme = inject(ThemeService);
   protected readonly t = t;
   protected readonly connection = computed(() => {
@@ -52,7 +52,7 @@ export class App {
   /** Only matters on narrow screens: from `lg` up the navigation is a fixed sidebar. */
   protected readonly menuOpen = signal(false);
   protected readonly roles = roleLabels;
-  /** The public demo's accounts on the sign-in screen (VIG-43); null off the demo. */
+  /** The public demo's accounts on the sign-in screen; null off the demo. */
   protected readonly demo = settings.demo;
 
   constructor() {

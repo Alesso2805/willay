@@ -25,7 +25,7 @@ import { Incident, IncidentSeverity, IncidentStatus, IncidentsApi } from './inci
 export const INBOX_LIMIT = 200;
 
 /**
- * Incident inbox (VIG-34): the organization's incidents, newest first, filtered by status and
+ * Incident inbox: the organization's incidents, newest first, filtered by status and
  * severity from the URL. It follows the live channel; new incidents are announced by the shell
  * on every page (NewIncidents), so this page does not announce them again.
  */

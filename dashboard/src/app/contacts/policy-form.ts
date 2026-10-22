@@ -10,7 +10,7 @@ export interface LevelDraft {
   targets: ReadonlySet<string>;
 }
 
-/** Problems shown next to their field (VIG-37). */
+/** Problems shown next to their field. */
 export interface FormErrors {
   name?: string;
   levels?: string;

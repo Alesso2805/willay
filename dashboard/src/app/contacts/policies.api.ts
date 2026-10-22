@@ -24,7 +24,7 @@ export interface PolicyInput {
   levels: { wait_s: number; targets: { contact_group_id: string; channel: Channel }[] }[];
 }
 
-/** VIG-24's API: everyone reads; admin creates, edits and deletes. */
+/** Everyone reads; admin creates, edits and deletes. */
 @Injectable({ providedIn: 'root' })
 export class PoliciesApi {
   private readonly http = inject(HttpClient);

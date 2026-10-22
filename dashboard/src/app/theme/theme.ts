@@ -10,7 +10,7 @@ export const THEME_STORAGE_KEY = 'willay.theme';
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 
 /**
- * Light or dark mode (VIG-41). It follows the system unless the user picks one, a choice kept in
+ * Light or dark mode. It follows the system unless the user picks one, a choice kept in
  * this browser rather than in the database: a phone may go dark at night while the office screen
  * stays light, and the theme must apply before the app loads, when there is no user to ask the
  * API about yet.
