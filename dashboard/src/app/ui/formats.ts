@@ -1,7 +1,7 @@
 import { currentLocale } from '../i18n/i18n';
 
 /**
- * Shared dashboard formats (VIG-33), in the current language (VIG-40). Times use the
+ * Shared dashboard formats, in the current language. Times use the
  * organization's time zone, not the browser's: a travelling operator sees the same times as the
  * emails and Telegram messages.
  */

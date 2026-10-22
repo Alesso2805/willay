@@ -43,7 +43,7 @@ export function stopwatch(seconds: number): string {
 }
 
 /**
- * The public demo's panel on Inicio (VIG-43): what the Rímac scenario does, the button that
+ * The public demo's panel on Inicio: what the Rímac scenario does, the button that
  * starts it (demo admin) and its progress, for every user of the demo organization. It asks
  * every 3 s while a run is on and every 30 s otherwise, so a run someone else started shows up.
  */

@@ -26,7 +26,7 @@ type Editing = { kind: 'new' } | { kind: 'edit'; policy: Policy };
 const NO_ERRORS: FormErrors = { perLevel: {} };
 
 /**
- * VIG-37: escalation policies from the dashboard, on top of VIG-24's API. Ordered levels, each
+ * Escalation policies from the dashboard. Ordered levels, each
  * waiting some minutes before the next one is alerted, and the groups it notifies per channel.
  * Everyone in this section reads them; only an admin changes them, and a change also reaches
  * ongoing incidents, because the escalation worker reads the policy when it escalates.

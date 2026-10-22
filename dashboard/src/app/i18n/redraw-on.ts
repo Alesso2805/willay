@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 
 /**
- * Draws its content again, from scratch, whenever the value changes (VIG-40):
+ * Draws its content again, from scratch, whenever the value changes:
  * `<ng-container *appRedrawOn="languages.current()">`. A new language thus reaches every text,
  * including those computed in TypeScript, without each page reacting to the change on its own.
  * What lives in services (the session, the live channel) carries on.

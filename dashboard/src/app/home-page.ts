@@ -11,7 +11,6 @@ import { Notice } from './ui/notice';
 import { PageHeader } from './ui/page-header';
 import { ZONE_STATES } from './ui/visual-states';
 
-/** Home: what an operator wants to know on opening the dashboard, and who they are in Willay. */
 @Component({
   selector: 'app-home-page',
   imports: [RouterLink, Icon, Notice, PageHeader, DemoPanel],

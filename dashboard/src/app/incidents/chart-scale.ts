@@ -1,4 +1,4 @@
-/** Pure helpers for the readings chart (VIG-26): axes, scales and the line, with no Angular. */
+/** Pure helpers for the readings chart: axes, scales and the line, with no Angular. */
 
 export interface ChartPoint {
   /** Epoch milliseconds. */

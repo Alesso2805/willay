@@ -16,7 +16,7 @@ const STORED = 'willay.language';
 const PENDING = 'willay.language.pending';
 
 /**
- * Which language the dashboard shows (VIG-40). The user's choice is saved in the database, so it
+ * Which language the dashboard shows. The user's choice is saved in the database, so it
  * follows them to any device; until they choose, the browser's language, and else Spanish.
  */
 @Injectable({ providedIn: 'root' })
@@ -69,7 +69,7 @@ export class LanguageService {
   }
 }
 
-/** API errors come back in the language on screen (VIG-40: Accept-Language). */
+/** API errors come back in the language on screen (Accept-Language). */
 export const acceptLanguageInterceptor: HttpInterceptorFn = (request, next) =>
   request.url.startsWith(settings.apiUrl)
     ? next(request.clone({ setHeaders: { 'Accept-Language': currentLanguage() } }))

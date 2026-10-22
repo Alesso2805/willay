@@ -16,7 +16,7 @@ import { createBaseMap, plainText } from './base-map';
 import { StationView, ZONE_STYLES, ZoneView, markerHtml } from './live-map-presentation';
 
 /**
- * The live map (VIG-25). A "dumb" component: it draws the zones by state and the stations by
+ * The live map. A "dumb" component: it draws the zones by state and the stations by
  * their marker state; the page computes both. The station markers are kept and updated in
  * place, because their tooltips change every second (the age of the last value).
  */

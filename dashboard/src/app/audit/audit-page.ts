@@ -31,7 +31,7 @@ interface Filters {
 const EMPTY: Filters = { tipo: '', autor: '', desde: '', hasta: '', entidad: '' };
 
 /**
- * VIG-38: who changed what, most recent first. Admin only. Filters live in the URL; "Cargar
+ * Who changed what, most recent first. Admin only. Filters live in the URL; "Cargar
  * más" follows the API's cursor, so entries arriving meanwhile neither repeat nor go missing.
  */
 @Component({

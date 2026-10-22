@@ -14,7 +14,7 @@ export interface Organization {
   timezone: string;
 }
 
-/** VIG-44: every role reads it; an admin changes its language and time zone. */
+/** Every role reads it; an admin changes its language and time zone. */
 @Injectable({ providedIn: 'root' })
 export class OrganizationApi {
   private readonly http = inject(HttpClient);

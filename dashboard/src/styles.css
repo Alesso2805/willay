@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /*
- * Light and dark mode (VIG-41): ThemeService (and, before the app loads, the script in
+ * Light and dark mode: ThemeService (and, before the app loads, the script in
  * index.html) puts `dark` on <html>. Every color below is a CSS variable; `:root.dark`
  * redefines those that follow the theme (night and brand blue do not), so switching themes
  * repaints without redrawing anything. ADR-0009.
@@ -9,12 +9,12 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * "Monitoring center" identity (VIG-33): night blue for navigation and water blue as the
+ * "Monitoring center" identity: night blue for navigation and water blue as the
  * brand color, the same in both themes. The logo (public/icon.svg, also the browser tab's icon)
  * is a W drawn as waves with an amber warning dot, on night blue. Checked contrast: white on
  * brand-700 5.4:1; night-300 on night-900 7.9:1.
  *
- * Semantic colors (VIG-41): pages use these, never a fixed gray, so they follow the theme.
+ * Semantic colors: pages use these, never a fixed gray, so they follow the theme.
  * Light values here, dark ones in `:root.dark`; ui/visual-states.spec.ts measures both.
  */
 @theme {
@@ -53,7 +53,7 @@
 }
 
 /*
- * State colors (VIG-33): the catalog in ui/visual-states.ts names a tone and these give its
+ * State colors: the catalog in ui/visual-states.ts names a tone and these give its
  * shade in each theme: `fg` on `bg` for badges, `map` for strokes and markers (with a white
  * icon on top). `--map-canvas` is the base map's land color, which map colors must stand out
  * from.
@@ -191,7 +191,7 @@
 }
 
 /*
- * The same tiles in dark mode (VIG-41): inverted and turned back to their hues, then muted and
+ * The same tiles in dark mode: inverted and turned back to their hues, then muted and
  * dimmed. No other provider, account or license; land ends up close to --map-canvas, which
  * the map colors are tested against.
  */

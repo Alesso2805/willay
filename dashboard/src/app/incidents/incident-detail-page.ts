@@ -30,7 +30,7 @@ const CHANNELS: Readonly<Record<IncidentAlert['channel'], TranslationKey>> = {
 };
 
 /**
- * An incident's detail (VIG-26): summary, alerts by recipient and timeline. It reloads when
+ * An incident's detail: summary, alerts by recipient and timeline. It reloads when
  * one of its own events arrives on the live channel and after every reconnection.
  */
 @Component({

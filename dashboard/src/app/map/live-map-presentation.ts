@@ -92,7 +92,6 @@ const STATION_URGENCY: readonly StationState[] = ['silent', 'unzoned', 'waiting'
 
 export interface StationView {
   station: Station;
-  /** What its marker shows. */
   marker: StationState;
   /** For a station without a zone (what its marker shows), whether it reports. */
   secondary: StationState | null;

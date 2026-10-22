@@ -5,7 +5,7 @@ import { Position, RiskLevel } from './zones.api';
 
 export const RISK_LEVELS: readonly RiskLevel[] = ['low', 'medium', 'high', 'critical'];
 
-/** Label and color come from the visual catalog (VIG-33); only the map stroke lives here. */
+/** Label and color come from the visual catalog; only the map stroke lives here. */
 export function riskLabel(level: RiskLevel): string {
   return t(RISK_LEVEL_STATES[level].labelKey);
 }

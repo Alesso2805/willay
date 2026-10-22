@@ -45,7 +45,7 @@ const SEVERITY_ORDER: Severity[] = ['info', 'warning', 'critical'];
 const MAX_COOLDOWN_MIN = 1440;
 
 /**
- * VIG-27: the rules that open incidents. Everyone sees them; operator and admin create, edit
+ * The rules that open incidents. Everyone sees them; operator and admin create, edit
  * and deactivate them, and preview a draft over the last 24 h before saving it.
  */
 @Component({

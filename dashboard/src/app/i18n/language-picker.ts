@@ -3,7 +3,7 @@ import { LANGUAGES, LANGUAGE_NAMES, Language, t } from './i18n';
 import { LanguageService } from './language';
 
 /**
- * ES / EN switch (VIG-40). Each option is written in its own language and marked with `lang`,
+ * ES / EN switch. Each option is written in its own language and marked with `lang`,
  * so a screen reader pronounces it right and whoever cannot read the current language still
  * recognizes theirs.
  */

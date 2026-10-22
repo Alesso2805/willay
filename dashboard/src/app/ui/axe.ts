@@ -1,7 +1,7 @@
 import axe from 'axe-core';
 
 /**
- * Serious or critical axe-core violations in what the component rendered (VIG-33). Tests only:
+ * Serious or critical axe-core violations in what the component rendered. Tests only:
  * Lighthouse uses this same engine for its accessibility score.
  *
  * Color contrast is not checked here because jsdom does not compute real styles. The visual

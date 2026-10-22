@@ -20,7 +20,7 @@ import { IncidentDetail, IncidentsApi } from './incidents.api';
 type Resolution = 'resolved' | 'false_alarm';
 
 /**
- * Acknowledge and resolve from the incident detail (VIG-35). The buttons follow the user's
+ * Acknowledge and resolve from the incident detail. The buttons follow the user's
  * permissions (acknowledge: responder and above; resolve: operator and above); the API checks
  * them anyway. Resolving is final, so it asks how it ended and to confirm, in a panel inside
  * the card that leaves the timeline in view.

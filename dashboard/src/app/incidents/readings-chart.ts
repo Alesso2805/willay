@@ -36,7 +36,7 @@ const MIN_MARGIN = 30_000;
 let nextId = 0;
 
 /**
- * The readings around an incident's opening as an SVG line (VIG-26, own SVG: no chart library).
+ * The readings around an incident's opening as an SVG line (own SVG: no chart library).
  * Screen readers get a text summary, and "Ver como tabla" shows every reading.
  */
 @Component({
