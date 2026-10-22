@@ -33,7 +33,7 @@ def test_single_organization_is_resolved_by_id() -> None:
         ),
         # Format without "Add organization id": aliases only, useless to resolve the tenant.
         (["rimac"], MalformedOrganizationClaimError),
-        # What two mappers emit at once (seen in VIG-02): also rejected.
+        # What two mappers emit at once: also rejected.
         (["rimac", {"rimac": {"id": RIMAC_ID}}], MalformedOrganizationClaimError),
         ({"rimac": {}}, MalformedOrganizationClaimError),
         ({"rimac": {"id": 42}}, MalformedOrganizationClaimError),

@@ -1,4 +1,4 @@
-"""Contact use cases (VIG-36). Admin only, audited in the same transaction and scoped to the
+"""Contact use cases. Admin only, audited in the same transaction and scoped to the
 actor's organization (another organization's contact does not exist: 404).
 
 A contact with history (alerts, or an acknowledgement) is never deleted (SPEC): the timeline

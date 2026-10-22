@@ -1,4 +1,4 @@
-"""The readings shown with an incident (VIG-26): which window, from where, and which line.
+"""The readings shown with an incident: which window, from where, and which line.
 
 The window tells the story of the opening: an hour before it (what led to it) and up to two
 hours after (whether it kept worsening). Readings expire (180-day retention), but the `opened`

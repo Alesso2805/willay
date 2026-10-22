@@ -113,7 +113,7 @@ async def stream_grant(
     claims: Annotated[dict[str, Any], Depends(verified_claims)],
     engine: EngineDep,
 ) -> StreamGrant:
-    """Authentication for long-lived responses (SSE, VIG-25).
+    """Authentication for long-lived responses (SSE).
 
     `current_principal` uses the request transaction, which in a stream would live as long as
     the connection: one pool connection held per open dashboard. This authenticates in a short

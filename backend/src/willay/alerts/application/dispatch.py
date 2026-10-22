@@ -1,4 +1,4 @@
-"""Sending pending alerts by email (VIG-20) and Telegram (VIG-22) with the same pattern.
+"""Sending pending alerts by email and Telegram with the same pattern.
 
 Like the readings queue (ADR-0002), each alert goes through short transactions:
 1. claim: SKIP LOCKED, `attempts + 1` and a 60 s visibility timeout, so no other
@@ -43,8 +43,8 @@ class ClaimedAlert:
     destination: str
     message: AlertMessage
     channel: Channel = Channel.EMAIL
-    correlation_id: UUID | None = None  # its incident's (VIG-28)
-    # When the reading that opened its incident arrived; None for silence (VIG-28).
+    correlation_id: UUID | None = None
+    # When the reading that opened its incident arrived; None for silence.
     trigger_received_at: datetime | None = None
 
 
@@ -102,7 +102,7 @@ class DeliveryChannel(Protocol):
 
 
 class EmailChannel:
-    """Email with a link to the confirmation page (VIG-20, VIG-23)."""
+    """Email with a link to the confirmation page."""
 
     channel = Channel.EMAIL
 
@@ -122,7 +122,7 @@ class TelegramSender(Protocol):
 
 
 class TelegramChannel:
-    """Telegram message with a button whose `callback_data` is the token (VIG-22): 43
+    """Telegram message with a button whose `callback_data` is the token: 43
     chars, within Telegram's 64-char limit."""
 
     channel = Channel.TELEGRAM
@@ -197,8 +197,6 @@ class AlertDispatcher:
 
 
 class EmailDispatcher(AlertDispatcher):
-    """Shortcut for the email dispatcher."""
-
     def __init__(
         self, queue: DispatchQueue, sender: EmailSender, clock: Clock, confirm_base_url: str
     ) -> None:
@@ -206,7 +204,5 @@ class EmailDispatcher(AlertDispatcher):
 
 
 class TelegramDispatcher(AlertDispatcher):
-    """Shortcut for the Telegram dispatcher."""
-
     def __init__(self, queue: DispatchQueue, api: TelegramSender, clock: Clock) -> None:
         super().__init__(queue, TelegramChannel(api), clock)

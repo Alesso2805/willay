@@ -1,4 +1,4 @@
-"""One cycle of the escalation worker (VIG-24).
+"""One cycle of the escalation worker.
 
 Each incident is handled in its own transaction, locked with SKIP LOCKED: two workers never
 escalate the same incident, and one held elsewhere (e.g. being acknowledged) is retried next

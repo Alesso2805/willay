@@ -1,4 +1,4 @@
-"""What the dashboard may show about an alert's recipient (VIG-26, SPEC: privacy).
+"""What the dashboard may show about an alert's recipient (SPEC: privacy).
 
 The email is personal data: only users who may see contact details (operator and admin) get
 it. A Telegram `chat_id` never leaves the API, whoever asks: knowing whether the contact has

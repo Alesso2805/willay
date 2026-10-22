@@ -30,7 +30,7 @@ class StoreCounts:
 class IngestResult:
     received: int
     counts: StoreCounts
-    # Follows these readings to the incident they open and its alerts (VIG-28).
+    # Follows these readings to the incident they open and its alerts.
     correlation_id: UUID
 
     @property

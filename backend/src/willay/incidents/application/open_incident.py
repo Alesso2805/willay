@@ -38,7 +38,7 @@ class Trigger:
     details: Mapping[str, Any] = field(default_factory=dict)
     # None if readings cannot worsen the rule (silence).
     worsening: Worsening | None = None
-    # The batch that fired it, or one of its own for silence; stays on the incident (VIG-28).
+    # The batch that fired it, or one of its own for silence; stays on the incident.
     correlation_id: UUID | None = None
     # When the reading that fired it arrived, for the latency metric; None for silence.
     received_at: datetime | None = None

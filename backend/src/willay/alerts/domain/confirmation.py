@@ -1,4 +1,4 @@
-"""Confirming an alert with its token (VIG-23): single use, valid for 24 h.
+"""Confirming an alert with its token: single use, valid for 24 h.
 
 Confirming any alert acknowledges the incident (SPEC). If someone else got there first, the
 alert is recorded as seen without changing who acknowledged; if the incident is already
@@ -16,7 +16,7 @@ class ConfirmOutcome(StrEnum):
     UNKNOWN = "unknown"  # no token matches
     EXPIRED = "expired"
     USED = "used"
-    NOT_YOURS = "not_yours"  # the Telegram button was pressed by someone else (VIG-22)
+    NOT_YOURS = "not_yours"  # the Telegram button was pressed by someone else
 
 
 def token_problem(

@@ -1,4 +1,4 @@
-"""The public demo's live side (VIG-43): what the demo worker plays, and when. Pure.
+"""The public demo's live side: what the demo worker plays, and when. Pure.
 
 Every demo station reports every 10 s with the simulator's own signals, so the map is never
 empty. A scenario run plays SPEC's Rímac story from its own start:

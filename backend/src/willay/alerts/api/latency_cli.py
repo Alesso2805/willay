@@ -1,4 +1,4 @@
-"""Latency report (VIG-28): `make latency ARGS="--minutes 60"`.
+"""Latency report: `make latency ARGS="--minutes 60"`.
 
 p50, p95 and max of reading received → first alert sent, over the incidents opened in a
 period. Exits with 1 when p95 misses SPEC's target (< 30 s), so a load test can fail on it.

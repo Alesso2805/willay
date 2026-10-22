@@ -1,4 +1,4 @@
-"""Minimal Telegram Bot API client (httpx2): what VIG-21 and VIG-22 use.
+"""Minimal Telegram Bot API client (httpx2): what linking and confirming use.
 
 The bot token is part of the URL (`/bot<TOKEN>/<method>`), so it must not leak:
 - httpx2 logs every request URL at INFO, so its logger is raised to WARNING;
@@ -15,7 +15,7 @@ from willay.alerts.application.telegram_bot import Click, TelegramError, Update
 
 logging.getLogger("httpx2").setLevel(logging.WARNING)
 
-# Only what the bot handles: messages (linking) and button clicks (confirming, VIG-22).
+# Only what the bot handles: messages (linking) and button clicks (confirming).
 ALLOWED_UPDATES = ["message", "callback_query"]
 
 
@@ -111,8 +111,8 @@ def _click(callback: dict[str, Any]) -> Click | None:
     message = callback.get("message") or {}
     return Click(
         id=callback["id"],
-        from_id=sender["id"],
-        data=callback.get("data"),
+        clicker_id=sender["id"],
+        token=callback.get("data"),
         chat_id=(message.get("chat") or {}).get("id"),
         message_id=message.get("message_id"),
         message_text=message.get("text"),

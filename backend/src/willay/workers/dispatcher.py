@@ -1,4 +1,4 @@
-"""Dispatcher worker (VIG-20, VIG-22): `python -m willay.workers.dispatcher`.
+"""Dispatcher worker: `python -m willay.workers.dispatcher`.
 
 Sends pending alerts by email and Telegram. Wakes on LISTEN willay_alerts when new alerts are
 committed, and polls every 5 s for lost notifications and due retries. Each channel runs on

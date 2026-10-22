@@ -79,12 +79,3 @@ def run_async_worker(name: str, body: WorkerBody) -> None:
         await body(settings, stop)
 
     asyncio.run(main())
-
-
-def run_worker(name: str, interval_s: float, tick: Tick = _noop) -> None:
-    """Simple workers (no wakeup notifications yet): one tick every `interval_s`."""
-
-    async def body(settings: Settings, stop: asyncio.Event) -> None:
-        await run_loop(name, interval_s, settings.heartbeat_dir / f"{name}.alive", stop, tick)
-
-    run_async_worker(name, body)

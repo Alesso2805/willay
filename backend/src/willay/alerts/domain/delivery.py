@@ -39,7 +39,7 @@ def new_ack_token(now: datetime) -> AckToken:
 
 
 def new_token(now: datetime, ttl: timedelta) -> AckToken:
-    """A single-use 256-bit token; also used for Telegram linking (VIG-21)."""
+    """A single-use 256-bit token; also used for Telegram linking."""
     token = secrets.token_urlsafe(TOKEN_BYTES)
     return AckToken(token, hash_ack_token(token), now + ttl)
 

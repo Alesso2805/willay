@@ -1,4 +1,4 @@
-"""Reading → first alert latencies from the database (VIG-28)."""
+"""Reading → first alert latencies from the database."""
 
 from datetime import datetime
 from uuid import UUID

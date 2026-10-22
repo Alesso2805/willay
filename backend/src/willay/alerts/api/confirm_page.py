@@ -1,4 +1,4 @@
-"""Confirming an alert from its link (VIG-23), without login: the token is the credential.
+"""Confirming an alert from its link, without login: the token is the credential.
 
 GET only shows the page (email scanners open links on their own); only the button's POST
 confirms. No CSRF protection needed: the POST cannot be built without the token, and

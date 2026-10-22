@@ -1,4 +1,4 @@
-"""AuditTrail over core.audit_log (VIG-38). Read only: the table is append-only anyway."""
+"""AuditTrail over core.audit_log. Read only: the table is append-only anyway."""
 
 from typing import Any
 from uuid import UUID

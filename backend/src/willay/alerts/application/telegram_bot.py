@@ -1,5 +1,5 @@
-"""The telegram worker serves the bot: links contacts (VIG-21) and receives clicks on alert
-confirmation buttons (VIG-22).
+"""The telegram worker serves the bot: links contacts and receives clicks on alert
+confirmation buttons.
 
 Long polling with `getUpdates`; asking from `update_id + 1` acknowledges the previous update
 to Telegram, so each one is committed before the next is requested and a database failure
@@ -41,8 +41,8 @@ class Click:
     """A click on an alert's button (`callback_query`)."""
 
     id: str  # to answer it with answerCallbackQuery
-    from_id: int  # who clicked
-    data: str | None  # the alert token
+    clicker_id: int
+    token: str | None
     chat_id: int | None = None  # the button's message, to edit it
     message_id: int | None = None
     message_text: str | None = None  # None if Telegram no longer provides it
@@ -121,14 +121,14 @@ class TelegramPoller:
 
     async def _confirm(self, update_id: int, click: Click) -> None:
         view = ConfirmationView(ConfirmOutcome.UNKNOWN, None)
-        if click.data is not None:
+        if click.token is not None:
             async with self._transaction() as tx:
                 view = await confirm_alert(
-                    click.data,
+                    click.token,
                     confirmations=self._confirmations(tx),
                     incidents=self._incidents(tx),
                     clock=self._clock,
-                    expected_destination=str(click.from_id),
+                    expected_destination=str(click.clicker_id),
                 )
         alert = view.alert
         log.info(

@@ -17,7 +17,8 @@ from willay.shared.errors import ErrorCode, FieldError
 MAX_NAME_LENGTH = 120
 # Uppercase letters, digits and dashes, like RIM-CHA-01. Normalized to uppercase.
 CODE_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9-]{1,31}$")
-# The silence detector runs every 15 s: shorter intervals add nothing.
+# The fastest a station may report: the incident chart (incident_readings.py) and the rule
+# preview (rules/application/preview.py) size their reads for it.
 MIN_INTERVAL_S = 5
 MAX_INTERVAL_S = 86_400
 MIN_SILENCE_MULTIPLIER = 1

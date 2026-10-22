@@ -1,4 +1,4 @@
-"""Public demo worker (VIG-43): `python -m willay.workers.demo`.
+"""Public demo worker: `python -m willay.workers.demo`.
 
 Disabled (heartbeat only) unless WILLAY_DEMO_MODE is set. Every 2 s it:
 1. asks for a restore run when the demo organization's nightly hour comes;

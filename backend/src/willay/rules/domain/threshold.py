@@ -1,4 +1,4 @@
-"""Threshold rule (VIG-15): value out of bounds for N consecutive `ok` readings.
+"""Threshold rule: value out of bounds for N consecutive `ok` readings.
 
 `params` in core.rules: {"operator": "gt", "value": 3.5, "consecutive": 2}.
 

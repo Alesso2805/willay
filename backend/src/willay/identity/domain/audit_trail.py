@@ -1,4 +1,4 @@
-"""Reading the audit log (VIG-38): who changed what, most recent first.
+"""Reading the audit log: who changed what, most recent first.
 
 Pages are cut with a cursor on (at, id), not with an offset: if new entries arrive while the
 admin pages through, an offset would shift and repeat or skip rows; a cursor resumes right
@@ -25,7 +25,7 @@ class EntityType(StrEnum):
     ESCALATION_POLICY = "escalation_policy"
     CONTACT = "contact"
     CONTACT_GROUP = "contact_group"
-    ORGANIZATION = "organization"  # its language and time zone (VIG-44)
+    ORGANIZATION = "organization"  # its language and time zone
 
 
 @dataclass(frozen=True)

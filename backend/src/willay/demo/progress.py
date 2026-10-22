@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from willay.alerts.domain.delivery import hash_ack_token
 from willay.demo.mailbox import Recipient
 from willay.demo.story import IncidentState, StoryEvent
+from willay.incidents.domain.lifecycle import IncidentStatus
 
 _RULES = text("""
     SELECT r.id, r.is_active, r.escalation_policy_id, s.code
@@ -153,7 +154,7 @@ async def incidents(
     rows = await conn.execute(_INCIDENTS, params)
     return {
         r.rule_id: IncidentState(
-            r.id, r.rule_id, r.status, r.current_level, r.acknowledged, r.exhausted
+            r.id, r.rule_id, IncidentStatus(r.status), r.current_level, r.acknowledged, r.exhausted
         )
         for r in rows
     }

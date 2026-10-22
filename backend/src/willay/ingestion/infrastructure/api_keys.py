@@ -13,7 +13,7 @@ from willay.ingestion.domain.api_keys import generate_api_key
 
 # Keys verified by this process. Each station sends a batch every few seconds and Argon2id costs
 # 50 to 130 ms of CPU by machine, so without this 50 stations sending together queue up for
-# seconds on 4 CPUs (VIG-29).
+# seconds on 4 CPUs.
 VERIFIED_CACHE_SIZE = 4096
 
 

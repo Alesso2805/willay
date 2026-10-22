@@ -1,8 +1,8 @@
-"""Readings and the opening evidence of an incident's station, for its chart (VIG-26)."""
+"""Readings and the opening evidence of an incident's station, for its chart."""
 
 from collections.abc import Mapping
 from datetime import datetime
-from typing import Any
+from typing import Any, NamedTuple
 from uuid import UUID
 
 from sqlalchemy import text
@@ -34,6 +34,11 @@ _OPENED = text("""
 MAX_POINTS = 5000
 
 
+class StationLabel(NamedTuple):
+    code: str
+    unit: str
+
+
 class SqlIncidentReadings:
     def __init__(self, conn: AsyncConnection) -> None:
         self._conn = conn
@@ -53,11 +58,10 @@ class SqlIncidentReadings:
         )
         return [Point(r.measured_at, r.value) for r in rows]
 
-    async def station(self, organization_id: UUID, station_id: UUID) -> tuple[str, str] | None:
-        """Its code and unit."""
+    async def station(self, organization_id: UUID, station_id: UUID) -> StationLabel | None:
         params = {"organization_id": organization_id, "id": station_id}
         row = (await self._conn.execute(_STATION, params)).first()
-        return (row.code, row.unit) if row else None
+        return StationLabel(row.code, row.unit) if row else None
 
     async def opened_payload(self, incident_id: UUID) -> Mapping[str, Any]:
         payload: Mapping[str, Any] | None = await self._conn.scalar(

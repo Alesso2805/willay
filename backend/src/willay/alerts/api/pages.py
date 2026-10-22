@@ -1,8 +1,8 @@
-"""Alert confirmation pages (VIG-23): plain HTML, no JavaScript.
+"""Alert confirmation pages: plain HTML, no JavaScript.
 
 Opened from email, sometimes on a modest phone: a light page that works without scripts
 and is accessible (state is stated in text, never by color alone). All variable data is
-escaped. Written in the contact's language (VIG-40); a link that matches no alert has no
+escaped. Written in the contact's language; a link that matches no alert has no
 contact, so it follows the browser's.
 """
 
@@ -34,7 +34,7 @@ button:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
   .note { border-left-color: #5fd4e8; background: #15293e; }
 }
 """
-# Dark mode (VIG-41) follows the device, the only signal a page without login has. As in the
+# Dark mode follows the device, the only signal a page without login has. As in the
 # dashboard, every pair keeps ≥ 4.5:1 (text 14:1, button 9.8:1).
 
 

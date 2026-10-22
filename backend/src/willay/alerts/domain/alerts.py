@@ -41,7 +41,7 @@ class Target:
 
 class Reason(StrEnum):
     """Why an alert was skipped or a level expired, recorded in the timeline as a code with its
-    parameters (VIG-40): the dashboard says it in each user's language. Events from before
+    parameters: the dashboard says it in each user's language. Events from before
     VIG-40 keep their Spanish text under `reason`."""
 
     NO_EMAIL = "no_email"

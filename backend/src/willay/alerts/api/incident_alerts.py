@@ -1,5 +1,5 @@
-"""`GET /v1/incidents/{id}/alerts`: who was alerted, through which channel, and what happened
-(VIG-26). Anyone who can see incidents can read it; the email only reaches users who may see
+"""`GET /v1/incidents/{id}/alerts`: who was alerted, through which channel, and what happened.
+Anyone who can see incidents can read it; the email only reaches users who may see
 contact details, and a Telegram chat never leaves the API (alerts/domain/recipients.py).
 """
 

@@ -1,4 +1,4 @@
-"""Failed readings API (VIG-39): what the evaluator gave up on, and sending it back.
+"""Failed readings API: what the evaluator gave up on, and sending it back.
 
 Operator and admin only (SPEC: "See and reprocess readings whose evaluation failed"). The
 dashboard header asks for the count whenever the live channel says it changed.

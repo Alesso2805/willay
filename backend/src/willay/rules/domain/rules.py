@@ -1,4 +1,4 @@
-"""Rules as the operator manages them (VIG-27): what a rule watches, how bad it is and whom it
+"""Rules as the operator manages them: what a rule watches, how bad it is and whom it
 alerts. Whether it fires is decided by threshold.py, rate_of_change.py and silence.py; this
 module checks that a rule is one the evaluator will understand.
 """

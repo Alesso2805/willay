@@ -1,4 +1,4 @@
-"""Audit log pages for the admin (VIG-38). Always the actor's organization only."""
+"""Audit log pages for the admin. Always the actor's organization only."""
 
 from collections.abc import Mapping
 from dataclasses import dataclass

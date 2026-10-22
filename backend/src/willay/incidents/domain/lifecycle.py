@@ -1,4 +1,4 @@
-"""Incident lifecycle (VIG-19): open → acknowledged → resolved.
+"""Incident lifecycle: open → acknowledged → resolved.
 
 Acknowledge only from `open` (it stops escalation). Resolve from `open` or `acknowledged`, as
 resolved or false alarm; resolving without acknowledging first is a product decision so an

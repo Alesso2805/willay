@@ -22,19 +22,24 @@ from willay.demo.story import (
     status_line,
     summary,
 )
+from willay.incidents.domain.lifecycle import IncidentStatus
 from willay.ingestion.domain.simulation import Behavior, StationPlan
 
 T0 = datetime(2026, 10, 3, 13, 40, tzinfo=UTC)
 
 
 def _incident(
-    *, status: str = "open", level: int = 1, acknowledged: bool = False, exhausted: bool = False
+    *,
+    status: IncidentStatus = IncidentStatus.OPEN,
+    level: int = 1,
+    acknowledged: bool = False,
+    exhausted: bool = False,
 ) -> IncidentState:
     return IncidentState(uuid4(), DROP_RULE, status, level, acknowledged, exhausted)
 
 
 def _acknowledged(level: int) -> IncidentState:
-    return _incident(status="acknowledged", level=level, acknowledged=True)
+    return _incident(status=IncidentStatus.ACKNOWLEDGED, level=level, acknowledged=True)
 
 
 def test_the_story_passes_when_level_2_acknowledges_both_incidents() -> None:
@@ -64,7 +69,7 @@ def test_it_waits_while_an_incident_is_still_climbing_the_levels() -> None:
             "nobody at level 2 acknowledged the silence incident: it escalated to level 3",
         ),
         (
-            Case("drop", _incident(status="resolved"), 60.0),
+            Case("drop", _incident(status=IncidentStatus.RESOLVED), 60.0),
             "the drop incident was resolved without being acknowledged",
         ),
         (

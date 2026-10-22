@@ -1,4 +1,4 @@
-"""Risk zone REST API (VIG-12). Geometry travels as GeoJSON (lon, lat)."""
+"""Risk zone REST API. Geometry travels as GeoJSON (lon, lat)."""
 
 from datetime import datetime
 from typing import Annotated, Any, Literal

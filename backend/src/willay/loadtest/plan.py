@@ -1,4 +1,4 @@
-"""What the load test sends and how it is judged (VIG-29), with no I/O.
+"""What the load test sends and how it is judged, with no I/O.
 
 Every station sends a normal series around 2 m and, once, a spike above its threshold rule,
 at a moment spread over the run. Each spike opens one incident whose first alert gives one
@@ -34,7 +34,7 @@ class LoadPlan:
 
 def build_plan(stations: int, minutes: float, interval_s: float, seed: int) -> LoadPlan:
     ticks = max(1, int(minutes * 60 / interval_s))
-    rng = random.Random(seed)  # the same seed, the same run
+    rng = random.Random(seed)
     return LoadPlan(
         stations=stations,
         ticks=ticks,

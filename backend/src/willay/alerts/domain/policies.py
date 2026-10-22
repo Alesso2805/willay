@@ -1,4 +1,4 @@
-"""Escalation policies (VIG-24): ordered levels that notify contact groups through a channel.
+"""Escalation policies: ordered levels that notify contact groups through a channel.
 
 Levels are given as a list and their order is their position (1, 2, 3...), so there are no
 gaps or duplicate orders to validate.

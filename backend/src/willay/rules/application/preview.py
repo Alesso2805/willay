@@ -1,4 +1,4 @@
-"""Rule preview use case (VIG-27): a draft rule replayed over the last 24 h of its station's
+"""Rule preview use case: a draft rule replayed over the last 24 h of its station's
 `ok` readings, or of every station of the zone for a zone-wide silence rule. Nothing is
 written: it only answers "when would this rule have opened an incident?".
 """

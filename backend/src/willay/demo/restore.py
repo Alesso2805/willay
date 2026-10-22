@@ -1,4 +1,4 @@
-"""The demo organization back as the seed made it (VIG-43).
+"""The demo organization back as the seed made it.
 
 Visitors of the public demo change things: they rename zones, add rules, resolve incidents,
 pick English. Every night the demo worker deletes everything the organization has and loads the

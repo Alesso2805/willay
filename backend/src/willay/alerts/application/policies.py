@@ -1,4 +1,4 @@
-"""Escalation policy use cases (VIG-24). Admin only; audited and scoped to the actor's
+"""Escalation policy use cases. Admin only; audited and scoped to the actor's
 organization (another organization's policy does not exist: 404).
 
 Edits also apply to ongoing incidents (SPEC): the worker reads levels when escalating.
