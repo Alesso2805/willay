@@ -1,4 +1,4 @@
-"""Structure of the initial migration: hypertable, constraints and reversibility."""
+"""The migration history: the hypertable, the constraints and reversibility."""
 
 from datetime import timedelta
 
