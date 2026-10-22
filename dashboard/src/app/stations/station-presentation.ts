@@ -68,8 +68,7 @@ function notOlder(candidate: Heartbeat, current: Heartbeat | null): boolean {
   return current === null || Date.parse(candidate.last_seen_at) >= Date.parse(current.last_seen_at);
 }
 
-/** Turns an error from saving a station into a message for the operator. */
-export function stationProblem(error: unknown): string {
+export function stationSaveProblem(error: unknown): string {
   if (!(error instanceof HttpErrorResponse)) return t('stations.saveFailed');
   if (error.status === 409) return t('stations.duplicate');
   if (error.status === 403) return t('stations.forbidden');

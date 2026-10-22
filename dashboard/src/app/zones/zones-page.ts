@@ -10,7 +10,7 @@ import { PageHeader } from '../ui/page-header';
 import { StateBadge } from '../ui/state-badge';
 import { RISK_LEVEL_STATES } from '../ui/visual-states';
 import { DrawnGeometry, MapMode, ZoneMap } from './zone-map';
-import { RISK_LEVELS, SaveProblem, riskLabel, saveProblem } from './zone-presentation';
+import { RISK_LEVELS, SaveProblem, riskLabel, zoneSaveProblem } from './zone-presentation';
 import { RiskLevel, Zone, ZoneInput, ZonesApi } from './zones.api';
 
 type Editing = { kind: 'new' } | { kind: 'edit'; zone: Zone };
@@ -170,7 +170,7 @@ export class ZonesPage {
       },
       error: (error: unknown) => {
         this.saving.set(false);
-        this.problem.set(saveProblem(error));
+        this.problem.set(zoneSaveProblem(error));
       },
     });
   }
@@ -183,7 +183,7 @@ export class ZonesPage {
         this.status.set(t('zones.reactivated', { name: zone.name }));
         this.load();
       },
-      error: (error: unknown) => this.status.set(saveProblem(error).message),
+      error: (error: unknown) => this.status.set(zoneSaveProblem(error).message),
     });
   }
 
@@ -194,7 +194,7 @@ export class ZonesPage {
         this.status.set(t('zones.deactivated', { name: zone.name }));
         this.load();
       },
-      error: (error: unknown) => this.status.set(saveProblem(error).message),
+      error: (error: unknown) => this.status.set(zoneSaveProblem(error).message),
     });
   }
 }

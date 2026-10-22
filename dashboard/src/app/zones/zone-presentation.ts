@@ -30,8 +30,7 @@ export interface SaveProblem {
   point: Position | null;
 }
 
-/** Turns an API error from saving a zone into a message for the operator. */
-export function saveProblem(error: unknown): SaveProblem {
+export function zoneSaveProblem(error: unknown): SaveProblem {
   if (!(error instanceof HttpErrorResponse)) {
     return { message: t('zones.saveFailed'), point: null };
   }

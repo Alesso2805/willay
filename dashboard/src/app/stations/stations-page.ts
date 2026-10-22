@@ -20,7 +20,7 @@ import {
   UNITS,
   VARIABLES,
   keepNewerHeartbeats,
-  stationProblem,
+  stationSaveProblem,
   stationState,
   withHeartbeat,
   positionLabel,
@@ -287,7 +287,7 @@ export class StationsPage {
     if (!confirm(t('stations.confirmRotate', { code: station.code }))) return;
     this.api.rotateKey(station.id).subscribe({
       next: (issued) => this.done(t('stations.rotated', { code: station.code }), issued),
-      error: (error: unknown) => this.status.set(stationProblem(error)),
+      error: (error: unknown) => this.status.set(stationSaveProblem(error)),
     });
   }
 
@@ -295,7 +295,7 @@ export class StationsPage {
     if (!confirm(t('stations.confirmDeactivate', { code: station.code }))) return;
     this.api.deactivate(station.id).subscribe({
       next: () => this.done(t('stations.deactivated', { code: station.code })),
-      error: (error: unknown) => this.status.set(stationProblem(error)),
+      error: (error: unknown) => this.status.set(stationSaveProblem(error)),
     });
   }
 
@@ -314,7 +314,7 @@ export class StationsPage {
     };
     this.api.update(station.id, body).subscribe({
       next: () => this.done(t('stations.reactivated', { code: station.code })),
-      error: (error: unknown) => this.status.set(stationProblem(error)),
+      error: (error: unknown) => this.status.set(stationSaveProblem(error)),
     });
   }
 
@@ -343,7 +343,7 @@ export class StationsPage {
 
   private failed(error: unknown): void {
     this.saving.set(false);
-    this.problem.set(stationProblem(error));
+    this.problem.set(stationSaveProblem(error));
   }
 }
 
