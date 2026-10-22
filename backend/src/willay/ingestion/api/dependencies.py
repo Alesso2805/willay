@@ -68,7 +68,7 @@ async def rate_limited_station(
     clock: ClockDep,
 ) -> AuthenticatedStation:
     # Counted after authenticating: the limit is per station. Nothing throttles clients with a
-    # wrong key yet, and a well-formed one still costs an Argon2id check.
+    # wrong key yet, and a well-formed one still costs an Argon2id check (VIG-47).
     try:
         await enforce_rate_limit(station.station_id, clock, SqlBatchCounter(engine))
     except RateLimitExceededError as exc:
