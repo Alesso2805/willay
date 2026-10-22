@@ -225,7 +225,7 @@ erDiagram
 
 ## Product backlog
 
-45 stories in 12 epics (E0 to E11): 38 in the MVP (169 points), 4 for the public release (18 points) and 3 optional ones, VIG-31, VIG-32 and VIG-37, of 3 points each. VIG-33 to VIG-39 were added on September 30, 2026, after reviewing which screens this specification promised without a story that built them. MoSCoW priority (M = Must, S = Should, C = Could) and estimate in points (1, 2, 3, 5, 8). VIG-40 (bilingual product) was added the same day, when the codebase and its documentation moved to English. VIG-41 (light and dark mode) was added on October 4, 2026, at the product owner's request, and so were VIG-42 to VIG-45 (epic E11), to deploy a demo that anyone can try and to publish the repository.
+47 stories in 12 epics (E0 to E11): 38 in the MVP (169 points), 4 for the public release (18 points), 2 after it (6 points) and 3 optional ones, VIG-31, VIG-32 and VIG-37, of 3 points each. VIG-33 to VIG-39 were added on September 30, 2026, after reviewing which screens this specification promised without a story that built them. MoSCoW priority (M = Must, S = Should, C = Could) and estimate in points (1, 2, 3, 5, 8). VIG-40 (bilingual product) was added the same day, when the codebase and its documentation moved to English. VIG-41 (light and dark mode) was added on October 4, 2026, at the product owner's request, and so were VIG-42 to VIG-45 (epic E11), to deploy a demo that anyone can try and to publish the repository. VIG-46 and VIG-47 were added on October 22, 2026, after an audit of every comment against one written rule: the rule itself, and a limit the audit found missing.
 
 | ID | Epic | Story | Acceptance criteria | Prio | Pts | Sprint |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -274,10 +274,12 @@ erDiagram
 | VIG-43 | E11 Public release | As a recruiter I want to try Willay without installing anything | Off unless `WILLAY_DEMO_MODE` is set. Demo accounts whose shared password the sign-in screen shows, with a short guide of what to try; they cannot change their password. A "Run the Rímac scenario" button for the demo admin plays SPEC's scenario on the server, one run at a time and with its progress, through a `demo` worker (a separate process like the others) that also keeps the demo stations reporting and restores the demo organization every night, configuration included. A link to the emails Willay sent (Mailpit) | M | 8 | 8 |
 | VIG-44 | E10 Administration | As an admin I want to set my organization's language and time zone | `GET /v1/organization` for every role and `PUT` for admin, audited: language (es, en), the default of contacts without one, and time zone (an IANA name), used by messages and dashboard times; a screen for admin | S | 3 | 8 |
 | VIG-45 | E11 Public release | As the product owner I want the repository ready to be public | MIT license; a README for visitors with the live demo, its accounts, highlights and architecture; `SECURITY.md` on how to report a vulnerability; tooling files that only serve the local workstation stay out of version control | M | 2 | 8 |
+| VIG-46 | E0 Foundations | As a developer I want comments that follow one written rule | Engineering rules › Comments in the code states the rule, story IDs included (product owner, 2026-10-22); the comments that contradicted the code are fixed (the audit of 2026-10-22 found 7, 4 in the backend and 3 in the dashboard); restatements, history, separators and story-ID provenance are deleted, and names and types say what their comments said; no behaviour change: Ruff, Mypy, the import contracts, Pytest and the dashboard's lint, tests and build stay green. In two pull requests, the backend first | S | 3 | 9 |
+| VIG-47 | E2 Ingestion | As an operator I want requests with a wrong API key throttled before each costs an Argon2id check | Requests that fail station authentication are limited per client address before the key is verified, in the proxy or the API (an ADR decides where); over the limit, 429 with `Retry-After`; a test sends a burst of wrong keys and is throttled while a valid station keeps sending. Found by the comment audit of 2026-10-22: a comment said the proxy did this, and nothing did | M | 3 | 9 |
 
 ## Sprint plan
 
-Nine two-week sprints, from September 28, 2026 to January 31, 2027, designed to make progress outside your working hours. Each sprint closes with a demonstrable goal. Sprint 7 was added on September 30, 2026 together with VIG-33 to VIG-39: adding a sprint was preferred over cutting "Must" stories. Sprint 8 was added on October 4, 2026, for the public release.
+Ten two-week sprints, from September 28, 2026 to February 14, 2027, designed to make progress outside your working hours. Each sprint closes with a demonstrable goal. Sprint 7 was added on September 30, 2026 together with VIG-33 to VIG-39: adding a sprint was preferred over cutting "Must" stories. Sprint 8 was added on October 4, 2026, for the public release, and Sprint 9 on October 22, 2026, for VIG-46 and VIG-47.
 
 | Sprint | Dates | Goal | Stories | Pts |
 | --- | --- | --- | --- | --- |
@@ -290,6 +292,7 @@ Nine two-week sprints, from September 28, 2026 to January 31, 2027, designed to 
 | 6 | Dec 21 – Jan 3 | Management from the dashboard: contacts, failed readings, rules and audit | VIG-36, 39, 27 and 38 | 22 |
 | 7 | Jan 4 – 17 | Latency measured, load test, bilingual product, light and dark mode and recorded Rímac demo | VIG-28 to 30, VIG-40 and VIG-41 (+ VIG-31 if there is time) | 25 (+3) |
 | 8 | Jan 18 – 31 | A deployed demo that anyone can try, and a public repository | VIG-42, 43, 44 and 45 (+ VIG-37) | 18 (+3) |
+| 9 | Feb 1 – 14, 2027 | Comments that follow one written rule, and wrong API keys throttled | VIG-46 and 47 | 6 |
 
 **Buffer.** Sprint 1 is the most loaded (25 points) and sprint 6 falls during the holidays. If a sprint does not close, first move out the "Should" stories (VIG-27, VIG-29, VIG-38, VIG-40 and VIG-41) rather than cutting quality on the "Must" stories.
 
