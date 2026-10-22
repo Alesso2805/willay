@@ -111,8 +111,8 @@ def _click(callback: dict[str, Any]) -> Click | None:
     message = callback.get("message") or {}
     return Click(
         id=callback["id"],
-        from_id=sender["id"],
-        data=callback.get("data"),
+        clicker_id=sender["id"],
+        token=callback.get("data"),
         chat_id=(message.get("chat") or {}).get("id"),
         message_id=message.get("message_id"),
         message_text=message.get("text"),

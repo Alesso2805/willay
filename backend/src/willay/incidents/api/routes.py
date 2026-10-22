@@ -181,8 +181,8 @@ async def get_incident_readings(
     source, points = chart.series(stored, chart.evidence(opened))
     line = chart.threshold(opened)
     return IncidentReadingsOut(
-        station_code=station[0] if station else None,
-        unit=station[1] if station else None,
+        station_code=station.code if station else None,
+        unit=station.unit if station else None,
         window_start=start,
         window_end=end,
         source=source,

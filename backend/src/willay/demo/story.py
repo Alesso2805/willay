@@ -13,6 +13,7 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
+from willay.incidents.domain.lifecycle import IncidentStatus
 from willay.ingestion.domain.simulation import Behavior, StationPlan
 from willay.seed import data as seed
 
@@ -37,7 +38,7 @@ _STATIONS = {s.code: s for s in seed.STATIONS}
 class IncidentState:
     id: UUID
     rule_id: UUID
-    status: str  # open, acknowledged, resolved
+    status: IncidentStatus
     current_level: int
     acknowledged: bool
     exhausted: bool
@@ -90,7 +91,7 @@ def _problem(case: Case) -> str | None:
                 f" the story needs level {ACK_LEVEL} to acknowledge it"
             )
         return None
-    if incident.status == "resolved":
+    if incident.status is IncidentStatus.RESOLVED:
         return f"the {case.cause} incident was resolved without being acknowledged"
     if incident.current_level > ACK_LEVEL:
         return (
